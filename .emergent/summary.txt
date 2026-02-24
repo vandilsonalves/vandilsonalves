@@ -1,0 +1,150 @@
+<analysis>**original_problem_statement:**
+O usuário solicitou a criação de uma plataforma completa de ranking de corrida chamada Ranking Run Pró. Os requisitos evoluíram significativamente, começando com um sistema de ranking duplo (Nacional e Estadual) e culminando em uma plataforma completa com múltiplos papéis e funcionalidades.
+
+**REQUISITOS DO PRODUTO:**
+1.  **Sistema de Ranking:**
+    *   Rankings Nacionais e Estaduais, filtráveis por categoria (Masculino, Feminino, PCD, Cadeirante) e faixa etária.
+    *   Sistema de pontuação específico: 1º-10º lugar para atletas normais (10 a 1 ponto) e 1º-3º para PCD/Cadeirante (10 a 8 pontos).
+    *   Selo P para atletas com menos de 12 provas (8 para PCD/Cadeirante) no ano.
+2.  **Autenticação e Perfis:**
+    *   Cadastro e login para atletas e administradores.
+    *   **Painel do Atleta:** O atleta pode editar seu perfil (foto, equipe, redes sociais, etc.), mas não o email.
+    *   **Submissão de Resultados:** Atletas podem submeter seus resultados de corridas, com campos para nome da competição, colocação, tempo, link de comprovação e foto do pódio (opcional).
+3.  **Painel de Administração (Admin Dashboard):**
+    *   **Aprovação de Resultados:** Administradores devem aprovar ou reprovar os resultados submetidos pelos atletas para que os pontos sejam validados.
+    *   **Dashboard com Gráficos:** Visualização de estatísticas como atletas por estado, distribuição por gênero e faixa etária, e pendências de aprovação.
+    *   Controle total sobre o aplicativo (excluir, alterar, inserir).
+4.  **Funcionalidades Adicionais:**
+    *   Exportação do ranking para CSV e Excel.
+    *   Gráficos de evolução de desempenho do atleta.
+    *   Busca com autocompletar e filtros avançados.
+    *   Página de detalhes do atleta com histórico de corridas e barra de progresso.
+
+**User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
+
+**what currently exists?**
+Uma aplicação full-stack funcional com backend em FastAPI e frontend em React.
+*   **Backend:** Possui um sistema de autenticação completo (JWT com roles /), endpoints para o ranking, submissão de resultados por atletas, aprovação por administradores, atualização de perfil e um novo conjunto de endpoints para fornecer estatísticas para o dashboard do admin.
+*   **Frontend:** Inclui páginas de Login, Cadastro, Ranking principal, Detalhes do Atleta e Submissão de Resultados. A interface possui filtros e abas para as diferentes categorias.
+
+**Last working item**:
+*   **Last item agent was working:** Corrigindo um bug crítico no sistema de pontuação e na validação de resultados. O usuário relatou que a plataforma aceitava colocações inválidas (ex: 15º lugar) e calculava os pontos de forma errada (ex: 6º lugar recebia 6 pontos em vez de 5).
+*   **Status:** **USER VERIFICATION PENDING**
+*   **Agent Testing Done:** Y
+*   **Which testing method agent to use?** Frontend testing agent. O objetivo é validar visualmente a correção dos dados na tabela de ranking e confirmar que o formulário de submissão de resultados agora impede a inserção de colocações inválidas.
+*   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+*   **Issue 1:** Verificação da correção de pontuação e validação (PRIORITY: P0)
+    *   **Description:** O usuário precisa confirmar se a correção do bug crítico está funcionando. A aplicação não deve mais exibir resultados para colocações que não pontuam (acima de 10º para Normal, acima de 3º para PCD/Cadeirante) e a pontuação deve estar correta.
+    *   **Status:** USER VERIFICATION PENDING
+    *   **Is recurring issue?** Y
+
+**In progress Task List**:
+*   **Task 1:** Implementação da UI do Painel de Admin e do Painel do Atleta (PRIORITY: P0)
+    *   **Where to resume:** O backend para estas funcionalidades já está pronto e testado. O próximo passo é construir o frontend:
+        1.  **Painel de Admin:** Criar uma nova página () que exibe gráficos e cartões de informação com base nos endpoints de estatísticas (), seguindo o design da imagem  fornecida pelo usuário.
+        2.  **Painel do Atleta:** Criar uma página ( ou similar) onde o atleta logado possa editar suas informações de perfil, utilizando o endpoint  e seguindo o design da imagem .
+    *   **What will be achieved with this?** Concluirá a principal solicitação do usuário, transformando o aplicativo em uma plataforma totalmente gerenciável.
+    *   **Status:** IN PROGRESS (Backend concluído, Frontend não iniciado).
+    *   **Should Test frontend/backend/both after fix?** Both.
+    *   **Blocked on something:** Confirmação do usuário sobre a correção do bug anterior (Issue 1).
+
+**Upcoming and Future Tasks**
+*   Não há outras tarefas futuras definidas. A conclusão do Painel de Admin e do Painel do Atleta finalizará os requisitos atuais.
+
+**Completed work in this session**
+*   **Backend Completo:**
+    *   Sistema de autenticação (JWT) com roles  e .
+    *   Fluxo de submissão de resultados por atletas e aprovação por administradores.
+    *   Endpoints para exportação (CSV/Excel) e estatísticas do dashboard.
+    *   Endpoint para atualização de perfil de atleta.
+*   **Correção Crítica:**
+    *   Corrigida a lógica de pontuação para seguir as regras do usuário.
+    *   Implementada validação estrita no backend e frontend para bloquear a submissão de resultados que não pontuam.
+    *   Realizada a limpeza de mais de 600 resultados inválidos do banco de dados e recalculado todo o ranking.
+*   **Frontend Básico:**
+    *   Estrutura de páginas para Login, Cadastro, Ranking, Detalhes do Atleta e Submissão.
+    *   Roteamento e componentes de UI (abas, filtros, tabelas).
+
+**Earlier issues found/mentioned but not fixed**
+*   Nenhum.
+
+**Known issue recurrence from previous fork**
+*   Nenhuma recorrência conhecida.
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+*   **Backend:** FastAPI, MongoDB (com ), JWT para autenticação (, ).
+*   **Frontend:** React, React Router, Tailwind CSS, componentes shadcn/ui,  para gráficos.
+*   **Arquitetura:** Repositório monorepo com uma API backend e um SPA frontend.
+
+**key DB schema**
+*   **:** Armazena dados do usuário, incluindo ,  ( ou ), e novos campos de perfil como , , .
+*   **:** Armazena submissões de atletas aguardando aprovação, com  'pendente'.
+*   **:** Armazena resultados aprovados.
+*   **:** Cache calculado com a pontuação e ranking de cada atleta.
+
+**changes in tech stack**
+*   Foram adicionadas as bibliotecas  (frontend) para gráficos e  (backend) para exportação para Excel.
+
+**All files of reference**
+*   : Arquivo principal do backend. Recentemente modificado para adicionar endpoints de estatísticas, endpoint de atualização de perfil e a validação de colocação.
+*   : Contém o formulário de submissão. Modificado para limitar dinamicamente o campo de colocação.
+*   : Arquivo principal de roteamento do frontend.
+
+**Areas that need refactoring**:
+*   O arquivo  possui mais de 870 linhas e concentra toda a lógica do backend. Idealmente, ele deveria ser dividido em módulos menores (ex: , , ) para melhorar a manutenção. Isso representa um débito técnico significativo.
+
+**key api endpoints**
+*   , , 
+*   
+*   , , 
+*   , 
+*   , 
+*    (e outros endpoints de estatísticas para o admin)
+
+**Critical Info for New Agent**
+*   A tarefa mais crítica foi a recente correção no sistema de pontuação. É **essencial** obter a confirmação do usuário de que o bug foi resolvido antes de prosseguir.
+*   A próxima grande entrega é a implementação do **Painel de Admin** e do **Painel do Atleta** no frontend. Os endpoints de backend já estão prontos e testados. O usuário forneceu imagens de referência para o design.
+*   Esteja ciente de que o arquivo  é muito grande. Tente manter o código organizado ao fazer novas adições.
+
+**documents and test reports created in this job**
+*   Nenhum.
+
+**Last 10 User Messages and any pending HUMAN messages**
+*   **user (msg 320):** Relata o bug crítico: colocações inválidas são aceitas e a pontuação está errada. (CONCLUÍDO - CORREÇÃO PENDENTE DE VALIDAÇÃO)
+*   **user (msg 279):** Reafirma as regras de pontuação e validação de colocação. (CONCLUÍDO)
+*   **user (msg 250):** Pede para testar o backend antes de criar o frontend. (CONCLUÍDO)
+*   **user (msg 221):** Solicita a criação do Painel de Admin e do Painel do Atleta com base em imagens. (EM ANDAMENTO)
+*   **user (msg 202):** Reporta um erro de JavaScript () que quebrou a aplicação. (CONCLUÍDO)
+*   **user (msg 171):** Aponta a parte do código que está causando o erro. (CONCLUÍDO)
+*   **user (msg 116):** Confirma a continuação da implementação. (CONCLUÍDO)
+*   **user (msg 84):** Pede para implementar todas as funcionalidades de uma vez. (CONCLUÍDO)
+*   **user (msg 79):** Solicita um grande número de novas funcionalidades, incluindo cadastro de atletas e aprovação de admin. (CONCLUÍDO)
+*   **user (msg 54):** Confirma as respostas para as perguntas de planejamento do agente. (CONCLUÍDO)
+
+**Pendente:** Aguardando o usuário verificar e confirmar que a correção do bug de pontuação e validação foi bem-sucedida.
+
+**Project Health Check:**
+*   **Working:** Backend API (autenticação, ranking, submissão, aprovação, estatísticas), Frontend (estrutura de páginas, roteamento, componentes básicos).
+*   **Broken:** Nenhum componente está quebrado no momento, mas a validação da correção do bug pelo usuário é crucial.
+*   **Mocked:** A aplicação utiliza dados fictícios de atletas e corridas, conforme planejado para o desenvolvimento.
+
+**3rd Party Integrations**
+*   Nenhuma.
+
+**Testing status**
+*   **Testing agent used:** NO
+*   **Troubleshoot agent used:** NO
+*   **Test files created:** N/A
+*   **Known regressions:** N/A
+
+**Credentials to test flow:**
+*   **Admin:**  / 
+*   **Atleta:**  / 
+
+**What agent forgot to execute**
+*   O agente ainda não implementou o frontend para o **Painel de Admin** e para o **Painel de Edição do Atleta**. Esta é a tarefa principal que está em andamento.</analysis>
