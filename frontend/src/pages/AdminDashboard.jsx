@@ -6,31 +6,39 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   CheckCircle, XCircle, ExternalLink, Calendar, MapPin, Trophy, Clock, 
-  ArrowLeft, Users, AlertCircle, TrendingUp, BarChart3, PieChart,
-  UserCheck, UserX, Activity
+  Users, AlertCircle, TrendingUp, BarChart3, PieChart,
+  Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database
 } from 'lucide-react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899'];
+const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
+
+// Menu items para sidebar
+const menuItems = [
+  { id: 'dashboard', label: 'Dashboard', icon: Home },
+  { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
+  { id: 'graficos', label: 'Gráficos', icon: BarChart3 },
+  { id: 'ranking', label: 'Rankings', icon: Trophy },
+];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, token, isAdmin } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeMenu, setActiveMenu] = useState('dashboard');
   
   // Stats
   const [stats, setStats] = useState(null);
   const [statsEstados, setStatsEstados] = useState([]);
   const [statsCategorias, setStatsCategorias] = useState(null);
   const [statsFaixa, setStatsFaixa] = useState([]);
+  const [corridasPorMes, setCorridasPorMes] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   
   // Pendentes
@@ -61,17 +69,19 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, estadosRes, categoriasRes, faixaRes] = await Promise.all([
+      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/estados`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
       setStats(statsRes.data);
       setStatsEstados(estadosRes.data);
       setStatsCategorias(categoriasRes.data);
       setStatsFaixa(faixaRes.data);
+      setCorridasPorMes(corridasRes.data);
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
     } finally {
@@ -94,15 +104,12 @@ const AdminDashboard = () => {
   };
 
   const handleAprovar = async (resultadoId) => {
-    if (!window.confirm('Confirma a aprovação deste resultado?')) return;
-
     setActionLoading(true);
     try {
       await axios.post(`${API}/admin/aprovar/${resultadoId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      alert('Resultado aprovado com sucesso!');
       fetchPendentes();
       fetchStats();
     } catch (error) {
@@ -121,7 +128,6 @@ const AdminDashboard = () => {
         { headers: { Authorization: `Bearer ${token}` }}
       );
       
-      alert('Resultado reprovado');
       setShowReprovarModal(false);
       setMotivoReprovacao('');
       setSelectedResultado(null);
@@ -157,161 +163,202 @@ const AdminDashboard = () => {
   if (!isAdmin) return null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
-      <div className="container mx-auto max-w-7xl">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-1" data-testid="admin-title">
-              Painel Administrativo
-            </h1>
-            <p className="text-slate-400">Gerenciamento do Ranking Run Pró</p>
-          </div>
-          <Button onClick={() => navigate('/')} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar ao Ranking
-          </Button>
+    <div className="min-h-screen flex bg-slate-100 dark:bg-slate-950">
+      {/* Sidebar */}
+      <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white fixed h-full shadow-xl">
+        {/* Logo */}
+        <div className="p-6 border-b border-slate-700/50">
+          <h1 className="text-xl font-bold text-emerald-400">Ranking Run Pró</h1>
+          <p className="text-xs text-slate-400 mt-1">Painel Administrativo</p>
         </div>
 
-        {/* Tabs */}
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-          <TabsList className="grid w-full grid-cols-2 lg:grid-cols-3 mb-6 bg-slate-800/50">
-            <TabsTrigger value="overview" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white" data-testid="tab-overview">
-              <BarChart3 className="w-4 h-4 mr-2" />
-              Visão Geral
-            </TabsTrigger>
-            <TabsTrigger value="pendentes" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white" data-testid="tab-pendentes">
-              <AlertCircle className="w-4 h-4 mr-2" />
-              Pendentes ({pendentes.length})
-            </TabsTrigger>
-            <TabsTrigger value="graficos" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white" data-testid="tab-graficos">
-              <PieChart className="w-4 h-4 mr-2" />
-              Gráficos
-            </TabsTrigger>
-          </TabsList>
+        {/* Menu */}
+        <nav className="p-4 space-y-2">
+          {menuItems.map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                onClick={() => setActiveMenu(item.id)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
+                  activeMenu === item.id 
+                    ? 'bg-emerald-500/20 text-emerald-400 border-l-4 border-emerald-400' 
+                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                }`}
+                data-testid={`menu-${item.id}`}
+              >
+                <Icon className="w-5 h-5" />
+                <span className="font-medium">{item.label}</span>
+                {item.id === 'pendentes' && pendentes.length > 0 && (
+                  <Badge className="ml-auto bg-red-500 text-white text-xs">
+                    {pendentes.length}
+                  </Badge>
+                )}
+                {activeMenu === item.id && (
+                  <ChevronRight className="w-4 h-4 ml-auto" />
+                )}
+              </button>
+            );
+          })}
+        </nav>
 
-          {/* Tab: Visão Geral */}
-          <TabsContent value="overview">
+        {/* Footer da Sidebar */}
+        <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700/50">
+          <Button 
+            onClick={() => navigate('/')} 
+            variant="ghost" 
+            className="w-full justify-start text-slate-400 hover:text-white"
+          >
+            <Home className="w-4 h-4 mr-2" />
+            Voltar ao Site
+          </Button>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div className="ml-64 flex-1 p-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
+            {menuItems.find(m => m.id === activeMenu)?.label || 'Dashboard'}
+          </h2>
+          <p className="text-slate-500">
+            Bem-vindo, {user?.nome}
+          </p>
+        </div>
+
+        {/* Dashboard View */}
+        {activeMenu === 'dashboard' && (
+          <div className="space-y-6">
+            {/* Cards de Estatísticas - Estilo KPI */}
             {loadingStats ? (
-              <div className="text-center py-12 text-slate-400">Carregando estatísticas...</div>
+              <div className="text-center py-12">Carregando...</div>
             ) : (
-              <div className="space-y-6">
-                {/* Cards de Estatísticas */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                  <Card className="bg-gradient-to-br from-emerald-500/20 to-emerald-600/10 border-emerald-500/30">
+              <>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                  {/* Total Atletas */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-emerald-300 font-medium">Total de Atletas</p>
-                          <p className="text-3xl font-bold text-white mt-1" data-testid="stat-total-atletas">{stats?.total_atletas || 0}</p>
+                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.total_atletas || 0}</p>
+                          <p className="text-sm text-slate-500 mt-1">Atletas Ativos</p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                          <Users className="h-6 w-6 text-emerald-400" />
+                        <div className="h-14 w-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                          <Users className="h-7 w-7 text-emerald-600" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 border-amber-500/30">
+                  {/* Pendentes */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-600" />
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-amber-300 font-medium">Resultados Pendentes</p>
-                          <p className="text-3xl font-bold text-white mt-1" data-testid="stat-pendentes">{stats?.resultados_pendentes || 0}</p>
+                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.resultados_pendentes || 0}</p>
+                          <p className="text-sm text-slate-500 mt-1">Aguardando Aprovação</p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-amber-500/20 flex items-center justify-center">
-                          <AlertCircle className="h-6 w-6 text-amber-400" />
+                        <div className="h-14 w-14 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+                          <AlertCircle className="h-7 w-7 text-amber-600" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-blue-500/20 to-blue-600/10 border-blue-500/30">
+                  {/* Total Corridas */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-blue-300 font-medium">Atletas Masculinos</p>
-                          <p className="text-3xl font-bold text-white mt-1" data-testid="stat-homens">{stats?.total_homens || 0}</p>
+                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.total_corridas || 0}</p>
+                          <p className="text-sm text-slate-500 mt-1">Corridas Registradas</p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
-                          <UserCheck className="h-6 w-6 text-blue-400" />
+                        <div className="h-14 w-14 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                          <Trophy className="h-7 w-7 text-blue-600" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
 
-                  <Card className="bg-gradient-to-br from-pink-500/20 to-pink-600/10 border-pink-500/30">
+                  {/* Selo P */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
+                    <div className="h-1 bg-gradient-to-r from-purple-400 to-purple-600" />
                     <CardContent className="pt-6">
                       <div className="flex items-center justify-between">
                         <div>
-                          <p className="text-sm text-pink-300 font-medium">Atletas Femininas</p>
-                          <p className="text-3xl font-bold text-white mt-1" data-testid="stat-mulheres">{stats?.total_mulheres || 0}</p>
+                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.atletas_pendentes_corridas || 0}</p>
+                          <p className="text-sm text-slate-500 mt-1">Atletas com Selo "P"</p>
                         </div>
-                        <div className="h-12 w-12 rounded-full bg-pink-500/20 flex items-center justify-center">
-                          <UserX className="h-6 w-6 text-pink-400" />
+                        <div className="h-14 w-14 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                          <Activity className="h-7 w-7 text-purple-600" />
                         </div>
                       </div>
                     </CardContent>
                   </Card>
                 </div>
 
-                {/* Gráficos lado a lado */}
+                {/* Gráficos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Atletas por Estado */}
-                  <Card className="bg-slate-800/50 border-slate-700">
+                  {/* Corridas por Mês */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                     <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-emerald-400" />
-                        Atletas por Estado
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-emerald-500" />
+                        Corridas por Mês
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-[300px]">
+                      <div className="h-[280px]">
                         <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={statsEstados.slice(0, 10)} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis type="number" stroke="#9CA3AF" />
-                            <YAxis dataKey="estado" type="category" stroke="#9CA3AF" width={40} />
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
-                              labelStyle={{ color: '#F3F4F6' }}
-                            />
-                            <Bar dataKey="total" fill="#10B981" radius={[0, 4, 4, 0]} />
-                          </BarChart>
+                          <AreaChart data={corridasPorMes}>
+                            <defs>
+                              <linearGradient id="colorCorridas" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
+                                <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                            <XAxis dataKey="mes" stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => v.split('-')[1]} />
+                            <YAxis stroke="#9CA3AF" fontSize={12} />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Area type="monotone" dataKey="total" stroke="#10B981" strokeWidth={2} fill="url(#colorCorridas)" />
+                          </AreaChart>
                         </ResponsiveContainer>
                       </div>
                     </CardContent>
                   </Card>
 
                   {/* Distribuição por Gênero */}
-                  <Card className="bg-slate-800/50 border-slate-700">
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                     <CardHeader>
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <PieChart className="w-5 h-5 text-emerald-400" />
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <PieChart className="w-5 h-5 text-emerald-500" />
                         Distribuição por Gênero
                       </CardTitle>
                     </CardHeader>
                     <CardContent>
-                      <div className="h-[300px]">
+                      <div className="h-[280px] flex items-center justify-center">
                         <ResponsiveContainer width="100%" height="100%">
                           <RechartsPie>
                             <Pie
                               data={prepareGeneroData()}
                               cx="50%"
                               cy="50%"
-                              labelLine={false}
-                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                              innerRadius={60}
                               outerRadius={100}
-                              fill="#8884d8"
+                              paddingAngle={5}
                               dataKey="value"
                             >
                               {prepareGeneroData().map((entry, index) => (
                                 <Cell key={`cell-${index}`} fill={entry.color} />
                               ))}
                             </Pie>
-                            <Tooltip 
-                              contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
-                            />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Legend />
                           </RechartsPie>
                         </ResponsiveContainer>
                       </div>
@@ -319,101 +366,104 @@ const AdminDashboard = () => {
                   </Card>
                 </div>
 
-                {/* Atletas com selo P */}
-                <Card className="bg-slate-800/50 border-slate-700">
-                  <CardContent className="pt-6">
-                    <div className="flex items-center gap-4">
-                      <div className="h-14 w-14 rounded-full bg-orange-500/20 flex items-center justify-center">
-                        <Activity className="h-7 w-7 text-orange-400" />
-                      </div>
-                      <div>
-                        <p className="text-sm text-slate-400 font-medium">Atletas com Selo "P" (Pendente de Corridas)</p>
-                        <p className="text-2xl font-bold text-white">{stats?.atletas_pendentes_corridas || 0}</p>
-                        <p className="text-xs text-slate-500 mt-1">Atletas que ainda não completaram o mínimo de corridas para a premiação</p>
-                      </div>
+                {/* Atletas por Estado */}
+                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <Database className="w-5 h-5 text-emerald-500" />
+                      Atletas por Estado (Top 10)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[300px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={statsEstados.slice(0, 10)} layout="vertical">
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis type="number" stroke="#9CA3AF" />
+                          <YAxis dataKey="estado" type="category" stroke="#9CA3AF" width={40} />
+                          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                          <Bar dataKey="total" radius={[0, 4, 4, 0]}>
+                            {statsEstados.slice(0, 10).map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </>
             )}
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Tab: Pendentes */}
-          <TabsContent value="pendentes">
+        {/* Pendentes View */}
+        {activeMenu === 'pendentes' && (
+          <div>
             {loadingPendentes ? (
-              <div className="text-center py-12 text-slate-400">Carregando...</div>
+              <div className="text-center py-12">Carregando...</div>
             ) : pendentes.length === 0 ? (
-              <Alert className="bg-emerald-500/10 border-emerald-500/30">
-                <CheckCircle className="h-4 w-4 text-emerald-400" />
-                <AlertDescription className="text-emerald-300 ml-2">
+              <Alert className="bg-emerald-50 border-emerald-200">
+                <CheckCircle className="h-4 w-4 text-emerald-600" />
+                <AlertDescription className="text-emerald-700 ml-2">
                   Não há resultados pendentes de aprovação.
                 </AlertDescription>
               </Alert>
             ) : (
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {pendentes.map((resultado) => (
-                  <Card key={resultado.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 transition-colors" data-testid={`resultado-${resultado.id}`}>
-                    <CardHeader className="bg-slate-800/80 rounded-t-lg">
+                  <Card key={resultado.id} className="bg-white dark:bg-slate-800 shadow-lg border-0" data-testid={`resultado-${resultado.id}`}>
+                    <CardHeader className="bg-slate-50 dark:bg-slate-800/80 rounded-t-lg border-b">
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg text-white">
+                          <CardTitle className="text-lg">
                             {resultado.nome_competicao}
                           </CardTitle>
-                          <p className="text-sm text-slate-400 mt-1">
-                            <strong className="text-slate-300">Atleta:</strong> {resultado.atleta_nome} ({resultado.atleta_equipe})
+                          <p className="text-sm text-slate-500 mt-1">
+                            <strong>Atleta:</strong> {resultado.atleta_nome}
                           </p>
-                          <Badge variant="outline" className="mt-2 border-slate-600 text-slate-300">
+                          <Badge variant="outline" className="mt-2">
                             {resultado.atleta_categoria?.toUpperCase()}
                           </Badge>
                         </div>
-                        <Badge className="bg-amber-500/20 text-amber-400 border-amber-500/30">
+                        <Badge className="bg-amber-100 text-amber-700 border-0">
                           Pendente
                         </Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-3">
                       <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2 text-slate-300">
+                        <div className="flex items-center gap-2">
                           <Trophy className="w-4 h-4 text-amber-500" />
                           <span><strong>Colocação:</strong> {resultado.colocacao}º</span>
                         </div>
-                        <div className="flex items-center gap-2 text-slate-300">
-                          <Clock className="w-4 h-4 text-blue-400" />
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-4 h-4 text-blue-500" />
                           <span><strong>Tempo:</strong> {resultado.tempo}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-slate-300">
-                          <MapPin className="w-4 h-4 text-emerald-400" />
+                        <div className="flex items-center gap-2">
+                          <MapPin className="w-4 h-4 text-emerald-500" />
                           <span>{resultado.cidade_competicao}/{resultado.estado_competicao}</span>
                         </div>
-                        <div className="flex items-center gap-2 text-slate-300">
+                        <div className="flex items-center gap-2">
                           <Calendar className="w-4 h-4 text-slate-400" />
                           <span>{new Date(resultado.data_competicao).toLocaleDateString('pt-BR')}</span>
                         </div>
                       </div>
 
-                      <div className="pt-3 border-t border-slate-700">
-                        <p className="text-sm text-slate-300"><strong>Distância:</strong> {resultado.distancia}</p>
-                        <p className="text-sm mt-1 text-slate-300">
+                      <div className="pt-3 border-t">
+                        <p className="text-sm"><strong>Distância:</strong> {resultado.distancia}</p>
+                        <p className="text-sm mt-1">
                           <strong>Link:</strong>{' '}
                           <a
                             href={resultado.link_resultado}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-emerald-400 hover:text-emerald-300 inline-flex items-center gap-1"
+                            className="text-emerald-600 hover:underline inline-flex items-center gap-1"
                           >
                             Ver resultado <ExternalLink className="w-3 h-3" />
                           </a>
                         </p>
-                        {resultado.foto_podio_url && (
-                          <div className="mt-3">
-                            <p className="text-sm font-semibold mb-2 text-slate-300">Foto do Pódio:</p>
-                            <img
-                              src={`${BACKEND_URL}${resultado.foto_podio_url}`}
-                              alt="Pódio"
-                              className="w-full h-40 object-cover rounded-lg border border-slate-600"
-                            />
-                          </div>
-                        )}
                       </div>
 
                       <div className="flex gap-2 pt-4">
@@ -445,19 +495,21 @@ const AdminDashboard = () => {
                 ))}
               </div>
             )}
-          </TabsContent>
+          </div>
+        )}
 
-          {/* Tab: Gráficos */}
-          <TabsContent value="graficos">
+        {/* Gráficos View */}
+        {activeMenu === 'graficos' && (
+          <div className="space-y-6">
             {loadingStats ? (
-              <div className="text-center py-12 text-slate-400">Carregando gráficos...</div>
+              <div className="text-center py-12">Carregando...</div>
             ) : (
-              <div className="space-y-6">
+              <>
                 {/* Distribuição por Categoria */}
-                <Card className="bg-slate-800/50 border-slate-700">
+                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                   <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <PieChart className="w-5 h-5 text-emerald-400" />
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-emerald-500" />
                       Distribuição por Categoria e Gênero
                     </CardTitle>
                   </CardHeader>
@@ -465,13 +517,10 @@ const AdminDashboard = () => {
                     <div className="h-[400px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={prepareCategoriasData()}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                           <XAxis dataKey="name" stroke="#9CA3AF" />
                           <YAxis stroke="#9CA3AF" />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
-                            labelStyle={{ color: '#F3F4F6' }}
-                          />
+                          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
                           <Bar dataKey="value" radius={[4, 4, 0, 0]}>
                             {prepareCategoriasData().map((entry, index) => (
                               <Cell key={`cell-${index}`} fill={entry.color} />
@@ -484,51 +533,59 @@ const AdminDashboard = () => {
                 </Card>
 
                 {/* Distribuição por Faixa Etária */}
-                <Card className="bg-slate-800/50 border-slate-700">
+                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                   <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-emerald-400" />
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <PieChart className="w-5 h-5 text-emerald-500" />
                       Distribuição por Faixa Etária
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="h-[300px]">
+                    <div className="h-[350px]">
                       <ResponsiveContainer width="100%" height="100%">
                         <BarChart data={statsFaixa}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                           <XAxis dataKey="faixa" stroke="#9CA3AF" />
                           <YAxis stroke="#9CA3AF" />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151', borderRadius: '8px' }}
-                            labelStyle={{ color: '#F3F4F6' }}
-                          />
+                          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
                           <Bar dataKey="total" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
                         </BarChart>
                       </ResponsiveContainer>
                     </div>
                   </CardContent>
                 </Card>
-              </div>
+              </>
             )}
-          </TabsContent>
-        </Tabs>
+          </div>
+        )}
+
+        {/* Ranking View - Redireciona para página principal */}
+        {activeMenu === 'ranking' && (
+          <div className="text-center py-12">
+            <Trophy className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
+            <h3 className="text-xl font-semibold mb-2">Gerenciar Rankings</h3>
+            <p className="text-slate-500 mb-4">Acesse a página principal para visualizar e gerenciar os rankings.</p>
+            <Button onClick={() => navigate('/')} className="bg-emerald-600">
+              Ir para Rankings
+            </Button>
+          </div>
+        )}
 
         {/* Modal de Reprovação */}
         <Dialog open={showReprovarModal} onOpenChange={setShowReprovarModal}>
-          <DialogContent className="bg-slate-800 border-slate-700">
+          <DialogContent>
             <DialogHeader>
-              <DialogTitle className="text-white">Reprovar Resultado</DialogTitle>
+              <DialogTitle>Reprovar Resultado</DialogTitle>
             </DialogHeader>
             <div className="space-y-4">
-              <p className="text-sm text-slate-400">
-                Informe o motivo da reprovação (será enviado ao atleta):
+              <p className="text-sm text-slate-600">
+                O atleta receberá uma notificação com o motivo da reprovação e poderá submeter novamente.
               </p>
               <Textarea
                 value={motivoReprovacao}
                 onChange={(e) => setMotivoReprovacao(e.target.value)}
                 placeholder="Ex: Resultado não encontrado no link fornecido, foto ilegível, etc."
                 rows={4}
-                className="bg-slate-900 border-slate-600 text-white"
               />
             </div>
             <DialogFooter>
@@ -538,7 +595,6 @@ const AdminDashboard = () => {
                   setShowReprovarModal(false);
                   setMotivoReprovacao('');
                 }}
-                className="border-slate-600 text-slate-300"
               >
                 Cancelar
               </Button>
