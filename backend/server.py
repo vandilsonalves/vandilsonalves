@@ -449,7 +449,24 @@ async def submeter_resultado(
             detail="Prazo expirado! Você tem apenas 6 dias úteis para enviar o resultado após a competição."
         )
     
-    # Salvar foto (simplificado - em produção usar S3)
+    # VALIDAR COLOCAÇÃO (APENAS POSIÇÕES QUE PONTUAM)
+    categoria = current_user.get("categoria", "normal")
+    
+    if categoria in ["pcd", "cadeirante"]:
+        # PCD e Cadeirante: apenas top 3
+        if colocacao < 1 or colocacao > 3:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Para categoria {categoria.upper()}, apenas colocações de 1º a 3º são válidas e pontuam."
+            )
+    else:
+        # Normal: apenas top 10
+        if colocacao < 1 or colocacao > 10:
+            raise HTTPException(
+                status_code=400,
+                detail="Para categoria Normal, apenas colocações de 1º a 10º são válidas e pontuam."
+            )
+    
     # Salvar foto (OPCIONAL)
     foto_url = ""
     if foto_podio and foto_podio.filename:
