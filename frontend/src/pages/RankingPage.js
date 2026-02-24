@@ -109,11 +109,11 @@ const RankingPage = () => {
         <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg">
           <CardContent className="pt-6">
             <Tabs value={categoriaAtual} onValueChange={setCategoriaAtual} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto">
-                <TabsTrigger value="masculino" className="font-semibold py-3" data-testid="tab-masculino">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto gap-1">
+                <TabsTrigger value="masculino" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-masculino">
                   MASCULINO
                 </TabsTrigger>
-                <TabsTrigger value="feminino" className="font-semibold py-3" data-testid="tab-feminino">
+                <TabsTrigger value="feminino" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-feminino">
                   FEMININO
                 </TabsTrigger>
                 <TabsTrigger value="pcd-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-m">
@@ -121,6 +121,12 @@ const RankingPage = () => {
                 </TabsTrigger>
                 <TabsTrigger value="pcd-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-f">
                   PCD / F
+                </TabsTrigger>
+                <TabsTrigger value="cadeirante-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-cadeirante-m">
+                  CADEIRANTE / M
+                </TabsTrigger>
+                <TabsTrigger value="cadeirante-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-cadeirante-f">
+                  CADEIRANTE / F
                 </TabsTrigger>
               </TabsList>
             </Tabs>
