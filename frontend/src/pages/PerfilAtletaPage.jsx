@@ -8,14 +8,24 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Badge } from '@/components/ui/badge';
 import { 
   ArrowLeft, Save, User, Mail, MapPin, Users, Trophy, 
-  Facebook, Instagram, Phone, FileText, Camera, Check, Loader2
+  Facebook, Instagram, Phone, FileText, Camera, Check, Loader2,
+  Share2, Award, ExternalLink
 } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Ícones de redes sociais externas
+const SocialLinks = [
+  { name: 'Strava', icon: '🏃', url: 'https://www.strava.com', color: 'bg-orange-500' },
+  { name: 'WhatsApp', icon: '💬', url: 'https://chat.whatsapp.com', color: 'bg-green-500' },
+  { name: 'TikTok', icon: '🎵', url: 'https://www.tiktok.com', color: 'bg-slate-900' },
+  { name: 'YouTube', icon: '▶️', url: 'https://www.youtube.com', color: 'bg-red-600' },
+];
 
 const PerfilAtletaPage = () => {
   const navigate = useNavigate();
@@ -28,6 +38,7 @@ const PerfilAtletaPage = () => {
   
   // Dados do atleta
   const [atleta, setAtleta] = useState(null);
+  const [conquistas, setConquistas] = useState([]);
   
   // Campos editáveis
   const [equipe, setEquipe] = useState('');
@@ -42,12 +53,12 @@ const PerfilAtletaPage = () => {
       return;
     }
     fetchAtletaData();
+    fetchConquistas();
   }, [user, token]);
 
   const fetchAtletaData = async () => {
     setLoading(true);
     try {
-      // Buscar perfil completo do atleta logado
       const response = await axios.get(`${API}/atletas/meu-perfil`, {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -67,7 +78,6 @@ const PerfilAtletaPage = () => {
         total_corridas: data.total_corridas || 0
       });
       
-      // Preencher campos editáveis
       setEquipe(data.equipe || '');
       setFacebookUrl(data.facebook_url || '');
       setInstagramUrl(data.instagram_url || '');
@@ -79,6 +89,17 @@ const PerfilAtletaPage = () => {
       setError('Erro ao carregar dados do perfil');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchConquistas = async () => {
+    try {
+      const response = await axios.get(`${API}/conquistas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setConquistas(response.data.conquistas || []);
+    } catch (error) {
+      console.error('Erro ao buscar conquistas:', error);
     }
   };
 
@@ -99,11 +120,7 @@ const PerfilAtletaPage = () => {
       });
       
       setSuccess('Perfil atualizado com sucesso!');
-      
-      // Atualizar dados locais
       setAtleta(prev => ({ ...prev, equipe }));
-      
-      // Limpar mensagem após 3 segundos
       setTimeout(() => setSuccess(''), 3000);
       
     } catch (error) {
@@ -118,13 +135,11 @@ const PerfilAtletaPage = () => {
     const file = e.target.files?.[0];
     if (!file) return;
     
-    // Validar tipo
     if (!file.type.startsWith('image/')) {
       setError('Por favor, selecione uma imagem válida');
       return;
     }
     
-    // Validar tamanho (max 5MB)
     if (file.size > 5 * 1024 * 1024) {
       setError('A imagem deve ter no máximo 5MB');
       return;
@@ -144,7 +159,6 @@ const PerfilAtletaPage = () => {
         }
       });
       
-      // Atualizar foto local
       setAtleta(prev => ({ ...prev, foto_url: response.data.foto_url }));
       setSuccess('Foto atualizada com sucesso!');
       setTimeout(() => setSuccess(''), 3000);
@@ -154,6 +168,32 @@ const PerfilAtletaPage = () => {
       setError('Erro ao enviar foto');
     } finally {
       setUploadingPhoto(false);
+    }
+  };
+
+  const handleShare = async (platform) => {
+    try {
+      const response = await axios.get(`${API}/atletas/${user.id}/compartilhar`);
+      const data = response.data;
+      
+      let shareUrl = '';
+      const texto = encodeURIComponent(data.texto_whatsapp);
+      const url = encodeURIComponent(data.url_compartilhar);
+      
+      if (platform === 'whatsapp') {
+        shareUrl = `https://wa.me/?text=${texto}`;
+      } else if (platform === 'instagram') {
+        // Instagram não tem API de compartilhamento direto, copiar texto
+        navigator.clipboard.writeText(data.texto_whatsapp);
+        alert('Texto copiado! Cole no seu Instagram.');
+        return;
+      }
+      
+      if (shareUrl) {
+        window.open(shareUrl, '_blank');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
     }
   };
 
@@ -185,7 +225,7 @@ const PerfilAtletaPage = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
-      <div className="container mx-auto max-w-4xl">
+      <div className="container mx-auto max-w-5xl">
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
           <div>
@@ -199,6 +239,31 @@ const PerfilAtletaPage = () => {
             Voltar
           </Button>
         </div>
+
+        {/* Links Rápidos para Redes Sociais */}
+        <Card className="mb-6 bg-slate-800/50 border-slate-700">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-lg text-white flex items-center gap-2">
+              <ExternalLink className="w-5 h-5 text-emerald-400" />
+              Acesso Rápido
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-3">
+              {SocialLinks.map((link) => (
+                <Button
+                  key={link.name}
+                  variant="outline"
+                  className={`${link.color} text-white border-0 hover:opacity-80`}
+                  onClick={() => window.open(link.url, '_blank')}
+                >
+                  <span className="mr-2">{link.icon}</span>
+                  {link.name}
+                </Button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
 
         {/* Alertas */}
         {success && (
@@ -226,7 +291,6 @@ const PerfilAtletaPage = () => {
                   </AvatarFallback>
                 </Avatar>
                 
-                {/* Botão de upload de foto */}
                 <label className="absolute bottom-0 right-0 cursor-pointer">
                   <input
                     type="file"
@@ -250,7 +314,6 @@ const PerfilAtletaPage = () => {
             </CardHeader>
             
             <CardContent className="space-y-4">
-              {/* Informações não editáveis */}
               <div className="space-y-3 text-sm">
                 <div className="flex items-center gap-3 text-slate-300">
                   <MapPin className="w-4 h-4 text-emerald-400" />
@@ -279,6 +342,47 @@ const PerfilAtletaPage = () => {
                     <p className="text-2xl font-bold text-blue-400">{atleta?.total_corridas || 0}</p>
                     <p className="text-xs text-slate-400">Corridas</p>
                   </div>
+                </div>
+              </div>
+
+              {/* Conquistas */}
+              {conquistas.length > 0 && (
+                <div className="pt-4 border-t border-slate-700">
+                  <p className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-amber-400" />
+                    Conquistas
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {conquistas.map((c) => (
+                      <Badge key={c.codigo} variant="outline" className="border-amber-500/30 text-amber-300">
+                        {c.icone} {c.nome}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Compartilhar */}
+              <div className="pt-4 border-t border-slate-700">
+                <p className="text-sm font-medium text-slate-300 mb-3 flex items-center gap-2">
+                  <Share2 className="w-4 h-4 text-emerald-400" />
+                  Compartilhar minha posição
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-green-600 hover:bg-green-500"
+                    onClick={() => handleShare('whatsapp')}
+                  >
+                    WhatsApp
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="flex-1 bg-pink-600 hover:bg-pink-500"
+                    onClick={() => handleShare('instagram')}
+                  >
+                    Instagram
+                  </Button>
                 </div>
               </div>
             </CardContent>
