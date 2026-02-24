@@ -94,6 +94,11 @@ class Usuario(BaseModel):
     foto_url: str = ""
     role: str = "atleta"  # atleta ou admin
     is_active: bool = True
+    facebook_url: str = ""
+    instagram_url: str = ""
+    telefone: str = ""
+    bio: str = ""
+    primeira_submissao: bool = False  # Para regra dos 15 dias
 
 class UsuarioRegister(BaseModel):
     nome: str
