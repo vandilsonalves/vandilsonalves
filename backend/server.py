@@ -433,7 +433,7 @@ async def submeter_resultado(
     link_resultado: str = Form(...),
     tempo: str = Form(...),
     distancia: str = Form(...),
-    foto_podio: UploadFile = File(...),
+    foto_podio: UploadFile = File(None),
     current_user: dict = Depends(get_current_user)
 ):
     """Atleta submete resultado para aprovação"""
