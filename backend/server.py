@@ -850,6 +850,159 @@ async def popular_dados_teste():
     return {"message": "Use apenas para desenvolvimento"}
 
 
+# ==================== ADMIN STATISTICS ====================
+
+@api_router.get("/admin/stats")
+async def get_admin_stats(admin: dict = Depends(get_admin_user)):
+    """Estatísticas gerais do dashboard admin"""
+    
+    # Total de atletas
+    total_atletas = await db.usuarios.count_documents({"role": "atleta"})
+    
+    # Resultados pendentes
+    resultados_pendentes = await db.resultados_pendentes.count_documents({"status": "pendente"})
+    
+    # Atletas com menos de 12 corridas (normal) ou 8 (PCD/Cadeirante)
+    rankings = await db.ranking_anual.find({"ano": 2025}, {"_id": 0}).to_list(None)
+    atletas_pendentes = 0
+    for rank in rankings:
+        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+        if usuario:
+            min_corridas = 8 if usuario["categoria"] in ["pcd", "cadeirante"] else 12
+            if rank["total_corridas"] < min_corridas:
+                atletas_pendentes += 1
+    
+    # Total homens vs mulheres
+    total_homens = await db.usuarios.count_documents({"role": "atleta", "genero": "M"})
+    total_mulheres = await db.usuarios.count_documents({"role": "atleta", "genero": "F"})
+    
+    return {
+        "total_atletas": total_atletas,
+        "resultados_pendentes": resultados_pendentes,
+        "atletas_pendentes_corridas": atletas_pendentes,
+        "total_homens": total_homens,
+        "total_mulheres": total_mulheres
+    }
+
+@api_router.get("/admin/stats/estados")
+async def get_stats_estados(admin: dict = Depends(get_admin_user)):
+    """Distribuição de atletas por estado"""
+    
+    pipeline = [
+        {"$match": {"role": "atleta"}},
+        {"$group": {"_id": "$estado", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    return [{"estado": r["_id"], "total": r["count"]} for r in result]
+
+@api_router.get("/admin/stats/categorias")
+async def get_stats_categorias(admin: dict = Depends(get_admin_user)):
+    """Distribuição por categoria e gênero"""
+    
+    pipeline = [
+        {"$match": {"role": "atleta"}},
+        {"$group": {
+            "_id": {"categoria": "$categoria", "genero": "$genero"},
+            "count": {"$sum": 1}
+        }}
+    ]
+    
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    
+    stats = {
+        "normal_m": 0, "normal_f": 0,
+        "pcd_m": 0, "pcd_f": 0,
+        "cadeirante_m": 0, "cadeirante_f": 0
+    }
+    
+    for r in result:
+        cat = r["_id"]["categoria"]
+        gen = r["_id"]["genero"]
+        key = f"{cat}_{gen.lower()}"
+        stats[key] = r["count"]
+    
+    return stats
+
+@api_router.get("/admin/stats/faixa-etaria")
+async def get_stats_faixa_etaria(admin: dict = Depends(get_admin_user)):
+    """Distribuição por faixa etária"""
+    
+    pipeline = [
+        {"$match": {"role": "atleta"}},
+        {"$group": {"_id": "$faixa_etaria", "count": {"$sum": 1}}},
+        {"$sort": {"_id": 1}}
+    ]
+    
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    return [{"faixa": r["_id"], "total": r["count"]} for r in result]
+
+
+# ==================== PERFIL DO ATLETA ====================
+
+class PerfilUpdate(BaseModel):
+    equipe: Optional[str] = None
+    facebook_url: Optional[str] = None
+    instagram_url: Optional[str] = None
+    telefone: Optional[str] = None
+    bio: Optional[str] = None
+
+@api_router.patch("/atletas/perfil")
+async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get_current_user)):
+    """Atleta atualiza seu próprio perfil"""
+    
+    update_data = {}
+    if dados.equipe is not None:
+        update_data["equipe"] = dados.equipe
+    if dados.facebook_url is not None:
+        update_data["facebook_url"] = dados.facebook_url
+    if dados.instagram_url is not None:
+        update_data["instagram_url"] = dados.instagram_url
+    if dados.telefone is not None:
+        update_data["telefone"] = dados.telefone
+    if dados.bio is not None:
+        update_data["bio"] = dados.bio
+    
+    if not update_data:
+        raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
+    
+    await db.usuarios.update_one(
+        {"id": current_user["id"]},
+        {"$set": update_data}
+    )
+    
+    return {"message": "Perfil atualizado com sucesso!"}
+
+@api_router.post("/atletas/foto")
+async def upload_foto_perfil(
+    foto: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Upload de foto de perfil"""
+    
+    # Salvar foto
+    foto_filename = f"perfil_{current_user['id']}_{uuid.uuid4()}.jpg"
+    foto_path = Path("/app/uploads") / foto_filename
+    foto_path.parent.mkdir(exist_ok=True)
+    
+    with foto_path.open("wb") as f:
+        f.write(await foto.read())
+    
+    foto_url = f"/uploads/{foto_filename}"
+    
+    # Atualizar usuário
+    await db.usuarios.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"foto_url": foto_url}}
+    )
+    
+    return {"message": "Foto atualizada!", "foto_url": foto_url}
+
+
+
+
+
 # ==================== INCLUDE ROUTER ====================
 
 app.include_router(api_router)
