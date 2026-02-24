@@ -3,11 +3,13 @@ import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RankingTable from '@/components/RankingTable';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User } from 'lucide-react';
+import NotificacoesBell from '@/components/NotificacoesBell';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
@@ -25,13 +27,43 @@ const RankingPage = () => {
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroColocacao, setFiltroColocacao] = useState('');
   const [filtroUF, setFiltroUF] = useState('');
+  const [filtroFaixa, setFiltroFaixa] = useState('');
+  const [filtroEquipe, setFiltroEquipe] = useState('');
+  const [filtroCidade, setFiltroCidade] = useState('');
+  
+  // Dados auxiliares
+  const [faixasDisponiveis, setFaixasDisponiveis] = useState([]);
+  const [equipesDisponiveis, setEquipesDisponiveis] = useState([]);
+
+  // Buscar dados auxiliares
+  useEffect(() => {
+    const fetchAuxData = async () => {
+      try {
+        const [faixasRes, equipesRes] = await Promise.all([
+          axios.get(`${API}/ranking/faixas-etarias`),
+          axios.get(`${API}/ranking/equipes`)
+        ]);
+        setFaixasDisponiveis(faixasRes.data.faixas || []);
+        setEquipesDisponiveis(equipesRes.data.equipes || []);
+      } catch (error) {
+        console.error('Erro ao buscar dados auxiliares:', error);
+      }
+    };
+    fetchAuxData();
+  }, []);
 
   // Buscar ranking
   useEffect(() => {
     const fetchRanking = async () => {
       setLoading(true);
       try {
-        const url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=2025`;
+        let url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=2025`;
+        
+        // Adicionar filtros à URL
+        if (filtroFaixa) url += `&faixa=${filtroFaixa}`;
+        if (filtroEquipe) url += `&equipe=${encodeURIComponent(filtroEquipe)}`;
+        if (filtroCidade) url += `&cidade=${encodeURIComponent(filtroCidade)}`;
+        
         const response = await axios.get(url);
         setRankingData(response.data);
       } catch (error) {
@@ -43,9 +75,9 @@ const RankingPage = () => {
     };
 
     fetchRanking();
-  }, [categoriaAtual]);
+  }, [categoriaAtual, filtroFaixa, filtroEquipe, filtroCidade]);
 
-  // Aplicar filtros
+  // Aplicar filtros locais
   const rankingFiltrado = rankingData.filter(atleta => {
     const nomeMatch = atleta.nome.toLowerCase().includes(filtroNome.toLowerCase());
     const colocacaoMatch = filtroColocacao === '' || atleta.colocacao === parseInt(filtroColocacao);
@@ -63,36 +95,56 @@ const RankingPage = () => {
     window.open(url, '_blank');
   };
 
+  const limparFiltros = () => {
+    setFiltroNome('');
+    setFiltroColocacao('');
+    setFiltroUF('');
+    setFiltroFaixa('');
+    setFiltroEquipe('');
+    setFiltroCidade('');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header com Login/Logout */}
+        {/* Header com Login/Logout e Nome do Usuário */}
         <div className="flex items-center justify-between mb-6">
           <div>
             <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-tight">
               Ranking Run Pró
             </h1>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             {user ? (
               <>
+                {/* Nome do usuário */}
+                <div className="hidden md:flex items-center gap-2 mr-4 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-full">
+                  <User className="w-4 h-4 text-emerald-600" />
+                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300" data-testid="user-name">
+                    {user.nome}
+                  </span>
+                </div>
+                
+                {/* Notificações */}
+                <NotificacoesBell />
+                
                 {isAdmin && (
-                  <Button onClick={() => navigate('/admin')} variant="outline">
+                  <Button onClick={() => navigate('/admin')} variant="outline" size="sm">
                     <Shield className="w-4 h-4 mr-2" />
                     Admin
                   </Button>
                 )}
                 {!isAdmin && (
-                  <Button onClick={() => navigate('/perfil')} variant="outline" data-testid="btn-perfil">
+                  <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
                     <User className="w-4 h-4 mr-2" />
                     Meu Perfil
                   </Button>
                 )}
-                <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600">
+                <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600" size="sm">
                   <Upload className="w-4 h-4 mr-2" />
-                  Submeter Resultado
+                  Submeter
                 </Button>
-                <Button onClick={logout} variant="outline">
+                <Button onClick={logout} variant="outline" size="sm">
                   <LogOut className="w-4 h-4 mr-2" />
                   Sair
                 </Button>
@@ -194,13 +246,73 @@ const RankingPage = () => {
                 />
               </div>
 
-              {/* Botão Filtrar */}
-              <Button 
-                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
-                data-testid="btn-filtrar"
-              >
-                Filtrar
-              </Button>
+              {/* Filtro Faixa Etária */}
+              <div>
+                <Label htmlFor="filtro-faixa" className="text-sm font-medium mb-2 block">
+                  Faixa Etária
+                </Label>
+                <Select value={filtroFaixa} onValueChange={setFiltroFaixa}>
+                  <SelectTrigger data-testid="filtro-faixa">
+                    <SelectValue placeholder="Todas as faixas" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas as faixas</SelectItem>
+                    {faixasDisponiveis.map((faixa) => (
+                      <SelectItem key={faixa} value={faixa}>{faixa}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro Equipe */}
+              <div>
+                <Label htmlFor="filtro-equipe" className="text-sm font-medium mb-2 block">
+                  Equipe
+                </Label>
+                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+                  <SelectTrigger data-testid="filtro-equipe">
+                    <SelectValue placeholder="Todas as equipes" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">Todas as equipes</SelectItem>
+                    {equipesDisponiveis.map((equipe) => (
+                      <SelectItem key={equipe} value={equipe}>{equipe}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro Cidade */}
+              <div>
+                <Label htmlFor="filtro-cidade" className="text-sm font-medium mb-2 block">
+                  Cidade
+                </Label>
+                <Input
+                  id="filtro-cidade"
+                  placeholder="Ex: São Paulo"
+                  value={filtroCidade}
+                  onChange={(e) => setFiltroCidade(e.target.value)}
+                  data-testid="filtro-cidade"
+                />
+              </div>
+
+              {/* Botões */}
+              <div className="space-y-2 pt-2">
+                <Button 
+                  className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+                  data-testid="btn-filtrar"
+                >
+                  Filtrar
+                </Button>
+                <Button 
+                  variant="outline"
+                  className="w-full"
+                  onClick={limparFiltros}
+                  data-testid="btn-limpar"
+                >
+                  Limpar Filtros
+                </Button>
+              </div>
 
               {/* Botão Como funciona? */}
               <Dialog>
@@ -220,32 +332,26 @@ const RankingPage = () => {
                   </DialogHeader>
                   <div className="space-y-4 text-slate-700 dark:text-slate-300">
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">🏆 Sistema de Pontuação</h3>
-                      <p>Os atletas acumulam pontos ao participar de corridas oficiais. A pontuação varia de acordo com a colocação e distância da prova.</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">📊 Categorias</h3>
-                      <ul className="list-disc list-inside space-y-1">
-                        <li><strong>Masculino/Feminino:</strong> Atletas sem restrições</li>
-                        <li><strong>PCD:</strong> Pessoas com Deficiência</li>
-                        <li><strong>Cadeirante:</strong> Atletas em cadeiras de rodas</li>
+                      <h3 className="font-semibold text-lg mb-2">Sistema de Pontuação</h3>
+                      <p>Os atletas acumulam pontos ao participar de corridas oficiais. A pontuação varia de acordo com a colocação.</p>
+                      <ul className="list-disc list-inside mt-2 text-sm">
+                        <li><strong>Normal:</strong> 1º lugar = 10pts, 2º = 9pts, ... até 10º = 1pt</li>
+                        <li><strong>PCD/Cadeirante:</strong> 1º = 10pts, 2º = 9pts, 3º = 8pts</li>
                       </ul>
                     </div>
                     
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">🅿️ Selo "P" (Pendente)</h3>
-                      <p>O selo laranja "P" indica que o atleta ainda não completou <strong>12 provas no ano</strong>. Após atingir esse número, o selo desaparece e o atleta está elegível para premiação anual.</p>
+                      <h3 className="font-semibold text-lg mb-2">Selo "P" (Pendente)</h3>
+                      <p>O selo laranja "P" indica que o atleta ainda não completou o mínimo de provas:</p>
+                      <ul className="list-disc list-inside mt-2 text-sm">
+                        <li><strong>Normal:</strong> 12 provas</li>
+                        <li><strong>PCD/Cadeirante:</strong> 8 provas</li>
+                      </ul>
                     </div>
                     
                     <div>
-                      <h3 className="font-semibold text-lg mb-2">⭐ Status Elite</h3>
-                      <p>Atletas com <strong>100 pontos ou mais</strong> recebem o status Elite, identificado por uma borda dourada no avatar e badge especial.</p>
-                    </div>
-                    
-                    <div>
-                      <h3 className="font-semibold text-lg mb-2">📅 Período</h3>
-                      <p>O ranking é calculado anualmente, de janeiro a dezembro de 2025.</p>
+                      <h3 className="font-semibold text-lg mb-2">Status Elite</h3>
+                      <p>Atletas com <strong>100 pontos ou mais</strong> recebem o status Elite.</p>
                     </div>
                   </div>
                 </DialogContent>
