@@ -47,32 +47,32 @@ const PerfilAtletaPage = () => {
   const fetchAtletaData = async () => {
     setLoading(true);
     try {
-      const response = await axios.get(`${API}/atletas/${user.id}`, {
+      // Buscar perfil completo do atleta logado
+      const response = await axios.get(`${API}/atletas/meu-perfil`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setAtleta(response.data);
-      
-      // Buscar dados completos do usuário para edição
-      const userResponse = await axios.get(`${API}/auth/me`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const data = response.data;
+      setAtleta({
+        id: data.id,
+        nome: data.nome,
+        cidade: data.cidade,
+        estado: data.estado,
+        genero: data.genero,
+        categoria: data.categoria,
+        faixa_etaria: data.faixa_etaria,
+        foto_url: data.foto_url,
+        equipe: data.equipe,
+        pontos_carreira: data.pontos_carreira || 0,
+        total_corridas: data.total_corridas || 0
       });
       
-      // Preencher campos com dados existentes
-      setEquipe(response.data.equipe || '');
-      
-      // Buscar dados adicionais do perfil (se existirem)
-      try {
-        const perfilResponse = await axios.get(`${API}/atletas/${user.id}/perfil`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-        setFacebookUrl(perfilResponse.data.facebook_url || '');
-        setInstagramUrl(perfilResponse.data.instagram_url || '');
-        setTelefone(perfilResponse.data.telefone || '');
-        setBio(perfilResponse.data.bio || '');
-      } catch (e) {
-        // Dados de perfil ainda não existem, usar valores vazios
-      }
+      // Preencher campos editáveis
+      setEquipe(data.equipe || '');
+      setFacebookUrl(data.facebook_url || '');
+      setInstagramUrl(data.instagram_url || '');
+      setTelefone(data.telefone || '');
+      setBio(data.bio || '');
       
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
