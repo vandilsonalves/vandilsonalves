@@ -246,7 +246,7 @@ const RankingPage = () => {
             <Card className="border-slate-200 dark:border-slate-800 shadow-lg">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="text-xl">
-                  {tipoRanking === 'nacional' ? 'Ranking Nacional' : `Ranking ${ufSelecionada}`}
+                  Ranking {categoriaAtual.replace('-', ' ').toUpperCase()}
                   <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
                     ({rankingFiltrado.length} atletas)
                   </span>
