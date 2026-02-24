@@ -136,6 +136,10 @@ const SubmeterResultadoPage = () => {
               <Alert className="bg-amber-50 border-amber-200">
                 <AlertDescription>
                   <strong>Atenção:</strong> Você tem 6 dias úteis após a competição para enviar o resultado.
+                  <br />
+                  <strong>Colocações válidas:</strong> {user.categoria === 'pcd' || user.categoria === 'cadeirante' 
+                    ? '1º a 3º lugar (PCD/Cadeirante)' 
+                    : '1º a 10º lugar (Normal)'}
                 </AlertDescription>
               </Alert>
 
