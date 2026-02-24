@@ -9,6 +9,7 @@ import { ArrowLeft, MapPin, Trophy, Medal, Award } from 'lucide-react';
 import PendingBadge from '@/components/PendingBadge';
 import RaceProgressBar from '@/components/RaceProgressBar';
 import ConquistasTable from '@/components/ConquistasTable';
+import GraficoEvolucao from '@/components/GraficoEvolucao';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
