@@ -266,7 +266,6 @@ const SubmeterResultadoPage = () => {
                           type="file"
                           accept="image/*"
                           onChange={(e) => setFotoPodio(e.target.files[0])}
-                          required
                         />
                       </div>
                     )}
