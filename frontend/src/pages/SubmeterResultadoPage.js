@@ -242,7 +242,7 @@ const SubmeterResultadoPage = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label>Foto do Pódio *</Label>
+                  <Label>Foto do Pódio (opcional)</Label>
                   <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
                     {fotoPodio ? (
                       <div>
