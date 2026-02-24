@@ -82,6 +82,12 @@ const RankingPage = () => {
                     Admin
                   </Button>
                 )}
+                {!isAdmin && (
+                  <Button onClick={() => navigate('/perfil')} variant="outline" data-testid="btn-perfil">
+                    <User className="w-4 h-4 mr-2" />
+                    Meu Perfil
+                  </Button>
+                )}
                 <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600">
                   <Upload className="w-4 h-4 mr-2" />
                   Submeter Resultado
