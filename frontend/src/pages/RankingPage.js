@@ -244,7 +244,34 @@ const RankingPage = () => {
           {/* Tabela de Ranking */}
           <div className="lg:col-span-3">
             <Card className="border-slate-200 dark:border-slate-800 shadow-lg">
-              <CardContent className="pt-6">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="text-xl">
+                  {tipoRanking === 'nacional' ? 'Ranking Nacional' : `Ranking ${ufSelecionada}`}
+                  <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
+                    ({rankingFiltrado.length} atletas)
+                  </span>
+                </CardTitle>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => handleExport('csv')}
+                    variant="outline"
+                    size="sm"
+                    className="text-emerald-600"
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    CSV
+                  </Button>
+                  <Button
+                    onClick={() => handleExport('excel')}
+                    variant="outline"
+                    size="sm"
+                    className="text-emerald-600"
+                  >
+                    <FileDown className="w-4 h-4 mr-2" />
+                    Excel
+                  </Button>
+                </div>
+              </CardHeader>
                 {loading ? (
                   <div className="text-center py-12 text-slate-600 dark:text-slate-400">
                     Carregando ranking...
