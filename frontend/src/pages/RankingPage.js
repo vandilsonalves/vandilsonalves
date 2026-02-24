@@ -272,6 +272,7 @@ const RankingPage = () => {
                   </Button>
                 </div>
               </CardHeader>
+              <CardContent>
                 {loading ? (
                   <div className="text-center py-12 text-slate-600 dark:text-slate-400">
                     Carregando ranking...
