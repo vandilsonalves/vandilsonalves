@@ -1155,6 +1155,23 @@ class PerfilUpdate(BaseModel):
     telefone: Optional[str] = None
     bio: Optional[str] = None
 
+@api_router.get("/atletas/meu-perfil")
+async def get_meu_perfil(current_user: dict = Depends(get_current_user)):
+    """Retorna dados completos do perfil do atleta logado"""
+    
+    usuario = await db.usuarios.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Buscar dados de ranking
+    ranking = await db.ranking_anual.find_one({"usuario_id": current_user["id"], "ano": 2025}, {"_id": 0})
+    
+    return {
+        **usuario,
+        "pontos_carreira": ranking["pontos_total"] if ranking else 0,
+        "total_corridas": ranking["total_corridas"] if ranking else 0
+    }
+
 @api_router.patch("/atletas/perfil")
 async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get_current_user)):
     """Atleta atualiza seu próprio perfil"""
