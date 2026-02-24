@@ -159,6 +159,9 @@ const AtletaDetalhes = () => {
           </Card>
         </div>
 
+        {/* Gráfico de Evolução */}
+        <GraficoEvolucao atletaId={id} />
+
         {/* Tabela de Últimas Conquistas */}
         <Card className="border-slate-200 dark:border-slate-800 shadow-lg">
           <CardContent className="pt-6">
