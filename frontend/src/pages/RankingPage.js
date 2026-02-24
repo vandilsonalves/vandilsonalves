@@ -1,56 +1,35 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import RankingTable from '@/components/RankingTable';
-import { Search } from 'lucide-react';
+import { Search, HelpCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const RankingPage = () => {
-  const [tipoRanking, setTipoRanking] = useState('nacional'); // 'nacional' ou 'estadual'
-  const [ufSelecionada, setUfSelecionada] = useState('');
-  const [estados, setEstados] = useState([]);
+  const navigate = useNavigate();
+  const [categoriaAtual, setCategoriaAtual] = useState('masculino');
   const [rankingData, setRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
   
   // Filtros
   const [filtroNome, setFiltroNome] = useState('');
-  const [filtroEquipe, setFiltroEquipe] = useState('');
-  const [filtroEstado, setFiltroEstado] = useState('');
-  const [filtroCidade, setFiltroCidade] = useState('');
-
-  // Buscar estados disponíveis
-  useEffect(() => {
-    const fetchEstados = async () => {
-      try {
-        const response = await axios.get(`${API}/ranking/estados?ano=2025`);
-        setEstados(response.data.estados);
-        if (response.data.estados.length > 0) {
-          setUfSelecionada(response.data.estados[0]);
-        }
-      } catch (error) {
-        console.error('Erro ao buscar estados:', error);
-      }
-    };
-    fetchEstados();
-  }, []);
+  const [filtroColocacao, setFiltroColocacao] = useState('');
+  const [filtroUF, setFiltroUF] = useState('');
 
   // Buscar ranking
   useEffect(() => {
     const fetchRanking = async () => {
       setLoading(true);
       try {
-        let url = `${API}/ranking/nacional?ano=2025`;
-        
-        if (tipoRanking === 'estadual' && ufSelecionada) {
-          url = `${API}/ranking/estadual/${ufSelecionada}?ano=2025`;
-        }
-        
+        const url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=2025`;
         const response = await axios.get(url);
         setRankingData(response.data);
       } catch (error) {
@@ -62,76 +41,54 @@ const RankingPage = () => {
     };
 
     fetchRanking();
-  }, [tipoRanking, ufSelecionada]);
+  }, [categoriaAtual]);
 
   // Aplicar filtros
   const rankingFiltrado = rankingData.filter(atleta => {
     const nomeMatch = atleta.nome.toLowerCase().includes(filtroNome.toLowerCase());
-    const equipeMatch = atleta.equipe.toLowerCase().includes(filtroEquipe.toLowerCase());
-    const estadoMatch = atleta.uf.toLowerCase().includes(filtroEstado.toLowerCase());
-    const cidadeMatch = atleta.cidade.toLowerCase().includes(filtroCidade.toLowerCase());
+    const colocacaoMatch = filtroColocacao === '' || atleta.colocacao === parseInt(filtroColocacao);
+    const ufMatch = atleta.uf.toLowerCase().includes(filtroUF.toLowerCase());
     
-    return nomeMatch && equipeMatch && estadoMatch && cidadeMatch;
+    return nomeMatch && colocacaoMatch && ufMatch;
   });
 
-  const handleTipoChange = (value) => {
-    setTipoRanking(value);
+  const handleAtletaClick = (atletaId) => {
+    navigate(`/atleta/${atletaId}`);
   };
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-white mb-2 tracking-tight">
+        <div className="mb-6">
+          <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-tight">
             Ranking Run Pró
           </h1>
-          <p className="text-slate-600 dark:text-slate-400">
-            Sistema Nacional de Rankings de Corrida 2025
-          </p>
         </div>
 
-        {/* Toggle Nacional/Estadual */}
+        {/* Tabs de Categorias */}
         <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg">
           <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
-              <div className="flex-1">
-                <Label className="text-sm font-medium mb-2 block">Tipo de Ranking</Label>
-                <Tabs value={tipoRanking} onValueChange={handleTipoChange} className="w-full md:w-auto">
-                  <TabsList className="grid w-full md:w-[400px] grid-cols-2">
-                    <TabsTrigger value="nacional" className="font-semibold" data-testid="toggle-nacional">
-                      🇧🇷 Nacional
-                    </TabsTrigger>
-                    <TabsTrigger value="estadual" className="font-semibold" data-testid="toggle-estadual">
-                      🏳 Estadual
-                    </TabsTrigger>
-                  </TabsList>
-                </Tabs>
-              </div>
-
-              {/* Dropdown UF (apenas para estadual) */}
-              {tipoRanking === 'estadual' && (
-                <div className="flex-1">
-                  <Label className="text-sm font-medium mb-2 block">Selecionar Estado</Label>
-                  <Select value={ufSelecionada} onValueChange={setUfSelecionada}>
-                    <SelectTrigger className="w-full md:w-[200px]" data-testid="select-estado">
-                      <SelectValue placeholder="Selecione o estado" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {estados.map(uf => (
-                        <SelectItem key={uf} value={uf} data-testid={`estado-${uf}`}>
-                          {uf}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
-            </div>
+            <Tabs value={categoriaAtual} onValueChange={setCategoriaAtual} className="w-full">
+              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 h-auto">
+                <TabsTrigger value="masculino" className="font-semibold py-3" data-testid="tab-masculino">
+                  MASCULINO
+                </TabsTrigger>
+                <TabsTrigger value="feminino" className="font-semibold py-3" data-testid="tab-feminino">
+                  FEMININO
+                </TabsTrigger>
+                <TabsTrigger value="pcd-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-m">
+                  PCD / M
+                </TabsTrigger>
+                <TabsTrigger value="pcd-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-f">
+                  PCD / F
+                </TabsTrigger>
+              </TabsList>
+            </Tabs>
           </CardContent>
         </Card>
 
-        {/* Layout Principal: Filtros + Tabela */}
+        {/* Layout: Filtros + Tabela */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
           {/* Sidebar de Filtros */}
           <Card className="lg:col-span-1 h-fit border-slate-200 dark:border-slate-800 shadow-lg">
@@ -156,84 +113,105 @@ const RankingPage = () => {
                 />
               </div>
 
-              {/* Filtro Equipe */}
+              {/* Filtro Colocação */}
               <div>
-                <Label htmlFor="filtro-equipe" className="text-sm font-medium mb-2 block">
-                  Equipe
+                <Label htmlFor="filtro-colocacao" className="text-sm font-medium mb-2 block">
+                  Colocação
                 </Label>
                 <Input
-                  id="filtro-equipe"
-                  placeholder="Todas as equipes"
-                  value={filtroEquipe}
-                  onChange={(e) => setFiltroEquipe(e.target.value)}
-                  data-testid="filtro-equipe"
+                  id="filtro-colocacao"
+                  type="number"
+                  placeholder="Ex: 1"
+                  value={filtroColocacao}
+                  onChange={(e) => setFiltroColocacao(e.target.value)}
+                  data-testid="filtro-colocacao"
                 />
               </div>
 
-              {/* Filtro Estado */}
+              {/* Filtro UF */}
               <div>
-                <Label htmlFor="filtro-estado" className="text-sm font-medium mb-2 block">
-                  Estado
+                <Label htmlFor="filtro-uf" className="text-sm font-medium mb-2 block">
+                  UF
                 </Label>
                 <Input
-                  id="filtro-estado"
-                  placeholder="Todos os estados"
-                  value={filtroEstado}
-                  onChange={(e) => setFiltroEstado(e.target.value)}
-                  data-testid="filtro-estado"
+                  id="filtro-uf"
+                  placeholder="Ex: SP"
+                  value={filtroUF}
+                  onChange={(e) => setFiltroUF(e.target.value.toUpperCase())}
+                  maxLength={2}
+                  data-testid="filtro-uf"
                 />
               </div>
 
-              {/* Filtro Cidade */}
-              <div>
-                <Label htmlFor="filtro-cidade" className="text-sm font-medium mb-2 block">
-                  Cidade
-                </Label>
-                <Input
-                  id="filtro-cidade"
-                  placeholder="Todas cidades"
-                  value={filtroCidade}
-                  onChange={(e) => setFiltroCidade(e.target.value)}
-                  data-testid="filtro-cidade"
-                />
-              </div>
+              {/* Botão Filtrar */}
+              <Button 
+                className="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-semibold"
+                data-testid="btn-filtrar"
+              >
+                Filtrar
+              </Button>
 
-              {/* Botão Limpar Filtros */}
-              {(filtroNome || filtroEquipe || filtroEstado || filtroCidade) && (
-                <button
-                  onClick={() => {
-                    setFiltroNome('');
-                    setFiltroEquipe('');
-                    setFiltroEstado('');
-                    setFiltroCidade('');
-                  }}
-                  className="w-full text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white underline"
-                  data-testid="limpar-filtros"
-                >
-                  Limpar filtros
-                </button>
-              )}
+              {/* Botão Como funciona? */}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button 
+                    variant="outline"
+                    className="w-full bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold border-0"
+                    data-testid="btn-como-funciona"
+                  >
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    Como funciona?
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="max-w-2xl">
+                  <DialogHeader>
+                    <DialogTitle className="text-2xl font-bold text-emerald-600">Como funciona o Ranking?</DialogTitle>
+                  </DialogHeader>
+                  <div className="space-y-4 text-slate-700 dark:text-slate-300">
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">🏆 Sistema de Pontuação</h3>
+                      <p>Os atletas acumulam pontos ao participar de corridas oficiais. A pontuação varia de acordo com a colocação e distância da prova.</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">📊 Categorias</h3>
+                      <ul className="list-disc list-inside space-y-1">
+                        <li><strong>Masculino/Feminino:</strong> Atletas sem restrições</li>
+                        <li><strong>PCD:</strong> Pessoas com Deficiência</li>
+                        <li><strong>Cadeirante:</strong> Atletas em cadeiras de rodas</li>
+                      </ul>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">🅿️ Selo "P" (Pendente)</h3>
+                      <p>O selo laranja "P" indica que o atleta ainda não completou <strong>12 provas no ano</strong>. Após atingir esse número, o selo desaparece e o atleta está elegível para premiação anual.</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">⭐ Status Elite</h3>
+                      <p>Atletas com <strong>100 pontos ou mais</strong> recebem o status Elite, identificado por uma borda dourada no avatar e badge especial.</p>
+                    </div>
+                    
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">📅 Período</h3>
+                      <p>O ranking é calculado anualmente, de janeiro a dezembro de 2025.</p>
+                    </div>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </CardContent>
           </Card>
 
           {/* Tabela de Ranking */}
           <div className="lg:col-span-3">
             <Card className="border-slate-200 dark:border-slate-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl">
-                  {tipoRanking === 'nacional' ? 'Ranking Nacional' : `Ranking ${ufSelecionada}`}
-                  <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
-                    ({rankingFiltrado.length} atletas)
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+              <CardContent className="pt-6">
                 {loading ? (
                   <div className="text-center py-12 text-slate-600 dark:text-slate-400">
                     Carregando ranking...
                   </div>
                 ) : (
-                  <RankingTable data={rankingFiltrado} />
+                  <RankingTable data={rankingFiltrado} onAtletaClick={handleAtletaClick} />
                 )}
               </CardContent>
             </Card>
