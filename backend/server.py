@@ -450,14 +450,17 @@ async def submeter_resultado(
         )
     
     # Salvar foto (simplificado - em produção usar S3)
-    foto_filename = f"{uuid.uuid4()}_{foto_podio.filename}"
-    foto_path = Path("/app/uploads") / foto_filename
-    foto_path.parent.mkdir(exist_ok=True)
-    
-    with foto_path.open("wb") as f:
-        f.write(await foto_podio.read())
-    
-    foto_url = f"/uploads/{foto_filename}"
+    # Salvar foto (OPCIONAL)
+    foto_url = ""
+    if foto_podio and foto_podio.filename:
+        foto_filename = f"{uuid.uuid4()}_{foto_podio.filename}"
+        foto_path = Path("/app/uploads") / foto_filename
+        foto_path.parent.mkdir(exist_ok=True)
+        
+        with foto_path.open("wb") as f:
+            f.write(await foto_podio.read())
+        
+        foto_url = f"/uploads/{foto_filename}"
     
     # Criar resultado pendente
     resultado = ResultadoPendente(
