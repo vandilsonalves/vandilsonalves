@@ -870,9 +870,191 @@ async def root():
 
 @api_router.post("/ranking/popular")
 async def popular_dados_teste():
-    """Popula banco com dados de teste"""
-    # (código de população omitido por brevidade - mantém o existente)
-    return {"message": "Use apenas para desenvolvimento"}
+    """Popula banco com 15 atletas por modalidade (90 atletas total) com corridas"""
+    
+    # Limpar dados existentes
+    await db.usuarios.delete_many({"role": "atleta"})
+    await db.corridas.delete_many({})
+    await db.ranking_anual.delete_many({})
+    await db.resultados_pendentes.delete_many({})
+    
+    # Manter admin
+    admin_exists = await db.usuarios.find_one({"email": "admin@runpro.com"})
+    if not admin_exists:
+        admin = Usuario(
+            nome="Administrador",
+            email="admin@runpro.com",
+            password_hash=get_password_hash("admin123"),
+            equipe="Run Pró",
+            cidade="São Paulo",
+            estado="SP",
+            genero="M",
+            categoria="normal",
+            data_nascimento="1985-01-01",
+            faixa_etaria="30-39",
+            foto_url=gerar_foto_url("Admin"),
+            role="admin"
+        )
+        await db.usuarios.insert_one(admin.model_dump())
+    
+    # Nomes brasileiros
+    nomes_masculinos = [
+        "João Silva", "Pedro Santos", "Lucas Oliveira", "Matheus Costa", "Gabriel Souza",
+        "Rafael Lima", "Felipe Pereira", "Bruno Almeida", "Daniel Rodrigues", "Thiago Fernandes",
+        "Gustavo Martins", "André Ribeiro", "Carlos Eduardo", "Fernando Gomes", "Leonardo Carvalho",
+        "Marcos Vinícius", "Paulo Ricardo", "Ricardo Barbosa", "Vinícius Nunes", "Alexandre Moreira"
+    ]
+    
+    nomes_femininos = [
+        "Maria Silva", "Ana Santos", "Juliana Oliveira", "Camila Costa", "Fernanda Souza",
+        "Patrícia Lima", "Bruna Pereira", "Carolina Almeida", "Débora Rodrigues", "Érica Fernandes",
+        "Gabriela Martins", "Helena Ribeiro", "Isabela Gomes", "Jéssica Carvalho", "Larissa Barbosa",
+        "Mariana Nunes", "Natália Moreira", "Paula Mendes", "Renata Araújo", "Tatiana Rocha"
+    ]
+    
+    equipes = [
+        "Runners BR", "Maratona Club", "Speed Team", "Força Atlética", "Corrida Livre",
+        "Team Run", "Atletas Unidos", "Fast Runners", "Elite Running", "Pro Runners",
+        "Corredores SP", "Run Fast", "Vitória Runners", "Campinas Running", "BH Runners"
+    ]
+    
+    estados = ["SP", "RJ", "MG", "RS", "PR", "SC", "BA", "PE", "CE", "GO", "DF", "ES"]
+    
+    cidades_por_estado = {
+        "SP": ["São Paulo", "Campinas", "Santos", "Ribeirão Preto", "Sorocaba"],
+        "RJ": ["Rio de Janeiro", "Niterói", "Petrópolis", "Campos", "Nova Iguaçu"],
+        "MG": ["Belo Horizonte", "Uberlândia", "Juiz de Fora", "Contagem", "Ouro Preto"],
+        "RS": ["Porto Alegre", "Caxias do Sul", "Pelotas", "Canoas", "Santa Maria"],
+        "PR": ["Curitiba", "Londrina", "Maringá", "Foz do Iguaçu", "Cascavel"],
+        "SC": ["Florianópolis", "Joinville", "Blumenau", "Balneário Camboriú", "Chapecó"],
+        "BA": ["Salvador", "Feira de Santana", "Vitória da Conquista", "Ilhéus", "Camaçari"],
+        "PE": ["Recife", "Olinda", "Jaboatão", "Caruaru", "Petrolina"],
+        "CE": ["Fortaleza", "Caucaia", "Juazeiro do Norte", "Sobral", "Maracanaú"],
+        "GO": ["Goiânia", "Aparecida de Goiânia", "Anápolis", "Rio Verde", "Luziânia"],
+        "DF": ["Brasília", "Taguatinga", "Ceilândia", "Gama", "Planaltina"],
+        "ES": ["Vitória", "Vila Velha", "Serra", "Cariacica", "Linhares"]
+    }
+    
+    competicoes = [
+        "Maratona de São Paulo", "Meia Maratona Internacional do Rio", "Corrida de Reis",
+        "Maratona de Porto Alegre", "São Silvestre", "Volta da Pampulha",
+        "Maratona de Curitiba", "Meia Maratona de Brasília", "Circuito das Estações",
+        "Night Run", "Maratona de Salvador", "Corrida do Soldado",
+        "Maratona do Rio", "Meia Maratona de Florianópolis", "Corrida Cidade de Campinas",
+        "Run 21K", "Maratona Internacional de Foz do Iguaçu", "Corrida Duque de Caxias"
+    ]
+    
+    distancias = ["5KM", "10KM", "21KM", "42KM"]
+    
+    # Gerar datas de nascimento aleatórias por faixa etária
+    def gerar_data_nascimento():
+        ano = random.randint(1960, 2010)
+        mes = random.randint(1, 12)
+        dia = random.randint(1, 28)
+        return f"{ano}-{mes:02d}-{dia:02d}"
+    
+    # Modalidades: (categoria, genero)
+    modalidades = [
+        ("normal", "M"),    # Normal Masculino
+        ("normal", "F"),    # Normal Feminino
+        ("pcd", "M"),       # PCD Masculino
+        ("pcd", "F"),       # PCD Feminino
+        ("cadeirante", "M"), # Cadeirante Masculino
+        ("cadeirante", "F")  # Cadeirante Feminino
+    ]
+    
+    atletas_criados = 0
+    corridas_criadas = 0
+    
+    for cat, gen in modalidades:
+        nomes = nomes_masculinos if gen == "M" else nomes_femininos
+        random.shuffle(nomes)
+        
+        for i in range(15):
+            nome = f"{nomes[i % len(nomes)]} {random.choice(['Jr.', 'Filho', 'Neto', ''])}".strip()
+            if i >= len(nomes):
+                nome = f"{nomes[i % len(nomes)]} {random.randint(1, 99)}"
+            
+            estado = random.choice(estados)
+            cidade = random.choice(cidades_por_estado[estado])
+            data_nasc = gerar_data_nascimento()
+            
+            atleta = Usuario(
+                nome=nome,
+                email=f"{nome.lower().replace(' ', '.').replace('.', '')}_{cat}_{i}@email.com",
+                password_hash=get_password_hash("atleta123"),
+                equipe=random.choice(equipes),
+                cidade=cidade,
+                estado=estado,
+                genero=gen,
+                categoria=cat,
+                data_nascimento=data_nasc,
+                faixa_etaria=calcular_faixa_etaria(data_nasc),
+                foto_url=gerar_foto_url(nome),
+                role="atleta"
+            )
+            
+            await db.usuarios.insert_one(atleta.model_dump())
+            atletas_criados += 1
+            
+            # Gerar corridas para cada atleta
+            # PCD/Cadeirante: 8-12 corridas, Normal: 10-18 corridas
+            if cat in ["pcd", "cadeirante"]:
+                num_corridas = random.randint(6, 12)
+                max_colocacao = 3  # Apenas top 3 pontua
+            else:
+                num_corridas = random.randint(8, 18)
+                max_colocacao = 10  # Top 10 pontua
+            
+            meses_usados = []
+            for j in range(num_corridas):
+                # Garantir distribuição ao longo do ano
+                mes = random.randint(1, 11)
+                while mes in meses_usados and len(meses_usados) < 11:
+                    mes = random.randint(1, 11)
+                meses_usados.append(mes)
+                
+                dia = random.randint(1, 28)
+                data_corrida = f"2025-{mes:02d}-{dia:02d}"
+                
+                # Colocação apenas nas posições que pontuam
+                colocacao = random.randint(1, max_colocacao)
+                pontos = calcular_pontos_colocacao(colocacao, cat)
+                
+                # Tempo variável baseado na distância
+                distancia = random.choice(distancias)
+                if distancia == "5KM":
+                    tempo = f"00:{random.randint(18, 35)}:{random.randint(0, 59):02d}"
+                elif distancia == "10KM":
+                    tempo = f"00:{random.randint(35, 60)}:{random.randint(0, 59):02d}"
+                elif distancia == "21KM":
+                    tempo = f"01:{random.randint(25, 55)}:{random.randint(0, 59):02d}"
+                else:  # 42KM
+                    tempo = f"0{random.randint(3, 5)}:{random.randint(0, 59):02d}:{random.randint(0, 59):02d}"
+                
+                corrida = Corrida(
+                    usuario_id=atleta.id,
+                    nome=random.choice(competicoes),
+                    colocacao=colocacao,
+                    tempo=tempo,
+                    pontos=pontos,
+                    local=f"{random.choice(list(cidades_por_estado.values())[0])}/{random.choice(estados)}",
+                    distancia=distancia,
+                    data=data_corrida,
+                    ano=2025
+                )
+                
+                await db.corridas.insert_one(corrida.model_dump())
+                corridas_criadas += 1
+    
+    # Recalcular ranking
+    await calcular_ranking()
+    
+    return {
+        "message": "Dados populados com sucesso!",
+        "atletas_criados": atletas_criados,
+        "corridas_criadas": corridas_criadas
+    }
 
 
 # ==================== ADMIN STATISTICS ====================
