@@ -10,6 +10,8 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token'));
   const [loading, setLoading] = useState(true);
+  const [notificacoes, setNotificacoes] = useState([]);
+  const [naoLidas, setNaoLidas] = useState(0);
 
   useEffect(() => {
     if (token) {
@@ -18,6 +20,15 @@ export function AuthProvider({ children }) {
       setLoading(false);
     }
   }, [token]);
+
+  // Buscar notificações periodicamente
+  useEffect(() => {
+    if (token && user) {
+      fetchNotificacoes();
+      const interval = setInterval(fetchNotificacoes, 30000); // A cada 30 segundos
+      return () => clearInterval(interval);
+    }
+  }, [token, user]);
 
   const fetchUser = async () => {
     try {
@@ -30,6 +41,40 @@ export function AuthProvider({ children }) {
       logout();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNotificacoes = async () => {
+    try {
+      const response = await axios.get(`${API}/notificacoes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setNotificacoes(response.data.notificacoes);
+      setNaoLidas(response.data.nao_lidas);
+    } catch (error) {
+      console.error('Erro ao buscar notificações:', error);
+    }
+  };
+
+  const marcarLida = async (notificacaoId) => {
+    try {
+      await axios.post(`${API}/notificacoes/${notificacaoId}/ler`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchNotificacoes();
+    } catch (error) {
+      console.error('Erro ao marcar notificação:', error);
+    }
+  };
+
+  const marcarTodasLidas = async () => {
+    try {
+      await axios.post(`${API}/notificacoes/ler-todas`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      await fetchNotificacoes();
+    } catch (error) {
+      console.error('Erro ao marcar todas:', error);
     }
   };
 
@@ -59,12 +104,27 @@ export function AuthProvider({ children }) {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
+    setNotificacoes([]);
+    setNaoLidas(0);
   };
 
   const isAdmin = user?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, logout, isAdmin }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      token, 
+      loading, 
+      login, 
+      register, 
+      logout, 
+      isAdmin,
+      notificacoes,
+      naoLidas,
+      fetchNotificacoes,
+      marcarLida,
+      marcarTodasLidas
+    }}>
       {children}
     </AuthContext.Provider>
   );
