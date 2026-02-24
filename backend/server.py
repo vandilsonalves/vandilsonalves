@@ -8,7 +8,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timezone, date
 import random
 
 ROOT_DIR = Path(__file__).parent
@@ -36,22 +36,25 @@ class Usuario(BaseModel):
     equipe: str
     cidade: str
     estado: str  # UF (SP, RJ, PR, etc)
+    genero: str  # M ou F
+    categoria: str  # normal, pcd, cadeirante
+    data_nascimento: str  # YYYY-MM-DD
+    faixa_etaria: str  # 18-29, 30-39, 40-49, 50-59, 60+
     foto_url: str = ""
     
-class UsuarioCreate(BaseModel):
-    nome: str
-    equipe: str
-    cidade: str
-    estado: str
-
-class Resultado(BaseModel):
+class Corrida(BaseModel):
     model_config = ConfigDict(extra="ignore")
     
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     usuario_id: str
-    ano: int
+    nome: str
+    colocacao: int
+    tempo: str  # HH:MM:SS
     pontos: int
-    aprovado: bool = True
+    local: str  # Cidade/UF
+    distancia: str  # 5KM, 10KM, 21KM, 42KM
+    data: str  # YYYY-MM-DD
+    ano: int
 
 class RankingAnual(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -61,30 +64,102 @@ class RankingAnual(BaseModel):
     pontos_total: int
     total_corridas: int
     estado: str
+    genero: str
+    categoria: str
+    faixa_etaria: str
     ranking_nacional: int = 0
     ranking_estadual: int = 0
+    ranking_categoria: int = 0
 
 class RankingResponse(BaseModel):
+    id: str
     colocacao: int
     uf: str
     foto_url: str
     nome: str
     cidade: str
     equipe: str
+    faixa_etaria: str
     total_corridas: int
     pontos: int
-    is_elite: bool  # True se pontos >= 100
+    is_elite: bool
+    is_pendente: bool  # True se < 12 corridas
+
+class AtletaDetalhes(BaseModel):
+    id: str
+    nome: str
+    cidade: str
+    estado: str
+    genero: str
+    categoria: str
+    faixa_etaria: str
+    foto_url: str
+    equipe: str
+    pontos_carreira: int
+    total_corridas: int
+    melhor_colocacao: int
+    is_pendente: bool
+
+class CorridaResponse(BaseModel):
+    id: str
+    nome: str
+    colocacao: int
+    tempo: str
+    pontos: int
+    local: str
+    distancia: str
+    data: str
 
 
 # ==================== HELPER FUNCTIONS ====================
+
+def calcular_faixa_etaria(data_nascimento: str) -> str:
+    """Calcula faixa etária baseado na data de nascimento"""
+    ano_nasc = int(data_nascimento.split('-')[0])
+    idade = 2025 - ano_nasc
+    
+    if idade < 18:
+        return "12-17"
+    elif idade <= 29:
+        return "18-29"
+    elif idade <= 39:
+        return "30-39"
+    elif idade <= 49:
+        return "40-49"
+    elif idade <= 59:
+        return "50-59"
+    else:
+        return "60+"
 
 def gerar_foto_url(nome: str) -> str:
     """Gera URL de avatar com iniciais usando UI Avatars"""
     nome_encoded = nome.replace(' ', '+')
     return f"https://ui-avatars.com/api/?name={nome_encoded}&size=128&background=random&bold=true"
 
+def gerar_tempo_corrida(distancia: str, colocacao: int) -> str:
+    """Gera tempo realista baseado na distância e colocação"""
+    tempos_base = {
+        "5KM": (15, 25),    # 15-25 min
+        "10KM": (32, 55),   # 32-55 min
+        "21KM": (65, 120),  # 1h05-2h00
+        "42KM": (140, 240)  # 2h20-4h00
+    }
+    
+    min_tempo, max_tempo = tempos_base.get(distancia, (30, 60))
+    
+    # Colocações melhores = tempos menores
+    fator_colocacao = 1 + (colocacao - 1) * 0.05
+    tempo_min = int(min_tempo * fator_colocacao)
+    
+    minutos_total = random.randint(tempo_min, tempo_min + 10)
+    horas = minutos_total // 60
+    minutos = minutos_total % 60
+    segundos = random.randint(0, 59)
+    
+    return f"{horas:02d}:{minutos:02d}:{segundos:02d}"
+
 async def calcular_ranking():
-    """Calcula o ranking anual agregando resultados aprovados"""
+    """Calcula o ranking anual agregando corridas"""
     ano_atual = 2025
     
     # Limpar ranking antigo
@@ -92,7 +167,7 @@ async def calcular_ranking():
     
     # Agregação: somar pontos e contar corridas por usuário
     pipeline = [
-        {"$match": {"ano": ano_atual, "aprovado": True}},
+        {"$match": {"ano": ano_atual}},
         {"$group": {
             "_id": "$usuario_id",
             "pontos_total": {"$sum": "$pontos"},
@@ -100,7 +175,7 @@ async def calcular_ranking():
         }}
     ]
     
-    agregados = await db.resultados.aggregate(pipeline).to_list(None)
+    agregados = await db.corridas.aggregate(pipeline).to_list(None)
     
     # Criar documentos de ranking
     ranking_docs = []
@@ -112,7 +187,10 @@ async def calcular_ranking():
                 "ano": ano_atual,
                 "pontos_total": agg["pontos_total"],
                 "total_corridas": agg["total_corridas"],
-                "estado": usuario["estado"]
+                "estado": usuario["estado"],
+                "genero": usuario["genero"],
+                "categoria": usuario["categoria"],
+                "faixa_etaria": usuario["faixa_etaria"]
             })
     
     # Ordenar por pontos (nacional)
@@ -121,6 +199,19 @@ async def calcular_ranking():
     # Atribuir ranking nacional
     for idx, doc in enumerate(ranking_docs, start=1):
         doc["ranking_nacional"] = idx
+    
+    # Calcular ranking por categoria
+    categorias_generos = [
+        ("normal", "M"), ("normal", "F"),
+        ("pcd", "M"), ("pcd", "F"),
+        ("cadeirante", "M"), ("cadeirante", "F")
+    ]
+    
+    for cat, gen in categorias_generos:
+        docs_cat = [d for d in ranking_docs if d["categoria"] == cat and d["genero"] == gen]
+        docs_cat.sort(key=lambda x: x["pontos_total"], reverse=True)
+        for idx, doc in enumerate(docs_cat, start=1):
+            doc["ranking_categoria"] = idx
     
     # Calcular ranking estadual por UF
     estados = set(doc["estado"] for doc in ranking_docs)
@@ -143,13 +234,29 @@ async def calcular_ranking():
 async def root():
     return {"message": "Ranking Run Pro API"}
 
-@api_router.get("/ranking/nacional", response_model=List[RankingResponse])
-async def get_ranking_nacional(ano: int = Query(2025)):
-    """Retorna o ranking nacional ordenado por pontos"""
+@api_router.get("/ranking/categoria/{categoria}/{genero}", response_model=List[RankingResponse])
+async def get_ranking_por_categoria(categoria: str, genero: str, ano: int = Query(2025)):
+    """Retorna ranking filtrado por categoria e gênero"""
     
-    # Buscar ranking anual ordenado
+    # Validar categoria
+    if categoria not in ["masculino", "feminino", "pcd-m", "pcd-f", "cadeirante-m", "cadeirante-f"]:
+        raise HTTPException(status_code=400, detail="Categoria inválida")
+    
+    # Mapear categoria
+    cat_map = {
+        "masculino": ("normal", "M"),
+        "feminino": ("normal", "F"),
+        "pcd-m": ("pcd", "M"),
+        "pcd-f": ("pcd", "F"),
+        "cadeirante-m": ("cadeirante", "M"),
+        "cadeirante-f": ("cadeirante", "F")
+    }
+    
+    cat_db, gen_db = cat_map[categoria]
+    
+    # Buscar ranking
     ranking_list = await db.ranking_anual.find(
-        {"ano": ano},
+        {"ano": ano, "categoria": cat_db, "genero": gen_db},
         {"_id": 0}
     ).sort("pontos_total", -1).to_list(None)
     
@@ -162,15 +269,51 @@ async def get_ranking_nacional(ano: int = Query(2025)):
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
             response.append(RankingResponse(
+                id=usuario["id"],
+                colocacao=rank["ranking_categoria"],
+                uf=rank["estado"],
+                foto_url=usuario["foto_url"],
+                nome=usuario["nome"],
+                cidade=f"{usuario['cidade']}/{usuario['estado']}",
+                equipe=usuario["equipe"],
+                faixa_etaria=rank["faixa_etaria"],
+                total_corridas=rank["total_corridas"],
+                pontos=rank["pontos_total"],
+                is_elite=(rank["pontos_total"] >= 100),
+                is_pendente=(rank["total_corridas"] < 12)
+            ))
+    
+    return response
+
+@api_router.get("/ranking/nacional", response_model=List[RankingResponse])
+async def get_ranking_nacional(ano: int = Query(2025)):
+    """Retorna o ranking nacional ordenado por pontos"""
+    
+    ranking_list = await db.ranking_anual.find(
+        {"ano": ano},
+        {"_id": 0}
+    ).sort("pontos_total", -1).to_list(None)
+    
+    if not ranking_list:
+        return []
+    
+    response = []
+    for rank in ranking_list:
+        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+        if usuario:
+            response.append(RankingResponse(
+                id=usuario["id"],
                 colocacao=rank["ranking_nacional"],
                 uf=rank["estado"],
                 foto_url=usuario["foto_url"],
                 nome=usuario["nome"],
                 cidade=f"{usuario['cidade']}/{usuario['estado']}",
                 equipe=usuario["equipe"],
+                faixa_etaria=rank["faixa_etaria"],
                 total_corridas=rank["total_corridas"],
                 pontos=rank["pontos_total"],
-                is_elite=(rank["pontos_total"] >= 100)
+                is_elite=(rank["pontos_total"] >= 100),
+                is_pendente=(rank["total_corridas"] < 12)
             ))
     
     return response
@@ -181,7 +324,6 @@ async def get_ranking_estadual(uf: str, ano: int = Query(2025)):
     
     uf = uf.upper()
     
-    # Buscar ranking do estado ordenado
     ranking_list = await db.ranking_anual.find(
         {"ano": ano, "estado": uf},
         {"_id": 0}
@@ -190,21 +332,23 @@ async def get_ranking_estadual(uf: str, ano: int = Query(2025)):
     if not ranking_list:
         return []
     
-    # Enriquecer com dados do usuário
     response = []
     for rank in ranking_list:
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
             response.append(RankingResponse(
+                id=usuario["id"],
                 colocacao=rank["ranking_estadual"],
                 uf=rank["estado"],
                 foto_url=usuario["foto_url"],
                 nome=usuario["nome"],
                 cidade=f"{usuario['cidade']}/{usuario['estado']}",
                 equipe=usuario["equipe"],
+                faixa_etaria=rank["faixa_etaria"],
                 total_corridas=rank["total_corridas"],
                 pontos=rank["pontos_total"],
-                is_elite=(rank["pontos_total"] >= 100)
+                is_elite=(rank["pontos_total"] >= 100),
+                is_pendente=(rank["total_corridas"] < 12)
             ))
     
     return response
@@ -222,145 +366,212 @@ async def get_estados_disponiveis(ano: int = Query(2025)):
     estados = await db.ranking_anual.aggregate(pipeline).to_list(None)
     return {"estados": [e["_id"] for e in estados]}
 
+@api_router.get("/atletas/{atleta_id}", response_model=AtletaDetalhes)
+async def get_atleta_detalhes(atleta_id: str):
+    """Retorna detalhes completos do atleta"""
+    
+    usuario = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    # Buscar estatísticas
+    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+    
+    # Buscar melhor colocação
+    melhor_corrida = await db.corridas.find_one(
+        {"usuario_id": atleta_id},
+        {"_id": 0},
+        sort=[("colocacao", 1)]
+    )
+    
+    melhor_colocacao = melhor_corrida["colocacao"] if melhor_corrida else 0
+    total_corridas = ranking["total_corridas"] if ranking else 0
+    pontos_carreira = ranking["pontos_total"] if ranking else 0
+    
+    return AtletaDetalhes(
+        id=usuario["id"],
+        nome=usuario["nome"],
+        cidade=usuario["cidade"],
+        estado=usuario["estado"],
+        genero=usuario["genero"],
+        categoria=usuario["categoria"],
+        faixa_etaria=usuario["faixa_etaria"],
+        foto_url=usuario["foto_url"],
+        equipe=usuario["equipe"],
+        pontos_carreira=pontos_carreira,
+        total_corridas=total_corridas,
+        melhor_colocacao=melhor_colocacao,
+        is_pendente=(total_corridas < 12)
+    )
+
+@api_router.get("/atletas/{atleta_id}/corridas", response_model=List[CorridaResponse])
+async def get_atleta_corridas(atleta_id: str):
+    """Retorna histórico de corridas do atleta"""
+    
+    corridas = await db.corridas.find(
+        {"usuario_id": atleta_id},
+        {"_id": 0}
+    ).sort("data", -1).to_list(None)
+    
+    return [CorridaResponse(**corrida) for corrida in corridas]
+
 @api_router.post("/ranking/popular")
 async def popular_dados_teste():
     """Popula o banco com dados de teste realistas"""
     
     # Limpar dados existentes
     await db.usuarios.delete_many({})
-    await db.resultados.delete_many({})
+    await db.corridas.delete_many({})
     await db.ranking_anual.delete_many({})
     
-    # Dados realistas de atletas brasileiros
-    atletas_data = [
-        # São Paulo (SP) - 15 atletas
-        {"nome": "Fernando Vasque", "equipe": "FV Running", "cidade": "Colombo", "estado": "PR", "pontos": 125, "corridas": 25},
-        {"nome": "Paulo de Paula Oly", "equipe": "Sem equipe", "cidade": "São Paulo", "estado": "SP", "pontos": 100, "corridas": 40},
-        {"nome": "Anderson Teles Da Silva", "equipe": "ATRunners", "cidade": "São Paulo", "estado": "SP", "pontos": 80, "corridas": 35},
-        {"nome": "Carlos Eduardo Santos", "equipe": "SP Runners", "cidade": "Campinas", "estado": "SP", "pontos": 118, "corridas": 28},
-        {"nome": "Marina Silva Costa", "equipe": "Corredoras SP", "cidade": "São Paulo", "estado": "SP", "pontos": 95, "corridas": 30},
-        {"nome": "Roberto Mendes", "equipe": "Fast Runners", "cidade": "Santos", "estado": "SP", "pontos": 88, "corridas": 22},
-        {"nome": "Julia Almeida", "equipe": "SP Running Team", "cidade": "Ribeirão Preto", "estado": "SP", "pontos": 102, "corridas": 33},
-        {"nome": "Diego Oliveira", "equipe": "Paulista Runners", "cidade": "Sorocaba", "estado": "SP", "pontos": 76, "corridas": 24},
-        {"nome": "Fernanda Lima", "equipe": "Run SP", "cidade": "São José dos Campos", "estado": "SP", "pontos": 91, "corridas": 29},
-        {"nome": "Ricardo Ferreira", "equipe": "SP Runners", "cidade": "Guarulhos", "estado": "SP", "pontos": 83, "corridas": 26},
-        {"nome": "Camila Rodrigues", "equipe": "Fast Team", "cidade": "Campinas", "estado": "SP", "pontos": 97, "corridas": 31},
-        {"nome": "Thiago Martins", "equipe": "SP Running Club", "cidade": "São Paulo", "estado": "SP", "pontos": 71, "corridas": 21},
-        {"nome": "Beatriz Souza", "equipe": "Corredoras SP", "cidade": "Santos", "estado": "SP", "pontos": 86, "corridas": 27},
-        {"nome": "Lucas Pereira", "equipe": "Paulista Team", "cidade": "São Paulo", "estado": "SP", "pontos": 79, "corridas": 25},
-        {"nome": "Amanda Costa", "equipe": "SP Runners", "cidade": "Campinas", "estado": "SP", "pontos": 93, "corridas": 32},
-        
-        # Rio de Janeiro (RJ) - 12 atletas
-        {"nome": "Fábio Sanches", "equipe": "Sanches Running", "cidade": "Magé", "estado": "RJ", "pontos": 98, "corridas": 30},
-        {"nome": "Mariana Santos", "equipe": "Carioca Runners", "cidade": "Rio de Janeiro", "estado": "RJ", "pontos": 110, "corridas": 34},
-        {"nome": "Bruno Costa", "equipe": "RJ Running Team", "cidade": "Niterói", "estado": "RJ", "pontos": 87, "corridas": 28},
-        {"nome": "Juliana Ferreira", "equipe": "Carioca Runners", "cidade": "Rio de Janeiro", "estado": "RJ", "pontos": 94, "corridas": 29},
-        {"nome": "André Luiz", "equipe": "RJ Runners", "cidade": "Duque de Caxias", "estado": "RJ", "pontos": 81, "corridas": 25},
-        {"nome": "Patricia Oliveira", "equipe": "Run Rio", "cidade": "Niterói", "estado": "RJ", "pontos": 89, "corridas": 27},
-        {"nome": "Rodrigo Silva", "equipe": "Carioca Team", "cidade": "Rio de Janeiro", "estado": "RJ", "pontos": 105, "corridas": 35},
-        {"nome": "Carla Mendes", "equipe": "RJ Running", "cidade": "Petrópolis", "estado": "RJ", "pontos": 78, "corridas": 24},
-        {"nome": "Felipe Santos", "equipe": "Carioca Runners", "cidade": "Rio de Janeiro", "estado": "RJ", "pontos": 92, "corridas": 30},
-        {"nome": "Vanessa Lima", "equipe": "Run Rio", "cidade": "Niterói", "estado": "RJ", "pontos": 85, "corridas": 26},
-        {"nome": "Gabriel Rocha", "equipe": "RJ Runners", "cidade": "Rio de Janeiro", "estado": "RJ", "pontos": 73, "corridas": 22},
-        {"nome": "Tatiana Costa", "equipe": "Carioca Team", "cidade": "Nova Iguaçu", "estado": "RJ", "pontos": 96, "corridas": 31},
-        
-        # Paraná (PR) - 10 atletas
-        {"nome": "Kaio Rocha Ferreira", "equipe": "Emerson PeriniID", "cidade": "Cuiabá", "estado": "MT", "pontos": 40, "corridas": 35},
-        {"nome": "Marcelo Souza", "equipe": "Paraná Runners", "cidade": "Curitiba", "estado": "PR", "pontos": 108, "corridas": 32},
-        {"nome": "Larissa Alves", "equipe": "PR Running", "cidade": "Londrina", "estado": "PR", "pontos": 90, "corridas": 28},
-        {"nome": "Rafael Dias", "equipe": "Curitiba Runners", "cidade": "Curitiba", "estado": "PR", "pontos": 82, "corridas": 25},
-        {"nome": "Bianca Lima", "equipe": "PR Team", "cidade": "Maringá", "estado": "PR", "pontos": 77, "corridas": 23},
-        {"nome": "Gustavo Martins", "equipe": "Paraná Running", "cidade": "Ponta Grossa", "estado": "PR", "pontos": 84, "corridas": 26},
-        {"nome": "Aline Santos", "equipe": "PR Runners", "cidade": "Curitiba", "estado": "PR", "pontos": 91, "corridas": 29},
-        {"nome": "Eduardo Costa", "equipe": "Curitiba Team", "cidade": "Curitiba", "estado": "PR", "pontos": 75, "corridas": 24},
-        {"nome": "Renata Silva", "equipe": "PR Running", "cidade": "Londrina", "estado": "PR", "pontos": 88, "corridas": 27},
-        {"nome": "Daniel Oliveira", "equipe": "Paraná Runners", "cidade": "Cascavel", "estado": "PR", "pontos": 70, "corridas": 21},
-        
-        # Bahia (BA) - 8 atletas
-        {"nome": "Isabela Ferreira", "equipe": "Bahia Runners", "cidade": "Salvador", "estado": "BA", "pontos": 115, "corridas": 36},
-        {"nome": "Leonardo Santos", "equipe": "BA Running", "cidade": "Salvador", "estado": "BA", "pontos": 99, "corridas": 31},
-        {"nome": "Carolina Souza", "equipe": "Salvador Runners", "cidade": "Salvador", "estado": "BA", "pontos": 87, "corridas": 28},
-        {"nome": "Vinicius Lima", "equipe": "Bahia Team", "cidade": "Feira de Santana", "estado": "BA", "pontos": 80, "corridas": 25},
-        {"nome": "Paula Rodrigues", "equipe": "BA Runners", "cidade": "Vitória da Conquista", "estado": "BA", "pontos": 74, "corridas": 23},
-        {"nome": "Henrique Costa", "equipe": "Salvador Running", "cidade": "Salvador", "estado": "BA", "pontos": 92, "corridas": 29},
-        {"nome": "Débora Alves", "equipe": "Bahia Runners", "cidade": "Ilhéus", "estado": "BA", "pontos": 85, "corridas": 26},
-        {"nome": "Fábio Mendes", "equipe": "BA Team", "cidade": "Salvador", "estado": "BA", "pontos": 78, "corridas": 24},
-        
-        # Ceará (CE) - 8 atletas
-        {"nome": "André Sales", "equipe": "Força Falcão de Atletismo", "cidade": "Fortaleza", "estado": "CE", "pontos": 76, "corridas": 20},
-        {"nome": "Luciana Oliveira", "equipe": "Ceará Runners", "cidade": "Fortaleza", "estado": "CE", "pontos": 103, "corridas": 33},
-        {"nome": "Marcos Silva", "equipe": "CE Running", "cidade": "Juazeiro do Norte", "estado": "CE", "pontos": 89, "corridas": 27},
-        {"nome": "Adriana Costa", "equipe": "Fortaleza Runners", "cidade": "Fortaleza", "estado": "CE", "pontos": 81, "corridas": 25},
-        {"nome": "Pedro Henrique", "equipe": "Ceará Team", "cidade": "Sobral", "estado": "CE", "pontos": 72, "corridas": 22},
-        {"nome": "Natália Santos", "equipe": "CE Runners", "cidade": "Fortaleza", "estado": "CE", "pontos": 94, "corridas": 30},
-        {"nome": "Guilherme Lima", "equipe": "Fortaleza Running", "cidade": "Fortaleza", "estado": "CE", "pontos": 77, "corridas": 24},
-        {"nome": "Letícia Alves", "equipe": "Ceará Runners", "cidade": "Caucaia", "estado": "CE", "pontos": 86, "corridas": 26},
-        
-        # Minas Gerais (MG) - 8 atletas
-        {"nome": "Alexandre Ribeiro", "equipe": "MG Runners", "cidade": "Belo Horizonte", "estado": "MG", "pontos": 112, "corridas": 35},
-        {"nome": "Priscila Martins", "equipe": "BH Running", "cidade": "Belo Horizonte", "estado": "MG", "pontos": 98, "corridas": 31},
-        {"nome": "João Pedro", "equipe": "Minas Team", "cidade": "Uberlândia", "estado": "MG", "pontos": 83, "corridas": 26},
-        {"nome": "Simone Costa", "equipe": "MG Running", "cidade": "Contagem", "estado": "MG", "pontos": 79, "corridas": 24},
-        {"nome": "Mateus Oliveira", "equipe": "BH Runners", "cidade": "Belo Horizonte", "estado": "MG", "pontos": 91, "corridas": 28},
-        {"nome": "Raquel Santos", "equipe": "Minas Runners", "cidade": "Juiz de Fora", "estado": "MG", "pontos": 87, "corridas": 27},
-        {"nome": "Bruno Ferreira", "equipe": "MG Team", "cidade": "Betim", "estado": "MG", "pontos": 74, "corridas": 23},
-        {"nome": "Cristina Silva", "equipe": "BH Running", "cidade": "Belo Horizonte", "estado": "MG", "pontos": 95, "corridas": 30},
-        
-        # Rio Grande do Sul (RS) - 7 atletas
-        {"nome": "Rodrigo Machado", "equipe": "Gaúcho Runners", "cidade": "Porto Alegre", "estado": "RS", "pontos": 107, "corridas": 34},
-        {"nome": "Cláudia Pereira", "equipe": "RS Running", "cidade": "Porto Alegre", "estado": "RS", "pontos": 93, "corridas": 29},
-        {"nome": "Luiz Fernando", "equipe": "POA Runners", "cidade": "Caxias do Sul", "estado": "RS", "pontos": 85, "corridas": 26},
-        {"nome": "Sabrina Costa", "equipe": "Gaúcho Team", "cidade": "Porto Alegre", "estado": "RS", "pontos": 78, "corridas": 24},
-        {"nome": "Anderson Silva", "equipe": "RS Runners", "cidade": "Canoas", "estado": "RS", "pontos": 82, "corridas": 25},
-        {"nome": "Mônica Alves", "equipe": "POA Running", "cidade": "Porto Alegre", "estado": "RS", "pontos": 89, "corridas": 28},
-        {"nome": "Tiago Souza", "equipe": "Gaúcho Runners", "cidade": "Pelotas", "estado": "RS", "pontos": 71, "corridas": 22},
-        
-        # Santa Catarina (SC) - 7 atletas
-        {"nome": "Edson Luiz Brasiliano de Lima", "equipe": "ZULURun ASSESSORIA E CORRIDA DE RUA", "cidade": "Xanxerê", "estado": "SC", "pontos": 74, "corridas": 40},
-        {"nome": "Cristiano Nunes", "equipe": "SC Runners", "cidade": "Florianópolis", "estado": "SC", "pontos": 109, "corridas": 33},
-        {"nome": "Jéssica Oliveira", "equipe": "Floripa Running", "cidade": "Florianópolis", "estado": "SC", "pontos": 96, "corridas": 30},
-        {"nome": "Márcio Santos", "equipe": "Catarinense Team", "cidade": "Joinville", "estado": "SC", "pontos": 84, "corridas": 26},
-        {"nome": "Bruna Lima", "equipe": "SC Running", "cidade": "Blumenau", "estado": "SC", "pontos": 79, "corridas": 24},
-        {"nome": "Paulo Roberto", "equipe": "Floripa Runners", "cidade": "Florianópolis", "estado": "SC", "pontos": 88, "corridas": 27},
-        {"nome": "Andreia Costa", "equipe": "SC Team", "cidade": "Chapecó", "estado": "SC", "pontos": 75, "corridas": 23},
-        
-        # Outros estados - 5 atletas
-        {"nome": "Samuel Souza do Nascimento", "equipe": "CAPB Paraíba", "cidade": "Limeiro", "estado": "PB", "pontos": 125, "corridas": 30},
-        {"nome": "Ricardo Gomes", "equipe": "ES Runners", "cidade": "Vitória", "estado": "ES", "pontos": 101, "corridas": 32},
-        {"nome": "Ana Paula Silva", "equipe": "Goiás Running", "cidade": "Goiânia", "estado": "GO", "pontos": 86, "corridas": 27},
-        {"nome": "Sérgio Mendes", "equipe": "Brasília Runners", "cidade": "Brasília", "estado": "DF", "pontos": 92, "corridas": 29},
-        {"nome": "Eliane Santos", "equipe": "Pernambuco Team", "cidade": "Recife", "estado": "PE", "pontos": 77, "corridas": 24},
+    # Nomes brasileiros realistas
+    nomes_masculinos = [
+        "Samuel Souza do Nascimento", "Paulo de Paula Oly", "Fábio Sanches",
+        "André Sales", "Edson Luiz Brasiliano de Lima", "Anderson Teles Da Silva",
+        "Fernando Vasque", "Kaio Rocha Ferreira", "Carlos Eduardo Santos",
+        "Roberto Mendes", "Diego Oliveira", "Ricardo Ferreira", "Thiago Martins",
+        "Lucas Pereira", "Bruno Costa", "André Luiz", "Rodrigo Silva", "Felipe Santos",
+        "Gabriel Rocha", "Marcelo Souza", "Rafael Dias", "Gustavo Martins",
+        "Eduardo Costa", "Daniel Oliveira", "Leonardo Santos", "Vinicius Lima",
+        "Henrique Costa", "Fábio Mendes", "Marcos Silva", "Pedro Henrique",
+        "Guilherme Lima", "Alexandre Ribeiro", "João Pedro", "Mateus Oliveira",
+        "Bruno Ferreira", "Rodrigo Machado", "Luiz Fernando", "Anderson Silva",
+        "Tiago Souza", "Cristiano Nunes", "Márcio Santos", "Paulo Roberto"
     ]
     
-    # Inserir usuários
-    usuarios_inseridos = []
-    for atleta in atletas_data:
-        usuario = Usuario(
-            nome=atleta["nome"],
-            equipe=atleta["equipe"],
-            cidade=atleta["cidade"],
-            estado=atleta["estado"],
-            foto_url=gerar_foto_url(atleta["nome"])
-        )
-        doc = usuario.model_dump()
-        await db.usuarios.insert_one(doc)
-        usuarios_inseridos.append((usuario.id, atleta["pontos"], atleta["corridas"]))
+    nomes_femininos = [
+        "Marina Silva Costa", "Julia Almeida", "Fernanda Lima", "Camila Rodrigues",
+        "Beatriz Souza", "Amanda Costa", "Mariana Santos", "Juliana Ferreira",
+        "Patricia Oliveira", "Carla Mendes", "Vanessa Lima", "Tatiana Costa",
+        "Larissa Alves", "Bianca Lima", "Aline Santos", "Renata Silva",
+        "Isabela Ferreira", "Carolina Souza", "Paula Rodrigues", "Débora Alves",
+        "Luciana Oliveira", "Adriana Costa", "Natália Santos", "Letícia Alves",
+        "Priscila Martins", "Simone Costa", "Raquel Santos", "Cristina Silva",
+        "Cláudia Pereira", "Sabrina Costa", "Mônica Alves", "Jéssica Oliveira",
+        "Bruna Lima", "Andreia Costa", "Ana Paula Silva", "Eliane Santos"
+    ]
     
-    # Inserir resultados (corridas) para cada usuário
-    resultados_inseridos = []
-    for usuario_id, pontos_total, num_corridas in usuarios_inseridos:
-        # Distribuir pontos entre corridas (entre 3 e 6 pontos por corrida)
-        for _ in range(num_corridas):
-            pontos_corrida = random.randint(3, 6)
-            resultado = Resultado(
-                usuario_id=usuario_id,
-                ano=2025,
-                pontos=pontos_corrida,
-                aprovado=True
+    equipes = [
+        "CAPB Paraíba", "Sem equipe", "Sanches Running", "Força Falcão de Atletismo",
+        "ZULURun ASSESSORIA E CORRIDA DE RUA", "ATRunners", "FV Running",
+        "Emerson PeriniID", "SP Runners", "Fast Runners", "Run SP", "Carioca Runners",
+        "RJ Running Team", "Paraná Runners", "Bahia Runners", "Ceará Runners",
+        "MG Runners", "Gaúcho Runners", "SC Runners", "Floripa Running"
+    ]
+    
+    cidades_estados = [
+        ("Limeira", "SP"), ("São Paulo", "SP"), ("Campinas", "SP"), ("Santos", "SP"),
+        ("Rio de Janeiro", "RJ"), ("Niterói", "RJ"), ("Magé", "RJ"),
+        ("Curitiba", "PR"), ("Londrina", "PR"), ("Colombo", "PR"),
+        ("Salvador", "BA"), ("Feira de Santana", "BA"), ("Vitória da Conquista", "BA"),
+        ("Fortaleza", "CE"), ("Juazeiro do Norte", "CE"), ("Sobral", "CE"),
+        ("Belo Horizonte", "MG"), ("Uberlândia", "MG"), ("Contagem", "MG"),
+        ("Porto Alegre", "RS"), ("Caxias do Sul", "RS"), ("Canoas", "RS"),
+        ("Florianópolis", "SC"), ("Joinville", "SC"), ("Xanxerê", "SC"),
+        ("Cuiabá", "MT"), ("Lauro de Freitas", "BA"), ("Goiânia", "GO"),
+        ("Brasília", "DF"), ("Recife", "PE"), ("Vitória", "ES")
+    ]
+    
+    nomes_corridas = [
+        "Corrida da Glória", "Caetité Run", "Meia Maratona de Vitória da Conquista",
+        "São Silvestre", "Corrida de Reis", "Volta da Pampulha", "Corrida do Fogo",
+        "Circuito das Estações", "Maratona do Rio", "Meia Maratona Internacional",
+        "Corrida de São Pedro", "Desafio das Dunas", "Corrida do Sertão",
+        "Prova Rústica", "Trail Run", "Corrida Noturna", "Beach Run"
+    ]
+    
+    distancias = ["5KM", "10KM", "21KM", "42KM"]
+    
+    # Gerar atletas
+    usuarios_inseridos = []
+    
+    # Distribuição: 40 M, 40 F, 10 PCD M, 10 PCD F, 5 CAD M, 5 CAD F
+    distribuicao = [
+        ("normal", "M", 40, nomes_masculinos[:40]),
+        ("normal", "F", 40, nomes_femininos[:36]),
+        ("pcd", "M", 10, ["João Silva PCD", "Pedro Santos PCD", "Lucas Oliveira PCD", 
+                         "Rafael Costa PCD", "Marcos Lima PCD", "Bruno Alves PCD",
+                         "Thiago Rocha PCD", "André Martins PCD", "Felipe Dias PCD", "Gabriel Nunes PCD"]),
+        ("pcd", "F", 10, ["Maria Silva PCD", "Ana Santos PCD", "Julia Costa PCD",
+                         "Fernanda Lima PCD", "Carla Alves PCD", "Patricia Rocha PCD",
+                         "Vanessa Martins PCD", "Letícia Dias PCD", "Bianca Nunes PCD", "Renata Souza PCD"]),
+        ("cadeirante", "M", 5, ["Roberto Silva Cadeirante", "Marcelo Costa Cadeirante",
+                               "Fernando Lima Cadeirante", "Eduardo Alves Cadeirante", "Paulo Santos Cadeirante"]),
+        ("cadeirante", "F", 5, ["Sandra Silva Cadeirante", "Cristina Costa Cadeirante",
+                               "Juliana Lima Cadeirante", "Beatriz Alves Cadeirante", "Amanda Santos Cadeirante"])
+    ]
+    
+    for categoria, genero, qtd, nomes in distribuicao:
+        for i in range(qtd):
+            nome = nomes[i % len(nomes)]
+            cidade, estado = random.choice(cidades_estados)
+            equipe = random.choice(equipes)
+            
+            # Gerar data de nascimento aleatória
+            ano_nasc = random.randint(1960, 2007)
+            data_nasc = f"{ano_nasc}-{random.randint(1, 12):02d}-{random.randint(1, 28):02d}"
+            faixa = calcular_faixa_etaria(data_nasc)
+            
+            usuario = Usuario(
+                nome=nome,
+                equipe=equipe,
+                cidade=cidade,
+                estado=estado,
+                genero=genero,
+                categoria=categoria,
+                data_nascimento=data_nasc,
+                faixa_etaria=faixa,
+                foto_url=gerar_foto_url(nome)
             )
-            doc = resultado.model_dump()
-            await db.resultados.insert_one(doc)
-            resultados_inseridos.append(resultado.id)
+            
+            doc = usuario.model_dump()
+            await db.usuarios.insert_one(doc)
+            usuarios_inseridos.append(usuario.id)
+    
+    # Gerar corridas para cada atleta
+    corridas_inseridas = []
+    for usuario_id in usuarios_inseridos:
+        num_corridas = random.randint(3, 15)
+        
+        for _ in range(num_corridas):
+            nome_corrida = random.choice(nomes_corridas)
+            colocacao = random.randint(1, 20)
+            distancia = random.choice(distancias)
+            tempo = gerar_tempo_corrida(distancia, colocacao)
+            
+            # Pontos baseados na colocação
+            if colocacao == 1:
+                pontos = random.randint(8, 10)
+            elif colocacao <= 3:
+                pontos = random.randint(6, 8)
+            elif colocacao <= 10:
+                pontos = random.randint(4, 6)
+            else:
+                pontos = random.randint(2, 4)
+            
+            cidade, estado = random.choice(cidades_estados)
+            local = f"{cidade}/{estado}"
+            
+            # Data aleatória em 2025
+            mes = random.randint(1, 12)
+            dia = random.randint(1, 28)
+            data_corrida = f"2025-{mes:02d}-{dia:02d}"
+            
+            corrida = Corrida(
+                usuario_id=usuario_id,
+                nome=nome_corrida,
+                colocacao=colocacao,
+                tempo=tempo,
+                pontos=pontos,
+                local=local,
+                distancia=distancia,
+                data=data_corrida,
+                ano=2025
+            )
+            
+            doc = corrida.model_dump()
+            await db.corridas.insert_one(doc)
+            corridas_inseridas.append(corrida.id)
     
     # Calcular ranking
     total_ranking = await calcular_ranking()
@@ -368,14 +579,13 @@ async def popular_dados_teste():
     return {
         "message": "Dados populados com sucesso!",
         "usuarios": len(usuarios_inseridos),
-        "resultados": len(resultados_inseridos),
+        "corridas": len(corridas_inseridas),
         "ranking_calculado": total_ranking
     }
 
 
 # ==================== INCLUDE ROUTER ====================
 
-# Include the router in the main app
 app.include_router(api_router)
 
 app.add_middleware(
@@ -386,7 +596,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
