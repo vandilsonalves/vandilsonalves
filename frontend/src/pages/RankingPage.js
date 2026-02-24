@@ -58,14 +58,51 @@ const RankingPage = () => {
     navigate(`/atleta/${atletaId}`);
   };
 
+  const handleExport = (format) => {
+    const url = `${API}/ranking/export/${format}?categoria=${categoriaAtual}`;
+    window.open(url, '_blank');
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-tight">
-            Ranking Run Pró
-          </h1>
+        {/* Header com Login/Logout */}
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-tight">
+              Ranking Run Pró
+            </h1>
+          </div>
+          <div className="flex gap-2">
+            {user ? (
+              <>
+                {isAdmin && (
+                  <Button onClick={() => navigate('/admin')} variant="outline">
+                    <Shield className="w-4 h-4 mr-2" />
+                    Admin
+                  </Button>
+                )}
+                <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600">
+                  <Upload className="w-4 h-4 mr-2" />
+                  Submeter Resultado
+                </Button>
+                <Button onClick={logout} variant="outline">
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sair
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button onClick={() => navigate('/cadastro')} variant="outline">
+                  Cadastrar
+                </Button>
+                <Button onClick={() => navigate('/login')} className="bg-emerald-600">
+                  <LogIn className="w-4 h-4 mr-2" />
+                  Entrar
+                </Button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Tabs de Categorias */}
