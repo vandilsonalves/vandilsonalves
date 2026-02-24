@@ -155,12 +155,17 @@ const SubmeterResultadoPage = () => {
                   <Input
                     type="number"
                     min="1"
-                    max="10"
+                    max={user.categoria === 'pcd' || user.categoria === 'cadeirante' ? 3 : 10}
                     value={formData.colocacao}
                     onChange={(e) => handleChange('colocacao', e.target.value)}
-                    placeholder="Ex: 1"
+                    placeholder={user.categoria === 'pcd' || user.categoria === 'cadeirante' ? "1 a 3" : "1 a 10"}
                     required
                   />
+                  <p className="text-xs text-slate-500 mt-1">
+                    {user.categoria === 'pcd' || user.categoria === 'cadeirante' 
+                      ? '⚠️ PCD/Cadeirante: Apenas 1º a 3º lugar pontuam e podem ser enviados'
+                      : '⚠️ Normal: Apenas 1º a 10º lugar pontuam e podem ser enviados'}
+                  </p>
                 </div>
 
                 <div>
