@@ -16,6 +16,7 @@ const API = `${BACKEND_URL}/api`;
 
 const RankingPage = () => {
   const navigate = useNavigate();
+  const { user, isAdmin, logout } = useAuth();
   const [categoriaAtual, setCategoriaAtual] = useState('masculino');
   const [rankingData, setRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
