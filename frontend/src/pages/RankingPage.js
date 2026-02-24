@@ -251,12 +251,12 @@ const RankingPage = () => {
                 <Label htmlFor="filtro-faixa" className="text-sm font-medium mb-2 block">
                   Faixa Etária
                 </Label>
-                <Select value={filtroFaixa} onValueChange={setFiltroFaixa}>
+                <Select value={filtroFaixa || "all"} onValueChange={(v) => setFiltroFaixa(v === "all" ? "" : v)}>
                   <SelectTrigger data-testid="filtro-faixa">
                     <SelectValue placeholder="Todas as faixas" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as faixas</SelectItem>
+                    <SelectItem value="all">Todas as faixas</SelectItem>
                     {faixasDisponiveis.map((faixa) => (
                       <SelectItem key={faixa} value={faixa}>{faixa}</SelectItem>
                     ))}
@@ -269,12 +269,12 @@ const RankingPage = () => {
                 <Label htmlFor="filtro-equipe" className="text-sm font-medium mb-2 block">
                   Equipe
                 </Label>
-                <Select value={filtroEquipe} onValueChange={setFiltroEquipe}>
+                <Select value={filtroEquipe || "all"} onValueChange={(v) => setFiltroEquipe(v === "all" ? "" : v)}>
                   <SelectTrigger data-testid="filtro-equipe">
                     <SelectValue placeholder="Todas as equipes" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">Todas as equipes</SelectItem>
+                    <SelectItem value="all">Todas as equipes</SelectItem>
                     {equipesDisponiveis.map((equipe) => (
                       <SelectItem key={equipe} value={equipe}>{equipe}</SelectItem>
                     ))}
