@@ -1,18 +1,25 @@
 import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { AuthProvider } from "@/context/AuthContext";
 import RankingPage from "@/pages/RankingPage";
 import AtletaDetalhes from "@/pages/AtletaDetalhes";
+import LoginPage from "@/pages/LoginPage";
+import CadastroPage from "@/pages/CadastroPage";
 
 function App() {
   return (
-    <div className="App">
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<RankingPage />} />
-          <Route path="/atleta/:id" element={<AtletaDetalhes />} />
-        </Routes>
-      </BrowserRouter>
-    </div>
+    <AuthProvider>
+      <div className="App">
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<RankingPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/cadastro" element={<CadastroPage />} />
+            <Route path="/atleta/:id" element={<AtletaDetalhes />} />
+          </Routes>
+        </BrowserRouter>
+      </div>
+    </AuthProvider>
   );
 }
 
