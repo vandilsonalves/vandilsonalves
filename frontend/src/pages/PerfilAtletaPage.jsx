@@ -163,7 +163,9 @@ const PerfilAtletaPage = () => {
         facebook_url: facebookUrl,
         instagram_url: instagramUrl,
         telefone,
-        bio
+        bio,
+        etnia,
+        apelido
       }, {
         headers: { Authorization: `Bearer ${token}` }
       });
