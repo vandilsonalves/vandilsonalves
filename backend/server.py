@@ -2000,6 +2000,156 @@ async def popular_dados_teste():
     }
 
 
+# ==================== ANIVERSARIANTES ====================
+
+@api_router.get("/admin/aniversariantes")
+async def get_aniversariantes_mes(mes: int = None, ano: int = None, admin: dict = Depends(get_admin_user)):
+    """Retorna os aniversariantes do mês com calendário"""
+    hoje = datetime.now()
+    mes_atual = mes or hoje.month
+    ano_atual = ano or hoje.year
+    
+    # Buscar todos os atletas
+    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    
+    # Organizar por dia do mês
+    calendario = {}
+    for dia in range(1, 32):
+        calendario[dia] = []
+    
+    for atleta in atletas:
+        if atleta.get("data_nascimento"):
+            try:
+                data_nasc = datetime.strptime(atleta["data_nascimento"], "%Y-%m-%d")
+                if data_nasc.month == mes_atual:
+                    calendario[data_nasc.day].append({
+                        "id": atleta["id"],
+                        "nome": atleta["nome"],
+                        "apelido": atleta.get("apelido", ""),
+                        "foto_url": atleta.get("foto_url", ""),
+                        "equipe": atleta.get("equipe", ""),
+                        "idade": ano_atual - data_nasc.year
+                    })
+            except ValueError:
+                pass
+    
+    meses_nome = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+                  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    
+    return {
+        "mes": meses_nome[mes_atual],
+        "ano": ano_atual,
+        "calendario": calendario,
+        "total_aniversariantes": sum(len(v) for v in calendario.values())
+    }
+
+
+@api_router.get("/admin/aniversariantes/hoje")
+async def get_aniversariantes_hoje(admin: dict = Depends(get_admin_user)):
+    """Retorna os aniversariantes do dia"""
+    hoje = datetime.now()
+    
+    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    
+    aniversariantes = []
+    for atleta in atletas:
+        if atleta.get("data_nascimento"):
+            try:
+                data_nasc = datetime.strptime(atleta["data_nascimento"], "%Y-%m-%d")
+                if data_nasc.month == hoje.month and data_nasc.day == hoje.day:
+                    aniversariantes.append({
+                        "id": atleta["id"],
+                        "nome": atleta["nome"],
+                        "apelido": atleta.get("apelido", ""),
+                        "foto_url": atleta.get("foto_url", ""),
+                        "equipe": atleta.get("equipe", ""),
+                        "email": atleta["email"],
+                        "idade": hoje.year - data_nasc.year
+                    })
+            except ValueError:
+                pass
+    
+    return {"aniversariantes": aniversariantes, "data": hoje.strftime("%Y-%m-%d")}
+
+
+@api_router.post("/admin/aniversariantes/enviar-mensagem")
+async def enviar_mensagem_aniversario(dados: dict, admin: dict = Depends(get_admin_user)):
+    """Envia mensagem de aniversário para atleta(s)"""
+    atleta_ids = dados.get("atleta_ids", [])
+    mensagem = dados.get("mensagem", "Feliz Aniversário! Que este novo ciclo traga muitas conquistas nas pistas. 🎂🏃")
+    
+    mensagens_enviadas = 0
+    for atleta_id in atleta_ids:
+        atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+        if atleta:
+            msg = MensagemAniversario(
+                usuario_id=atleta_id,
+                mensagem=mensagem,
+                ano=datetime.now().year
+            )
+            await db.mensagens_aniversario.insert_one(msg.model_dump())
+            mensagens_enviadas += 1
+    
+    return {"message": f"{mensagens_enviadas} mensagem(ns) enviada(s) com sucesso!"}
+
+
+@api_router.get("/admin/aniversariantes/configuracao")
+async def get_configuracao_aniversario(admin: dict = Depends(get_admin_user)):
+    """Retorna configuração de mensagem de aniversário"""
+    config = await db.configuracoes.find_one({"tipo": "mensagem_aniversario"}, {"_id": 0})
+    if not config:
+        config = {
+            "tipo": "mensagem_aniversario",
+            "mensagem_padrao": "Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️",
+            "envio_automatico": False
+        }
+        await db.configuracoes.insert_one(config)
+    
+    return config
+
+
+@api_router.put("/admin/aniversariantes/configuracao")
+async def update_configuracao_aniversario(dados: dict, admin: dict = Depends(get_admin_user)):
+    """Atualiza configuração de mensagem de aniversário"""
+    await db.configuracoes.update_one(
+        {"tipo": "mensagem_aniversario"},
+        {"$set": {
+            "mensagem_padrao": dados.get("mensagem_padrao", ""),
+            "envio_automatico": dados.get("envio_automatico", False)
+        }},
+        upsert=True
+    )
+    return {"message": "Configuração atualizada com sucesso!"}
+
+
+# ==================== ATLETA - MENSAGEM DE ANIVERSÁRIO ====================
+
+@api_router.get("/atletas/mensagem-aniversario")
+async def get_mensagem_aniversario(current_user: dict = Depends(get_current_user)):
+    """Retorna mensagem de aniversário não visualizada do atleta"""
+    ano_atual = datetime.now().year
+    
+    mensagem = await db.mensagens_aniversario.find_one(
+        {"usuario_id": current_user["id"], "ano": ano_atual, "visualizada": False},
+        {"_id": 0}
+    )
+    
+    return {"mensagem": mensagem}
+
+
+@api_router.post("/atletas/mensagem-aniversario/visualizar")
+async def marcar_mensagem_visualizada(current_user: dict = Depends(get_current_user)):
+    """Marca mensagem de aniversário como visualizada"""
+    ano_atual = datetime.now().year
+    
+    await db.mensagens_aniversario.update_many(
+        {"usuario_id": current_user["id"], "ano": ano_atual, "visualizada": False},
+        {"$set": {"visualizada": True, "data_visualizacao": datetime.now().isoformat()}}
+    )
+    
+    return {"message": "Mensagem marcada como visualizada"}
+
+
 # ==================== INCLUDE ROUTER ====================
 
 app.include_router(api_router)
