@@ -242,31 +242,48 @@ const SubmeterResultadoPage = () => {
                 </div>
 
                 <div className="md:col-span-2">
-                  <Label>Foto do Pódio (opcional)</Label>
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center">
+                  <Label className="flex items-center gap-2 mb-2">
+                    <Upload className="w-4 h-4" />
+                    Foto do Pódio ou sua no Evento (opcional)
+                  </Label>
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors">
                     {fotoPodio ? (
                       <div>
                         <p className="text-sm text-emerald-600 mb-2">✓ {fotoPodio.name}</p>
-                        <Button
-                          type="button"
-                          variant="outline"
-                          size="sm"
-                          onClick={() => setFotoPodio(null)}
-                        >
-                          Remover
-                        </Button>
+                        <div className="flex gap-2 justify-center">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setFotoPodio(null)}
+                          >
+                            Remover
+                          </Button>
+                        </div>
                       </div>
                     ) : (
                       <div>
-                        <Upload className="w-12 h-12 mx-auto mb-2 text-slate-400" />
-                        <p className="text-sm text-slate-600 mb-2">
-                          Clique para selecionar a foto do pódio
+                        <Upload className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+                        <label className="cursor-pointer">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="mb-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                            onClick={() => document.getElementById('foto-podio-input').click()}
+                          >
+                            Adicionar uma Foto do Pódio ou sua no Evento
+                          </Button>
+                          <Input
+                            id="foto-podio-input"
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => setFotoPodio(e.target.files[0])}
+                            className="hidden"
+                          />
+                        </label>
+                        <p className="text-xs text-slate-500">
+                          Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
                         </p>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => setFotoPodio(e.target.files[0])}
-                        />
                       </div>
                     )}
                   </div>
