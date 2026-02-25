@@ -43,6 +43,10 @@ class UsuarioLogin(BaseModel):
     password: str
 
 class PerfilUpdate(BaseModel):
+    nome: Optional[str] = None
+    cidade: Optional[str] = None
+    estado: Optional[str] = None
+    data_nascimento: Optional[str] = None
     equipe: Optional[str] = None
     facebook_url: Optional[str] = None
     instagram_url: Optional[str] = None
