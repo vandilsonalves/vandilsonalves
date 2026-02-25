@@ -160,6 +160,17 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 9. ✅ Correção de "Rankings" para "Ranking" no menu
 10. ✅ Exportação de ranking com TODAS as modalidades
 
+## Novas Funcionalidades (25/02/2026)
+11. ✅ **Ranking Semanal** - Top 10 atletas da última semana
+12. ✅ **Ranking Mensal** - Top 10 atletas do mês atual
+13. ✅ **Destaque do Mês** - Card com estatísticas:
+    - Total de corridas no mês
+    - Atletas no pódio
+    - Atleta mais ativo (mais corridas)
+    - Atleta com mais pontos
+14. ✅ **Botão "Ver/Ocultar Destaques"** - Toggle na sidebar de filtros
+15. ✅ **Medalhas visuais** - Ouro, prata e bronze nos rankings
+
 ---
 
 Última atualização: 25/02/2026
