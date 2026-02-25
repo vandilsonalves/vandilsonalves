@@ -170,6 +170,30 @@ const CadastroPage = () => {
                     required
                   />
                 </div>
+
+                <div>
+                  <Label>Etnia *</Label>
+                  <Select value={formData.etnia} onValueChange={(value) => handleChange('etnia', value)}>
+                    <SelectTrigger data-testid="select-etnia">
+                      <SelectValue placeholder="Selecione sua etnia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ETNIAS.map((etnia) => (
+                        <SelectItem key={etnia} value={etnia}>{etnia}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Apelido</Label>
+                  <Input
+                    value={formData.apelido}
+                    onChange={(e) => handleChange('apelido', e.target.value)}
+                    placeholder="Como você quer ser chamado"
+                    data-testid="input-apelido"
+                  />
+                </div>
               </div>
 
               <Button
