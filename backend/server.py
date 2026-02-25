@@ -1380,7 +1380,7 @@ async def export_ranking_excel(categoria: str = "masculino", todas_modalidades: 
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename=ranking_{categoria}.xlsx"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 
