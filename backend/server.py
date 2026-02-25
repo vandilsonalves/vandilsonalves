@@ -1191,100 +1191,191 @@ async def get_anos_disponiveis():
     return {"anos": [r["_id"] for r in result]}
 
 @api_router.get("/ranking/export/csv")
-async def export_ranking_csv(categoria: str = "masculino"):
-    """Exporta ranking em CSV"""
-    cat_map = {
-        "masculino": ("normal", "M"),
-        "feminino": ("normal", "F"),
-        "pcd-m": ("pcd", "M"),
-        "pcd-f": ("pcd", "F"),
-        "cadeirante-m": ("cadeirante", "M"),
-        "cadeirante-f": ("cadeirante", "F")
-    }
+async def export_ranking_csv(categoria: str = "masculino", todas_modalidades: bool = False):
+    """Exporta ranking em CSV - todas modalidades ou uma específica"""
     
-    cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
-    
-    ranking_list = await db.ranking_anual.find(
-        {"ano": 2025, "categoria": cat_db, "genero": gen_db},
-        {"_id": 0}
-    ).sort("pontos_total", -1).to_list(None)
+    modalidades = [
+        ("Masculino", "normal", "M"),
+        ("Feminino", "normal", "F"),
+        ("PCD Masculino", "pcd", "M"),
+        ("PCD Feminino", "pcd", "F"),
+        ("Cadeirante Masculino", "cadeirante", "M"),
+        ("Cadeirante Feminino", "cadeirante", "F")
+    ]
     
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"])
     
-    for rank in ranking_list:
-        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
-        if usuario:
-            writer.writerow([
-                rank["ranking_categoria"],
-                usuario["nome"],
-                usuario["equipe"],
-                usuario["cidade"],
-                usuario["estado"],
-                rank["faixa_etaria"],
-                rank["total_corridas"],
-                rank["pontos_total"]
-            ])
+    if todas_modalidades:
+        # Exportar todas as modalidades
+        for nome_mod, cat_db, gen_db in modalidades:
+            writer.writerow([f"=== {nome_mod} ==="])
+            writer.writerow(["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"])
+            
+            ranking_list = await db.ranking_anual.find(
+                {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+                {"_id": 0}
+            ).sort("pontos_total", -1).to_list(None)
+            
+            for rank in ranking_list:
+                usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+                if usuario:
+                    writer.writerow([
+                        rank.get("ranking_categoria", 0),
+                        usuario["nome"],
+                        usuario["equipe"],
+                        usuario["cidade"],
+                        usuario["estado"],
+                        rank["faixa_etaria"],
+                        rank["total_corridas"],
+                        rank["pontos_total"]
+                    ])
+            writer.writerow([])  # Linha em branco entre modalidades
+    else:
+        # Exportar apenas uma categoria
+        cat_map = {
+            "masculino": ("normal", "M"),
+            "feminino": ("normal", "F"),
+            "pcd-m": ("pcd", "M"),
+            "pcd-f": ("pcd", "F"),
+            "cadeirante-m": ("cadeirante", "M"),
+            "cadeirante-f": ("cadeirante", "F")
+        }
+        
+        cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
+        
+        ranking_list = await db.ranking_anual.find(
+            {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+            {"_id": 0}
+        ).sort("pontos_total", -1).to_list(None)
+        
+        writer.writerow(["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"])
+        
+        for rank in ranking_list:
+            usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+            if usuario:
+                writer.writerow([
+                    rank.get("ranking_categoria", 0),
+                    usuario["nome"],
+                    usuario["equipe"],
+                    usuario["cidade"],
+                    usuario["estado"],
+                    rank["faixa_etaria"],
+                    rank["total_corridas"],
+                    rank["pontos_total"]
+                ])
     
     output.seek(0)
+    filename = "ranking_todas_modalidades.csv" if todas_modalidades else f"ranking_{categoria}.csv"
     return StreamingResponse(
         iter([output.getvalue()]),
         media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename=ranking_{categoria}.csv"}
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
     )
 
 @api_router.get("/ranking/export/excel")
-async def export_ranking_excel(categoria: str = "masculino"):
-    """Exporta ranking em Excel"""
-    cat_map = {
-        "masculino": ("normal", "M"),
-        "feminino": ("normal", "F"),
-        "pcd-m": ("pcd", "M"),
-        "pcd-f": ("pcd", "F"),
-        "cadeirante-m": ("cadeirante", "M"),
-        "cadeirante-f": ("cadeirante", "F")
-    }
-    
-    cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
-    
-    ranking_list = await db.ranking_anual.find(
-        {"ano": 2025, "categoria": cat_db, "genero": gen_db},
-        {"_id": 0}
-    ).sort("pontos_total", -1).to_list(None)
+async def export_ranking_excel(categoria: str = "masculino", todas_modalidades: bool = False):
+    """Exporta ranking em Excel - todas modalidades ou uma específica"""
     
     wb = Workbook()
-    ws = wb.active
-    ws.title = f"Ranking {categoria.title()}"
     
-    headers = ["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"]
-    ws.append(headers)
+    modalidades = [
+        ("Masculino", "normal", "M"),
+        ("Feminino", "normal", "F"),
+        ("PCD Masculino", "pcd", "M"),
+        ("PCD Feminino", "pcd", "F"),
+        ("Cadeirante Masculino", "cadeirante", "M"),
+        ("Cadeirante Feminino", "cadeirante", "F")
+    ]
     
     header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
     header_font = Font(bold=True, color="FFFFFF")
     
-    for cell in ws[1]:
-        cell.fill = header_fill
-        cell.font = header_font
-        cell.alignment = Alignment(horizontal="center")
-    
-    for rank in ranking_list:
-        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
-        if usuario:
-            ws.append([
-                rank["ranking_categoria"],
-                usuario["nome"],
-                usuario["equipe"],
-                usuario["cidade"],
-                usuario["estado"],
-                rank["faixa_etaria"],
-                rank["total_corridas"],
-                rank["pontos_total"]
-            ])
+    if todas_modalidades:
+        # Criar uma aba para cada modalidade
+        first_sheet = True
+        for nome_mod, cat_db, gen_db in modalidades:
+            if first_sheet:
+                ws = wb.active
+                ws.title = nome_mod
+                first_sheet = False
+            else:
+                ws = wb.create_sheet(title=nome_mod)
+            
+            headers = ["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"]
+            ws.append(headers)
+            
+            for cell in ws[1]:
+                cell.fill = header_fill
+                cell.font = header_font
+                cell.alignment = Alignment(horizontal="center")
+            
+            ranking_list = await db.ranking_anual.find(
+                {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+                {"_id": 0}
+            ).sort("pontos_total", -1).to_list(None)
+            
+            for rank in ranking_list:
+                usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+                if usuario:
+                    ws.append([
+                        rank.get("ranking_categoria", 0),
+                        usuario["nome"],
+                        usuario["equipe"],
+                        usuario["cidade"],
+                        usuario["estado"],
+                        rank["faixa_etaria"],
+                        rank["total_corridas"],
+                        rank["pontos_total"]
+                    ])
+    else:
+        # Exportar apenas uma categoria
+        cat_map = {
+            "masculino": ("normal", "M"),
+            "feminino": ("normal", "F"),
+            "pcd-m": ("pcd", "M"),
+            "pcd-f": ("pcd", "F"),
+            "cadeirante-m": ("cadeirante", "M"),
+            "cadeirante-f": ("cadeirante", "F")
+        }
+        
+        cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
+        
+        ws = wb.active
+        ws.title = f"Ranking {categoria.title()}"
+        
+        headers = ["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"]
+        ws.append(headers)
+        
+        for cell in ws[1]:
+            cell.fill = header_fill
+            cell.font = header_font
+            cell.alignment = Alignment(horizontal="center")
+        
+        ranking_list = await db.ranking_anual.find(
+            {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+            {"_id": 0}
+        ).sort("pontos_total", -1).to_list(None)
+        
+        for rank in ranking_list:
+            usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+            if usuario:
+                ws.append([
+                    rank.get("ranking_categoria", 0),
+                    usuario["nome"],
+                    usuario["equipe"],
+                    usuario["cidade"],
+                    usuario["estado"],
+                    rank["faixa_etaria"],
+                    rank["total_corridas"],
+                    rank["pontos_total"]
+                ])
     
     output = io.BytesIO()
     wb.save(output)
     output.seek(0)
+    
+    filename = "ranking_todas_modalidades.xlsx" if todas_modalidades else f"ranking_{categoria}.xlsx"
     
     return StreamingResponse(
         output,
