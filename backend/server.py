@@ -1471,12 +1471,12 @@ async def get_compartilhar_atleta(atleta_id: str):
     
     genero_nome = "Masculino" if usuario["genero"] == "M" else "Feminino"
     
-    texto_compartilhar = f"🏆 Ranking Run Pró 2025\n\n"
+    texto_compartilhar = "🏆 Ranking Run Pró 2025\n\n"
     texto_compartilhar += f"👤 {usuario['nome']}\n"
     texto_compartilhar += f"🏅 {ranking['ranking_categoria'] if ranking else 0}º lugar - {categoria_nome} {genero_nome}\n"
     texto_compartilhar += f"⭐ {ranking['pontos_total'] if ranking else 0} pontos\n"
     texto_compartilhar += f"🏃 {ranking['total_corridas'] if ranking else 0} corridas\n\n"
-    texto_compartilhar += f"#RankingRunPro #Corrida #Running"
+    texto_compartilhar += "#RankingRunPro #Corrida #Running"
     
     return {
         "atleta": usuario["nome"],
