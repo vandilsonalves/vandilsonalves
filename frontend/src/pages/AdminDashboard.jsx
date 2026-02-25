@@ -209,6 +209,58 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAniversariantes = async () => {
+    setLoadingAniversariantes(true);
+    try {
+      const response = await axios.get(`${API}/admin/aniversariantes`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { mes: mesCalendario, ano: anoCalendario }
+      });
+      setAniversariantesMes(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar aniversariantes:', error);
+    } finally {
+      setLoadingAniversariantes(false);
+    }
+  };
+
+  const handleEnviarMensagemAniversario = async () => {
+    if (atletasSelecionar.length === 0) {
+      toast.error('Erro', { description: 'Selecione pelo menos um atleta' });
+      return;
+    }
+
+    try {
+      await axios.post(`${API}/admin/aniversariantes/enviar-mensagem`, {
+        atleta_ids: atletasSelecionar,
+        mensagem: mensagemPadrao
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Ação Concluída', { description: `Mensagem enviada para ${atletasSelecionar.length} atleta(s)!` });
+      setAtletasSelecionar([]);
+      setDiaSelecionado(null);
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao enviar mensagem' });
+    }
+  };
+
+  const toggleAtletaSelecao = (atletaId) => {
+    setAtletasSelecionar(prev => 
+      prev.includes(atletaId) 
+        ? prev.filter(id => id !== atletaId)
+        : [...prev, atletaId]
+    );
+  };
+
+  const getDiasNoMes = (mes, ano) => {
+    return new Date(ano, mes, 0).getDate();
+  };
+
+  const getPrimeiroDiaSemana = (mes, ano) => {
+    return new Date(ano, mes - 1, 1).getDay();
+  };
+
   const handleAprovar = async (resultadoId) => {
     setActionLoading(true);
     try {
