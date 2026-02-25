@@ -1300,6 +1300,195 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Aniversariantes View */}
+        {activeMenu === 'aniversariantes' && (
+          <div className="space-y-6">
+            <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="flex items-center gap-2">
+                  <Cake className="w-5 h-5 text-pink-500" />
+                  Aniversariantes - {MESES[mesCalendario - 1]} {anoCalendario}
+                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      if (mesCalendario === 1) {
+                        setMesCalendario(12);
+                        setAnoCalendario(prev => prev - 1);
+                      } else {
+                        setMesCalendario(prev => prev - 1);
+                      }
+                    }}
+                  >
+                    <ChevronLeft className="w-4 h-4" />
+                  </Button>
+                  <span className="font-medium px-4">{MESES[mesCalendario - 1]} {anoCalendario}</span>
+                  <Button 
+                    size="sm" 
+                    variant="outline"
+                    onClick={() => {
+                      if (mesCalendario === 12) {
+                        setMesCalendario(1);
+                        setAnoCalendario(prev => prev + 1);
+                      } else {
+                        setMesCalendario(prev => prev + 1);
+                      }
+                    }}
+                  >
+                    <ChevronRight className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {loadingAniversariantes ? (
+                  <div className="text-center py-12">Carregando...</div>
+                ) : aniversariantesMes && (
+                  <>
+                    {/* Stats */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                      <div className="bg-pink-50 dark:bg-pink-900/30 rounded-lg p-4 text-center">
+                        <Gift className="w-8 h-8 mx-auto mb-2 text-pink-500" />
+                        <div className="text-2xl font-bold text-pink-600">{aniversariantesMes.total_aniversariantes}</div>
+                        <div className="text-sm text-slate-500">Aniversariantes</div>
+                      </div>
+                    </div>
+
+                    {/* Calendário */}
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-4">
+                      <div className="grid grid-cols-7 gap-1 mb-2">
+                        {['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'].map(dia => (
+                          <div key={dia} className="text-center text-xs font-medium text-slate-500 py-2">
+                            {dia}
+                          </div>
+                        ))}
+                      </div>
+                      <div className="grid grid-cols-7 gap-1">
+                        {/* Dias vazios no início */}
+                        {Array.from({ length: getPrimeiroDiaSemana(mesCalendario, anoCalendario) }).map((_, i) => (
+                          <div key={`empty-${i}`} className="aspect-square" />
+                        ))}
+                        {/* Dias do mês */}
+                        {Array.from({ length: getDiasNoMes(mesCalendario, anoCalendario) }).map((_, i) => {
+                          const dia = i + 1;
+                          const aniversariantes = aniversariantesMes.calendario[dia] || [];
+                          const hasAniversariantes = aniversariantes.length > 0;
+                          const isHoje = new Date().getDate() === dia && 
+                                         new Date().getMonth() + 1 === mesCalendario &&
+                                         new Date().getFullYear() === anoCalendario;
+                          
+                          return (
+                            <div 
+                              key={dia}
+                              className={`aspect-square rounded-lg flex flex-col items-center justify-center cursor-pointer transition-all
+                                ${hasAniversariantes ? 'bg-pink-100 dark:bg-pink-900/50 hover:bg-pink-200 dark:hover:bg-pink-900' : 'hover:bg-slate-100 dark:hover:bg-slate-800'}
+                                ${isHoje ? 'ring-2 ring-emerald-500' : ''}
+                                ${diaSelecionado === dia ? 'ring-2 ring-pink-500 bg-pink-200 dark:bg-pink-800' : ''}
+                              `}
+                              onClick={() => hasAniversariantes && setDiaSelecionado(dia)}
+                              data-testid={`dia-${dia}`}
+                            >
+                              <span className={`text-sm font-medium ${hasAniversariantes ? 'text-pink-600 dark:text-pink-300' : ''}`}>
+                                {dia}
+                              </span>
+                              {hasAniversariantes && (
+                                <div className="flex -space-x-1 mt-1">
+                                  {aniversariantes.slice(0, 3).map((a, idx) => (
+                                    <Avatar key={idx} className="w-5 h-5 border border-white">
+                                      <AvatarImage src={a.foto_url?.startsWith('http') ? a.foto_url : `${BACKEND_URL}${a.foto_url}`} />
+                                      <AvatarFallback className="bg-pink-500 text-white text-[8px]">{a.nome?.charAt(0)}</AvatarFallback>
+                                    </Avatar>
+                                  ))}
+                                  {aniversariantes.length > 3 && (
+                                    <div className="w-5 h-5 rounded-full bg-pink-500 text-white text-[8px] flex items-center justify-center border border-white">
+                                      +{aniversariantes.length - 3}
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Painel lateral - Aniversariantes do dia selecionado */}
+                    {diaSelecionado && aniversariantesMes.calendario[diaSelecionado]?.length > 0 && (
+                      <div className="mt-6 p-4 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 rounded-xl">
+                        <h4 className="font-semibold mb-4 flex items-center gap-2">
+                          <Cake className="w-5 h-5 text-pink-500" />
+                          Aniversariantes do dia {diaSelecionado}
+                        </h4>
+                        
+                        <div className="space-y-3 mb-4">
+                          {aniversariantesMes.calendario[diaSelecionado].map((atleta) => (
+                            <div 
+                              key={atleta.id}
+                              className={`flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg cursor-pointer transition-all
+                                ${atletasSelecionar.includes(atleta.id) ? 'ring-2 ring-pink-500' : ''}`}
+                              onClick={() => toggleAtletaSelecao(atleta.id)}
+                            >
+                              <input 
+                                type="checkbox" 
+                                checked={atletasSelecionar.includes(atleta.id)}
+                                onChange={() => {}}
+                                className="rounded border-pink-300"
+                              />
+                              <Avatar className="w-10 h-10">
+                                <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
+                                <AvatarFallback className="bg-pink-500 text-white">{atleta.nome?.charAt(0)}</AvatarFallback>
+                              </Avatar>
+                              <div className="flex-1">
+                                <p className="font-medium">{atleta.nome}</p>
+                                <p className="text-sm text-slate-500">{atleta.equipe} • {atleta.idade} anos</p>
+                              </div>
+                              <Badge className="bg-pink-100 text-pink-700 border-0">
+                                {atleta.apelido || 'Atleta'}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
+
+                        {/* Mensagem de aniversário */}
+                        <div className="space-y-3">
+                          <Label>Mensagem de Felicitação</Label>
+                          <Textarea
+                            value={mensagemPadrao}
+                            onChange={(e) => setMensagemPadrao(e.target.value)}
+                            placeholder="Escreva sua mensagem de aniversário..."
+                            rows={3}
+                            className="bg-white dark:bg-slate-800"
+                          />
+                          <div className="flex gap-2">
+                            <Button
+                              onClick={handleEnviarMensagemAniversario}
+                              className="bg-pink-500 hover:bg-pink-600"
+                              disabled={atletasSelecionar.length === 0}
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              Enviar para {atletasSelecionar.length} atleta(s)
+                            </Button>
+                            <Button
+                              variant="outline"
+                              onClick={() => {
+                                const todosIds = aniversariantesMes.calendario[diaSelecionado].map(a => a.id);
+                                setAtletasSelecionar(todosIds);
+                              }}
+                            >
+                              Selecionar Todos
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Modal de Reprovação */}
         <Dialog open={showReprovarModal} onOpenChange={setShowReprovarModal}>
           <DialogContent>
