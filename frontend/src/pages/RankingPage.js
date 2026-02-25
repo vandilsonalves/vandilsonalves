@@ -23,6 +23,7 @@ const RankingPage = () => {
   const [categoriaAtual, setCategoriaAtual] = useState('masculino');
   const [rankingData, setRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [showDestaques, setShowDestaques] = useState(true);
   
   // Filtros
   const [filtroNome, setFiltroNome] = useState('');
