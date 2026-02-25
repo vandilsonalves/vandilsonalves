@@ -353,7 +353,12 @@ async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get
     if dados.telefone is not None:
         update_data["telefone"] = dados.telefone
     if dados.bio is not None:
-        update_data["bio"] = dados.bio
+        # Limitar bio a 150 caracteres
+        update_data["bio"] = dados.bio[:150] if dados.bio else ""
+    if dados.etnia is not None:
+        update_data["etnia"] = dados.etnia
+    if dados.apelido is not None:
+        update_data["apelido"] = dados.apelido
     
     if not update_data:
         raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
