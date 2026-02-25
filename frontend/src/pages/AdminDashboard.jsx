@@ -933,20 +933,23 @@ const AdminDashboard = () => {
 
         {/* Submeter Resultado View */}
         {activeMenu === 'submeter' && (
-          <div className="max-w-2xl">
+          <div className="max-w-4xl">
             <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
               <CardHeader>
-                <CardTitle>Ajustar Pontos do Atleta</CardTitle>
+                <CardTitle>Gerenciar Resultados do Atleta</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-2">
                   <Label>Selecionar Atleta</Label>
-                  <Select value={atletaSelecionado} onValueChange={setAtletaSelecionado}>
+                  <Select value={atletaSelecionado} onValueChange={(v) => {
+                    setAtletaSelecionado(v);
+                    setCorridasAtleta([]);
+                  }}>
                     <SelectTrigger>
                       <SelectValue placeholder="Buscar atleta..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {atletas.map((a) => (
+                      {atletas.sort((a, b) => a.nome.localeCompare(b.nome)).map((a) => (
                         <SelectItem key={a.id} value={a.id}>{a.nome} - {a.equipe}</SelectItem>
                       ))}
                     </SelectContent>
@@ -975,33 +978,164 @@ const AdminDashboard = () => {
                   </div>
                 </div>
 
-                <div className="space-y-2">
-                  <Label>Quantidade de Pontos</Label>
-                  <Input
-                    type="number"
-                    value={pontosOperacao}
-                    onChange={(e) => setPontosOperacao(parseInt(e.target.value) || 0)}
-                    placeholder="Ex: 10"
-                  />
-                </div>
+                {/* Formulário para Adicionar Pontos */}
+                {tipoOperacao === 'adicionar' && atletaSelecionado && (
+                  <div className="border rounded-lg p-6 bg-slate-50 dark:bg-slate-900 space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Plus className="w-5 h-5 text-emerald-500" />
+                      Adicionar Nova Corrida
+                    </h3>
+                    
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="md:col-span-2 space-y-2">
+                        <Label>Nome da Competição *</Label>
+                        <Input
+                          value={novaCorridaAdmin.nome_competicao}
+                          onChange={(e) => setNovaCorridaAdmin({...novaCorridaAdmin, nome_competicao: e.target.value})}
+                          placeholder="Ex: Maratona de São Paulo"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Colocação *</Label>
+                        <Input
+                          type="number"
+                          min="1"
+                          max="10"
+                          value={novaCorridaAdmin.colocacao}
+                          onChange={(e) => setNovaCorridaAdmin({...novaCorridaAdmin, colocacao: e.target.value})}
+                          placeholder="1 a 10"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Distância *</Label>
+                        <Select 
+                          value={novaCorridaAdmin.distancia} 
+                          onValueChange={(v) => setNovaCorridaAdmin({...novaCorridaAdmin, distancia: v})}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="5KM">5 KM</SelectItem>
+                            <SelectItem value="10KM">10 KM</SelectItem>
+                            <SelectItem value="21KM">21 KM (Meia Maratona)</SelectItem>
+                            <SelectItem value="42KM">42 KM (Maratona)</SelectItem>
+                            <SelectItem value="OUTRA">Outra</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Cidade da Competição *</Label>
+                        <Input
+                          value={novaCorridaAdmin.cidade_competicao}
+                          onChange={(e) => setNovaCorridaAdmin({...novaCorridaAdmin, cidade_competicao: e.target.value})}
+                          placeholder="Ex: São Paulo"
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Estado (UF) *</Label>
+                        <Select 
+                          value={novaCorridaAdmin.estado_competicao} 
+                          onValueChange={(v) => setNovaCorridaAdmin({...novaCorridaAdmin, estado_competicao: v})}
+                        >
+                          <SelectTrigger><SelectValue placeholder="Selecione" /></SelectTrigger>
+                          <SelectContent>
+                            {ESTADOS_BR.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Data da Competição *</Label>
+                        <Input
+                          type="date"
+                          value={novaCorridaAdmin.data_competicao}
+                          onChange={(e) => setNovaCorridaAdmin({...novaCorridaAdmin, data_competicao: e.target.value})}
+                        />
+                      </div>
+                      
+                      <div className="space-y-2">
+                        <Label>Tempo (HH:MM:SS) *</Label>
+                        <Input
+                          type="time"
+                          step="1"
+                          value={novaCorridaAdmin.tempo}
+                          onChange={(e) => setNovaCorridaAdmin({...novaCorridaAdmin, tempo: e.target.value})}
+                        />
+                      </div>
+                      
+                      <div className="md:col-span-2 space-y-2">
+                        <Label>Link do Resultado (opcional)</Label>
+                        <Input
+                          type="url"
+                          value={novaCorridaAdmin.link_resultado}
+                          onChange={(e) => setNovaCorridaAdmin({...novaCorridaAdmin, link_resultado: e.target.value})}
+                          placeholder="https://..."
+                        />
+                      </div>
+                    </div>
 
-                <div className="space-y-2">
-                  <Label>Motivo / Justificativa</Label>
-                  <Textarea
-                    value={motivoOperacao}
-                    onChange={(e) => setMotivoOperacao(e.target.value)}
-                    placeholder="Ex: Correção de resultado, bonificação especial, etc."
-                    rows={3}
-                  />
-                </div>
+                    <Button
+                      onClick={handleSubmeterResultadoAdmin}
+                      disabled={actionLoading}
+                      className="w-full bg-emerald-600 mt-4"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Corrida e Pontos
+                    </Button>
+                  </div>
+                )}
 
-                <Button
-                  onClick={handleSubmeterResultado}
-                  disabled={actionLoading}
-                  className="w-full bg-emerald-600"
-                >
-                  Confirmar Ajuste
-                </Button>
+                {/* Lista de Corridas para Remover */}
+                {tipoOperacao === 'remover' && atletaSelecionado && (
+                  <div className="border rounded-lg p-6 bg-slate-50 dark:bg-slate-900 space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Minus className="w-5 h-5 text-red-500" />
+                      Corridas do Atleta (selecione para editar ou excluir)
+                    </h3>
+                    
+                    {corridasAtleta.length === 0 ? (
+                      <p className="text-slate-500 text-center py-4">Nenhuma corrida encontrada para este atleta.</p>
+                    ) : (
+                      <div className="space-y-3 max-h-96 overflow-y-auto">
+                        {corridasAtleta.map((corrida) => (
+                          <div key={corrida.id} className="flex items-center justify-between p-4 bg-white dark:bg-slate-800 rounded-lg border">
+                            <div className="flex-1">
+                              <p className="font-medium">{corrida.nome}</p>
+                              <div className="flex gap-4 text-sm text-slate-500 mt-1">
+                                <span>{corrida.data}</span>
+                                <span>{corrida.colocacao}º lugar</span>
+                                <span>{corrida.distancia}</span>
+                                <span className="font-semibold text-emerald-600">{corrida.pontos} pts</span>
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={() => {
+                                  setCorridaSelecionada(corrida);
+                                  setShowEditCorridaModal(true);
+                                }}
+                              >
+                                <Edit className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteCorrida(corrida.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
