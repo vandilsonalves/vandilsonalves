@@ -64,15 +64,29 @@ const AdminDashboard = () => {
   const [atletas, setAtletas] = useState([]);
   const [loadingAtletas, setLoadingAtletas] = useState(false);
   const [filtroCategoria, setFiltroCategoria] = useState('all');
+  const [searchQuery, setSearchQuery] = useState('');
   const [showAtletaModal, setShowAtletaModal] = useState(false);
   const [atletaEditando, setAtletaEditando] = useState(null);
   const [showAddAtletaModal, setShowAddAtletaModal] = useState(false);
   
-  // Submeter Resultado (Admin)
+  // Submeter Resultado (Admin) - Novo formato completo
   const [atletaSelecionado, setAtletaSelecionado] = useState('');
   const [tipoOperacao, setTipoOperacao] = useState('adicionar');
-  const [pontosOperacao, setPontosOperacao] = useState(0);
-  const [motivoOperacao, setMotivoOperacao] = useState('');
+  const [corridasAtleta, setCorridasAtleta] = useState([]);
+  const [corridaSelecionada, setCorridaSelecionada] = useState(null);
+  const [showEditCorridaModal, setShowEditCorridaModal] = useState(false);
+  
+  // Form para nova corrida (admin)
+  const [novaCorridaAdmin, setNovaCorridaAdmin] = useState({
+    nome_competicao: '',
+    colocacao: '',
+    distancia: '',
+    cidade_competicao: '',
+    estado_competicao: '',
+    data_competicao: '',
+    tempo: '',
+    link_resultado: ''
+  });
   
   // Modal
   const [showReprovarModal, setShowReprovarModal] = useState(false);
