@@ -100,7 +100,9 @@ async def register_atleta(dados: UsuarioRegister):
         faixa_etaria=faixa,
         foto_url=gerar_foto_url(dados.nome),
         role="atleta",
-        is_active=True
+        is_active=True,
+        etnia=dados.etnia,
+        apelido=dados.apelido
     )
     
     doc = usuario.model_dump()
