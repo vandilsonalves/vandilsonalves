@@ -126,6 +126,8 @@ const PerfilAtletaPage = () => {
       setInstagramUrl(data.instagram_url || '');
       setTelefone(data.telefone || '');
       setBio(data.bio || '');
+      setEtnia(data.etnia || '');
+      setApelido(data.apelido || '');
       
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
