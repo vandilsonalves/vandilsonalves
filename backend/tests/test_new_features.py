@@ -201,7 +201,7 @@ class TestAdminAjustarPontos:
         data = response.json()
         assert "message" in data
         assert "+10" in data["message"]
-        print(f"✓ POST /api/admin/ajustar-pontos - Added 10 points")
+        print("✓ POST /api/admin/ajustar-pontos - Added 10 points")
     
     def test_admin_ajustar_pontos_remover(self, admin_token):
         """Test POST /api/admin/ajustar-pontos - Remove points"""
@@ -230,7 +230,7 @@ class TestAdminAjustarPontos:
         data = response.json()
         assert "message" in data
         assert "-5" in data["message"]
-        print(f"✓ POST /api/admin/ajustar-pontos - Removed 5 points")
+        print("✓ POST /api/admin/ajustar-pontos - Removed 5 points")
 
 
 class TestAtletaProfile:

@@ -133,7 +133,7 @@ class TestRankingMensal:
         data = response.json()
         assert data["mes"] == "Janeiro"
         assert data["ano"] == 2026
-        print(f"✓ GET /api/ranking/mensal with custom month - Janeiro 2026")
+        print("✓ GET /api/ranking/mensal with custom month - Janeiro 2026")
     
     def test_ranking_mensal_limite_top10(self):
         """Test that mensal ranking returns max 10 athletes"""
@@ -187,7 +187,7 @@ class TestDestaqueMes:
             assert cat in destaques, f"Missing category '{cat}' in destaques_categoria"
             assert isinstance(destaques[cat], list), f"Category '{cat}' should be a list"
         
-        print(f"✓ All 6 categories present in destaques_categoria")
+        print("✓ All 6 categories present in destaques_categoria")
     
     def test_destaque_mes_mais_ativo(self):
         """Test mais_ativo_mes structure"""
@@ -233,7 +233,7 @@ class TestDestaqueMes:
         data = response.json()
         assert data["mes"] == "Janeiro"
         assert data["ano"] == 2025
-        print(f"✓ GET /api/ranking/destaque-mes with custom month - Janeiro 2025")
+        print("✓ GET /api/ranking/destaque-mes with custom month - Janeiro 2025")
     
     def test_destaque_mes_top3_per_category(self):
         """Test that each category has max 3 athletes (podium)"""
