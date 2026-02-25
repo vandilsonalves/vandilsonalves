@@ -376,13 +376,60 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleExportAtletas = () => {
-    window.open(`${API}/admin/atletas/export?categoria=${filtroCategoria}`, '_blank');
+  const handleExportAtletas = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/atletas/export`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { categoria: filtroCategoria },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `atletas_${filtroCategoria}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Ação Concluída', { description: 'Dados exportados com sucesso!' });
+    } catch (error) {
+      toast.error('Erro', { description: 'Erro ao exportar dados' });
+    }
   };
 
-  const handleExportRanking = (format) => {
-    window.open(`${API}/ranking/export/${format}?categoria=masculino`, '_blank');
+  const handleExportRanking = async (format) => {
+    try {
+      const response = await axios.get(`${API}/ranking/export/${format}`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { todas_modalidades: true },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `ranking_todas_modalidades.${format === 'excel' ? 'xlsx' : 'csv'}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success('Ação Concluída', { description: 'Ranking exportado com sucesso!' });
+    } catch (error) {
+      toast.error('Erro', { description: 'Erro ao exportar ranking' });
+    }
   };
+
+  // Filtrar atletas por busca e ordenar A-Z
+  const filteredAtletas = atletas
+    .filter(a => 
+      a.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.equipe?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      a.cidade?.toLowerCase().includes(searchQuery.toLowerCase())
+    )
+    .sort((a, b) => a.nome.localeCompare(b.nome));
 
   // Preparar dados para gráficos
   const prepareCategoriasData = () => {
