@@ -1683,7 +1683,12 @@ async def get_atleta_detalhes(atleta_id: str):
         pontos_carreira=pontos_carreira,
         total_corridas=total_corridas,
         melhor_colocacao=melhor_colocacao,
-        is_pendente=(total_corridas < min_corridas)
+        is_pendente=(total_corridas < min_corridas),
+        bio=usuario.get("bio", ""),
+        apelido=usuario.get("apelido", ""),
+        etnia=usuario.get("etnia", ""),
+        instagram_url=usuario.get("instagram_url", ""),
+        facebook_url=usuario.get("facebook_url", "")
     )
 
 @api_router.get("/atletas/{atleta_id}/corridas", response_model=List[CorridaResponse])
