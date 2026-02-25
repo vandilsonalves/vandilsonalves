@@ -317,6 +317,44 @@ const AtletaDetalhes = () => {
                 <div className="text-slate-600 dark:text-slate-400 mb-3">
                   <strong>Equipe:</strong> {atleta.equipe}
                 </div>
+
+                {/* Redes Sociais com Apelido/Nome */}
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-4 mb-3">
+                  {atleta.instagram_url && (
+                    <a 
+                      href={atleta.instagram_url.startsWith('http') ? atleta.instagram_url : `https://instagram.com/${atleta.instagram_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-pink-600 hover:text-pink-700 transition-colors"
+                      data-testid="link-instagram"
+                    >
+                      <Instagram className="w-5 h-5" />
+                      <span className="font-medium">@{atleta.apelido || atleta.nome.split(' ')[0]}</span>
+                    </a>
+                  )}
+                  {atleta.facebook_url && (
+                    <a 
+                      href={atleta.facebook_url.startsWith('http') ? atleta.facebook_url : `https://facebook.com/${atleta.facebook_url}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-2 text-blue-600 hover:text-blue-700 transition-colors"
+                      data-testid="link-facebook"
+                    >
+                      <Facebook className="w-5 h-5" />
+                      <span className="font-medium">{atleta.nome.split(' ')[0]}</span>
+                    </a>
+                  )}
+                </div>
+
+                {/* Bio do Atleta */}
+                {atleta.bio && (
+                  <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3 mb-3">
+                    <p className="text-sm text-slate-700 dark:text-slate-300 italic">
+                      "{atleta.bio}"
+                    </p>
+                  </div>
+                )}
+
                 <div className="text-lg font-semibold text-slate-700 dark:text-slate-300">
                   Pontos de carreira: <span className="text-amber-600 dark:text-amber-400">{atleta.pontos_carreira}</span>
                 </div>
