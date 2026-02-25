@@ -1387,6 +1387,73 @@ const AdminDashboard = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Modal Editar Corrida */}
+        <Dialog open={showEditCorridaModal} onOpenChange={setShowEditCorridaModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Corrida</DialogTitle>
+            </DialogHeader>
+            {corridaSelecionada && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="md:col-span-2 space-y-2">
+                  <Label>Nome da Competição</Label>
+                  <Input 
+                    value={corridaSelecionada.nome} 
+                    onChange={(e) => setCorridaSelecionada({...corridaSelecionada, nome: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Colocação</Label>
+                  <Input 
+                    type="number"
+                    min="1"
+                    max="10"
+                    value={corridaSelecionada.colocacao} 
+                    onChange={(e) => setCorridaSelecionada({...corridaSelecionada, colocacao: parseInt(e.target.value)})} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Distância</Label>
+                  <Select 
+                    value={corridaSelecionada.distancia} 
+                    onValueChange={(v) => setCorridaSelecionada({...corridaSelecionada, distancia: v})}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="5KM">5 KM</SelectItem>
+                      <SelectItem value="10KM">10 KM</SelectItem>
+                      <SelectItem value="21KM">21 KM</SelectItem>
+                      <SelectItem value="42KM">42 KM</SelectItem>
+                      <SelectItem value="OUTRA">Outra</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Data</Label>
+                  <Input 
+                    type="date"
+                    value={corridaSelecionada.data} 
+                    onChange={(e) => setCorridaSelecionada({...corridaSelecionada, data: e.target.value})} 
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Tempo</Label>
+                  <Input 
+                    type="time"
+                    step="1"
+                    value={corridaSelecionada.tempo} 
+                    onChange={(e) => setCorridaSelecionada({...corridaSelecionada, tempo: e.target.value})} 
+                  />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowEditCorridaModal(false)}>Cancelar</Button>
+              <Button onClick={handleEditCorrida} disabled={actionLoading} className="bg-emerald-600">Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
