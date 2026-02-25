@@ -79,6 +79,10 @@ const PerfilAtletaPage = () => {
   const [instagramUrl, setInstagramUrl] = useState('');
   const [telefone, setTelefone] = useState('');
   const [bio, setBio] = useState('');
+  const [etnia, setEtnia] = useState('');
+  const [apelido, setApelido] = useState('');
+
+  const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo'];
 
   useEffect(() => {
     if (!user || !token) {
