@@ -182,11 +182,13 @@ const PerfilAtletaPage = () => {
     
     if (!file.type.startsWith('image/')) {
       setError('Por favor, selecione uma imagem válida');
+      toast.error('Erro', { description: 'Por favor, selecione uma imagem válida' });
       return;
     }
     
     if (file.size > 5 * 1024 * 1024) {
       setError('A imagem deve ter no máximo 5MB');
+      toast.error('Erro', { description: 'A imagem deve ter no máximo 5MB' });
       return;
     }
     
@@ -204,18 +206,20 @@ const PerfilAtletaPage = () => {
         }
       });
       
-      // Atualizar foto local com URL completa
+      // Atualizar foto local com URL completa e timestamp para forçar reload
       const fotoUrl = response.data.foto_url.startsWith('http') 
         ? response.data.foto_url 
-        : `${BACKEND_URL}${response.data.foto_url}`;
+        : `${BACKEND_URL}${response.data.foto_url}?t=${Date.now()}`;
       
       setAtleta(prev => ({ ...prev, foto_url: fotoUrl }));
-      setSuccess('Foto atualizada com sucesso!');
+      setSuccess('Ação Concluída - Foto atualizada com sucesso!');
+      toast.success('Ação Concluída', { description: 'Foto atualizada com sucesso!' });
       setTimeout(() => setSuccess(''), 3000);
       
     } catch (error) {
       console.error('Erro ao enviar foto:', error);
       setError('Erro ao enviar foto');
+      toast.error('Erro', { description: 'Erro ao enviar foto' });
     } finally {
       setUploadingPhoto(false);
     }
