@@ -163,6 +163,12 @@ class AtletaDetalhes(BaseModel):
     total_corridas: int
     melhor_colocacao: int
     is_pendente: bool
+    # Novos campos
+    bio: str = ""
+    apelido: str = ""
+    etnia: str = ""
+    instagram_url: str = ""
+    facebook_url: str = ""
 
 class CorridaResponse(BaseModel):
     id: str
