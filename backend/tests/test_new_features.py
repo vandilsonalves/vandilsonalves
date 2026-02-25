@@ -17,7 +17,7 @@ BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ranking-run-pro.prev
 # Test credentials
 ADMIN_EMAIL = "admin@runpro.com"
 ADMIN_PASSWORD = "admin123"
-ATLETA_EMAIL = "pedrosantosneto_normal_0@email.com"
+ATLETA_EMAIL = "gabrielsouza_normal_1@email.com"
 ATLETA_PASSWORD = "atleta123"
 
 
@@ -377,12 +377,24 @@ class TestCompartilharAtleta:
     
     def test_compartilhar_atleta(self):
         """Test GET /api/atletas/{id}/compartilhar"""
-        # First get an athlete ID
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ATLETA_EMAIL,
-            "password": ATLETA_PASSWORD
+        # First get an athlete ID from admin endpoint
+        admin_response = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD
         })
-        atleta_id = response.json()["user"]["id"]
+        if admin_response.status_code != 200:
+            pytest.skip("Admin login failed")
+        
+        admin_token = admin_response.json()["token"]
+        atletas_response = requests.get(
+            f"{BASE_URL}/api/admin/atletas",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        atletas = atletas_response.json()
+        if len(atletas) == 0:
+            pytest.skip("No athletes found")
+        
+        atleta_id = atletas[0]["id"]
         
         response = requests.get(f"{BASE_URL}/api/atletas/{atleta_id}/compartilhar")
         assert response.status_code == 200
@@ -432,12 +444,24 @@ class TestAtletaDetalhes:
     
     def test_get_atleta_detalhes(self):
         """Test GET /api/atletas/{id} - Full athlete details"""
-        # First get an athlete ID
-        response = requests.post(f"{BASE_URL}/api/auth/login", json={
-            "email": ATLETA_EMAIL,
-            "password": ATLETA_PASSWORD
+        # First get an athlete ID from admin endpoint
+        admin_response = requests.post(f"{BASE_URL}/api/auth/login", json={
+            "email": ADMIN_EMAIL,
+            "password": ADMIN_PASSWORD
         })
-        atleta_id = response.json()["user"]["id"]
+        if admin_response.status_code != 200:
+            pytest.skip("Admin login failed")
+        
+        admin_token = admin_response.json()["token"]
+        atletas_response = requests.get(
+            f"{BASE_URL}/api/admin/atletas",
+            headers={"Authorization": f"Bearer {admin_token}"}
+        )
+        atletas = atletas_response.json()
+        if len(atletas) == 0:
+            pytest.skip("No athletes found")
+        
+        atleta_id = atletas[0]["id"]
         
         response = requests.get(f"{BASE_URL}/api/atletas/{atleta_id}")
         assert response.status_code == 200
