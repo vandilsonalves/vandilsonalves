@@ -198,10 +198,11 @@ const AdminDashboard = () => {
       await axios.post(`${API}/admin/aprovar/${resultadoId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      toast.success('Ação Concluída', { description: 'Resultado aprovado com sucesso!' });
       fetchPendentes();
       fetchStats();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erro ao aprovar');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao aprovar' });
     } finally {
       setActionLoading(false);
     }
@@ -218,9 +219,10 @@ const AdminDashboard = () => {
       setShowReprovarModal(false);
       setMotivoReprovacao('');
       setSelectedResultado(null);
+      toast.success('Ação Concluída', { description: 'Resultado reprovado com sucesso!' });
       fetchPendentes();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erro ao reprovar');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao reprovar' });
     } finally {
       setActionLoading(false);
     }
@@ -233,10 +235,11 @@ const AdminDashboard = () => {
       await axios.delete(`${API}/admin/atletas/${atletaId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
+      toast.success('Ação Concluída', { description: 'Atleta excluído com sucesso!' });
       fetchAtletas();
       fetchStats();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erro ao excluir');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao excluir' });
     }
   };
 
@@ -248,9 +251,10 @@ const AdminDashboard = () => {
       });
       setShowAtletaModal(false);
       setAtletaEditando(null);
+      toast.success('Ação Concluída', { description: 'Atleta atualizado com sucesso!' });
       fetchAtletas();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erro ao salvar');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao salvar' });
     } finally {
       setActionLoading(false);
     }
@@ -268,40 +272,107 @@ const AdminDashboard = () => {
         cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
         data_nascimento: ''
       });
+      toast.success('Ação Concluída', { description: 'Atleta cadastrado com sucesso!' });
       fetchAtletas();
       fetchStats();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erro ao cadastrar');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao cadastrar' });
     } finally {
       setActionLoading(false);
     }
   };
 
-  const handleSubmeterResultado = async () => {
-    if (!atletaSelecionado || pontosOperacao <= 0) {
-      alert('Selecione um atleta e informe os pontos');
+  const handleSubmeterResultadoAdmin = async () => {
+    if (!atletaSelecionado) {
+      toast.error('Erro', { description: 'Selecione um atleta' });
       return;
     }
 
-    setActionLoading(true);
+    if (tipoOperacao === 'adicionar') {
+      // Validar campos obrigatórios
+      if (!novaCorridaAdmin.nome_competicao || !novaCorridaAdmin.colocacao || !novaCorridaAdmin.distancia ||
+          !novaCorridaAdmin.cidade_competicao || !novaCorridaAdmin.estado_competicao || 
+          !novaCorridaAdmin.data_competicao || !novaCorridaAdmin.tempo) {
+        toast.error('Erro', { description: 'Preencha todos os campos obrigatórios' });
+        return;
+      }
+
+      setActionLoading(true);
+      try {
+        await axios.post(`${API}/admin/adicionar-corrida`, {
+          atleta_id: atletaSelecionado,
+          ...novaCorridaAdmin
+        }, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        
+        toast.success('Ação Concluída', { description: 'Corrida adicionada com sucesso!' });
+        setAtletaSelecionado('');
+        setNovaCorridaAdmin({
+          nome_competicao: '',
+          colocacao: '',
+          distancia: '',
+          cidade_competicao: '',
+          estado_competicao: '',
+          data_competicao: '',
+          tempo: '',
+          link_resultado: ''
+        });
+        fetchStats();
+      } catch (error) {
+        toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao adicionar corrida' });
+      } finally {
+        setActionLoading(false);
+      }
+    }
+  };
+
+  const handleDeleteCorrida = async (corridaId) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta corrida?')) return;
+    
     try {
-      await axios.post(`${API}/admin/ajustar-pontos`, {
-        atleta_id: atletaSelecionado,
-        pontos: tipoOperacao === 'adicionar' ? pontosOperacao : -pontosOperacao,
-        motivo: motivoOperacao
-      }, {
+      await axios.delete(`${API}/admin/corridas/${corridaId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
-      alert('Pontos ajustados com sucesso!');
-      setAtletaSelecionado('');
-      setPontosOperacao(0);
-      setMotivoOperacao('');
+      toast.success('Ação Concluída', { description: 'Corrida excluída com sucesso!' });
+      fetchCorridasAtleta(atletaSelecionado);
       fetchStats();
     } catch (error) {
-      alert(error.response?.data?.detail || 'Erro ao ajustar pontos');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao excluir corrida' });
+    }
+  };
+
+  const handleEditCorrida = async () => {
+    if (!corridaSelecionada) return;
+    
+    setActionLoading(true);
+    try {
+      await axios.put(`${API}/admin/corridas/${corridaSelecionada.id}`, corridaSelecionada, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Ação Concluída', { description: 'Corrida atualizada com sucesso!' });
+      setShowEditCorridaModal(false);
+      setCorridaSelecionada(null);
+      fetchCorridasAtleta(atletaSelecionado);
+      fetchStats();
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao atualizar corrida' });
     } finally {
       setActionLoading(false);
+    }
+  };
+
+  const handleDeleteFotoPodio = async (resultadoId) => {
+    if (!window.confirm('Tem certeza que deseja excluir a foto do pódio?')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/pendentes/${resultadoId}/foto`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Ação Concluída', { description: 'Foto excluída com sucesso!' });
+      fetchPendentes();
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao excluir foto' });
     }
   };
 
