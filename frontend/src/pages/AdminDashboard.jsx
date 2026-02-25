@@ -100,8 +100,20 @@ const AdminDashboard = () => {
   const [novoAtleta, setNovoAtleta] = useState({
     nome: '', email: '', password: 'atleta123', equipe: '',
     cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
-    data_nascimento: ''
+    data_nascimento: '', etnia: '', apelido: ''
   });
+
+  // Aniversariantes
+  const [aniversariantesMes, setAniversariantesMes] = useState(null);
+  const [mesCalendario, setMesCalendario] = useState(new Date().getMonth() + 1);
+  const [anoCalendario, setAnoCalendario] = useState(new Date().getFullYear());
+  const [diaSelecionado, setDiaSelecionado] = useState(null);
+  const [mensagemPadrao, setMensagemPadrao] = useState('Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️');
+  const [atletasSelecionar, setAtletasSelecionar] = useState([]);
+  const [loadingAniversariantes, setLoadingAniversariantes] = useState(false);
+
+  const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+                 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   useEffect(() => {
     if (!isAdmin) {
