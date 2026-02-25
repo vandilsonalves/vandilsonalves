@@ -127,7 +127,10 @@ const AdminDashboard = () => {
     if (activeMenu === 'atletas') {
       fetchAtletas();
     }
-  }, [activeMenu, filtroCategoria]);
+    if (activeMenu === 'aniversariantes') {
+      fetchAniversariantes();
+    }
+  }, [activeMenu, filtroCategoria, mesCalendario, anoCalendario]);
 
   // Buscar corridas do atleta quando selecionar para remover
   useEffect(() => {
