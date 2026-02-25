@@ -6,11 +6,17 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   CheckCircle, XCircle, ExternalLink, Calendar, MapPin, Trophy, Clock, 
   Users, AlertCircle, TrendingUp, BarChart3, PieChart,
-  Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database
+  Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
+  UserPlus, Edit, Trash2, Eye, Download, Plus, Minus
 } from 'lucide-react';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
 import axios from 'axios';
@@ -20,10 +26,18 @@ const API = `${BACKEND_URL}/api`;
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
+const ESTADOS_BR = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+];
+
 // Menu items para sidebar
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
   { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
+  { id: 'atletas', label: 'Atletas', icon: Users },
+  { id: 'submeter', label: 'Submeter Resultado', icon: Plus },
   { id: 'graficos', label: 'Gráficos', icon: BarChart3 },
   { id: 'ranking', label: 'Rankings', icon: Trophy },
 ];
@@ -45,11 +59,32 @@ const AdminDashboard = () => {
   const [pendentes, setPendentes] = useState([]);
   const [loadingPendentes, setLoadingPendentes] = useState(true);
   
+  // Atletas
+  const [atletas, setAtletas] = useState([]);
+  const [loadingAtletas, setLoadingAtletas] = useState(false);
+  const [filtroCategoria, setFiltroCategoria] = useState('all');
+  const [showAtletaModal, setShowAtletaModal] = useState(false);
+  const [atletaEditando, setAtletaEditando] = useState(null);
+  const [showAddAtletaModal, setShowAddAtletaModal] = useState(false);
+  
+  // Submeter Resultado (Admin)
+  const [atletaSelecionado, setAtletaSelecionado] = useState('');
+  const [tipoOperacao, setTipoOperacao] = useState('adicionar');
+  const [pontosOperacao, setPontosOperacao] = useState(0);
+  const [motivoOperacao, setMotivoOperacao] = useState('');
+  
   // Modal
   const [showReprovarModal, setShowReprovarModal] = useState(false);
   const [selectedResultado, setSelectedResultado] = useState(null);
   const [motivoReprovacao, setMotivoReprovacao] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
+
+  // Form para novo atleta
+  const [novoAtleta, setNovoAtleta] = useState({
+    nome: '', email: '', password: 'atleta123', equipe: '',
+    cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
+    data_nascimento: ''
+  });
 
   useEffect(() => {
     if (!isAdmin) {
@@ -58,6 +93,12 @@ const AdminDashboard = () => {
     }
     fetchAllData();
   }, [isAdmin]);
+
+  useEffect(() => {
+    if (activeMenu === 'atletas') {
+      fetchAtletas();
+    }
+  }, [activeMenu, filtroCategoria]);
 
   const fetchAllData = async () => {
     await Promise.all([
@@ -103,13 +144,27 @@ const AdminDashboard = () => {
     }
   };
 
+  const fetchAtletas = async () => {
+    setLoadingAtletas(true);
+    try {
+      const response = await axios.get(`${API}/admin/atletas`, {
+        headers: { Authorization: `Bearer ${token}` },
+        params: { categoria: filtroCategoria !== 'all' ? filtroCategoria : undefined }
+      });
+      setAtletas(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar atletas:', error);
+    } finally {
+      setLoadingAtletas(false);
+    }
+  };
+
   const handleAprovar = async (resultadoId) => {
     setActionLoading(true);
     try {
       await axios.post(`${API}/admin/aprovar/${resultadoId}`, {}, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      
       fetchPendentes();
       fetchStats();
     } catch (error) {
@@ -127,7 +182,6 @@ const AdminDashboard = () => {
         { motivo: motivoReprovacao },
         { headers: { Authorization: `Bearer ${token}` }}
       );
-      
       setShowReprovarModal(false);
       setMotivoReprovacao('');
       setSelectedResultado(null);
@@ -137,6 +191,93 @@ const AdminDashboard = () => {
     } finally {
       setActionLoading(false);
     }
+  };
+
+  const handleDeleteAtleta = async (atletaId) => {
+    if (!window.confirm('Tem certeza que deseja excluir este atleta?')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/atletas/${atletaId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      fetchAtletas();
+      fetchStats();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Erro ao excluir');
+    }
+  };
+
+  const handleSaveAtleta = async () => {
+    setActionLoading(true);
+    try {
+      await axios.put(`${API}/admin/atletas/${atletaEditando.id}`, atletaEditando, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowAtletaModal(false);
+      setAtletaEditando(null);
+      fetchAtletas();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Erro ao salvar');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleAddAtleta = async () => {
+    setActionLoading(true);
+    try {
+      await axios.post(`${API}/admin/atletas`, novoAtleta, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setShowAddAtletaModal(false);
+      setNovoAtleta({
+        nome: '', email: '', password: 'atleta123', equipe: '',
+        cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
+        data_nascimento: ''
+      });
+      fetchAtletas();
+      fetchStats();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Erro ao cadastrar');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleSubmeterResultado = async () => {
+    if (!atletaSelecionado || pontosOperacao <= 0) {
+      alert('Selecione um atleta e informe os pontos');
+      return;
+    }
+
+    setActionLoading(true);
+    try {
+      await axios.post(`${API}/admin/ajustar-pontos`, {
+        atleta_id: atletaSelecionado,
+        pontos: tipoOperacao === 'adicionar' ? pontosOperacao : -pontosOperacao,
+        motivo: motivoOperacao
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      alert('Pontos ajustados com sucesso!');
+      setAtletaSelecionado('');
+      setPontosOperacao(0);
+      setMotivoOperacao('');
+      fetchStats();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Erro ao ajustar pontos');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleExportAtletas = () => {
+    window.open(`${API}/admin/atletas/export?categoria=${filtroCategoria}`, '_blank');
+  };
+
+  const handleExportRanking = (format) => {
+    window.open(`${API}/ranking/export/${format}?categoria=masculino`, '_blank');
   };
 
   // Preparar dados para gráficos
@@ -166,13 +307,11 @@ const AdminDashboard = () => {
     <div className="min-h-screen flex bg-slate-100 dark:bg-slate-950">
       {/* Sidebar */}
       <div className="w-64 bg-gradient-to-b from-slate-800 to-slate-900 text-white fixed h-full shadow-xl">
-        {/* Logo */}
         <div className="p-6 border-b border-slate-700/50">
           <h1 className="text-xl font-bold text-emerald-400">Ranking Run Pró</h1>
           <p className="text-xs text-slate-400 mt-1">Painel Administrativo</p>
         </div>
 
-        {/* Menu */}
         <nav className="p-4 space-y-2">
           {menuItems.map((item) => {
             const Icon = item.icon;
@@ -194,15 +333,11 @@ const AdminDashboard = () => {
                     {pendentes.length}
                   </Badge>
                 )}
-                {activeMenu === item.id && (
-                  <ChevronRight className="w-4 h-4 ml-auto" />
-                )}
               </button>
             );
           })}
         </nav>
 
-        {/* Footer da Sidebar */}
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-700/50">
           <Button 
             onClick={() => navigate('/')} 
@@ -217,26 +352,21 @@ const AdminDashboard = () => {
 
       {/* Main Content */}
       <div className="ml-64 flex-1 p-8">
-        {/* Header */}
         <div className="mb-8">
           <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
             {menuItems.find(m => m.id === activeMenu)?.label || 'Dashboard'}
           </h2>
-          <p className="text-slate-500">
-            Bem-vindo, {user?.nome}
-          </p>
+          <p className="text-slate-500">Bem-vindo, {user?.nome}</p>
         </div>
 
         {/* Dashboard View */}
         {activeMenu === 'dashboard' && (
           <div className="space-y-6">
-            {/* Cards de Estatísticas - Estilo KPI */}
             {loadingStats ? (
               <div className="text-center py-12">Carregando...</div>
             ) : (
               <>
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  {/* Total Atletas */}
                   <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
                     <CardContent className="pt-6">
@@ -252,7 +382,6 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Pendentes */}
                   <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-600" />
                     <CardContent className="pt-6">
@@ -268,7 +397,6 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Total Corridas */}
                   <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
                     <CardContent className="pt-6">
@@ -284,7 +412,6 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Selo P */}
                   <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
                     <div className="h-1 bg-gradient-to-r from-purple-400 to-purple-600" />
                     <CardContent className="pt-6">
@@ -301,9 +428,7 @@ const AdminDashboard = () => {
                   </Card>
                 </div>
 
-                {/* Gráficos */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Corridas por Mês */}
                   <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                     <CardHeader>
                       <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -332,7 +457,6 @@ const AdminDashboard = () => {
                     </CardContent>
                   </Card>
 
-                  {/* Distribuição por Gênero */}
                   <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                     <CardHeader>
                       <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -366,7 +490,6 @@ const AdminDashboard = () => {
                   </Card>
                 </div>
 
-                {/* Atletas por Estado */}
                 <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -416,9 +539,7 @@ const AdminDashboard = () => {
                     <CardHeader className="bg-slate-50 dark:bg-slate-800/80 rounded-t-lg border-b">
                       <div className="flex items-start justify-between">
                         <div>
-                          <CardTitle className="text-lg">
-                            {resultado.nome_competicao}
-                          </CardTitle>
+                          <CardTitle className="text-lg">{resultado.nome_competicao}</CardTitle>
                           <p className="text-sm text-slate-500 mt-1">
                             <strong>Atleta:</strong> {resultado.atleta_nome}
                           </p>
@@ -426,9 +547,7 @@ const AdminDashboard = () => {
                             {resultado.atleta_categoria?.toUpperCase()}
                           </Badge>
                         </div>
-                        <Badge className="bg-amber-100 text-amber-700 border-0">
-                          Pendente
-                        </Badge>
+                        <Badge className="bg-amber-100 text-amber-700 border-0">Pendente</Badge>
                       </div>
                     </CardHeader>
                     <CardContent className="pt-4 space-y-3">
@@ -498,6 +617,200 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* Atletas View */}
+        {activeMenu === 'atletas' && (
+          <div className="space-y-6">
+            {/* Toolbar */}
+            <div className="flex flex-wrap gap-4 items-center justify-between">
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  variant={filtroCategoria === 'all' ? 'default' : 'outline'}
+                  onClick={() => setFiltroCategoria('all')}
+                  size="sm"
+                >
+                  Todos
+                </Button>
+                <Button
+                  variant={filtroCategoria === 'normal-m' ? 'default' : 'outline'}
+                  onClick={() => setFiltroCategoria('normal-m')}
+                  size="sm"
+                >
+                  Atletas M
+                </Button>
+                <Button
+                  variant={filtroCategoria === 'normal-f' ? 'default' : 'outline'}
+                  onClick={() => setFiltroCategoria('normal-f')}
+                  size="sm"
+                >
+                  Atletas F
+                </Button>
+                <Button
+                  variant={filtroCategoria === 'pcd' ? 'default' : 'outline'}
+                  onClick={() => setFiltroCategoria('pcd')}
+                  size="sm"
+                >
+                  PCD M/F
+                </Button>
+                <Button
+                  variant={filtroCategoria === 'cadeirante' ? 'default' : 'outline'}
+                  onClick={() => setFiltroCategoria('cadeirante')}
+                  size="sm"
+                >
+                  Cadeirante M/F
+                </Button>
+              </div>
+              
+              <div className="flex gap-2">
+                <Button onClick={() => setShowAddAtletaModal(true)} className="bg-emerald-600">
+                  <UserPlus className="w-4 h-4 mr-2" />
+                  + Adicionar
+                </Button>
+                <Button onClick={handleExportAtletas} variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar Dados
+                </Button>
+              </div>
+            </div>
+
+            {/* Lista de Atletas */}
+            {loadingAtletas ? (
+              <div className="text-center py-12">Carregando...</div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {atletas.map((atleta) => (
+                  <Card key={atleta.id} className="bg-white dark:bg-slate-800 shadow border-0">
+                    <CardContent className="pt-4">
+                      <div className="flex items-center gap-4">
+                        <Avatar className="h-12 w-12">
+                          <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
+                          <AvatarFallback className="bg-emerald-600 text-white">
+                            {atleta.nome?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-semibold truncate">{atleta.nome}</h3>
+                          <p className="text-sm text-slate-500">{atleta.equipe}</p>
+                          <div className="flex gap-2 mt-1">
+                            <Badge variant="outline" className="text-xs">
+                              {atleta.categoria?.toUpperCase()}
+                            </Badge>
+                            <Badge variant="outline" className="text-xs">
+                              {atleta.genero === 'M' ? 'Masc' : 'Fem'}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex gap-2 mt-4 pt-4 border-t">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => navigate(`/atleta/${atleta.id}`)}
+                        >
+                          <Eye className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setAtletaEditando(atleta);
+                            setShowAtletaModal(true);
+                          }}
+                        >
+                          <Edit className="w-4 h-4" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onClick={() => handleDeleteAtleta(atleta.id)}
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Submeter Resultado View */}
+        {activeMenu === 'submeter' && (
+          <div className="max-w-2xl">
+            <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+              <CardHeader>
+                <CardTitle>Ajustar Pontos do Atleta</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                <div className="space-y-2">
+                  <Label>Selecionar Atleta</Label>
+                  <Select value={atletaSelecionado} onValueChange={setAtletaSelecionado}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Buscar atleta..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {atletas.map((a) => (
+                        <SelectItem key={a.id} value={a.id}>{a.nome} - {a.equipe}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Tipo de Operação</Label>
+                  <div className="flex gap-4">
+                    <Button
+                      variant={tipoOperacao === 'adicionar' ? 'default' : 'outline'}
+                      onClick={() => setTipoOperacao('adicionar')}
+                      className={tipoOperacao === 'adicionar' ? 'bg-emerald-600' : ''}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Adicionar Pontos
+                    </Button>
+                    <Button
+                      variant={tipoOperacao === 'remover' ? 'default' : 'outline'}
+                      onClick={() => setTipoOperacao('remover')}
+                      className={tipoOperacao === 'remover' ? 'bg-red-600' : ''}
+                    >
+                      <Minus className="w-4 h-4 mr-2" />
+                      Remover Pontos
+                    </Button>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Quantidade de Pontos</Label>
+                  <Input
+                    type="number"
+                    value={pontosOperacao}
+                    onChange={(e) => setPontosOperacao(parseInt(e.target.value) || 0)}
+                    placeholder="Ex: 10"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label>Motivo / Justificativa</Label>
+                  <Textarea
+                    value={motivoOperacao}
+                    onChange={(e) => setMotivoOperacao(e.target.value)}
+                    placeholder="Ex: Correção de resultado, bonificação especial, etc."
+                    rows={3}
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSubmeterResultado}
+                  disabled={actionLoading}
+                  className="w-full bg-emerald-600"
+                >
+                  Confirmar Ajuste
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Gráficos View */}
         {activeMenu === 'graficos' && (
           <div className="space-y-6">
@@ -505,7 +818,6 @@ const AdminDashboard = () => {
               <div className="text-center py-12">Carregando...</div>
             ) : (
               <>
-                {/* Distribuição por Categoria */}
                 <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -532,7 +844,6 @@ const AdminDashboard = () => {
                   </CardContent>
                 </Card>
 
-                {/* Distribuição por Faixa Etária */}
                 <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
                   <CardHeader>
                     <CardTitle className="text-lg font-semibold flex items-center gap-2">
@@ -559,15 +870,28 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Ranking View - Redireciona para página principal */}
+        {/* Ranking View */}
         {activeMenu === 'ranking' && (
-          <div className="text-center py-12">
-            <Trophy className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
-            <h3 className="text-xl font-semibold mb-2">Gerenciar Rankings</h3>
-            <p className="text-slate-500 mb-4">Acesse a página principal para visualizar e gerenciar os rankings.</p>
-            <Button onClick={() => navigate('/')} className="bg-emerald-600">
-              Ir para Rankings
-            </Button>
+          <div className="space-y-6">
+            <div className="flex gap-4">
+              <Button onClick={() => handleExportRanking('csv')} variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar CSV
+              </Button>
+              <Button onClick={() => handleExportRanking('excel')} variant="outline">
+                <Download className="w-4 h-4 mr-2" />
+                Exportar Excel
+              </Button>
+            </div>
+            
+            <div className="text-center py-12">
+              <Trophy className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
+              <h3 className="text-xl font-semibold mb-2">Gerenciar Rankings</h3>
+              <p className="text-slate-500 mb-4">Acesse a página principal para visualizar os rankings completos.</p>
+              <Button onClick={() => navigate('/')} className="bg-emerald-600">
+                Ir para Rankings
+              </Button>
+            </div>
           </div>
         )}
 
@@ -579,32 +903,151 @@ const AdminDashboard = () => {
             </DialogHeader>
             <div className="space-y-4">
               <p className="text-sm text-slate-600">
-                O atleta receberá uma notificação com o motivo da reprovação e poderá submeter novamente.
+                O atleta receberá uma notificação com o motivo da reprovação.
               </p>
               <Textarea
                 value={motivoReprovacao}
                 onChange={(e) => setMotivoReprovacao(e.target.value)}
-                placeholder="Ex: Resultado não encontrado no link fornecido, foto ilegível, etc."
+                placeholder="Ex: Resultado não encontrado no link fornecido..."
                 rows={4}
               />
             </div>
             <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setShowReprovarModal(false);
-                  setMotivoReprovacao('');
-                }}
-              >
-                Cancelar
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={handleReprovar}
-                disabled={actionLoading}
-              >
-                Reprovar
-              </Button>
+              <Button variant="outline" onClick={() => setShowReprovarModal(false)}>Cancelar</Button>
+              <Button variant="destructive" onClick={handleReprovar} disabled={actionLoading}>Reprovar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Editar Atleta */}
+        <Dialog open={showAtletaModal} onOpenChange={setShowAtletaModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Editar Atleta</DialogTitle>
+            </DialogHeader>
+            {atletaEditando && (
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Nome</Label>
+                  <Input value={atletaEditando.nome} onChange={(e) => setAtletaEditando({...atletaEditando, nome: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Email</Label>
+                  <Input value={atletaEditando.email} onChange={(e) => setAtletaEditando({...atletaEditando, email: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Equipe</Label>
+                  <Input value={atletaEditando.equipe} onChange={(e) => setAtletaEditando({...atletaEditando, equipe: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade</Label>
+                  <Input value={atletaEditando.cidade} onChange={(e) => setAtletaEditando({...atletaEditando, cidade: e.target.value})} />
+                </div>
+                <div className="space-y-2">
+                  <Label>UF</Label>
+                  <Select value={atletaEditando.estado} onValueChange={(v) => setAtletaEditando({...atletaEditando, estado: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {ESTADOS_BR.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Categoria</Label>
+                  <Select value={atletaEditando.categoria} onValueChange={(v) => setAtletaEditando({...atletaEditando, categoria: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="normal">Normal</SelectItem>
+                      <SelectItem value="pcd">PCD</SelectItem>
+                      <SelectItem value="cadeirante">Cadeirante</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Gênero</Label>
+                  <Select value={atletaEditando.genero} onValueChange={(v) => setAtletaEditando({...atletaEditando, genero: v})}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="M">Masculino</SelectItem>
+                      <SelectItem value="F">Feminino</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Data de Nascimento</Label>
+                  <Input type="date" value={atletaEditando.data_nascimento} onChange={(e) => setAtletaEditando({...atletaEditando, data_nascimento: e.target.value})} />
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAtletaModal(false)}>Cancelar</Button>
+              <Button onClick={handleSaveAtleta} disabled={actionLoading} className="bg-emerald-600">Salvar</Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Adicionar Atleta */}
+        <Dialog open={showAddAtletaModal} onOpenChange={setShowAddAtletaModal}>
+          <DialogContent className="max-w-2xl">
+            <DialogHeader>
+              <DialogTitle>Cadastrar Novo Atleta</DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Nome *</Label>
+                <Input value={novoAtleta.nome} onChange={(e) => setNovoAtleta({...novoAtleta, nome: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Email *</Label>
+                <Input value={novoAtleta.email} onChange={(e) => setNovoAtleta({...novoAtleta, email: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Equipe</Label>
+                <Input value={novoAtleta.equipe} onChange={(e) => setNovoAtleta({...novoAtleta, equipe: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Cidade *</Label>
+                <Input value={novoAtleta.cidade} onChange={(e) => setNovoAtleta({...novoAtleta, cidade: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>UF</Label>
+                <Select value={novoAtleta.estado} onValueChange={(v) => setNovoAtleta({...novoAtleta, estado: v})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {ESTADOS_BR.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Categoria</Label>
+                <Select value={novoAtleta.categoria} onValueChange={(v) => setNovoAtleta({...novoAtleta, categoria: v})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="normal">Normal</SelectItem>
+                    <SelectItem value="pcd">PCD</SelectItem>
+                    <SelectItem value="cadeirante">Cadeirante</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Gênero</Label>
+                <Select value={novoAtleta.genero} onValueChange={(v) => setNovoAtleta({...novoAtleta, genero: v})}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="M">Masculino</SelectItem>
+                    <SelectItem value="F">Feminino</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Data de Nascimento *</Label>
+                <Input type="date" value={novoAtleta.data_nascimento} onChange={(e) => setNovoAtleta({...novoAtleta, data_nascimento: e.target.value})} />
+              </div>
+            </div>
+            <p className="text-sm text-slate-500">Senha padrão: atleta123</p>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowAddAtletaModal(false)}>Cancelar</Button>
+              <Button onClick={handleAddAtleta} disabled={actionLoading} className="bg-emerald-600">Cadastrar</Button>
             </DialogFooter>
           </DialogContent>
         </Dialog>
