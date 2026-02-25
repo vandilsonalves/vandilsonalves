@@ -1203,23 +1203,29 @@ const AdminDashboard = () => {
         {/* Ranking View */}
         {activeMenu === 'ranking' && (
           <div className="space-y-6">
-            <div className="flex gap-4">
-              <Button onClick={() => handleExportRanking('csv')} variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar CSV
-              </Button>
-              <Button onClick={() => handleExportRanking('excel')} variant="outline">
-                <Download className="w-4 h-4 mr-2" />
-                Exportar Excel
-              </Button>
-            </div>
+            <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 p-6">
+              <h3 className="text-lg font-semibold mb-4">Exportar Ranking Completo</h3>
+              <p className="text-slate-500 mb-4">
+                Exporta todas as modalidades em um único arquivo: Masculino, Feminino, PCD Masculino, PCD Feminino, Cadeirante Masculino, Cadeirante Feminino.
+              </p>
+              <div className="flex gap-4">
+                <Button onClick={() => handleExportRanking('csv')} variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar CSV
+                </Button>
+                <Button onClick={() => handleExportRanking('excel')} variant="outline">
+                  <Download className="w-4 h-4 mr-2" />
+                  Exportar Excel
+                </Button>
+              </div>
+            </Card>
             
             <div className="text-center py-12">
               <Trophy className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold mb-2">Gerenciar Rankings</h3>
+              <h3 className="text-xl font-semibold mb-2">Gerenciar Ranking</h3>
               <p className="text-slate-500 mb-4">Acesse a página principal para visualizar os rankings completos.</p>
               <Button onClick={() => navigate('/')} className="bg-emerald-600">
-                Ir para Rankings
+                Ir para Ranking
               </Button>
             </div>
           </div>
