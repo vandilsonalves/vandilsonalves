@@ -24,8 +24,12 @@ const CadastroPage = () => {
     estado: '',
     genero: '',
     categoria: '',
-    data_nascimento: ''
+    data_nascimento: '',
+    etnia: '',
+    apelido: ''
   });
+
+  const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo'];
 
   const handleSubmit = async (e) => {
     e.preventDefault();
