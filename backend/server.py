@@ -918,6 +918,115 @@ async def admin_ajustar_pontos(dados: dict, admin: dict = Depends(get_admin_user
     return {"message": f"Pontos ajustados com sucesso! ({pontos:+d} pontos)"}
 
 
+@api_router.post("/admin/adicionar-corrida")
+async def admin_adicionar_corrida(dados: dict, admin: dict = Depends(get_admin_user)):
+    """Admin adiciona corrida completa para um atleta"""
+    atleta_id = dados.get("atleta_id")
+    
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    colocacao = int(dados.get("colocacao", 0))
+    pontos = calcular_pontos_colocacao(colocacao, atleta["categoria"])
+    
+    corrida = Corrida(
+        usuario_id=atleta_id,
+        nome=dados.get("nome_competicao", ""),
+        colocacao=colocacao,
+        tempo=dados.get("tempo", "00:00:00"),
+        pontos=pontos,
+        local=f"{dados.get('cidade_competicao', '')}/{dados.get('estado_competicao', '')}",
+        distancia=dados.get("distancia", ""),
+        data=dados.get("data_competicao", datetime.now().strftime("%Y-%m-%d")),
+        ano=2025
+    )
+    
+    await db.corridas.insert_one(corrida.model_dump())
+    await calcular_ranking()
+    
+    # Notificar atleta
+    await criar_notificacao(
+        usuario_id=atleta_id,
+        tipo="aprovacao",
+        titulo="Nova corrida adicionada!",
+        mensagem=f"A corrida '{dados.get('nome_competicao')}' foi adicionada ao seu histórico. Você ganhou {pontos} pontos.",
+        dados_extras={"pontos": pontos, "competicao": dados.get("nome_competicao")}
+    )
+    
+    # Verificar conquistas
+    await verificar_conquistas(atleta_id)
+    
+    return {"message": "Corrida adicionada com sucesso!", "pontos_adicionados": pontos}
+
+
+@api_router.put("/admin/corridas/{corrida_id}")
+async def admin_update_corrida(corrida_id: str, dados: dict, admin: dict = Depends(get_admin_user)):
+    """Admin edita uma corrida existente"""
+    corrida = await db.corridas.find_one({"id": corrida_id}, {"_id": 0})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida não encontrada")
+    
+    update_data = {}
+    
+    if "nome" in dados:
+        update_data["nome"] = dados["nome"]
+    if "colocacao" in dados:
+        update_data["colocacao"] = dados["colocacao"]
+        # Recalcular pontos
+        atleta = await db.usuarios.find_one({"id": corrida["usuario_id"]}, {"_id": 0})
+        if atleta:
+            update_data["pontos"] = calcular_pontos_colocacao(dados["colocacao"], atleta["categoria"])
+    if "distancia" in dados:
+        update_data["distancia"] = dados["distancia"]
+    if "data" in dados:
+        update_data["data"] = dados["data"]
+    if "tempo" in dados:
+        update_data["tempo"] = dados["tempo"]
+    
+    if update_data:
+        await db.corridas.update_one({"id": corrida_id}, {"$set": update_data})
+        await calcular_ranking()
+    
+    return {"message": "Corrida atualizada com sucesso!"}
+
+
+@api_router.delete("/admin/corridas/{corrida_id}")
+async def admin_delete_corrida(corrida_id: str, admin: dict = Depends(get_admin_user)):
+    """Admin exclui uma corrida"""
+    corrida = await db.corridas.find_one({"id": corrida_id}, {"_id": 0})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida não encontrada")
+    
+    await db.corridas.delete_one({"id": corrida_id})
+    await calcular_ranking()
+    
+    return {"message": "Corrida excluída com sucesso!"}
+
+
+@api_router.delete("/admin/pendentes/{resultado_id}/foto")
+async def admin_delete_foto_podio(resultado_id: str, admin: dict = Depends(get_admin_user)):
+    """Admin exclui a foto do pódio de um resultado pendente"""
+    resultado = await db.resultados_pendentes.find_one({"id": resultado_id}, {"_id": 0})
+    if not resultado:
+        raise HTTPException(status_code=404, detail="Resultado não encontrado")
+    
+    foto_url = resultado.get("foto_podio_url", "")
+    if foto_url:
+        # Remover arquivo físico
+        foto_path = Path("/app/uploads") / foto_url.replace("/uploads/", "")
+        if foto_path.exists():
+            foto_path.unlink()
+        
+        # Atualizar no banco
+        await db.resultados_pendentes.update_one(
+            {"id": resultado_id},
+            {"$set": {"foto_podio_url": ""}}
+        )
+    
+    return {"message": "Foto excluída com sucesso!"}
+
+
 # ==================== RANKING ENDPOINTS ====================
 
 async def calcular_ranking():
