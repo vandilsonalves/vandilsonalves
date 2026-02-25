@@ -8,8 +8,9 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import RankingTable from '@/components/RankingTable';
+import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2 } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 
