@@ -733,6 +733,191 @@ async def get_corridas_por_mes(admin: dict = Depends(get_admin_user)):
     return [{"mes": r["_id"], "total": r["count"]} for r in result]
 
 
+# ==================== ADMIN - GERENCIAMENTO DE ATLETAS ====================
+
+@api_router.get("/admin/atletas")
+async def get_all_atletas(
+    categoria: Optional[str] = None,
+    admin: dict = Depends(get_admin_user)
+):
+    """Lista todos atletas com filtros"""
+    query = {"role": "atleta"}
+    
+    if categoria and categoria != 'all':
+        if categoria == 'normal-m':
+            query["categoria"] = "normal"
+            query["genero"] = "M"
+        elif categoria == 'normal-f':
+            query["categoria"] = "normal"
+            query["genero"] = "F"
+        elif categoria == 'pcd':
+            query["categoria"] = "pcd"
+        elif categoria == 'cadeirante':
+            query["categoria"] = "cadeirante"
+    
+    atletas = await db.usuarios.find(query, {"_id": 0, "password_hash": 0}).to_list(None)
+    return atletas
+
+@api_router.post("/admin/atletas")
+async def admin_create_atleta(dados: dict, admin: dict = Depends(get_admin_user)):
+    """Admin cadastra novo atleta"""
+    existing = await db.usuarios.find_one({"email": dados.get("email")}, {"_id": 0})
+    if existing:
+        raise HTTPException(status_code=400, detail="Email já cadastrado")
+    
+    faixa = calcular_faixa_etaria(dados.get("data_nascimento", "1990-01-01"))
+    
+    usuario = Usuario(
+        nome=dados.get("nome", ""),
+        email=dados.get("email", ""),
+        password_hash=get_password_hash(dados.get("password", "atleta123")),
+        equipe=dados.get("equipe", ""),
+        cidade=dados.get("cidade", ""),
+        estado=dados.get("estado", "SP"),
+        genero=dados.get("genero", "M"),
+        categoria=dados.get("categoria", "normal"),
+        data_nascimento=dados.get("data_nascimento", "1990-01-01"),
+        faixa_etaria=faixa,
+        foto_url=gerar_foto_url(dados.get("nome", "")),
+        role="atleta"
+    )
+    
+    await db.usuarios.insert_one(usuario.model_dump())
+    return {"message": "Atleta cadastrado com sucesso!", "id": usuario.id}
+
+@api_router.put("/admin/atletas/{atleta_id}")
+async def admin_update_atleta(atleta_id: str, dados: dict, admin: dict = Depends(get_admin_user)):
+    """Admin atualiza dados do atleta"""
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    update_data = {}
+    campos_permitidos = ["nome", "email", "equipe", "cidade", "estado", "genero", "categoria", "data_nascimento"]
+    
+    for campo in campos_permitidos:
+        if campo in dados and dados[campo] is not None:
+            update_data[campo] = dados[campo]
+    
+    if "data_nascimento" in update_data:
+        update_data["faixa_etaria"] = calcular_faixa_etaria(update_data["data_nascimento"])
+    
+    if update_data:
+        await db.usuarios.update_one({"id": atleta_id}, {"$set": update_data})
+    
+    return {"message": "Atleta atualizado com sucesso!"}
+
+@api_router.delete("/admin/atletas/{atleta_id}")
+async def admin_delete_atleta(atleta_id: str, admin: dict = Depends(get_admin_user)):
+    """Admin exclui atleta"""
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    # Remover atleta e dados relacionados
+    await db.usuarios.delete_one({"id": atleta_id})
+    await db.corridas.delete_many({"usuario_id": atleta_id})
+    await db.ranking_anual.delete_many({"usuario_id": atleta_id})
+    await db.resultados_pendentes.delete_many({"usuario_id": atleta_id})
+    await db.notificacoes.delete_many({"usuario_id": atleta_id})
+    await db.conquistas_atleta.delete_many({"usuario_id": atleta_id})
+    
+    return {"message": "Atleta excluído com sucesso!"}
+
+@api_router.get("/admin/atletas/export")
+async def admin_export_atletas(categoria: str = "all", admin: dict = Depends(get_admin_user)):
+    """Exporta lista de atletas em Excel"""
+    query = {"role": "atleta"}
+    
+    if categoria and categoria != 'all':
+        if categoria == 'normal-m':
+            query["categoria"] = "normal"
+            query["genero"] = "M"
+        elif categoria == 'normal-f':
+            query["categoria"] = "normal"
+            query["genero"] = "F"
+        elif categoria == 'pcd':
+            query["categoria"] = "pcd"
+        elif categoria == 'cadeirante':
+            query["categoria"] = "cadeirante"
+    
+    atletas = await db.usuarios.find(query, {"_id": 0, "password_hash": 0}).to_list(None)
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Atletas"
+    
+    headers = ["Nome", "Email", "Equipe", "Cidade", "UF", "Categoria", "Gênero", "Faixa Etária"]
+    ws.append(headers)
+    
+    header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for cell in ws[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+    
+    for atleta in atletas:
+        ws.append([
+            atleta.get("nome", ""),
+            atleta.get("email", ""),
+            atleta.get("equipe", ""),
+            atleta.get("cidade", ""),
+            atleta.get("estado", ""),
+            atleta.get("categoria", "").upper(),
+            "Masculino" if atleta.get("genero") == "M" else "Feminino",
+            atleta.get("faixa_etaria", "")
+        ])
+    
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=atletas_{categoria}.xlsx"}
+    )
+
+@api_router.post("/admin/ajustar-pontos")
+async def admin_ajustar_pontos(dados: dict, admin: dict = Depends(get_admin_user)):
+    """Admin ajusta pontos de um atleta (adicionar ou remover)"""
+    atleta_id = dados.get("atleta_id")
+    pontos = dados.get("pontos", 0)
+    motivo = dados.get("motivo", "Ajuste administrativo")
+    
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    # Criar corrida de ajuste
+    corrida = Corrida(
+        usuario_id=atleta_id,
+        nome=f"Ajuste Admin: {motivo}",
+        colocacao=0,
+        tempo="00:00:00",
+        pontos=pontos,
+        local="Administrativo",
+        distancia="N/A",
+        data=datetime.now().strftime("%Y-%m-%d"),
+        ano=2025
+    )
+    
+    await db.corridas.insert_one(corrida.model_dump())
+    await calcular_ranking()
+    
+    # Notificar atleta
+    tipo_ajuste = "adicionados" if pontos > 0 else "removidos"
+    await criar_notificacao(
+        usuario_id=atleta_id,
+        tipo="ajuste",
+        titulo=f"Pontos {tipo_ajuste}",
+        mensagem=f"Foram {tipo_ajuste} {abs(pontos)} pontos. Motivo: {motivo}",
+        dados_extras={"pontos": pontos, "motivo": motivo}
+    )
+    
+    return {"message": f"Pontos ajustados com sucesso! ({pontos:+d} pontos)"}
+
+
 # ==================== RANKING ENDPOINTS ====================
 
 async def calcular_ranking():
