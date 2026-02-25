@@ -2138,34 +2138,6 @@ async def update_configuracao_aniversario(dados: dict, admin: dict = Depends(get
     return {"message": "Configuração atualizada com sucesso!"}
 
 
-# ==================== ATLETA - MENSAGEM DE ANIVERSÁRIO ====================
-
-@api_router.get("/atletas/mensagem-aniversario")
-async def get_mensagem_aniversario(current_user: dict = Depends(get_current_user)):
-    """Retorna mensagem de aniversário não visualizada do atleta"""
-    ano_atual = datetime.now().year
-    
-    mensagem = await db.mensagens_aniversario.find_one(
-        {"usuario_id": current_user["id"], "ano": ano_atual, "visualizada": False},
-        {"_id": 0}
-    )
-    
-    return {"mensagem": mensagem}
-
-
-@api_router.post("/atletas/mensagem-aniversario/visualizar")
-async def marcar_mensagem_visualizada(current_user: dict = Depends(get_current_user)):
-    """Marca mensagem de aniversário como visualizada"""
-    ano_atual = datetime.now().year
-    
-    await db.mensagens_aniversario.update_many(
-        {"usuario_id": current_user["id"], "ano": ano_atual, "visualizada": False},
-        {"$set": {"visualizada": True, "data_visualizacao": datetime.now().isoformat()}}
-    )
-    
-    return {"message": "Mensagem marcada como visualizada"}
-
-
 # ==================== INCLUDE ROUTER ====================
 
 app.include_router(api_router)
