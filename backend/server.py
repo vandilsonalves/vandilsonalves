@@ -1,6 +1,7 @@
 from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, UploadFile, File, Form, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -44,6 +45,11 @@ security = HTTPBearer()
 # Create the main app
 app = FastAPI(title="Ranking Run Pró API")
 api_router = APIRouter(prefix="/api")
+
+# Servir arquivos de uploads
+uploads_path = Path("/app/uploads")
+uploads_path.mkdir(exist_ok=True)
+app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 
 # ==================== AUTHENTICATION ====================
