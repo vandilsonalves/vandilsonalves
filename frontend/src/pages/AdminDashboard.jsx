@@ -736,6 +736,34 @@ const AdminDashboard = () => {
                         </p>
                       </div>
 
+                      {/* Foto do Pódio */}
+                      {resultado.foto_podio_url && (
+                        <div className="pt-3 border-t">
+                          <p className="text-sm font-medium mb-2 flex items-center gap-2">
+                            <Image className="w-4 h-4 text-blue-500" />
+                            Foto do Pódio
+                          </p>
+                          <div className="relative inline-block">
+                            <img 
+                              src={resultado.foto_podio_url.startsWith('http') ? resultado.foto_podio_url : `${BACKEND_URL}${resultado.foto_podio_url}`}
+                              alt="Foto do Pódio"
+                              className="max-h-48 rounded-lg border border-slate-200 object-cover"
+                            />
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              className="absolute top-2 right-2"
+                              onClick={() => handleDeleteFotoPodio(resultado.id)}
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </Button>
+                          </div>
+                          <p className="text-xs text-slate-500 mt-1">
+                            ⏰ A foto será auto-excluída em 24h após aprovação/reprovação
+                          </p>
+                        </div>
+                      )}
+
                       <div className="flex gap-2 pt-4">
                         <Button
                           onClick={() => handleAprovar(resultado.id)}
