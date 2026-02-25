@@ -115,6 +115,24 @@ const AdminDashboard = () => {
     }
   }, [activeMenu, filtroCategoria]);
 
+  // Buscar corridas do atleta quando selecionar para remover
+  useEffect(() => {
+    if (atletaSelecionado && tipoOperacao === 'remover') {
+      fetchCorridasAtleta(atletaSelecionado);
+    }
+  }, [atletaSelecionado, tipoOperacao]);
+
+  const fetchCorridasAtleta = async (atletaId) => {
+    try {
+      const response = await axios.get(`${API}/atletas/${atletaId}/corridas`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCorridasAtleta(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar corridas:', error);
+    }
+  };
+
   const fetchAllData = async () => {
     await Promise.all([
       fetchStats(),
