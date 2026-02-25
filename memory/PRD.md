@@ -171,6 +171,29 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 14. ✅ **Botão "Ver/Ocultar Destaques"** - Toggle na sidebar de filtros
 15. ✅ **Medalhas visuais** - Ouro, prata e bronze nos rankings
 
+## Novas Funcionalidades (25/02/2026 - Sessão 2)
+16. ✅ **Campo Etnia** - No cadastro e perfil (Branco, Negro, Indígena, Pardo, Amarelo)
+17. ✅ **Campo Apelido** - No cadastro e perfil
+18. ✅ **"Bio do Atleta"** - Substituiu "Sobre Você" com limite de 150 caracteres
+19. ✅ **Instagram + Apelido** - Exibido na página de detalhes do atleta (ícone + @apelido)
+20. ✅ **Facebook + Primeiro Nome** - Exibido na página de detalhes do atleta (ícone + nome)
+21. ✅ **Bio visível** - Exibida na página de detalhes do atleta entre aspas
+22. ✅ **Aba Aniversariantes** - Nova aba no painel do admin com:
+    - Calendário interativo do mês
+    - Navegação entre meses
+    - Destaque rosa para dias com aniversários
+    - Avatares dos atletas nos dias
+    - Painel lateral com lista de aniversariantes do dia
+    - Campo de mensagem de felicitação editável
+    - Botão "Enviar para X atleta(s)"
+    - Botão "Selecionar Todos"
+23. ✅ **Popup de Aniversário** - Exibido ao atleta quando recebe mensagem:
+    - Design moderno com gradiente rosa/roxo
+    - Ícone de bolo animado
+    - Mensagem personalizada
+    - Botão "Obrigado!" para fechar
+    - Não aparece novamente após visualização
+
 ---
 
 Última atualização: 25/02/2026
