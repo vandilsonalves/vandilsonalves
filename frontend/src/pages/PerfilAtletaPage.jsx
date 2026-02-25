@@ -663,18 +663,53 @@ const PerfilAtletaPage = () => {
               <div className="space-y-2">
                 <Label htmlFor="bio" className="text-slate-300 flex items-center gap-2">
                   <FileText className="w-4 h-4" />
-                  Sobre você
+                  Bio do Atleta
                 </Label>
                 <Textarea
                   id="bio"
                   value={bio}
-                  onChange={(e) => setBio(e.target.value)}
-                  placeholder="Conte um pouco sobre sua história no esporte, conquistas, motivações..."
-                  rows={4}
+                  onChange={(e) => setBio(e.target.value.slice(0, 150))}
+                  placeholder="Conte sua história em poucas palavras, como a bio do Instagram..."
+                  rows={3}
+                  maxLength={150}
                   className="bg-slate-900 border-slate-600 text-white resize-none"
                   data-testid="input-bio"
                 />
-                <p className="text-xs text-slate-500">{bio.length}/500 caracteres</p>
+                <p className={`text-xs ${bio.length >= 140 ? 'text-orange-400' : 'text-slate-500'}`}>{bio.length}/150 caracteres</p>
+              </div>
+
+              {/* Etnia */}
+              <div className="space-y-2">
+                <Label htmlFor="etnia" className="text-slate-300 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Etnia
+                </Label>
+                <Select value={etnia} onValueChange={setEtnia}>
+                  <SelectTrigger className="bg-slate-900 border-slate-600 text-white" data-testid="select-etnia">
+                    <SelectValue placeholder="Selecione sua etnia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {ETNIAS.map((e) => (
+                      <SelectItem key={e} value={e}>{e}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Apelido */}
+              <div className="space-y-2">
+                <Label htmlFor="apelido" className="text-slate-300 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Apelido
+                </Label>
+                <Input
+                  id="apelido"
+                  value={apelido}
+                  onChange={(e) => setApelido(e.target.value)}
+                  placeholder="Como você quer ser chamado"
+                  className="bg-slate-900 border-slate-600 text-white"
+                  data-testid="input-apelido"
+                />
               </div>
 
               {/* Botão Salvar */}
