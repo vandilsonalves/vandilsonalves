@@ -26,6 +26,9 @@ class Usuario(BaseModel):
     telefone: str = ""
     bio: str = ""
     primeira_submissao: bool = False
+    # Novos campos
+    etnia: str = ""  # Branco, Negro, Indígena, Pardo, Amarelo
+    apelido: str = ""
 
 class UsuarioRegister(BaseModel):
     nome: str
@@ -37,6 +40,9 @@ class UsuarioRegister(BaseModel):
     genero: str
     categoria: str
     data_nascimento: str
+    # Novos campos
+    etnia: str = ""
+    apelido: str = ""
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
@@ -52,6 +58,21 @@ class PerfilUpdate(BaseModel):
     instagram_url: Optional[str] = None
     telefone: Optional[str] = None
     bio: Optional[str] = None
+    # Novos campos
+    etnia: Optional[str] = None
+    apelido: Optional[str] = None
+
+# Mensagem de Aniversário
+class MensagemAniversario(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    usuario_id: str
+    mensagem: str
+    enviada_em: str = Field(default_factory=lambda: datetime.now().isoformat())
+    visualizada: bool = False
+    data_visualizacao: str = ""
+    ano: int = 2026  # Ano do aniversário
 
 class ResultadoPendente(BaseModel):
     model_config = ConfigDict(extra="ignore")
