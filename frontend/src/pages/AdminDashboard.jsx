@@ -851,65 +851,82 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Barra de Pesquisa */}
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
+              <Input
+                placeholder="Pesquisar atleta por nome, equipe ou cidade..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10 bg-white dark:bg-slate-800"
+                data-testid="search-atletas"
+              />
+            </div>
+
             {/* Lista de Atletas */}
             {loadingAtletas ? (
               <div className="text-center py-12">Carregando...</div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {atletas.map((atleta) => (
-                  <Card key={atleta.id} className="bg-white dark:bg-slate-800 shadow border-0">
-                    <CardContent className="pt-4">
-                      <div className="flex items-center gap-4">
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
-                          <AvatarFallback className="bg-emerald-600 text-white">
-                            {atleta.nome?.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-semibold truncate">{atleta.nome}</h3>
-                          <p className="text-sm text-slate-500">{atleta.equipe}</p>
-                          <div className="flex gap-2 mt-1">
-                            <Badge variant="outline" className="text-xs">
-                              {atleta.categoria?.toUpperCase()}
-                            </Badge>
-                            <Badge variant="outline" className="text-xs">
-                              {atleta.genero === 'M' ? 'Masc' : 'Fem'}
-                            </Badge>
+              <>
+                <p className="text-sm text-slate-500">
+                  {filteredAtletas.length} atleta(s) encontrado(s) • Ordenado de A a Z
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredAtletas.map((atleta) => (
+                    <Card key={atleta.id} className="bg-white dark:bg-slate-800 shadow border-0">
+                      <CardContent className="pt-4">
+                        <div className="flex items-center gap-4">
+                          <Avatar className="h-12 w-12">
+                            <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
+                            <AvatarFallback className="bg-emerald-600 text-white">
+                              {atleta.nome?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <h3 className="font-semibold truncate">{atleta.nome}</h3>
+                            <p className="text-sm text-slate-500">{atleta.equipe}</p>
+                            <div className="flex gap-2 mt-1">
+                              <Badge variant="outline" className="text-xs">
+                                {atleta.categoria?.toUpperCase()}
+                              </Badge>
+                              <Badge variant="outline" className="text-xs">
+                                {atleta.genero === 'M' ? 'Masc' : 'Fem'}
+                              </Badge>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      
-                      <div className="flex gap-2 mt-4 pt-4 border-t">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => navigate(`/atleta/${atleta.id}`)}
-                        >
-                          <Eye className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setAtletaEditando(atleta);
-                            setShowAtletaModal(true);
-                          }}
-                        >
-                          <Edit className="w-4 h-4" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="destructive"
-                          onClick={() => handleDeleteAtleta(atleta.id)}
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                        
+                        <div className="flex gap-2 mt-4 pt-4 border-t">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => navigate(`/atleta/${atleta.id}`)}
+                          >
+                            <Eye className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setAtletaEditando(atleta);
+                              setShowAtletaModal(true);
+                            }}
+                          >
+                            <Edit className="w-4 h-4" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="destructive"
+                            onClick={() => handleDeleteAtleta(atleta.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              </>
             )}
           </div>
         )}
