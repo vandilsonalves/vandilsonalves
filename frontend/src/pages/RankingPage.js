@@ -316,6 +316,17 @@ const RankingPage = () => {
                 </Button>
               </div>
 
+              {/* Botão Mostrar/Ocultar Destaques */}
+              <Button 
+                variant="outline"
+                className={`w-full ${showDestaques ? 'bg-emerald-50 border-emerald-300' : ''}`}
+                onClick={() => setShowDestaques(!showDestaques)}
+                data-testid="btn-toggle-destaques"
+              >
+                <Flame className="w-4 h-4 mr-2" />
+                {showDestaques ? 'Ocultar Destaques' : 'Ver Destaques'}
+              </Button>
+
               {/* Botão Como funciona? */}
               <Dialog>
                 <DialogTrigger asChild>
@@ -355,18 +366,35 @@ const RankingPage = () => {
                       <h3 className="font-semibold text-lg mb-2">Status Elite</h3>
                       <p>Atletas com <strong>100 pontos ou mais</strong> recebem o status Elite.</p>
                     </div>
+
+                    <div>
+                      <h3 className="font-semibold text-lg mb-2">Rankings por Período</h3>
+                      <p>Além do ranking anual, temos:</p>
+                      <ul className="list-disc list-inside mt-2 text-sm">
+                        <li><strong>Ranking Semanal:</strong> Top 10 da última semana</li>
+                        <li><strong>Ranking Mensal:</strong> Top 10 do mês atual</li>
+                        <li><strong>Destaque do Mês:</strong> Atletas mais ativos e com mais pontos</li>
+                      </ul>
+                    </div>
                   </div>
                 </DialogContent>
               </Dialog>
             </CardContent>
           </Card>
 
-          {/* Tabela de Ranking */}
-          <div className="lg:col-span-3">
+          {/* Conteúdo Principal */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Seção de Destaques */}
+            {showDestaques && (
+              <RankingDestaques categoria={categoriaAtual} />
+            )}
+
+            {/* Tabela de Ranking */}
             <Card className="border-slate-200 dark:border-slate-800 shadow-lg">
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle className="text-xl">
-                  Ranking {categoriaAtual.replace('-', ' ').toUpperCase()}
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-emerald-500" />
+                  Ranking Anual {categoriaAtual.replace('-', ' ').toUpperCase()}
                   <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
                     ({rankingFiltrado.length} atletas)
                   </span>
