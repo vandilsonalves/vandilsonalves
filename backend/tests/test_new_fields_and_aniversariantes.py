@@ -18,7 +18,7 @@ class TestAuthAndNewFields:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.admin_credentials = {"email": "admin@runpro.com", "password": "admin123"}
-        self.atleta_credentials = {"email": "gabrielsouza_normal_1@email.com", "password": "atleta123"}
+        self.atleta_credentials = {"email": "joãosilvaneto_normal_0@email.com", "password": "atleta123"}
         self.test_atleta_id = "a6a1828a-68de-432f-817d-8aa4b3167404"  # João Silva Neto
     
     def get_admin_token(self):
@@ -106,7 +106,7 @@ class TestPerfilUpdateAPI:
     @pytest.fixture(autouse=True)
     def setup(self):
         self.admin_credentials = {"email": "admin@runpro.com", "password": "admin123"}
-        self.atleta_credentials = {"email": "gabrielsouza_normal_1@email.com", "password": "atleta123"}
+        self.atleta_credentials = {"email": "joãosilvaneto_normal_0@email.com", "password": "atleta123"}
     
     def get_atleta_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json=self.atleta_credentials)
@@ -316,7 +316,7 @@ class TestAtletaMensagemAniversario:
     
     @pytest.fixture(autouse=True)
     def setup(self):
-        self.atleta_credentials = {"email": "gabrielsouza_normal_1@email.com", "password": "atleta123"}
+        self.atleta_credentials = {"email": "joãosilvaneto_normal_0@email.com", "password": "atleta123"}
     
     def get_atleta_token(self):
         response = requests.post(f"{BASE_URL}/api/auth/login", json=self.atleta_credentials)
