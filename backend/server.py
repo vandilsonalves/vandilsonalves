@@ -23,7 +23,8 @@ from models import (
     Usuario, UsuarioRegister, UsuarioLogin, PerfilUpdate,
     ResultadoPendente, ResultadoSubmissao, AprovacaoRequest,
     Corrida, RankingAnual, RankingResponse, AtletaDetalhes,
-    CorridaResponse, EvolucaoMensal, Notificacao, Conquista, ConquistaAtleta
+    CorridaResponse, EvolucaoMensal, Notificacao, Conquista, ConquistaAtleta,
+    MensagemAniversario
 )
 from services import (
     verify_password, get_password_hash, create_access_token,
