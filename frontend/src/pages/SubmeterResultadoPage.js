@@ -71,10 +71,12 @@ const SubmeterResultadoPage = () => {
         }
       });
 
+      toast.success('Ação Concluída', { description: 'Resultado submetido com sucesso!' });
       setSuccess(true);
       setTimeout(() => navigate('/'), 3000);
     } catch (err) {
       setError(err.response?.data?.detail || 'Erro ao submeter resultado');
+      toast.error('Erro', { description: err.response?.data?.detail || 'Erro ao submeter resultado' });
     } finally {
       setLoading(false);
     }
