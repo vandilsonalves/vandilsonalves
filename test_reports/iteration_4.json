@@ -1,0 +1,95 @@
+{
+  "summary": "Testing of new Ranking Semanal, Mensal, and Destaque do Mês features. All 7 requested features verified and working correctly. Backend APIs return correct data structure and frontend UI displays all components properly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ranking_semanal_mensal.py",
+    "/app/test_reports/pytest/pytest_ranking_semanal_mensal.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_ranking_semanal_mensal.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% (7/7 features verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "No new seed data created. Using existing athlete data.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New ranking features are complete and working: semanal, mensal, destaque-mes APIs and RankingDestaques.jsx component all verified.",
+  "verified_features": {
+    "1_api_ranking_semanal": {
+      "status": "PASS",
+      "description": "GET /api/ranking/semanal?categoria={categoria} returns weekly ranking with periodo, categoria, and ranking array. Top 10 limit enforced. Tested all categories: masculino, feminino, pcd-m, pcd-f, cadeirante-m, cadeirante-f."
+    },
+    "2_api_ranking_mensal": {
+      "status": "PASS",
+      "description": "GET /api/ranking/mensal?categoria={categoria}&mes={mes}&ano={ano} returns monthly ranking with mes (month name in Portuguese), ano, categoria, and ranking array. Supports custom month/year parameters. Top 10 limit enforced."
+    },
+    "3_api_destaque_mes": {
+      "status": "PASS",
+      "description": "GET /api/ranking/destaque-mes returns month highlights with: mes, ano, total_corridas_mes, destaques_categoria (all 6 categories with top 3 each), mais_ativo_mes, mais_pontos_mes. Structure verified and all data types validated."
+    },
+    "4_frontend_destaque_card": {
+      "status": "PASS",
+      "description": "Card 'Destaque de Fevereiro 2026' displays on main ranking page with: corridas count, atletas no pódio count, 'Mais Ativo' section with athlete name and corridas, 'Mais Pontos' section with athlete name and points."
+    },
+    "5_frontend_rankings_periodo": {
+      "status": "PASS",
+      "description": "Section 'Rankings por Período' with Semanal and Mensal tabs. Tab switching works correctly. Semanal shows 'Período: YYYY-MM-DD a YYYY-MM-DD', Mensal shows 'Mês de Ano'."
+    },
+    "6_frontend_top3_medals": {
+      "status": "PASS",
+      "description": "Top 3 athletes displayed with medal icons (gold=yellow, silver=slate, bronze=amber). 3 medal icons found in ranking section. Position ordering verified (1, 2, 3)."
+    },
+    "7_frontend_toggle_destaques": {
+      "status": "PASS",
+      "description": "Button 'Ver Destaques' / 'Ocultar Destaques' in filters sidebar toggles visibility of destaques section. Text changes correctly. Destaque card visibility confirmed to toggle on button click."
+    }
+  },
+  "api_test_results": {
+    "ranking_semanal_masculino": {
+      "endpoint": "GET /api/ranking/semanal?categoria=masculino",
+      "status": 200,
+      "response_sample": {
+        "periodo": "2026-02-18 a 2026-02-25",
+        "categoria": "masculino",
+        "ranking_count": 3
+      }
+    },
+    "ranking_mensal_masculino": {
+      "endpoint": "GET /api/ranking/mensal?categoria=masculino",
+      "status": 200,
+      "response_sample": {
+        "mes": "Fevereiro",
+        "ano": 2026,
+        "categoria": "masculino",
+        "ranking_count": 3
+      }
+    },
+    "destaque_mes": {
+      "endpoint": "GET /api/ranking/destaque-mes",
+      "status": 200,
+      "response_sample": {
+        "mes": "Fevereiro",
+        "ano": 2026,
+        "total_corridas_mes": 8,
+        "destaques_categoria_count": 6,
+        "mais_ativo_mes": "present",
+        "mais_pontos_mes": "present"
+      }
+    }
+  }
+}
