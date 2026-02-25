@@ -329,6 +329,18 @@ async def get_meu_perfil(current_user: dict = Depends(get_current_user)):
 async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get_current_user)):
     """Atleta atualiza seu próprio perfil"""
     update_data = {}
+    
+    # Campos editáveis pelo atleta
+    if dados.nome is not None:
+        update_data["nome"] = dados.nome
+    if dados.cidade is not None:
+        update_data["cidade"] = dados.cidade
+    if dados.estado is not None:
+        update_data["estado"] = dados.estado
+    if dados.data_nascimento is not None:
+        update_data["data_nascimento"] = dados.data_nascimento
+        # Recalcular faixa etária
+        update_data["faixa_etaria"] = calcular_faixa_etaria(dados.data_nascimento)
     if dados.equipe is not None:
         update_data["equipe"] = dados.equipe
     if dados.facebook_url is not None:
@@ -349,6 +361,68 @@ async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get
     )
     
     return {"message": "Perfil atualizado com sucesso!"}
+
+@api_router.get("/atletas/meu-ranking/export")
+async def export_meu_ranking(current_user: dict = Depends(get_current_user)):
+    """Exporta histórico de corridas do atleta logado"""
+    usuario = await db.usuarios.find_one({"id": current_user["id"]}, {"_id": 0, "password_hash": 0})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    corridas = await db.corridas.find(
+        {"usuario_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("data", -1).to_list(None)
+    
+    ranking = await db.ranking_anual.find_one({"usuario_id": current_user["id"], "ano": 2025}, {"_id": 0})
+    
+    # Criar Excel
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Meu Ranking"
+    
+    # Info do atleta
+    ws.append(["RANKING RUN PRÓ - HISTÓRICO DO ATLETA"])
+    ws.append([])
+    ws.append(["Nome:", usuario["nome"]])
+    ws.append(["Equipe:", usuario.get("equipe", "")])
+    ws.append(["Cidade:", f"{usuario['cidade']}/{usuario['estado']}"])
+    ws.append(["Categoria:", usuario["categoria"].upper()])
+    ws.append(["Pontos Totais:", ranking["pontos_total"] if ranking else 0])
+    ws.append(["Total de Corridas:", ranking["total_corridas"] if ranking else 0])
+    ws.append([])
+    
+    # Header das corridas
+    headers = ["Data", "Competição", "Distância", "Colocação", "Tempo", "Pontos", "Local"]
+    ws.append(headers)
+    
+    header_fill = PatternFill(start_color="10B981", end_color="10B981", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+    for cell in ws[10]:
+        cell.fill = header_fill
+        cell.font = header_font
+    
+    # Dados das corridas
+    for corrida in corridas:
+        ws.append([
+            corrida.get("data", ""),
+            corrida.get("nome", ""),
+            corrida.get("distancia", ""),
+            f"{corrida.get('colocacao', '')}º",
+            corrida.get("tempo", ""),
+            corrida.get("pontos", 0),
+            corrida.get("local", "")
+        ])
+    
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=meu_ranking_{usuario['nome'].replace(' ', '_')}.xlsx"}
+    )
 
 @api_router.post("/atletas/foto")
 async def upload_foto_perfil(
