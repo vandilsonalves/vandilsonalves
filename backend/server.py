@@ -2108,12 +2108,18 @@ async def get_configuracao_aniversario(admin: dict = Depends(get_admin_user)):
     """Retorna configuração de mensagem de aniversário"""
     config = await db.configuracoes.find_one({"tipo": "mensagem_aniversario"}, {"_id": 0})
     if not config:
-        config = {
+        config_doc = {
             "tipo": "mensagem_aniversario",
             "mensagem_padrao": "Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️",
             "envio_automatico": False
         }
-        await db.configuracoes.insert_one(config)
+        await db.configuracoes.insert_one(config_doc)
+        # Return without the _id field
+        return {
+            "tipo": config_doc["tipo"],
+            "mensagem_padrao": config_doc["mensagem_padrao"],
+            "envio_automatico": config_doc["envio_automatico"]
+        }
     
     return config
 
