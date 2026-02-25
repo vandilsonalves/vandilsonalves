@@ -369,26 +369,6 @@ const RankingPage = () => {
                     ({rankingFiltrado.length} atletas)
                   </span>
                 </CardTitle>
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => handleExport('csv')}
-                    variant="outline"
-                    size="sm"
-                    className="text-emerald-600"
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    CSV
-                  </Button>
-                  <Button
-                    onClick={() => handleExport('excel')}
-                    variant="outline"
-                    size="sm"
-                    className="text-emerald-600"
-                  >
-                    <FileDown className="w-4 h-4 mr-2" />
-                    Excel
-                  </Button>
-                </div>
               </CardHeader>
               <CardContent>
                 {loading ? (
