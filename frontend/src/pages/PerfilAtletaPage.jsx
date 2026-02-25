@@ -242,11 +242,13 @@ const PerfilAtletaPage = () => {
       link.remove();
       window.URL.revokeObjectURL(url);
       
-      setSuccess('Dados exportados com sucesso!');
+      setSuccess('Ação Concluída - Dados exportados com sucesso!');
+      toast.success('Ação Concluída', { description: 'Dados exportados com sucesso!' });
       setTimeout(() => setSuccess(''), 3000);
     } catch (error) {
       console.error('Erro ao exportar:', error);
       setError('Erro ao exportar dados');
+      toast.error('Erro', { description: 'Erro ao exportar dados' });
     } finally {
       setExportingData(false);
     }
