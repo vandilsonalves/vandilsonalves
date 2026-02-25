@@ -25,41 +25,60 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 ### 3. Painel do Atleta ✅
 - **Campos editáveis**: Nome, Cidade, UF, Data de Nascimento, Equipe, Redes Sociais, Bio
-- Upload de foto de perfil (corrigido)
+- **Upload de foto de perfil (CORRIGIDO)**: Foto visível após upload com timestamp para forçar reload
 - Visualização de estatísticas (pontos, corridas)
 - **Exportar Meus Dados** (download Excel do histórico)
 - **Acesso Rápido**: Botões Strava, WhatsApp, TikTok, YouTube
 - **Compartilhamento**: WhatsApp e Instagram
 - Sistema de Conquistas (Campeão, Pódio, Veterano, Elite, etc.)
 - Sistema de Notificações (sininho com badge)
+- **Mensagem "Ação Concluída"**: Toast de sucesso em todas as alterações
 
 ### 4. Painel de Administração ✅
 - **Dashboard** com estatísticas e gráficos:
   - Total de atletas, pendentes, corridas, selo "P"
   - Gráficos de distribuição por estado/categoria/gênero/faixa etária
   - Gráfico de corridas por mês
-- **Aba Aprovações**: Aprovar/Reprovar resultados submetidos
-- **Aba Atletas** (NOVA):
+- **Aba Aprovações**: 
+  - Aprovar/Reprovar resultados submetidos
+  - **Visualizar foto do pódio** enviada pelo atleta
+  - **Botão excluir foto** do pódio
+  - Fotos auto-excluídas em 24h após aprovação/reprovação
+- **Aba Atletas** (ATUALIZADA):
+  - **Barra de pesquisa** por nome, equipe ou cidade
+  - **Ordenação A-Z** (crescente)
   - Filtros: Todos, Atletas M/F, PCD M/F, Cadeirante M/F
   - Botão "+ Adicionar" para cadastrar atletas
-  - Botão "Exportar Dados" (Excel)
+  - Botão "Exportar Dados" (Excel) - **CORRIGIDO**
   - Cards de atletas com Ver/Editar/Excluir
   - Modal de edição completo
-- **Aba Submeter Resultado** (NOVA):
-  - Selecionar atleta
-  - Adicionar ou Remover pontos
-  - Informar motivo/justificativa
+- **Aba + Submeter Resultado** (REFORMULADA):
+  - Selecionar atleta (dropdown ordenado A-Z)
+  - Tipo de operação: Adicionar Pontos / Remover Pontos
+  - **Adicionar Pontos**: Formulário completo igual ao atleta:
+    - Nome da Competição, Colocação, Distância, Cidade, Estado UF, Data, Tempo, Link
+  - **Remover Pontos**: Lista corridas anteriores do atleta para editar ou excluir
 - **Aba Gráficos**: Visualizações detalhadas
-- **Aba Rankings**: Exportar CSV e Excel
+- **Aba Ranking** (CORRIGIDO de "Rankings"):
+  - **Exportação de TODAS as modalidades** em um único arquivo
+  - Masculino, Feminino, PCD M/F, Cadeirante M/F
+  - Exportar CSV e Excel
+- **Mensagem "Ação Concluída"**: Toast de sucesso em todas as alterações/exclusões
 
-### 5. Compartilhamento Avançado (Estilo Strava) ✅
+### 5. Submissão de Resultados (Atleta) ✅
+- **Botão "Adicionar uma Foto do Pódio ou sua no Evento"** (melhorado)
+- Formatos aceitos: JPG, PNG, GIF (máx 5MB)
+- Prazo de 6 dias úteis após o evento
+- Validação de colocações por categoria
+
+### 6. Compartilhamento Avançado (Estilo Strava) ✅
 - Página de detalhes do atleta com botão "Compartilhar"
 - Modal de compartilhamento com:
   - Preview da imagem (formato 9:16 para Stories)
   - Botões: WhatsApp, Instagram, Facebook, Baixar
   - Copiar Link
 
-### 6. Sistema de Notificações ✅
+### 7. Sistema de Notificações ✅
 - Notificações automáticas para:
   - Resultado aprovado
   - Resultado reprovado (com motivo)
@@ -68,7 +87,7 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 - Sininho no header com badge de não lidas
 - Dropdown com lista de notificações
 
-### 7. Sistema de Conquistas ✅
+### 8. Sistema de Conquistas ✅
 - Campeão (1º lugar em corrida)
 - Pódio (top 3 em corrida)
 - Veterano (10 corridas)
@@ -81,7 +100,7 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 ## Arquitetura Técnica
 
 ### Backend (FastAPI)
-- `/app/backend/server.py` - API principal (refatorado)
+- `/app/backend/server.py` - API principal
 - `/app/backend/models/__init__.py` - Modelos Pydantic
 - `/app/backend/services/__init__.py` - Serviços e helpers
 - MongoDB para persistência
@@ -90,7 +109,10 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
   - `/api/auth/*` - Autenticação
   - `/api/ranking/*` - Rankings e exportação
   - `/api/atletas/*` - Perfis de atletas
-  - `/api/admin/*` - Endpoints administrativos (atletas, ajuste de pontos)
+  - `/api/admin/*` - Endpoints administrativos
+  - `/api/admin/adicionar-corrida` - Admin adiciona corrida
+  - `/api/admin/corridas/{id}` - Admin edita/exclui corrida
+  - `/api/admin/pendentes/{id}/foto` - Admin exclui foto
   - `/api/notificacoes/*` - Sistema de notificações
   - `/api/conquistas/*` - Sistema de conquistas
 
@@ -101,6 +123,7 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 - Recharts para gráficos
 - html2canvas para gerar imagens de compartilhamento
 - React Router para navegação
+- **Sonner** para toasts ("Ação Concluída")
 
 ---
 
@@ -111,17 +134,31 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 ---
 
 ## Dados de Teste
-- 90 atletas (15 por categoria)
-- Aproximadamente 960 corridas
+- 94 atletas (15 por categoria)
+- Aproximadamente 971 corridas
 - Distribuição uniforme por estados e faixas etárias
 
 ---
 
 ## Próximos Passos (Backlog)
-1. Implementação de notificações por e-mail (Resend)
-2. Ranking histórico por ano
+1. **P0**: Implementação de notificações por e-mail (Resend)
+2. **P1**: Ranking histórico por ano (filtro por temporada)
 3. Melhorias de performance (cache)
 4. Integração real com Strava API
+
+---
+
+## Correções Implementadas (25/02/2026)
+1. ✅ Botão "Exportar Dados" na aba Atletas - funcional com download de Excel
+2. ✅ Mensagem "Ação Concluída" em todas as alterações (toast.success)
+3. ✅ Upload de foto de perfil do atleta - corrigido com timestamp para forçar reload
+4. ✅ Botão "Adicionar uma Foto do Pódio ou sua no Evento" na submissão
+5. ✅ Visualização da foto do pódio na aba Aprovações + botão excluir
+6. ✅ Barra de pesquisa na aba Atletas (nome, equipe, cidade)
+7. ✅ Ordenação de atletas A-Z (crescente)
+8. ✅ Reformulação da aba "+ Submeter Resultado" (formulário completo)
+9. ✅ Correção de "Rankings" para "Ranking" no menu
+10. ✅ Exportação de ranking com TODAS as modalidades
 
 ---
 
