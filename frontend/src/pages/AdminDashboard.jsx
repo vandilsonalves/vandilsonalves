@@ -16,7 +16,8 @@ import {
   CheckCircle, XCircle, ExternalLink, Calendar, MapPin, Trophy, Clock, 
   Users, AlertCircle, TrendingUp, BarChart3, PieChart,
   Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
-  UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X
+  UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X,
+  Cake, Send, Gift, ChevronLeft
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
@@ -41,6 +42,7 @@ const menuItems = [
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
   { id: 'graficos', label: 'Gráficos', icon: BarChart3 },
   { id: 'ranking', label: 'Ranking', icon: Trophy },
+  { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
 ];
 
 const AdminDashboard = () => {
