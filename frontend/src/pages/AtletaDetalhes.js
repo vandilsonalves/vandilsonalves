@@ -6,7 +6,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { ArrowLeft, MapPin, Trophy, Medal, Award, Share2, Download, Copy, Check, Link2 } from 'lucide-react';
+import { ArrowLeft, MapPin, Trophy, Medal, Award, Share2, Download, Copy, Check, Link2, Instagram, Facebook } from 'lucide-react';
 import PendingBadge from '@/components/PendingBadge';
 import RaceProgressBar from '@/components/RaceProgressBar';
 import ConquistasTable from '@/components/ConquistasTable';
