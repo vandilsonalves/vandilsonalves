@@ -1,0 +1,76 @@
+{
+  "summary": "Completed e2e testing of new features: Etnia, Apelido fields in registration/profile, Bio do Atleta with 150 char limit, Instagram+Apelido and Facebook+Nome display in athlete details, Admin Aniversariantes tab with interactive calendar",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_new_fields_and_aniversariantes.py",
+    "/app/test_reports/pytest/pytest_new_fields.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed MongoDB ObjectId serialization issue in /admin/aniversariantes/configuracao endpoint",
+    "Fixed route conflict: moved /atletas/mensagem-aniversario endpoints before parameterized /atletas/{id} route"
+  ],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_new_fields_and_aniversariantes.py"
+  ],
+  "success_rate": {
+    "backend": "100%",
+    "frontend": "100%"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"},
+    "atleta": {"email": "leonardocarvalhofilho_normal_1@email.com", "password": "atleta123"}
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "main_agent_can_self_test": true,
+  "context_for_next_testing_agent": "New fields (etnia, apelido, bio) are working. Admin Aniversariantes tab has interactive calendar with 12 aniversariantes in February 2026. Route fix applied for /atletas/mensagem-aniversario endpoint.",
+  "features_tested": {
+    "cadastro_page": {
+      "etnia_field": "PASS - Select with options (Branco, Negro, Indígena, Pardo, Amarelo)",
+      "apelido_field": "PASS - Input field present"
+    },
+    "perfil_atleta_page": {
+      "bio_do_atleta": "PASS - Textarea with 150 char counter",
+      "etnia_field": "PASS - Select field editable",
+      "apelido_field": "PASS - Input field editable",
+      "save_button": "PASS - Salvar Alterações button visible"
+    },
+    "atleta_detalhes_page": {
+      "instagram_apelido": "PASS - Shows @Gabi (Instagram icon + apelido)",
+      "facebook_nome": "PASS - Shows João (Facebook icon + first name)",
+      "bio_display": "PASS - Bio shown in quotes"
+    },
+    "admin_aniversariantes": {
+      "menu_item": "PASS - Aniversariantes in sidebar",
+      "calendar": "PASS - Interactive calendar with days 1-28",
+      "month_navigation": "PASS - < > buttons for month navigation",
+      "birthday_highlight": "PASS - Pink highlight for days with birthdays",
+      "avatar_badges": "PASS - Shows athlete initials on birthday days",
+      "day_selection": "PASS - Can click on days to see details",
+      "total_count": "PASS - Shows 12 Aniversariantes for February 2026"
+    },
+    "api_endpoints": {
+      "/api/admin/aniversariantes": "PASS - Returns calendar with aniversariantes",
+      "/api/admin/aniversariantes/hoje": "PASS - Returns today's birthdays",
+      "/api/admin/aniversariantes/enviar-mensagem": "PASS - Sends birthday messages",
+      "/api/admin/aniversariantes/configuracao": "PASS - Returns message configuration",
+      "/api/atletas/{id}": "PASS - Returns bio, apelido, etnia, instagram_url, facebook_url",
+      "/api/atletas/perfil": "PASS - Updates bio, etnia, apelido fields",
+      "/api/atletas/mensagem-aniversario": "PASS - Returns athlete birthday message",
+      "/api/atletas/mensagem-aniversario/visualizar": "PASS - Marks message as read",
+      "/api/auth/register": "PASS - Accepts etnia and apelido fields"
+    }
+  },
+  "backend_tests_passed": 15,
+  "backend_tests_failed": 0
+}
