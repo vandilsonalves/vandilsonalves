@@ -162,13 +162,15 @@ const PerfilAtletaPage = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      setSuccess('Perfil atualizado com sucesso!');
+      setSuccess('Ação Concluída - Perfil atualizado com sucesso!');
+      toast.success('Ação Concluída', { description: 'Perfil atualizado com sucesso!' });
       setAtleta(prev => ({ ...prev, nome, cidade, estado, equipe }));
       setTimeout(() => setSuccess(''), 3000);
       
     } catch (error) {
       console.error('Erro ao salvar:', error);
       setError(error.response?.data?.detail || 'Erro ao salvar alterações');
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao salvar alterações' });
     } finally {
       setSaving(false);
     }
