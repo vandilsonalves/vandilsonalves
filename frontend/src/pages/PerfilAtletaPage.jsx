@@ -9,22 +9,49 @@ import { Textarea } from '@/components/ui/textarea';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   ArrowLeft, Save, User, Mail, MapPin, Users, Trophy, 
   Facebook, Instagram, Phone, FileText, Camera, Check, Loader2,
-  Share2, Award, ExternalLink
+  Share2, Award, ExternalLink, Download, Calendar
 } from 'lucide-react';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Ícones de redes sociais externas
+// Links de redes sociais com URLs funcionais
 const SocialLinks = [
-  { name: 'Strava', icon: '🏃', url: 'https://www.strava.com', color: 'bg-orange-500' },
-  { name: 'WhatsApp', icon: '💬', url: 'https://chat.whatsapp.com', color: 'bg-green-500' },
-  { name: 'TikTok', icon: '🎵', url: 'https://www.tiktok.com', color: 'bg-slate-900' },
-  { name: 'YouTube', icon: '▶️', url: 'https://www.youtube.com', color: 'bg-red-600' },
+  { 
+    name: 'Strava', 
+    icon: '🏃', 
+    url: 'https://www.strava.com/dashboard', 
+    color: 'bg-orange-500 hover:bg-orange-600' 
+  },
+  { 
+    name: 'WhatsApp', 
+    icon: '💬', 
+    url: 'https://wa.me/', 
+    color: 'bg-green-500 hover:bg-green-600' 
+  },
+  { 
+    name: 'TikTok', 
+    icon: '🎵', 
+    url: 'https://www.tiktok.com/explore', 
+    color: 'bg-slate-800 hover:bg-slate-700' 
+  },
+  { 
+    name: 'YouTube', 
+    icon: '▶️', 
+    url: 'https://www.youtube.com', 
+    color: 'bg-red-600 hover:bg-red-700' 
+  },
+];
+
+const ESTADOS_BR = [
+  'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
+  'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
+  'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
 const PerfilAtletaPage = () => {
@@ -33,6 +60,7 @@ const PerfilAtletaPage = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [exportingData, setExportingData] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
   
@@ -41,6 +69,10 @@ const PerfilAtletaPage = () => {
   const [conquistas, setConquistas] = useState([]);
   
   // Campos editáveis
+  const [nome, setNome] = useState('');
+  const [cidade, setCidade] = useState('');
+  const [estado, setEstado] = useState('');
+  const [dataNascimento, setDataNascimento] = useState('');
   const [equipe, setEquipe] = useState('');
   const [facebookUrl, setFacebookUrl] = useState('');
   const [instagramUrl, setInstagramUrl] = useState('');
@@ -74,10 +106,16 @@ const PerfilAtletaPage = () => {
         faixa_etaria: data.faixa_etaria,
         foto_url: data.foto_url,
         equipe: data.equipe,
+        data_nascimento: data.data_nascimento,
         pontos_carreira: data.pontos_carreira || 0,
         total_corridas: data.total_corridas || 0
       });
       
+      // Preencher campos editáveis
+      setNome(data.nome || '');
+      setCidade(data.cidade || '');
+      setEstado(data.estado || '');
+      setDataNascimento(data.data_nascimento || '');
       setEquipe(data.equipe || '');
       setFacebookUrl(data.facebook_url || '');
       setInstagramUrl(data.instagram_url || '');
@@ -110,6 +148,10 @@ const PerfilAtletaPage = () => {
     
     try {
       await axios.patch(`${API}/atletas/perfil`, {
+        nome,
+        cidade,
+        estado,
+        data_nascimento: dataNascimento,
         equipe,
         facebook_url: facebookUrl,
         instagram_url: instagramUrl,
@@ -120,7 +162,7 @@ const PerfilAtletaPage = () => {
       });
       
       setSuccess('Perfil atualizado com sucesso!');
-      setAtleta(prev => ({ ...prev, equipe }));
+      setAtleta(prev => ({ ...prev, nome, cidade, estado, equipe }));
       setTimeout(() => setSuccess(''), 3000);
       
     } catch (error) {
@@ -159,7 +201,12 @@ const PerfilAtletaPage = () => {
         }
       });
       
-      setAtleta(prev => ({ ...prev, foto_url: response.data.foto_url }));
+      // Atualizar foto local com URL completa
+      const fotoUrl = response.data.foto_url.startsWith('http') 
+        ? response.data.foto_url 
+        : `${BACKEND_URL}${response.data.foto_url}`;
+      
+      setAtleta(prev => ({ ...prev, foto_url: fotoUrl }));
       setSuccess('Foto atualizada com sucesso!');
       setTimeout(() => setSuccess(''), 3000);
       
@@ -171,30 +218,71 @@ const PerfilAtletaPage = () => {
     }
   };
 
+  const handleExportData = async () => {
+    setExportingData(true);
+    try {
+      const response = await axios.get(`${API}/atletas/meu-ranking/export`, {
+        headers: { Authorization: `Bearer ${token}` },
+        responseType: 'blob'
+      });
+      
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `meu_ranking_${atleta?.nome?.replace(/\s+/g, '_')}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      setSuccess('Dados exportados com sucesso!');
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      setError('Erro ao exportar dados');
+    } finally {
+      setExportingData(false);
+    }
+  };
+
   const handleShare = async (platform) => {
     try {
       const response = await axios.get(`${API}/atletas/${user.id}/compartilhar`);
       const data = response.data;
       
-      let shareUrl = '';
       const texto = encodeURIComponent(data.texto_whatsapp);
       const url = encodeURIComponent(data.url_compartilhar);
       
-      if (platform === 'whatsapp') {
-        shareUrl = `https://wa.me/?text=${texto}`;
-      } else if (platform === 'instagram') {
-        // Instagram não tem API de compartilhamento direto, copiar texto
-        navigator.clipboard.writeText(data.texto_whatsapp);
-        alert('Texto copiado! Cole no seu Instagram.');
-        return;
+      let shareUrl = '';
+      
+      switch (platform) {
+        case 'whatsapp':
+          shareUrl = `https://api.whatsapp.com/send?text=${texto}`;
+          break;
+        case 'instagram':
+          // Instagram não tem API de compartilhamento direto, copiar texto
+          await navigator.clipboard.writeText(data.texto_whatsapp);
+          setSuccess('Texto copiado! Cole no seu Instagram.');
+          setTimeout(() => setSuccess(''), 3000);
+          return;
+        case 'facebook':
+          shareUrl = `https://www.facebook.com/sharer/sharer.php?u=${url}&quote=${texto}`;
+          break;
+        default:
+          break;
       }
       
       if (shareUrl) {
-        window.open(shareUrl, '_blank');
+        window.open(shareUrl, '_blank', 'width=600,height=400');
       }
     } catch (error) {
       console.error('Erro ao compartilhar:', error);
+      setError('Erro ao gerar link de compartilhamento');
     }
+  };
+
+  const handleSocialLink = (link) => {
+    window.open(link.url, '_blank');
   };
 
   const formatCategoria = (categoria) => {
@@ -208,6 +296,13 @@ const PerfilAtletaPage = () => {
 
   const formatGenero = (genero) => {
     return genero === 'M' ? 'Masculino' : 'Feminino';
+  };
+
+  // Construir URL da foto corretamente
+  const getFotoUrl = () => {
+    if (!atleta?.foto_url) return null;
+    if (atleta.foto_url.startsWith('http')) return atleta.foto_url;
+    return `${BACKEND_URL}${atleta.foto_url}`;
   };
 
   if (!user) return null;
@@ -234,10 +329,25 @@ const PerfilAtletaPage = () => {
             </h1>
             <p className="text-slate-400">Gerencie suas informações de atleta</p>
           </div>
-          <Button onClick={() => navigate('/')} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
+          <div className="flex gap-2">
+            <Button 
+              onClick={handleExportData} 
+              disabled={exportingData}
+              variant="outline" 
+              className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/20"
+            >
+              {exportingData ? (
+                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              Exportar Meus Dados
+            </Button>
+            <Button onClick={() => navigate('/')} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar
+            </Button>
+          </div>
         </div>
 
         {/* Links Rápidos para Redes Sociais */}
@@ -253,9 +363,8 @@ const PerfilAtletaPage = () => {
               {SocialLinks.map((link) => (
                 <Button
                   key={link.name}
-                  variant="outline"
-                  className={`${link.color} text-white border-0 hover:opacity-80`}
-                  onClick={() => window.open(link.url, '_blank')}
+                  className={`${link.color} text-white border-0`}
+                  onClick={() => handleSocialLink(link)}
                 >
                   <span className="mr-2">{link.icon}</span>
                   {link.name}
@@ -285,7 +394,7 @@ const PerfilAtletaPage = () => {
             <CardHeader className="text-center">
               <div className="relative inline-block mx-auto">
                 <Avatar className="h-32 w-32 border-4 border-emerald-500/30">
-                  <AvatarImage src={atleta?.foto_url} alt={atleta?.nome} />
+                  <AvatarImage src={getFotoUrl()} alt={atleta?.nome} />
                   <AvatarFallback className="bg-emerald-600 text-white text-3xl">
                     {atleta?.nome?.charAt(0)}
                   </AvatarFallback>
@@ -401,6 +510,73 @@ const PerfilAtletaPage = () => {
             </CardHeader>
             
             <CardContent className="space-y-6">
+              {/* Nome */}
+              <div className="space-y-2">
+                <Label htmlFor="nome" className="text-slate-300 flex items-center gap-2">
+                  <User className="w-4 h-4" />
+                  Nome Completo
+                </Label>
+                <Input
+                  id="nome"
+                  value={nome}
+                  onChange={(e) => setNome(e.target.value)}
+                  placeholder="Seu nome completo"
+                  className="bg-slate-900 border-slate-600 text-white"
+                  data-testid="input-nome"
+                />
+              </div>
+
+              {/* Cidade e Estado */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="cidade" className="text-slate-300 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Cidade
+                  </Label>
+                  <Input
+                    id="cidade"
+                    value={cidade}
+                    onChange={(e) => setCidade(e.target.value)}
+                    placeholder="Sua cidade"
+                    className="bg-slate-900 border-slate-600 text-white"
+                    data-testid="input-cidade"
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="estado" className="text-slate-300 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    UF
+                  </Label>
+                  <Select value={estado} onValueChange={setEstado}>
+                    <SelectTrigger className="bg-slate-900 border-slate-600 text-white" data-testid="input-estado">
+                      <SelectValue placeholder="Selecione o estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTADOS_BR.map((uf) => (
+                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+
+              {/* Data de Nascimento */}
+              <div className="space-y-2">
+                <Label htmlFor="data_nascimento" className="text-slate-300 flex items-center gap-2">
+                  <Calendar className="w-4 h-4" />
+                  Data de Nascimento
+                </Label>
+                <Input
+                  id="data_nascimento"
+                  type="date"
+                  value={dataNascimento}
+                  onChange={(e) => setDataNascimento(e.target.value)}
+                  className="bg-slate-900 border-slate-600 text-white"
+                  data-testid="input-data-nascimento"
+                />
+              </div>
+
               {/* Equipe */}
               <div className="space-y-2">
                 <Label htmlFor="equipe" className="text-slate-300 flex items-center gap-2">
@@ -514,7 +690,7 @@ const PerfilAtletaPage = () => {
           <CardContent className="pt-6">
             <p className="text-sm text-slate-400 text-center">
               <Mail className="w-4 h-4 inline mr-2" />
-              Para alterar seu email ou outras informações pessoais, entre em contato com o suporte.
+              Para alterar seu email ou categoria, entre em contato com o suporte.
             </p>
           </CardContent>
         </Card>
