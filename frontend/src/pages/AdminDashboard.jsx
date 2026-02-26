@@ -1794,6 +1794,70 @@ const AdminDashboard = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Modal Configuração de Aniversário */}
+        <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Settings className="w-5 h-5 text-pink-500" />
+                Configurações de Aniversário
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-6">
+              {/* Toggle Envio Automático */}
+              <div className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-lg">
+                <div>
+                  <p className="font-medium">Envio Automático às 00:00</p>
+                  <p className="text-sm text-slate-500">
+                    Quando ativado, mensagens são enviadas automaticamente à meia-noite para os aniversariantes do dia.
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    checked={envioAutomatico}
+                    onChange={(e) => setEnvioAutomatico(e.target.checked)}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-pink-300 dark:peer-focus:ring-pink-800 rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-slate-600 peer-checked:bg-pink-500"></div>
+                </label>
+              </div>
+
+              {/* Mensagem Padrão */}
+              <div className="space-y-2">
+                <Label>Mensagem Padrão de Felicitação</Label>
+                <Textarea
+                  value={mensagemPadrao}
+                  onChange={(e) => setMensagemPadrao(e.target.value)}
+                  placeholder="Escreva a mensagem padrão de aniversário..."
+                  rows={4}
+                  className="bg-slate-50 dark:bg-slate-900"
+                />
+                <p className="text-xs text-slate-500">
+                  Esta mensagem será usada tanto no envio automático quanto no envio manual.
+                </p>
+              </div>
+
+              {/* Info */}
+              <div className="p-3 bg-blue-50 dark:bg-blue-900/30 rounded-lg text-sm text-blue-700 dark:text-blue-300">
+                <p className="font-medium mb-1">Como funciona:</p>
+                <ul className="list-disc list-inside space-y-1 text-xs">
+                  <li>O sistema verifica diariamente os aniversariantes às 00:00</li>
+                  <li>Cada atleta recebe apenas 1 mensagem por ano</li>
+                  <li>O atleta vê a mensagem em formato de popup ao abrir o app</li>
+                  <li>Após visualizar, a mensagem não aparece novamente</li>
+                </ul>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowConfigModal(false)}>Cancelar</Button>
+              <Button onClick={handleSalvarConfigAniversario} className="bg-pink-500 hover:bg-pink-600">
+                Salvar Configurações
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
