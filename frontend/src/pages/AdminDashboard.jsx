@@ -1349,6 +1349,42 @@ const AdminDashboard = () => {
         {/* Aniversariantes View */}
         {activeMenu === 'aniversariantes' && (
           <div className="space-y-6">
+            {/* Card de Configuração */}
+            <Card className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/30 dark:to-purple-900/30 shadow-lg border-0">
+              <CardContent className="py-4">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2 rounded-full ${envioAutomatico ? 'bg-emerald-100 dark:bg-emerald-900' : 'bg-slate-100 dark:bg-slate-800'}`}>
+                      <Clock className={`w-5 h-5 ${envioAutomatico ? 'text-emerald-600' : 'text-slate-500'}`} />
+                    </div>
+                    <div>
+                      <p className="font-medium">Envio Automático às 00:00</p>
+                      <p className={`text-sm ${envioAutomatico ? 'text-emerald-600' : 'text-slate-500'}`}>
+                        {envioAutomatico ? '✅ Ativado - Mensagens são enviadas automaticamente' : '⏸️ Desativado'}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowConfigModal(true)}
+                      className="bg-white dark:bg-slate-800"
+                    >
+                      <Settings className="w-4 h-4 mr-2" />
+                      Configurar
+                    </Button>
+                    <Button 
+                      onClick={handleEnviarAniversariosAgora}
+                      className="bg-pink-500 hover:bg-pink-600"
+                    >
+                      <Send className="w-4 h-4 mr-2" />
+                      Enviar Agora (Hoje)
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
               <CardHeader className="flex flex-row items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
