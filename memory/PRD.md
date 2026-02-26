@@ -193,7 +193,16 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Mensagem personalizada
     - Botão "Obrigado!" para fechar
     - Não aparece novamente após visualização
+24. ✅ **Envio Automático de Aniversário** - Sistema automatizado:
+    - Scheduler usando APScheduler
+    - Executa às 00:00 todos os dias
+    - Verifica aniversariantes do dia automaticamente
+    - Envia mensagem padrão configurável
+    - Cada atleta recebe apenas 1 mensagem por ano
+    - Toggle para ativar/desativar via modal de configuração
+    - Botão "Enviar Agora (Hoje)" para envio manual
+    - Logs de execução do scheduler
 
 ---
 
-Última atualização: 25/02/2026
+Última atualização: 26/02/2026
