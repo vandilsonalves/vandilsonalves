@@ -2187,6 +2187,101 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# ==================== SCHEDULER DE ANIVERSÁRIOS ====================
+
+scheduler = AsyncIOScheduler()
+
+async def enviar_mensagens_aniversario_automatico():
+    """Função que roda às 00:00 para enviar mensagens de aniversário automaticamente"""
+    logger.info("🎂 Iniciando envio automático de mensagens de aniversário...")
+    
+    try:
+        # Verificar se envio automático está habilitado
+        config = await db.configuracoes.find_one({"tipo": "mensagem_aniversario"}, {"_id": 0})
+        if not config or not config.get("envio_automatico", False):
+            logger.info("⏸️ Envio automático desabilitado. Pulando...")
+            return
+        
+        mensagem_padrao = config.get(
+            "mensagem_padrao", 
+            "Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️"
+        )
+        
+        # Buscar aniversariantes de hoje
+        hoje = datetime.now()
+        atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+        
+        aniversariantes = []
+        for atleta in atletas:
+            if atleta.get("data_nascimento"):
+                try:
+                    data_nasc = datetime.strptime(atleta["data_nascimento"], "%Y-%m-%d")
+                    if data_nasc.month == hoje.month and data_nasc.day == hoje.day:
+                        aniversariantes.append(atleta)
+                except ValueError:
+                    pass
+        
+        if not aniversariantes:
+            logger.info("📭 Nenhum aniversariante hoje.")
+            return
+        
+        logger.info(f"🎉 Encontrados {len(aniversariantes)} aniversariante(s) hoje!")
+        
+        # Verificar se já enviou mensagem para cada atleta este ano
+        mensagens_enviadas = 0
+        for atleta in aniversariantes:
+            # Verificar se já existe mensagem para este atleta neste ano
+            existente = await db.mensagens_aniversario.find_one({
+                "usuario_id": atleta["id"],
+                "ano": hoje.year
+            }, {"_id": 0})
+            
+            if existente:
+                logger.info(f"⏭️ Mensagem já enviada para {atleta['nome']} em {hoje.year}")
+                continue
+            
+            # Criar mensagem
+            msg = MensagemAniversario(
+                usuario_id=atleta["id"],
+                mensagem=mensagem_padrao,
+                ano=hoje.year
+            )
+            await db.mensagens_aniversario.insert_one(msg.model_dump())
+            mensagens_enviadas += 1
+            logger.info(f"✅ Mensagem enviada para {atleta['nome']}")
+        
+        logger.info(f"🎂 Total de mensagens enviadas: {mensagens_enviadas}")
+        
+        # Registrar log de execução
+        await db.logs_scheduler.insert_one({
+            "tipo": "aniversario_automatico",
+            "data_execucao": hoje.isoformat(),
+            "aniversariantes_encontrados": len(aniversariantes),
+            "mensagens_enviadas": mensagens_enviadas
+        })
+        
+    except Exception as e:
+        logger.error(f"❌ Erro no envio automático de aniversários: {str(e)}")
+
+
+@app.on_event("startup")
+async def startup_event():
+    """Inicia o scheduler de aniversários"""
+    logger.info("🚀 Iniciando scheduler de aniversários...")
+    
+    # Agendar tarefa para rodar às 00:00 todos os dias
+    scheduler.add_job(
+        enviar_mensagens_aniversario_automatico,
+        CronTrigger(hour=0, minute=0),  # 00:00
+        id="envio_aniversario_diario",
+        replace_existing=True
+    )
+    
+    scheduler.start()
+    logger.info("✅ Scheduler de aniversários iniciado! Próxima execução às 00:00")
+
+
 @app.on_event("shutdown")
 async def shutdown_db_client():
+    scheduler.shutdown()
     client.close()
