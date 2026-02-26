@@ -111,6 +111,8 @@ const AdminDashboard = () => {
   const [mensagemPadrao, setMensagemPadrao] = useState('Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️');
   const [atletasSelecionar, setAtletasSelecionar] = useState([]);
   const [loadingAniversariantes, setLoadingAniversariantes] = useState(false);
+  const [envioAutomatico, setEnvioAutomatico] = useState(false);
+  const [showConfigModal, setShowConfigModal] = useState(false);
 
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
