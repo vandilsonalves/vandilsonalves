@@ -2221,7 +2221,7 @@ async def enviar_aniversarios_agora(admin: dict = Depends(get_admin_user)):
         mensagens_enviadas += 1
     
     return {
-        "message": f"Processo concluído!",
+        "message": "Processo concluído!",
         "aniversariantes_hoje": len(aniversariantes),
         "mensagens_enviadas": mensagens_enviadas,
         "ja_enviadas_anteriormente": ja_enviadas
