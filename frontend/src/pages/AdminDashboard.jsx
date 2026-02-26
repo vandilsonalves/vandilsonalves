@@ -131,6 +131,7 @@ const AdminDashboard = () => {
     }
     if (activeMenu === 'aniversariantes') {
       fetchAniversariantes();
+      fetchConfigAniversario();
     }
   }, [activeMenu, filtroCategoria, mesCalendario, anoCalendario]);
 
