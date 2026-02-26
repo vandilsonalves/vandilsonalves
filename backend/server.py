@@ -2169,6 +2169,76 @@ async def update_configuracao_aniversario(dados: dict, admin: dict = Depends(get
     return {"message": "Configuração atualizada com sucesso!"}
 
 
+@api_router.post("/admin/aniversariantes/enviar-agora")
+async def enviar_aniversarios_agora(admin: dict = Depends(get_admin_user)):
+    """Força o envio imediato de mensagens de aniversário para os aniversariantes de hoje"""
+    hoje = datetime.now()
+    
+    # Buscar configuração
+    config = await db.configuracoes.find_one({"tipo": "mensagem_aniversario"}, {"_id": 0})
+    mensagem_padrao = config.get(
+        "mensagem_padrao", 
+        "Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️"
+    ) if config else "Feliz Aniversário! 🎂 O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️"
+    
+    # Buscar aniversariantes de hoje
+    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    
+    aniversariantes = []
+    for atleta in atletas:
+        if atleta.get("data_nascimento"):
+            try:
+                data_nasc = datetime.strptime(atleta["data_nascimento"], "%Y-%m-%d")
+                if data_nasc.month == hoje.month and data_nasc.day == hoje.day:
+                    aniversariantes.append(atleta)
+            except ValueError:
+                pass
+    
+    if not aniversariantes:
+        return {"message": "Nenhum aniversariante hoje!", "enviados": 0}
+    
+    mensagens_enviadas = 0
+    ja_enviadas = 0
+    
+    for atleta in aniversariantes:
+        # Verificar se já existe mensagem para este atleta neste ano
+        existente = await db.mensagens_aniversario.find_one({
+            "usuario_id": atleta["id"],
+            "ano": hoje.year
+        }, {"_id": 0})
+        
+        if existente:
+            ja_enviadas += 1
+            continue
+        
+        # Criar mensagem
+        msg = MensagemAniversario(
+            usuario_id=atleta["id"],
+            mensagem=mensagem_padrao,
+            ano=hoje.year
+        )
+        await db.mensagens_aniversario.insert_one(msg.model_dump())
+        mensagens_enviadas += 1
+    
+    return {
+        "message": f"Processo concluído!",
+        "aniversariantes_hoje": len(aniversariantes),
+        "mensagens_enviadas": mensagens_enviadas,
+        "ja_enviadas_anteriormente": ja_enviadas
+    }
+
+
+@api_router.get("/admin/aniversariantes/logs")
+async def get_logs_aniversario(admin: dict = Depends(get_admin_user)):
+    """Retorna os logs de execução do scheduler de aniversários"""
+    logs = await db.logs_scheduler.find(
+        {"tipo": "aniversario_automatico"},
+        {"_id": 0}
+    ).sort("data_execucao", -1).limit(10).to_list(10)
+    
+    return {"logs": logs}
+
+
 # ==================== INCLUDE ROUTER ====================
 
 app.include_router(api_router)
