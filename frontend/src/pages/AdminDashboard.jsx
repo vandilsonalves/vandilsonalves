@@ -263,6 +263,49 @@ const AdminDashboard = () => {
     return new Date(ano, mes - 1, 1).getDay();
   };
 
+  const fetchConfigAniversario = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/aniversariantes/configuracao`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setMensagemPadrao(response.data.mensagem_padrao || '');
+      setEnvioAutomatico(response.data.envio_automatico || false);
+    } catch (error) {
+      console.error('Erro ao buscar configuração:', error);
+    }
+  };
+
+  const handleSalvarConfigAniversario = async () => {
+    try {
+      await axios.put(`${API}/admin/aniversariantes/configuracao`, {
+        mensagem_padrao: mensagemPadrao,
+        envio_automatico: envioAutomatico
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Ação Concluída', { 
+        description: `Configurações salvas! Envio automático ${envioAutomatico ? 'ATIVADO' : 'DESATIVADO'}` 
+      });
+      setShowConfigModal(false);
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao salvar configuração' });
+    }
+  };
+
+  const handleEnviarAniversariosAgora = async () => {
+    try {
+      const response = await axios.post(`${API}/admin/aniversariantes/enviar-agora`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      const data = response.data;
+      toast.success('Ação Concluída', { 
+        description: `${data.mensagens_enviadas} mensagem(s) enviada(s). ${data.ja_enviadas_anteriormente} já enviada(s) anteriormente.` 
+      });
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao enviar mensagens' });
+    }
+  };
+
   const handleAprovar = async (resultadoId) => {
     setActionLoading(true);
     try {
