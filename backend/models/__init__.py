@@ -192,6 +192,7 @@ class AtletaDetalhes(BaseModel):
     etnia: str = ""
     instagram_url: str = ""
     facebook_url: str = ""
+    modalidade_usuario: str = "profissional_amador"
 
 class CorridaResponse(BaseModel):
     id: str
