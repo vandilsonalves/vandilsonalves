@@ -150,6 +150,15 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - **Endpoints**: `/api/ranking/povao`, `/api/ranking/povao/stats`
     - **Validação**: Backend bloqueia PCD/Cadeirante de selecionar modalidade Povão
 
+## Correções e Melhorias (02/03/2026 - Sessão 2)
+26. ✅ **Modal de Foto do Pódio** - Nas aprovações do admin, clique na foto para ampliar em modal
+27. ✅ **Ranking Semanal/Mensal Isolados** - Atletas do Povão não aparecem mais no ranking Profissional/Amador
+28. ✅ **Novos Gráficos no Dashboard Admin**:
+    - Gráfico de pizza: Distribuição por Modalidade (Profissional/Amador vs Povão)
+    - Card especial: Ranking do Povão - Estatísticas (total atletas, provas, pontos)
+    - Gráfico de barras: Top 10 Equipes / Assessorias
+    - Gráfico de barras: Distribuição por Categoria (Normal, PCD, Cadeirante M/F)
+
 ---
 
 ## Próximos Passos (Backlog)
