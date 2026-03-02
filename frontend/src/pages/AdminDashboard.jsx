@@ -538,13 +538,19 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filtrar atletas por busca e ordenar A-Z
+  // Filtrar atletas por busca, modalidade e ordenar A-Z
   const filteredAtletas = atletas
-    .filter(a => 
-      a.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.equipe?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      a.cidade?.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter(a => {
+      const matchSearch = a.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.equipe?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.cidade?.toLowerCase().includes(searchQuery.toLowerCase());
+      
+      const matchModalidade = filtroModalidade === 'all' || 
+        a.modalidade_usuario === filtroModalidade ||
+        (filtroModalidade === 'profissional_amador' && !a.modalidade_usuario); // Default é profissional
+      
+      return matchSearch && matchModalidade;
+    })
     .sort((a, b) => a.nome.localeCompare(b.nome));
 
   // Preparar dados para gráficos
