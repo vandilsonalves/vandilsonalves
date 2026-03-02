@@ -139,15 +139,26 @@ const SubmeterResultadoPage = () => {
                 </Alert>
               )}
 
-              <Alert className="bg-amber-50 border-amber-200">
-                <AlertDescription>
-                  <strong>Atenção:</strong> Você tem 6 dias úteis após a competição para enviar o resultado.
-                  <br />
-                  <strong>Colocações válidas:</strong> {user.categoria === 'pcd' || user.categoria === 'cadeirante' 
-                    ? '1º a 3º lugar (PCD/Cadeirante)' 
-                    : '1º a 10º lugar (Normal)'}
-                </AlertDescription>
-              </Alert>
+              {/* Alerta específico para cada modalidade */}
+              {isPovao ? (
+                <Alert className="bg-purple-50 border-purple-200">
+                  <AlertDescription>
+                    <strong>Ranking do Povão - Pace Livre</strong><br />
+                    Você compete pela distância percorrida, não pela colocação!<br />
+                    <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 7pts | 21km+ = 9pts
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <Alert className="bg-amber-50 border-amber-200">
+                  <AlertDescription>
+                    <strong>Atenção:</strong> Você tem 6 dias úteis após a competição para enviar o resultado.
+                    <br />
+                    <strong>Colocações válidas:</strong> {user?.categoria === 'pcd' || user?.categoria === 'cadeirante' 
+                      ? '1º a 3º lugar (PCD/Cadeirante)' 
+                      : '1º a 10º lugar (Normal)'}
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="md:col-span-2">
