@@ -26,10 +26,14 @@ const CadastroPage = () => {
     categoria: '',
     data_nascimento: '',
     etnia: '',
-    apelido: ''
+    apelido: '',
+    modalidade_usuario: 'profissional_amador'
   });
 
   const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo'];
+  
+  // Verificar se pode usar modalidade Povão (PCD e Cadeirante não podem)
+  const podeSelecionarPovao = formData.categoria === 'normal' || formData.categoria === '';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -193,6 +197,94 @@ const CadastroPage = () => {
                     placeholder="Como você quer ser chamado"
                     data-testid="input-apelido"
                   />
+                </div>
+
+                {/* Seleção de Modalidade */}
+                <div className="md:col-span-2">
+                  <Label className="text-base font-semibold">Modalidade de Participação *</Label>
+                  <p className="text-sm text-slate-500 mb-3">
+                    Escolha como você deseja competir no Ranking Run Pró
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {/* Opção Profissional/Amador */}
+                    <div 
+                      className={`relative border-2 rounded-xl p-4 cursor-pointer transition-all ${
+                        formData.modalidade_usuario === 'profissional_amador' 
+                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30' 
+                          : 'border-slate-200 hover:border-emerald-300'
+                      }`}
+                      onClick={() => handleChange('modalidade_usuario', 'profissional_amador')}
+                      data-testid="modalidade-profissional"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                          formData.modalidade_usuario === 'profissional_amador' 
+                            ? 'border-emerald-500 bg-emerald-500' 
+                            : 'border-slate-300'
+                        }`}>
+                          {formData.modalidade_usuario === 'profissional_amador' && (
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200">
+                            Atleta Profissional / Amador
+                          </h4>
+                          <p className="text-sm text-slate-500 mt-1">
+                            Pontuação baseada em colocação (1º a 10º lugar)
+                          </p>
+                          <div className="mt-2 text-xs text-slate-400">
+                            <span className="inline-block bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mr-1">1º = 10pts</span>
+                            <span className="inline-block bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded mr-1">2º = 9pts</span>
+                            <span className="inline-block bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">...</span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Opção Povão - Pace Livre */}
+                    <div 
+                      className={`relative border-2 rounded-xl p-4 transition-all ${
+                        !podeSelecionarPovao 
+                          ? 'opacity-50 cursor-not-allowed border-slate-200' 
+                          : formData.modalidade_usuario === 'povao_pace_livre'
+                            ? 'border-purple-500 bg-purple-50 dark:bg-purple-900/30 cursor-pointer'
+                            : 'border-slate-200 hover:border-purple-300 cursor-pointer'
+                      }`}
+                      onClick={() => podeSelecionarPovao && handleChange('modalidade_usuario', 'povao_pace_livre')}
+                      data-testid="modalidade-povao"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`w-5 h-5 rounded-full border-2 flex items-center justify-center mt-0.5 ${
+                          formData.modalidade_usuario === 'povao_pace_livre' 
+                            ? 'border-purple-500 bg-purple-500' 
+                            : 'border-slate-300'
+                        }`}>
+                          {formData.modalidade_usuario === 'povao_pace_livre' && (
+                            <div className="w-2 h-2 rounded-full bg-white" />
+                          )}
+                        </div>
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-slate-800 dark:text-slate-200">
+                            Ranking do Povão - Pace Livre
+                          </h4>
+                          <p className="text-sm text-slate-500 mt-1">
+                            Pontuação baseada apenas na distância percorrida
+                          </p>
+                          <div className="mt-2 text-xs text-slate-400">
+                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded mr-1">5-9km = 5pts</span>
+                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded mr-1">10-20km = 7pts</span>
+                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded">21km+ = 9pts</span>
+                          </div>
+                          {!podeSelecionarPovao && (
+                            <p className="text-xs text-red-500 mt-2">
+                              Não disponível para PCD/Cadeirante
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
               </div>
 
