@@ -169,6 +169,15 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Botão "Limpar Filtros" funcionando
     - Layout responsivo com sidebar de filtros
 
+31. ✅ **Transferência de Modalidade (Admin)** - Botão para transferir atletas entre rankings:
+    - Botão "↔️" no card de cada atleta NORMAL (não aparece para PCD/Cadeirante)
+    - Modal de confirmação com explicação das regras de pontuação
+    - **Pro/Amador → Povão**: Recalcula pontos por distância (5-9km=5pts, 10-20km=7pts, 21km+=9pts)
+    - **Povão → Pro/Amador**: Recalcula pontos por colocação (1º=10pts, 2º=9pts, etc.)
+    - Atleta é removido do ranking antigo e inserido no novo
+    - Notificação automática enviada ao atleta
+    - Endpoint: POST `/api/admin/atletas/{id}/transferir-modalidade`
+
 ---
 
 ## Próximos Passos (Backlog)
