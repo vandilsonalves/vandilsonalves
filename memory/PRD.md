@@ -159,6 +159,16 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Gráfico de barras: Top 10 Equipes / Assessorias
     - Gráfico de barras: Distribuição por Categoria (Normal, PCD, Cadeirante M/F)
 
+## Correções Críticas (02/03/2026 - Sessão 3)
+29. ✅ **CRÍTICO: Isolamento Total de Rankings** - Paulo Malheiros e Ravir Luiz (Povão) removidos completamente do ranking Profissional/Amador
+    - `calcular_ranking()` modificado para ignorar atletas com `modalidade_usuario='povao_pace_livre'`
+    - `get_ranking_por_categoria()` com verificação dupla de segurança
+    - Banco de dados recalculado para remover atletas Povão do ranking_anual principal
+30. ✅ **Filtros no Ranking do Povão** - Adicionados todos os filtros conforme ranking Profissional:
+    - Nome, Colocação, UF, Faixa Etária, Equipe, Cidade
+    - Botão "Limpar Filtros" funcionando
+    - Layout responsivo com sidebar de filtros
+
 ---
 
 ## Próximos Passos (Backlog)
