@@ -1,0 +1,122 @@
+{
+  "summary": "Completed e2e testing of 'Ranking do Povão - Pace Livre' feature. All backend APIs working (12/12 tests passed). Frontend UI displays ranking type selector, modalidade selection in cadastro, and Povão view with stats/filters. Minor fix applied: added modalidade_usuario to /auth/me endpoint response.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ranking_povao.py",
+    "/app/test_reports/pytest/pytest_ranking_povao.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Fixed: /api/auth/me endpoint was missing modalidade_usuario field - now returns user's modality for proper frontend state management"
+  ],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/backend/tests/test_ranking_povao.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (8/8 features verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"},
+    "atleta": {"email": "leonardocarvalhofilho_normal_1@email.com", "password": "atleta123"}
+  },
+  "seed_data_creation": "Created test Povão athletes during automated tests (auto-cleaned)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Ranking do Povão feature fully implemented. Povão ranking shows 0 athletes because no results have been submitted yet - this is expected as the feature is new. The calcular_ranking_povao() function processes submitted results correctly.",
+  "verified_features": {
+    "1_cadastro_modalidade_selection": {
+      "status": "PASS",
+      "description": "Cadastro page displays two modalidade cards: 'Atleta Profissional/Amador' (points by position) and 'Ranking do Povão - Pace Livre' (points by distance). Cards are selectable with visual feedback (emerald/purple borders)."
+    },
+    "2_pcd_cadeirante_validation": {
+      "status": "PASS",
+      "description": "Backend correctly rejects PCD/Cadeirante athletes from selecting povao_pace_livre modality with 400 status and clear error message."
+    },
+    "3_ranking_povao_endpoint": {
+      "status": "PASS",
+      "description": "GET /api/ranking/povao?genero=M|F returns correct structure: genero (Masculino/Feminino), total_atletas, ranking array with colocacao, atleta_id, nome, pontos, total_corridas, distancia_acumulada."
+    },
+    "4_ranking_povao_stats_endpoint": {
+      "status": "PASS",
+      "description": "GET /api/ranking/povao/stats returns: total_atletas_masculino, total_atletas_feminino, total_atletas, total_provas, total_pontos."
+    },
+    "5_ranking_page_tipo_selector": {
+      "status": "PASS",
+      "description": "Ranking page displays type selector with 'Ranking Profissional/Amador' and 'Ranking do Povão' buttons. Clicking toggles between views correctly."
+    },
+    "6_povao_view_stats_cards": {
+      "status": "PASS",
+      "description": "Povão view displays 4 stats cards: Atletas Povão, Masculino, Feminino, Provas Registradas. All with correct purple/pink/blue/amber gradients."
+    },
+    "7_povao_gender_filter": {
+      "status": "PASS",
+      "description": "Povão ranking shows Masculino/Feminino filter buttons. Clicking toggles between gender-specific rankings."
+    },
+    "8_povao_points_explanation": {
+      "status": "PASS",
+      "description": "Povão view displays points system explanation: '5km a 9km = 5 pontos', '10km a 20km = 7 pontos', '21km ou mais = 9 pontos'. Also shows tiebreaker criteria."
+    },
+    "9_admin_modalidade_filter": {
+      "status": "PASS",
+      "description": "Admin Dashboard Atletas section includes modalidade filter: 'Todas', 'Profissional/Amador', 'Ranking do Povão'. Athletes show modalidade badge (Pro/Amador or Povão)."
+    },
+    "10_submeter_resultado_adaptation": {
+      "status": "PASS",
+      "description": "SubmeterResultadoPage checks user.modalidade_usuario and hides colocacao/tempo fields for Povão athletes. Shows purple theme and distance-based points info."
+    }
+  },
+  "api_test_results": {
+    "ranking_povao_masculino": {
+      "endpoint": "GET /api/ranking/povao?genero=M",
+      "status": 200,
+      "response_structure": "genero, total_atletas, ranking[]"
+    },
+    "ranking_povao_feminino": {
+      "endpoint": "GET /api/ranking/povao?genero=F",
+      "status": 200,
+      "response_structure": "genero, total_atletas, ranking[]"
+    },
+    "ranking_povao_stats": {
+      "endpoint": "GET /api/ranking/povao/stats",
+      "status": 200,
+      "response_structure": "total_atletas_masculino, total_atletas_feminino, total_atletas, total_provas, total_pontos"
+    },
+    "register_povao_athlete": {
+      "endpoint": "POST /api/auth/register",
+      "status": 200,
+      "description": "Successfully registers athlete with modalidade_usuario=povao_pace_livre"
+    },
+    "register_pcd_povao_blocked": {
+      "endpoint": "POST /api/auth/register",
+      "status": 400,
+      "description": "Correctly blocks PCD athlete from selecting Povão modality"
+    },
+    "register_cadeirante_povao_blocked": {
+      "endpoint": "POST /api/auth/register",
+      "status": 400,
+      "description": "Correctly blocks Cadeirante athlete from selecting Povão modality"
+    },
+    "auth_me_returns_modalidade": {
+      "endpoint": "GET /api/auth/me",
+      "status": 200,
+      "description": "Now returns modalidade_usuario field for proper frontend state"
+    }
+  },
+  "backend_tests_passed": 12,
+  "backend_tests_failed": 0,
+  "fix_applied": {
+    "file": "/app/backend/server.py",
+    "line": "165-175",
+    "description": "Added modalidade_usuario to /api/auth/me response so frontend can properly detect user's modality for SubmeterResultadoPage adaptation"
+  }
+}
