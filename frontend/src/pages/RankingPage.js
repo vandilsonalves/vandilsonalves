@@ -276,17 +276,17 @@ const RankingPage = () => {
               </CardContent>
             </Card>
 
-        {/* Layout: Filtros + Tabela */}
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {/* Sidebar de Filtros */}
-          <Card className="lg:col-span-1 h-fit border-slate-200 dark:border-slate-800 shadow-lg">
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center gap-2">
-                <Search className="w-5 h-5" />
-                Opções de filtro
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+            {/* Layout: Filtros + Tabela */}
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+              {/* Sidebar de Filtros */}
+              <Card className="lg:col-span-1 h-fit border-slate-200 dark:border-slate-800 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Search className="w-5 h-5" />
+                    Opções de filtro
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
               {/* Filtro Nome */}
               <div>
                 <Label htmlFor="filtro-nome" className="text-sm font-medium mb-2 block">
