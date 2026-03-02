@@ -131,6 +131,18 @@ const RankingPage = () => {
     return nomeMatch && colocacaoMatch && ufMatch;
   });
 
+  // Aplicar filtros locais para o Povão
+  const rankingPovaoFiltrado = rankingPovao.filter(atleta => {
+    const nomeMatch = atleta.nome.toLowerCase().includes(filtroNomePovao.toLowerCase());
+    const colocacaoMatch = filtroColocacaoPovao === '' || atleta.colocacao === parseInt(filtroColocacaoPovao);
+    const ufMatch = filtroUFPovao === '' || atleta.uf?.toUpperCase() === filtroUFPovao.toUpperCase();
+    const faixaMatch = filtroFaixaPovao === '' || filtroFaixaPovao === 'all' || atleta.faixa_etaria === filtroFaixaPovao;
+    const equipeMatch = filtroEquipePovao === '' || filtroEquipePovao === 'all' || atleta.equipe?.toLowerCase().includes(filtroEquipePovao.toLowerCase());
+    const cidadeMatch = filtroCidadePovao === '' || atleta.cidade?.toLowerCase().includes(filtroCidadePovao.toLowerCase());
+    
+    return nomeMatch && colocacaoMatch && ufMatch && faixaMatch && equipeMatch && cidadeMatch;
+  });
+
   const handleAtletaClick = (atletaId) => {
     navigate(`/atleta/${atletaId}`);
   };
@@ -147,6 +159,15 @@ const RankingPage = () => {
     setFiltroFaixa('');
     setFiltroEquipe('');
     setFiltroCidade('');
+  };
+
+  const limparFiltrosPovao = () => {
+    setFiltroNomePovao('');
+    setFiltroColocacaoPovao('');
+    setFiltroUFPovao('');
+    setFiltroFaixaPovao('');
+    setFiltroEquipePovao('');
+    setFiltroCidadePovao('');
   };
 
   return (
