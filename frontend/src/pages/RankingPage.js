@@ -815,6 +815,7 @@ const RankingPage = () => {
                 )}
               </CardContent>
             </Card>
+            </div>
           </div>
         )}
       </div>
