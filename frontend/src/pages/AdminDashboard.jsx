@@ -973,6 +973,37 @@ const AdminDashboard = () => {
               </div>
             </div>
 
+            {/* Filtro por Modalidade */}
+            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Modalidade:</span>
+              <div className="flex gap-2">
+                <Button
+                  variant={filtroModalidade === 'all' ? 'default' : 'outline'}
+                  onClick={() => setFiltroModalidade('all')}
+                  size="sm"
+                  className={filtroModalidade === 'all' ? 'bg-slate-700' : ''}
+                >
+                  Todas
+                </Button>
+                <Button
+                  variant={filtroModalidade === 'profissional_amador' ? 'default' : 'outline'}
+                  onClick={() => setFiltroModalidade('profissional_amador')}
+                  size="sm"
+                  className={filtroModalidade === 'profissional_amador' ? 'bg-emerald-600' : ''}
+                >
+                  Profissional/Amador
+                </Button>
+                <Button
+                  variant={filtroModalidade === 'povao_pace_livre' ? 'default' : 'outline'}
+                  onClick={() => setFiltroModalidade('povao_pace_livre')}
+                  size="sm"
+                  className={filtroModalidade === 'povao_pace_livre' ? 'bg-purple-600' : ''}
+                >
+                  Ranking do Povão
+                </Button>
+              </div>
+            </div>
+
             {/* Barra de Pesquisa */}
             <div className="relative">
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
