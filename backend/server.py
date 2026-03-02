@@ -1135,7 +1135,7 @@ async def admin_delete_foto_podio(resultado_id: str, admin: dict = Depends(get_a
 # ==================== RANKING ENDPOINTS ====================
 
 async def calcular_ranking():
-    """Calcula o ranking anual agregando corridas"""
+    """Calcula o ranking anual agregando corridas (apenas Profissional/Amador)"""
     ano_atual = 2025
     
     await db.ranking_anual.delete_many({"ano": ano_atual})
@@ -1155,6 +1155,11 @@ async def calcular_ranking():
     for agg in agregados:
         usuario = await db.usuarios.find_one({"id": agg["_id"]}, {"_id": 0})
         if usuario:
+            # IMPORTANTE: Filtrar apenas atletas Profissional/Amador (não Povão)
+            modalidade = usuario.get("modalidade_usuario", "profissional_amador")
+            if modalidade == "povao_pace_livre":
+                continue  # Ignorar atletas do Povão no ranking principal
+            
             ranking_docs.append({
                 "usuario_id": agg["_id"],
                 "ano": ano_atual,
@@ -1163,7 +1168,8 @@ async def calcular_ranking():
                 "estado": usuario["estado"],
                 "genero": usuario["genero"],
                 "categoria": usuario["categoria"],
-                "faixa_etaria": usuario["faixa_etaria"]
+                "faixa_etaria": usuario["faixa_etaria"],
+                "modalidade_usuario": modalidade
             })
     
     ranking_docs.sort(key=lambda x: x["pontos_total"], reverse=True)
