@@ -72,6 +72,62 @@ def get_min_corridas_categoria(categoria: str) -> int:
         return 8
     return 12
 
+
+def calcular_pontos_povao(distancia: str) -> int:
+    """Calcula pontos para a modalidade Povão - Pace Livre
+    
+    Regras:
+    - 5km até 9km: 5 pontos
+    - 10km até 20km: 7 pontos
+    - 21km ou mais: 9 pontos
+    """
+    # Converter distância para número
+    dist_str = distancia.upper().replace('KM', '').replace('K', '').strip()
+    
+    try:
+        dist_num = float(dist_str)
+    except ValueError:
+        # Tentar extrair número da string
+        if '5' in distancia:
+            dist_num = 5
+        elif '10' in distancia:
+            dist_num = 10
+        elif '21' in distancia or 'MEIA' in distancia.upper():
+            dist_num = 21
+        elif '42' in distancia or 'MARATONA' in distancia.upper():
+            dist_num = 42
+        else:
+            dist_num = 5  # Default
+    
+    # Calcular pontos por faixa de distância
+    if dist_num >= 21:
+        return 9
+    elif dist_num >= 10:
+        return 7
+    elif dist_num >= 5:
+        return 5
+    else:
+        return 0
+
+
+def extrair_distancia_km(distancia: str) -> float:
+    """Extrai o valor numérico da distância em KM"""
+    dist_str = distancia.upper().replace('KM', '').replace('K', '').strip()
+    
+    try:
+        return float(dist_str)
+    except ValueError:
+        if '5' in distancia:
+            return 5.0
+        elif '10' in distancia:
+            return 10.0
+        elif '21' in distancia or 'MEIA' in distancia.upper():
+            return 21.0
+        elif '42' in distancia or 'MARATONA' in distancia.upper():
+            return 42.0
+        else:
+            return 5.0
+
 # Conquistas disponíveis
 CONQUISTAS = {
     "primeiro_lugar": {
