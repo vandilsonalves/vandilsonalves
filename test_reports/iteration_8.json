@@ -1,0 +1,108 @@
+{
+  "summary": "Iteration 8: Critical bug fixes verified - Povão athlete isolation and Povão filters. All 12 backend tests passed. All 9 UI tests passed.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable component",
+        "issues": ["Minor HTML hydration warning: <tr> inside <span> - doesn't affect functionality but shows in console logs"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_povao_isolation_iter8.py",
+    "/app/test_reports/pytest/pytest_povao_isolation_iter8.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_povao_isolation_iter8.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (9/9 UI tests passed)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "None - existing data verified",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All Povão isolation features verified. Paulo Silva Malheiros and Ravir Luiz correctly appear ONLY in Povão ranking (not in Professional/Amateur). Povão ranking has all 6 filters (Nome, Colocação, UF, Faixa Etária, Equipe, Cidade) and Limpar Filtros button working.",
+  "verified_features": {
+    "critical_bug_fix_1": {
+      "description": "Povão athletes NOT appearing in Professional/Amateur ranking",
+      "status": "PASS",
+      "tested_endpoints": [
+        "/api/ranking/categoria/masculino/M",
+        "/api/ranking/categoria/feminino/F",
+        "/api/ranking/categoria/pcd-m/M",
+        "/api/ranking/categoria/pcd-f/F",
+        "/api/ranking/categoria/cadeirante-m/M",
+        "/api/ranking/categoria/cadeirante-f/F"
+      ],
+      "verification": "Paulo Silva Malheiros and Ravir Luiz NOT found in any Professional category"
+    },
+    "critical_bug_fix_2": {
+      "description": "Paulo Silva Malheiros and Ravir Luiz appear in Povão ranking",
+      "status": "PASS",
+      "tested_endpoint": "/api/ranking/povao?genero=M",
+      "verification": "Both athletes visible with correct points (Ravir: 7pts, Paulo: 5pts)"
+    },
+    "feature_povao_filters": {
+      "description": "Povão ranking has all 6 filters like Professional",
+      "status": "PASS",
+      "filters_verified": ["Nome", "Colocação", "UF", "Faixa Etária", "Equipe", "Cidade"],
+      "data_testids": [
+        "filtro-nome-povao",
+        "filtro-colocacao-povao",
+        "filtro-uf-povao",
+        "filtro-faixa-povao",
+        "filtro-equipe-povao",
+        "filtro-cidade-povao"
+      ]
+    },
+    "feature_limpar_filtros_povao": {
+      "description": "Limpar Filtros button clears all Povão filters",
+      "status": "PASS",
+      "data_testid": "btn-limpar-povao"
+    },
+    "ranking_semanal_mensal_isolation": {
+      "description": "Weekly and Monthly rankings exclude Povão athletes",
+      "status": "PASS",
+      "tested_endpoints": [
+        "/api/ranking/semanal?categoria=masculino",
+        "/api/ranking/mensal?categoria=masculino"
+      ]
+    }
+  },
+  "api_test_results": {
+    "ranking_povao_masculino": {
+      "endpoint": "GET /api/ranking/povao?genero=M",
+      "status": 200,
+      "total_athletes": 2,
+      "athletes": ["Ravir Luiz (7pts)", "Paulo Silva Malheiros (5pts)"]
+    },
+    "ranking_profissional_masculino": {
+      "endpoint": "GET /api/ranking/categoria/masculino/M",
+      "status": 200,
+      "total_athletes": 15,
+      "povao_athletes_found": 0,
+      "verification": "PASS - No Povão athletes in Professional ranking"
+    },
+    "povao_stats": {
+      "endpoint": "GET /api/ranking/povao/stats",
+      "status": 200,
+      "verified_fields": ["total_atletas", "total_atletas_masculino", "total_atletas_feminino", "total_provas", "total_pontos"]
+    }
+  },
+  "backend_tests_passed": 12,
+  "backend_tests_failed": 0,
+  "ui_tests_passed": 9,
+  "ui_tests_failed": 0
+}
