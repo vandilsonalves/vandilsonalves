@@ -138,17 +138,29 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 - Aproximadamente 971 corridas
 - Distribuição uniforme por estados e faixas etárias
 
+## Novas Funcionalidades (02/03/2026)
+25. ✅ **Ranking do Povão - Pace Livre** - Nova modalidade de ranking:
+    - **Cadastro**: Campo obrigatório para escolher modalidade (Profissional/Amador vs Povão)
+    - **Pontuação por distância**: 5-9km = 5pts, 10-20km = 7pts, 21km+ = 9pts
+    - **Ranking isolado**: Completamente separado do ranking Profissional/Amador
+    - **Filtros**: Apenas Masculino e Feminino (PCD/Cadeirante não podem participar)
+    - **View dedicada**: Cards de estatísticas, explicação do sistema de pontos
+    - **Submissão adaptada**: Formulário sem campos de colocação/tempo para atletas Povão
+    - **Admin**: Filtro por modalidade na lista de atletas + badge de modalidade nos cards
+    - **Endpoints**: `/api/ranking/povao`, `/api/ranking/povao/stats`
+    - **Validação**: Backend bloqueia PCD/Cadeirante de selecionar modalidade Povão
+
 ---
 
 ## Próximos Passos (Backlog)
-1. **P0**: Implementação de notificações por e-mail (Resend)
-2. **P1**: Ranking histórico por ano (filtro por temporada)
+1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
+2. **P2**: Ranking histórico por ano (filtro por temporada)
 3. Melhorias de performance (cache)
 4. Integração real com Strava API
 
 ---
 
-## Correções Implementadas (25/02/2026)
+Última atualização: 02/03/2026
 1. ✅ Botão "Exportar Dados" na aba Atletas - funcional com download de Excel
 2. ✅ Mensagem "Ação Concluída" em todas as alterações (toast.success)
 3. ✅ Upload de foto de perfil do atleta - corrigido com timestamp para forçar reload
