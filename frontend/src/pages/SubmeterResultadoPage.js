@@ -21,14 +21,17 @@ const SubmeterResultadoPage = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   
+  // Verificar se usuário é da modalidade Povão
+  const isPovao = user?.modalidade_usuario === 'povao_pace_livre';
+  
   const [formData, setFormData] = useState({
     nome_competicao: '',
-    colocacao: '',
+    colocacao: isPovao ? '0' : '',
     cidade_competicao: '',
     estado_competicao: '',
     data_competicao: '',
     link_resultado: '',
-    tempo: '',
+    tempo: isPovao ? '00:00:00' : '',
     distancia: ''
   });
   
