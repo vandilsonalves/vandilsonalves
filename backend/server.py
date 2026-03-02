@@ -524,21 +524,27 @@ async def submeter_resultado(
             detail="Prazo expirado! Você tem apenas 6 dias úteis para enviar o resultado após a competição."
         )
     
-    # VALIDAR COLOCAÇÃO (APENAS POSIÇÕES QUE PONTUAM)
+    # Verificar modalidade do usuário
+    modalidade_usuario = current_user.get("modalidade_usuario", "profissional_amador")
     categoria = current_user.get("categoria", "normal")
     
-    if categoria in ["pcd", "cadeirante"]:
-        if colocacao < 1 or colocacao > 3:
-            raise HTTPException(
-                status_code=400,
-                detail=f"Para categoria {categoria.upper()}, apenas colocações de 1º a 3º são válidas e pontuam."
-            )
-    else:
-        if colocacao < 1 or colocacao > 10:
-            raise HTTPException(
-                status_code=400,
-                detail="Para categoria Normal, apenas colocações de 1º a 10º são válidas e pontuam."
-            )
+    # VALIDAÇÃO PARA PROFISSIONAL/AMADOR
+    if modalidade_usuario == "profissional_amador":
+        # VALIDAR COLOCAÇÃO (APENAS POSIÇÕES QUE PONTUAM)
+        if categoria in ["pcd", "cadeirante"]:
+            if colocacao < 1 or colocacao > 3:
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Para categoria {categoria.upper()}, apenas colocações de 1º a 3º são válidas e pontuam."
+                )
+        else:
+            if colocacao < 1 or colocacao > 10:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Para categoria Normal, apenas colocações de 1º a 10º são válidas e pontuam."
+                )
+    # VALIDAÇÃO PARA POVÃO - não valida colocação, apenas participação
+    # Colocação será 0 ou ignorada
     
     # Salvar foto (OPCIONAL)
     foto_url = ""
@@ -552,22 +558,24 @@ async def submeter_resultado(
         
         foto_url = f"/uploads/{foto_filename}"
     
-    # Criar resultado pendente
+    # Criar resultado pendente com modalidade
     resultado = ResultadoPendente(
         usuario_id=current_user["id"],
         nome_competicao=nome_competicao,
-        colocacao=colocacao,
+        colocacao=colocacao if modalidade_usuario == "profissional_amador" else 0,
         cidade_competicao=cidade_competicao,
         estado_competicao=estado_competicao,
         data_competicao=data_competicao,
         link_resultado=link_resultado,
-        tempo=tempo,
+        tempo=tempo if modalidade_usuario == "profissional_amador" else "00:00:00",
         distancia=distancia,
         foto_podio_url=foto_url,
         status="pendente"
     )
     
+    # Adicionar modalidade ao resultado pendente
     doc = resultado.model_dump()
+    doc["modalidade"] = modalidade_usuario
     await db.resultados_pendentes.insert_one(doc)
     
     return {
