@@ -85,8 +85,34 @@ const RankingPage = () => {
       }
     };
 
-    fetchRanking();
-  }, [categoriaAtual, filtroFaixa, filtroEquipe, filtroCidade]);
+    if (tipoRanking === 'profissional') {
+      fetchRanking();
+    }
+  }, [categoriaAtual, filtroFaixa, filtroEquipe, filtroCidade, tipoRanking]);
+
+  // Buscar ranking do Povão
+  useEffect(() => {
+    const fetchRankingPovao = async () => {
+      setLoadingPovao(true);
+      try {
+        const [rankingRes, statsRes] = await Promise.all([
+          axios.get(`${API}/ranking/povao?genero=${generoPovao}`),
+          axios.get(`${API}/ranking/povao/stats`)
+        ]);
+        setRankingPovao(rankingRes.data.ranking || []);
+        setPovaoStats(statsRes.data);
+      } catch (error) {
+        console.error('Erro ao buscar ranking Povão:', error);
+        setRankingPovao([]);
+      } finally {
+        setLoadingPovao(false);
+      }
+    };
+
+    if (tipoRanking === 'povao') {
+      fetchRankingPovao();
+    }
+  }, [tipoRanking, generoPovao]);
 
   // Aplicar filtros locais
   const rankingFiltrado = rankingData.filter(atleta => {
