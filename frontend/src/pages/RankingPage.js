@@ -42,6 +42,14 @@ const RankingPage = () => {
   const [filtroEquipe, setFiltroEquipe] = useState('');
   const [filtroCidade, setFiltroCidade] = useState('');
   
+  // Filtros do Povão
+  const [filtroNomePovao, setFiltroNomePovao] = useState('');
+  const [filtroColocacaoPovao, setFiltroColocacaoPovao] = useState('');
+  const [filtroUFPovao, setFiltroUFPovao] = useState('');
+  const [filtroFaixaPovao, setFiltroFaixaPovao] = useState('');
+  const [filtroEquipePovao, setFiltroEquipePovao] = useState('');
+  const [filtroCidadePovao, setFiltroCidadePovao] = useState('');
+  
   // Dados auxiliares
   const [faixasDisponiveis, setFaixasDisponiveis] = useState([]);
   const [equipesDisponiveis, setEquipesDisponiveis] = useState([]);
