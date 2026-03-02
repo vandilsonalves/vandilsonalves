@@ -66,6 +66,7 @@ const AdminDashboard = () => {
   const [atletas, setAtletas] = useState([]);
   const [loadingAtletas, setLoadingAtletas] = useState(false);
   const [filtroCategoria, setFiltroCategoria] = useState('all');
+  const [filtroModalidade, setFiltroModalidade] = useState('all'); // all, profissional_amador, povao_pace_livre
   const [searchQuery, setSearchQuery] = useState('');
   const [showAtletaModal, setShowAtletaModal] = useState(false);
   const [atletaEditando, setAtletaEditando] = useState(null);
