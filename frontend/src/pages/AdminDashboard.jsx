@@ -534,6 +534,13 @@ const AdminDashboard = () => {
     }
   };
 
+  // Função para abrir modal de visualização da foto
+  const handleViewFoto = (fotoUrl) => {
+    const fullUrl = fotoUrl.startsWith('http') ? fotoUrl : `${BACKEND_URL}${fotoUrl}`;
+    setFotoModalUrl(fullUrl);
+    setShowFotoModal(true);
+  };
+
   const handleExportAtletas = async () => {
     try {
       const response = await axios.get(`${API}/admin/atletas/export`, {
