@@ -32,7 +32,8 @@ from models import (
 from services import (
     verify_password, get_password_hash, create_access_token,
     calcular_faixa_etaria, gerar_foto_url, calcular_pontos_colocacao,
-    get_min_corridas_categoria, SECRET_KEY, ALGORITHM, CONQUISTAS
+    get_min_corridas_categoria, SECRET_KEY, ALGORITHM, CONQUISTAS,
+    calcular_pontos_povao, extrair_distancia_km
 )
 
 ROOT_DIR = Path(__file__).parent
