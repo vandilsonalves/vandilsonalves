@@ -1,0 +1,86 @@
+{
+  "summary": "Testing iteration 7: All 3 bug fixes and 4 new features verified. Backend: 17/17 tests passed. Frontend: All 7 dashboard items verified, photo modal implementation verified in code (no pending results with photos to test).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_bug_fixes_iter7.py",
+    "/app/test_reports/pytest/pytest_bug_fixes_iter7.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_bug_fixes_iter7.py"
+  ],
+  "success_rate": {
+    "backend": "100% (17/17 tests passed)",
+    "frontend": "100% (7/7 features verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "None - existing data used",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All features from iteration 7 are working correctly. The photo modal in Aprovações could not be tested because there are no pending results with photos, but code implementation is verified in AdminDashboard.jsx (lines 2136-2158).",
+  "verified_features": {
+    "bug_fix_1_photo_modal": {
+      "status": "PASS (code verified)",
+      "description": "Photo modal implementation exists in AdminDashboard.jsx. handleViewFoto function opens modal, modal has data-testid='foto-podio-modal'. Could not test via UI as no pending results with photos exist."
+    },
+    "bug_fix_2_ranking_semanal_filtering": {
+      "status": "PASS",
+      "description": "Endpoint /api/ranking/semanal correctly filters by modalidade_usuario != 'povao_pace_livre'. Backend test verified no overlap between Povão and Semanal rankings."
+    },
+    "bug_fix_3_ranking_mensal_filtering": {
+      "status": "PASS",
+      "description": "Endpoint /api/ranking/mensal correctly filters by modalidade_usuario != 'povao_pace_livre'. Backend test verified no overlap between Povão and Mensal rankings."
+    },
+    "feature_distribuicao_por_modalidade": {
+      "status": "PASS",
+      "description": "Dashboard shows pie chart 'Distribuição por Modalidade' with Profissional/Amador (93%) vs Ranking do Povão (7%)."
+    },
+    "feature_ranking_povao_stats": {
+      "status": "PASS",
+      "description": "Dashboard shows 'Ranking do Povão - Estatísticas' card with: Total de Atletas, Provas Registradas, Masculino, Feminino, Total de Pontos Distribuídos."
+    },
+    "feature_top10_equipes": {
+      "status": "PASS",
+      "description": "Dashboard shows 'Top 10 Equipes / Assessorias' horizontal bar chart with team rankings (Campinas Running, Run Fast, Força Atlética, etc.)."
+    },
+    "feature_distribuicao_por_categoria": {
+      "status": "PASS",
+      "description": "Dashboard shows 'Distribuição por Categoria' bar chart with Normal M, Normal F, PCD M, PCD F, Cadeirante M, Cadeirante F."
+    }
+  },
+  "api_test_results": {
+    "ranking_semanal": {
+      "endpoint": "GET /api/ranking/semanal?categoria=masculino",
+      "status": 200,
+      "verified": "Returns only profissional_amador athletes"
+    },
+    "ranking_mensal": {
+      "endpoint": "GET /api/ranking/mensal?categoria=masculino",
+      "status": 200,
+      "verified": "Returns only profissional_amador athletes"
+    },
+    "admin_stats": {
+      "endpoint": "GET /api/admin/stats",
+      "status": 200,
+      "verified": "Returns total_atletas, resultados_pendentes, total_corridas"
+    },
+    "povao_stats": {
+      "endpoint": "GET /api/ranking/povao/stats",
+      "status": 200,
+      "verified": "Returns total_atletas, total_atletas_masculino, total_atletas_feminino, total_provas, total_pontos"
+    }
+  },
+  "backend_tests_passed": 17,
+  "backend_tests_failed": 0
+}
