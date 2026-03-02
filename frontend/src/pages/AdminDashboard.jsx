@@ -173,12 +173,13 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes] = await Promise.all([
+      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/estados`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/ranking/povao/stats`)
       ]);
       
       setStats(statsRes.data);
@@ -186,6 +187,38 @@ const AdminDashboard = () => {
       setStatsCategorias(categoriasRes.data);
       setStatsFaixa(faixaRes.data);
       setCorridasPorMes(corridasRes.data);
+      setStatsPovao(povaoRes.data);
+      
+      // Calcular estatísticas de equipes a partir dos atletas
+      const atletasRes = await axios.get(`${API}/admin/atletas`, { headers: { Authorization: `Bearer ${token}` } });
+      const atletas = atletasRes.data;
+      
+      // Contar por equipe
+      const equipesCount = {};
+      let profissionalCount = 0;
+      let povaoCount = 0;
+      
+      atletas.forEach(a => {
+        const equipe = a.equipe || 'Sem equipe';
+        equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
+        
+        // Contar modalidades
+        if (a.modalidade_usuario === 'povao_pace_livre') {
+          povaoCount++;
+        } else {
+          profissionalCount++;
+        }
+      });
+      
+      // Converter para array e ordenar por quantidade
+      const equipesArray = Object.entries(equipesCount)
+        .map(([equipe, total]) => ({ equipe, total }))
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10); // Top 10 equipes
+      
+      setStatsEquipes(equipesArray);
+      setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
+      
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
     } finally {
