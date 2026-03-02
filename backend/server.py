@@ -1595,6 +1595,7 @@ async def get_ranking_por_categoria(
     equipe: Optional[str] = None,
     cidade: Optional[str] = None
 ):
+    """Retorna ranking por categoria (apenas Profissional/Amador)"""
     cat_map = {
         "masculino": ("normal", "M"),
         "feminino": ("normal", "F"),
@@ -1619,6 +1620,11 @@ async def get_ranking_por_categoria(
     for rank in ranking_list:
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
+            # IMPORTANTE: Garantir que atletas do Povão não apareçam no ranking Profissional
+            modalidade = usuario.get("modalidade_usuario", "profissional_amador")
+            if modalidade == "povao_pace_livre":
+                continue  # Ignorar atletas do Povão
+            
             # Filtros adicionais
             if equipe and equipe.lower() not in usuario["equipe"].lower():
                 continue
