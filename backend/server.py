@@ -617,48 +617,95 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
     if not usuario:
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
-    pontos = calcular_pontos_colocacao(resultado["colocacao"], usuario["categoria"])
+    # Verificar modalidade do usuário
+    modalidade_usuario = usuario.get("modalidade_usuario", "profissional_amador")
     
-    if pontos == 0:
-        raise HTTPException(
-            status_code=400,
-            detail=f"Colocação {resultado['colocacao']}º não pontua para categoria {usuario['categoria']}"
+    if modalidade_usuario == "povao_pace_livre":
+        # PONTUAÇÃO POVÃO - baseada apenas na distância
+        pontos = 0  # Pontos normais zerados
+        pontos_povao = calcular_pontos_povao(resultado["distancia"])
+        
+        corrida = Corrida(
+            usuario_id=resultado["usuario_id"],
+            nome=resultado["nome_competicao"],
+            colocacao=0,  # Não importa para Povão
+            tempo="00:00:00",  # Não importa para Povão
+            pontos=0,  # Não usa pontos tradicionais
+            pontos_povao=pontos_povao,
+            local=f"{resultado['cidade_competicao']}/{resultado['estado_competicao']}",
+            distancia=resultado["distancia"],
+            data=resultado["data_competicao"],
+            ano=2025,
+            modalidade="povao_pace_livre"
         )
+        
+        await db.corridas.insert_one(corrida.model_dump())
+        
+        await db.resultados_pendentes.update_one(
+            {"id": resultado_id},
+            {"$set": {"status": "aprovado"}}
+        )
+        
+        # Recalcular ranking Povão
+        await calcular_ranking_povao()
+        
+        # Notificar atleta
+        await criar_notificacao(
+            usuario_id=resultado["usuario_id"],
+            tipo="aprovacao",
+            titulo="Resultado aprovado!",
+            mensagem=f"Seu resultado na {resultado['nome_competicao']} foi aprovado! Você ganhou {pontos_povao} pontos no Ranking do Povão.",
+            dados_extras={"pontos": pontos_povao, "competicao": resultado["nome_competicao"], "modalidade": "povao"}
+        )
+        
+        return {"message": "Resultado aprovado com sucesso!", "pontos_adicionados": pontos_povao, "modalidade": "povao_pace_livre"}
     
-    corrida = Corrida(
-        usuario_id=resultado["usuario_id"],
-        nome=resultado["nome_competicao"],
-        colocacao=resultado["colocacao"],
-        tempo=resultado["tempo"],
-        pontos=pontos,
-        local=f"{resultado['cidade_competicao']}/{resultado['estado_competicao']}",
-        distancia=resultado["distancia"],
-        data=resultado["data_competicao"],
-        ano=2025
-    )
-    
-    await db.corridas.insert_one(corrida.model_dump())
-    
-    await db.resultados_pendentes.update_one(
-        {"id": resultado_id},
-        {"$set": {"status": "aprovado"}}
-    )
-    
-    await calcular_ranking()
-    
-    # Notificar atleta
-    await criar_notificacao(
-        usuario_id=resultado["usuario_id"],
-        tipo="aprovacao",
-        titulo="Resultado aprovado!",
-        mensagem=f"Seu resultado na {resultado['nome_competicao']} foi aprovado! Você ganhou {pontos} pontos.",
-        dados_extras={"pontos": pontos, "competicao": resultado["nome_competicao"]}
-    )
-    
-    # Verificar conquistas
-    await verificar_conquistas(resultado["usuario_id"])
-    
-    return {"message": "Resultado aprovado com sucesso!", "pontos_adicionados": pontos}
+    else:
+        # PONTUAÇÃO PROFISSIONAL/AMADOR - tradicional
+        pontos = calcular_pontos_colocacao(resultado["colocacao"], usuario["categoria"])
+        
+        if pontos == 0:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Colocação {resultado['colocacao']}º não pontua para categoria {usuario['categoria']}"
+            )
+        
+        corrida = Corrida(
+            usuario_id=resultado["usuario_id"],
+            nome=resultado["nome_competicao"],
+            colocacao=resultado["colocacao"],
+            tempo=resultado["tempo"],
+            pontos=pontos,
+            pontos_povao=0,
+            local=f"{resultado['cidade_competicao']}/{resultado['estado_competicao']}",
+            distancia=resultado["distancia"],
+            data=resultado["data_competicao"],
+            ano=2025,
+            modalidade="profissional_amador"
+        )
+        
+        await db.corridas.insert_one(corrida.model_dump())
+        
+        await db.resultados_pendentes.update_one(
+            {"id": resultado_id},
+            {"$set": {"status": "aprovado"}}
+        )
+        
+        await calcular_ranking()
+        
+        # Notificar atleta
+        await criar_notificacao(
+            usuario_id=resultado["usuario_id"],
+            tipo="aprovacao",
+            titulo="Resultado aprovado!",
+            mensagem=f"Seu resultado na {resultado['nome_competicao']} foi aprovado! Você ganhou {pontos} pontos.",
+            dados_extras={"pontos": pontos, "competicao": resultado["nome_competicao"]}
+        )
+        
+        # Verificar conquistas
+        await verificar_conquistas(resultado["usuario_id"])
+        
+        return {"message": "Resultado aprovado com sucesso!", "pontos_adicionados": pontos}
 
 @api_router.post("/admin/reprovar/{resultado_id}")
 async def reprovar_resultado(
