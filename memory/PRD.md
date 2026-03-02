@@ -217,4 +217,4 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 ---
 
-Última atualização: 26/02/2026
+Última atualização: 02/03/2026
