@@ -58,6 +58,15 @@ const AdminDashboard = () => {
   const [corridasPorMes, setCorridasPorMes] = useState([]);
   const [loadingStats, setLoadingStats] = useState(true);
   
+  // Stats Avançados
+  const [statsEquipes, setStatsEquipes] = useState([]);
+  const [statsPovao, setStatsPovao] = useState(null);
+  const [statsModalidade, setStatsModalidade] = useState({ profissional: 0, povao: 0 });
+  
+  // Modal de visualização de foto do pódio
+  const [showFotoModal, setShowFotoModal] = useState(false);
+  const [fotoModalUrl, setFotoModalUrl] = useState('');
+  
   // Pendentes
   const [pendentes, setPendentes] = useState([]);
   const [loadingPendentes, setLoadingPendentes] = useState(true);
