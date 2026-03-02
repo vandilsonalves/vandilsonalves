@@ -500,54 +500,25 @@ const RankingPage = () => {
 
         {/* Ranking do Povão */}
         {tipoRanking === 'povao' && (
-          <div className="space-y-6">
-            {/* Stats do Povão */}
-            {povaoStats && (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-0 shadow-lg">
-                  <CardContent className="pt-6 text-center">
-                    <Users className="w-8 h-8 mx-auto mb-2 text-purple-600" />
-                    <div className="text-3xl font-bold text-purple-700">{povaoStats.total_atletas || 0}</div>
-                    <div className="text-sm text-purple-600">Atletas Povão</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-0 shadow-lg">
-                  <CardContent className="pt-6 text-center">
-                    <Target className="w-8 h-8 mx-auto mb-2 text-blue-600" />
-                    <div className="text-3xl font-bold text-blue-700">{povaoStats.total_atletas_masculino || 0}</div>
-                    <div className="text-sm text-blue-600">Masculino</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 border-0 shadow-lg">
-                  <CardContent className="pt-6 text-center">
-                    <Target className="w-8 h-8 mx-auto mb-2 text-pink-600" />
-                    <div className="text-3xl font-bold text-pink-700">{povaoStats.total_atletas_feminino || 0}</div>
-                    <div className="text-sm text-pink-600">Feminino</div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border-0 shadow-lg">
-                  <CardContent className="pt-6 text-center">
-                    <Trophy className="w-8 h-8 mx-auto mb-2 text-amber-600" />
-                    <div className="text-3xl font-bold text-amber-700">{povaoStats.total_provas || 0}</div>
-                    <div className="text-sm text-amber-600">Provas Registradas</div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Filtro de Gênero */}
-            <Card className="border-purple-200 dark:border-purple-800 shadow-lg">
-              <CardContent className="pt-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-2">
-                    <Users className="w-5 h-5 text-purple-500" />
-                    <span className="font-semibold text-lg">Ranking do Povão - Pace Livre</span>
-                  </div>
-                  <div className="flex gap-2">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Sidebar de Filtros - Povão */}
+            <Card className="lg:col-span-1 h-fit border-purple-200 dark:border-purple-800 shadow-lg">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
+                  <Search className="w-5 h-5" />
+                  Opções de filtro
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {/* Filtro de Gênero */}
+                <div>
+                  <Label className="text-purple-700">Gênero</Label>
+                  <div className="flex gap-2 mt-2">
                     <Button
                       variant={generoPovao === 'M' ? 'default' : 'outline'}
                       onClick={() => setGeneroPovao('M')}
-                      className={generoPovao === 'M' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                      className={`flex-1 ${generoPovao === 'M' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                      size="sm"
                       data-testid="povao-masculino"
                     >
                       Masculino
@@ -555,47 +526,182 @@ const RankingPage = () => {
                     <Button
                       variant={generoPovao === 'F' ? 'default' : 'outline'}
                       onClick={() => setGeneroPovao('F')}
-                      className={generoPovao === 'F' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                      className={`flex-1 ${generoPovao === 'F' ? 'bg-purple-600 hover:bg-purple-700' : ''}`}
+                      size="sm"
                       data-testid="povao-feminino"
                     >
                       Feminino
                     </Button>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
 
-            {/* Info sobre o sistema de pontuação */}
-            <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
-              <CardContent className="pt-4">
-                <div className="flex items-start gap-3">
-                  <HelpCircle className="w-5 h-5 text-purple-600 mt-0.5" />
-                  <div className="text-sm text-purple-800 dark:text-purple-200">
-                    <p className="font-semibold mb-1">Sistema de Pontuação do Povão</p>
-                    <p>A pontuação é baseada apenas na distância percorrida, não importa a colocação:</p>
-                    <div className="flex flex-wrap gap-2 mt-2">
-                      <Badge className="bg-purple-200 text-purple-800 border-0">5km a 9km = 5 pontos</Badge>
-                      <Badge className="bg-purple-300 text-purple-800 border-0">10km a 20km = 7 pontos</Badge>
-                      <Badge className="bg-purple-400 text-purple-900 border-0">21km ou mais = 9 pontos</Badge>
-                    </div>
-                    <p className="mt-2 text-xs text-purple-600">Critérios de desempate: 1º Pontos, 2º Número de Provas, 3º Distância Acumulada</p>
-                  </div>
+                {/* Nome */}
+                <div>
+                  <Label>Nome</Label>
+                  <Input
+                    placeholder="Buscar por nome"
+                    value={filtroNomePovao}
+                    onChange={(e) => setFiltroNomePovao(e.target.value)}
+                    data-testid="filtro-nome-povao"
+                  />
+                </div>
+
+                {/* Colocação */}
+                <div>
+                  <Label>Colocação</Label>
+                  <Input
+                    type="number"
+                    placeholder="Ex: 1"
+                    value={filtroColocacaoPovao}
+                    onChange={(e) => setFiltroColocacaoPovao(e.target.value)}
+                    data-testid="filtro-colocacao-povao"
+                  />
+                </div>
+
+                {/* UF */}
+                <div>
+                  <Label>UF</Label>
+                  <Input
+                    placeholder="Ex: SP"
+                    value={filtroUFPovao}
+                    onChange={(e) => setFiltroUFPovao(e.target.value.toUpperCase())}
+                    maxLength={2}
+                    data-testid="filtro-uf-povao"
+                  />
+                </div>
+
+                {/* Faixa Etária */}
+                <div>
+                  <Label>Faixa Etária</Label>
+                  <Select value={filtroFaixaPovao} onValueChange={setFiltroFaixaPovao}>
+                    <SelectTrigger data-testid="filtro-faixa-povao">
+                      <SelectValue placeholder="Todas as faixas" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as faixas</SelectItem>
+                      <SelectItem value="18-29">18-29</SelectItem>
+                      <SelectItem value="30-39">30-39</SelectItem>
+                      <SelectItem value="40-49">40-49</SelectItem>
+                      <SelectItem value="50-59">50-59</SelectItem>
+                      <SelectItem value="60+">60+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Equipe */}
+                <div>
+                  <Label>Equipe</Label>
+                  <Select value={filtroEquipePovao} onValueChange={setFiltroEquipePovao}>
+                    <SelectTrigger data-testid="filtro-equipe-povao">
+                      <SelectValue placeholder="Todas as equipes" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Todas as equipes</SelectItem>
+                      {equipesDisponiveis.map(eq => (
+                        <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Cidade */}
+                <div>
+                  <Label>Cidade</Label>
+                  <Input
+                    placeholder="Ex: São Paulo"
+                    value={filtroCidadePovao}
+                    onChange={(e) => setFiltroCidadePovao(e.target.value)}
+                    data-testid="filtro-cidade-povao"
+                  />
+                </div>
+
+                {/* Botões */}
+                <div className="space-y-2 pt-2">
+                  <Button 
+                    className="w-full bg-purple-500 hover:bg-purple-600 text-white font-semibold"
+                    data-testid="btn-filtrar-povao"
+                  >
+                    Filtrar
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="w-full"
+                    onClick={limparFiltrosPovao}
+                    data-testid="btn-limpar-povao"
+                  >
+                    Limpar Filtros
+                  </Button>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Tabela do Ranking Povão */}
-            <Card className="border-purple-200 dark:border-purple-800 shadow-lg">
-              <CardHeader>
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Users className="w-5 h-5 text-purple-500" />
-                  Ranking do Povão - {generoPovao === 'M' ? 'Masculino' : 'Feminino'}
-                  <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
-                    ({rankingPovao.length} atletas)
-                  </span>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
+            {/* Conteúdo Principal - Povão */}
+            <div className="lg:col-span-3 space-y-6">
+              {/* Stats do Povão */}
+              {povaoStats && (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-0 shadow-lg">
+                    <CardContent className="pt-6 text-center">
+                      <Users className="w-8 h-8 mx-auto mb-2 text-purple-600" />
+                      <div className="text-3xl font-bold text-purple-700">{povaoStats.total_atletas || 0}</div>
+                      <div className="text-sm text-purple-600">Atletas Povão</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-0 shadow-lg">
+                    <CardContent className="pt-6 text-center">
+                      <Target className="w-8 h-8 mx-auto mb-2 text-blue-600" />
+                      <div className="text-3xl font-bold text-blue-700">{povaoStats.total_atletas_masculino || 0}</div>
+                      <div className="text-sm text-blue-600">Masculino</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-pink-50 to-pink-100 dark:from-pink-900/30 dark:to-pink-800/30 border-0 shadow-lg">
+                    <CardContent className="pt-6 text-center">
+                      <Target className="w-8 h-8 mx-auto mb-2 text-pink-600" />
+                      <div className="text-3xl font-bold text-pink-700">{povaoStats.total_atletas_feminino || 0}</div>
+                      <div className="text-sm text-pink-600">Feminino</div>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/30 border-0 shadow-lg">
+                    <CardContent className="pt-6 text-center">
+                      <Trophy className="w-8 h-8 mx-auto mb-2 text-amber-600" />
+                      <div className="text-3xl font-bold text-amber-700">{povaoStats.total_provas || 0}</div>
+                      <div className="text-sm text-amber-600">Provas Registradas</div>
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
+
+              {/* Info sobre o sistema de pontuação */}
+              <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
+                <CardContent className="pt-4">
+                  <div className="flex items-start gap-3">
+                    <HelpCircle className="w-5 h-5 text-purple-600 mt-0.5" />
+                    <div className="text-sm text-purple-800 dark:text-purple-200">
+                      <p className="font-semibold mb-1">Sistema de Pontuação do Povão</p>
+                      <p>A pontuação é baseada apenas na distância percorrida, não importa a colocação:</p>
+                      <div className="flex flex-wrap gap-2 mt-2">
+                        <Badge className="bg-purple-200 text-purple-800 border-0">5km a 9km = 5 pontos</Badge>
+                        <Badge className="bg-purple-300 text-purple-800 border-0">10km a 20km = 7 pontos</Badge>
+                        <Badge className="bg-purple-400 text-purple-900 border-0">21km ou mais = 9 pontos</Badge>
+                      </div>
+                      <p className="mt-2 text-xs text-purple-600">Critérios de desempate: 1º Pontos, 2º Número de Provas, 3º Distância Acumulada</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Tabela do Ranking Povão */}
+              <Card className="border-purple-200 dark:border-purple-800 shadow-lg">
+                <CardHeader>
+                  <CardTitle className="text-xl flex items-center gap-2">
+                    <Users className="w-5 h-5 text-purple-500" />
+                    Ranking do Povão - {generoPovao === 'M' ? 'Masculino' : 'Feminino'}
+                    <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
+                      ({rankingPovaoFiltrado.length} atletas)
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
                 {loadingPovao ? (
                   <div className="text-center py-12 text-slate-600 dark:text-slate-400">
                     Carregando ranking do Povão...
