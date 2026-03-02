@@ -837,6 +837,171 @@ const AdminDashboard = () => {
                     </div>
                   </CardContent>
                 </Card>
+
+                {/* Novos Gráficos - Linha 2 */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Distribuição por Modalidade */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Users className="w-5 h-5 text-purple-500" />
+                        Distribuição por Modalidade
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPie>
+                            <Pie
+                              data={[
+                                { name: 'Profissional/Amador', value: statsModalidade.profissional, color: '#10B981' },
+                                { name: 'Ranking do Povão', value: statsModalidade.povao, color: '#8B5CF6' }
+                              ]}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={60}
+                              outerRadius={100}
+                              paddingAngle={5}
+                              dataKey="value"
+                              label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
+                            >
+                              <Cell fill="#10B981" />
+                              <Cell fill="#8B5CF6" />
+                            </Pie>
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Legend />
+                          </RechartsPie>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Ranking do Povão - Estatísticas */}
+                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2 text-purple-700 dark:text-purple-300">
+                        <Trophy className="w-5 h-5" />
+                        Ranking do Povão - Estatísticas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {statsPovao ? (
+                        <div className="space-y-4">
+                          <div className="grid grid-cols-2 gap-4">
+                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
+                              <div className="text-3xl font-bold text-purple-600">{statsPovao.total_atletas || 0}</div>
+                              <div className="text-sm text-purple-600/80">Total de Atletas</div>
+                            </div>
+                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
+                              <div className="text-3xl font-bold text-purple-600">{statsPovao.total_provas || 0}</div>
+                              <div className="text-sm text-purple-600/80">Provas Registradas</div>
+                            </div>
+                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
+                              <div className="text-3xl font-bold text-blue-600">{statsPovao.total_atletas_masculino || 0}</div>
+                              <div className="text-sm text-blue-600/80">Masculino</div>
+                            </div>
+                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
+                              <div className="text-3xl font-bold text-pink-600">{statsPovao.total_atletas_feminino || 0}</div>
+                              <div className="text-sm text-pink-600/80">Feminino</div>
+                            </div>
+                          </div>
+                          <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
+                            <div className="text-4xl font-bold text-amber-600">{statsPovao.total_pontos || 0}</div>
+                            <div className="text-sm text-amber-600/80">Total de Pontos Distribuídos</div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center text-purple-600/60 py-8">
+                          Carregando estatísticas...
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Top 10 Equipes/Assessorias */}
+                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-500" />
+                      Top 10 Equipes / Assessorias
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={statsEquipes} layout="vertical">
+                          <defs>
+                            <linearGradient id="colorEquipes" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#3B82F6" stopOpacity={1}/>
+                              <stop offset="100%" stopColor="#06B6D4" stopOpacity={1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis type="number" stroke="#9CA3AF" />
+                          <YAxis 
+                            dataKey="equipe" 
+                            type="category" 
+                            stroke="#9CA3AF" 
+                            width={150}
+                            tick={{ fontSize: 11 }}
+                            tickFormatter={(v) => v.length > 20 ? `${v.slice(0, 20)}...` : v}
+                          />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} 
+                            formatter={(value) => [`${value} atletas`, 'Quantidade']}
+                          />
+                          <Bar dataKey="total" fill="url(#colorEquipes)" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Cards de Resumo por Categoria */}
+                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <Activity className="w-5 h-5 text-emerald-500" />
+                      Distribuição por Categoria
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {statsCategorias && (
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={[
+                              { categoria: 'Normal M', total: statsCategorias.normal_m || 0, fill: '#10B981' },
+                              { categoria: 'Normal F', total: statsCategorias.normal_f || 0, fill: '#EC4899' },
+                              { categoria: 'PCD M', total: statsCategorias.pcd_m || 0, fill: '#3B82F6' },
+                              { categoria: 'PCD F', total: statsCategorias.pcd_f || 0, fill: '#F59E0B' },
+                              { categoria: 'Cadeirante M', total: statsCategorias.cadeirante_m || 0, fill: '#8B5CF6' },
+                              { categoria: 'Cadeirante F', total: statsCategorias.cadeirante_f || 0, fill: '#EF4444' }
+                            ]}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                            <XAxis dataKey="categoria" stroke="#9CA3AF" fontSize={11} angle={-15} textAnchor="end" />
+                            <YAxis stroke="#9CA3AF" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Bar dataKey="total" radius={[4, 4, 0, 0]}>
+                              {[
+                                { fill: '#10B981' },
+                                { fill: '#EC4899' },
+                                { fill: '#3B82F6' },
+                                { fill: '#F59E0B' },
+                                { fill: '#8B5CF6' },
+                                { fill: '#EF4444' }
+                              ].map((entry, index) => (
+                                <Cell key={`cell-${index}`} fill={entry.fill} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
               </>
             )}
           </div>
