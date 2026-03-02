@@ -171,23 +171,26 @@ const SubmeterResultadoPage = () => {
                   />
                 </div>
 
-                <div>
-                  <Label>Sua Colocação *</Label>
-                  <Input
-                    type="number"
-                    min="1"
-                    max={user.categoria === 'pcd' || user.categoria === 'cadeirante' ? 3 : 10}
-                    value={formData.colocacao}
-                    onChange={(e) => handleChange('colocacao', e.target.value)}
-                    placeholder={user.categoria === 'pcd' || user.categoria === 'cadeirante' ? "1 a 3" : "1 a 10"}
-                    required
-                  />
-                  <p className="text-xs text-slate-500 mt-1">
-                    {user.categoria === 'pcd' || user.categoria === 'cadeirante' 
-                      ? '⚠️ PCD/Cadeirante: Apenas 1º a 3º lugar pontuam e podem ser enviados'
-                      : '⚠️ Normal: Apenas 1º a 10º lugar pontuam e podem ser enviados'}
-                  </p>
-                </div>
+                {/* Campo de Colocação - oculto para Povão */}
+                {!isPovao && (
+                  <div>
+                    <Label>Sua Colocação *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max={user?.categoria === 'pcd' || user?.categoria === 'cadeirante' ? 3 : 10}
+                      value={formData.colocacao}
+                      onChange={(e) => handleChange('colocacao', e.target.value)}
+                      placeholder={user?.categoria === 'pcd' || user?.categoria === 'cadeirante' ? "1 a 3" : "1 a 10"}
+                      required
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      {user?.categoria === 'pcd' || user?.categoria === 'cadeirante' 
+                        ? 'PCD/Cadeirante: Apenas 1º a 3º lugar pontuam'
+                        : 'Normal: Apenas 1º a 10º lugar pontuam'}
+                    </p>
+                  </div>
+                )}
 
                 <div>
                   <Label>Distância *</Label>
@@ -203,6 +206,15 @@ const SubmeterResultadoPage = () => {
                       <SelectItem value="OUTRA">Outra</SelectItem>
                     </SelectContent>
                   </Select>
+                  {isPovao && (
+                    <p className="text-xs text-purple-600 mt-1">
+                      {formData.distancia === '5KM' && '5 pontos'}
+                      {formData.distancia === '10KM' && '7 pontos'}
+                      {formData.distancia === '21KM' && '9 pontos'}
+                      {formData.distancia === '42KM' && '9 pontos'}
+                      {formData.distancia === 'OUTRA' && 'Pontuação depende da distância'}
+                    </p>
+                  )}
                 </div>
 
                 <div>
