@@ -1140,6 +1140,127 @@ async def calcular_ranking():
     return len(ranking_docs)
 
 
+# ==================== RANKING DO POVÃO ====================
+
+async def calcular_ranking_povao():
+    """Calcula ranking para modalidade Povão - Pace Livre"""
+    await db.ranking_povao.delete_many({"ano": 2025})
+    
+    # Buscar usuários da modalidade Povão (excluindo PCD e Cadeirante)
+    usuarios_povao = await db.usuarios.find({
+        "role": "atleta",
+        "modalidade_usuario": "povao_pace_livre",
+        "categoria": "normal"  # Apenas atletas normais
+    }, {"_id": 0}).to_list(None)
+    
+    ranking_docs = []
+    
+    for usuario in usuarios_povao:
+        corridas = await db.corridas.find({
+            "usuario_id": usuario["id"],
+            "ano": 2025,
+            "modalidade": "povao_pace_livre"
+        }, {"_id": 0}).to_list(None)
+        
+        if not corridas:
+            continue
+        
+        pontos_total = sum(c.get("pontos_povao", 0) for c in corridas)
+        total_corridas = len(corridas)
+        distancia_acumulada = sum(extrair_distancia_km(c.get("distancia", "5KM")) for c in corridas)
+        
+        ranking_docs.append(RankingPovao(
+            usuario_id=usuario["id"],
+            ano=2025,
+            pontos_total=pontos_total,
+            total_corridas=total_corridas,
+            distancia_acumulada=distancia_acumulada,
+            estado=usuario["estado"],
+            genero=usuario["genero"]
+        ).model_dump())
+    
+    # Ordenar: 1º Pontos, 2º Nº Provas, 3º Distância acumulada
+    ranking_docs.sort(key=lambda x: (-x["pontos_total"], -x["total_corridas"], -x["distancia_acumulada"]))
+    
+    # Atribuir posições por gênero
+    for genero in ["M", "F"]:
+        genero_docs = [r for r in ranking_docs if r["genero"] == genero]
+        for i, doc in enumerate(genero_docs, 1):
+            doc["ranking_genero"] = i
+    
+    # Atribuir posição geral
+    for i, doc in enumerate(ranking_docs, 1):
+        doc["ranking_geral"] = i
+    
+    if ranking_docs:
+        await db.ranking_povao.insert_many(ranking_docs)
+    
+    return len(ranking_docs)
+
+
+@api_router.get("/ranking/povao")
+async def get_ranking_povao(genero: str = "M"):
+    """Retorna o ranking do Povão - Pace Livre"""
+    
+    ranking_list = await db.ranking_povao.find(
+        {"ano": 2025, "genero": genero},
+        {"_id": 0}
+    ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).to_list(None)
+    
+    result = []
+    for rank in ranking_list:
+        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+        if usuario:
+            result.append({
+                "colocacao": rank["ranking_genero"],
+                "atleta_id": rank["usuario_id"],
+                "nome": usuario["nome"],
+                "uf": usuario["estado"],
+                "cidade": usuario["cidade"],
+                "faixa_etaria": usuario["faixa_etaria"],
+                "foto_url": usuario.get("foto_url", ""),
+                "equipe": usuario.get("equipe", ""),
+                "total_corridas": rank["total_corridas"],
+                "distancia_acumulada": rank["distancia_acumulada"],
+                "pontos": rank["pontos_total"]
+            })
+    
+    return {
+        "genero": "Masculino" if genero == "M" else "Feminino",
+        "total_atletas": len(result),
+        "ranking": result
+    }
+
+
+@api_router.get("/ranking/povao/stats")
+async def get_povao_stats():
+    """Retorna estatísticas do ranking do Povão"""
+    
+    total_atletas_m = await db.ranking_povao.count_documents({"ano": 2025, "genero": "M"})
+    total_atletas_f = await db.ranking_povao.count_documents({"ano": 2025, "genero": "F"})
+    
+    # Total de provas e pontos
+    pipeline = [
+        {"$match": {"modalidade": "povao_pace_livre", "ano": 2025}},
+        {"$group": {
+            "_id": None,
+            "total_provas": {"$sum": 1},
+            "total_pontos": {"$sum": "$pontos_povao"},
+            "total_distancia": {"$sum": {"$toDouble": {"$replaceAll": {"input": {"$toUpper": "$distancia"}, "find": "KM", "replacement": ""}}}}
+        }}
+    ]
+    
+    stats = await db.corridas.aggregate(pipeline).to_list(1)
+    
+    return {
+        "total_atletas_masculino": total_atletas_m,
+        "total_atletas_feminino": total_atletas_f,
+        "total_atletas": total_atletas_m + total_atletas_f,
+        "total_provas": stats[0]["total_provas"] if stats else 0,
+        "total_pontos": stats[0]["total_pontos"] if stats else 0
+    }
+
+
 # ==================== RANKING SEMANAL E MENSAL ====================
 
 @api_router.get("/ranking/semanal")
