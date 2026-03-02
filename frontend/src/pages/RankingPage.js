@@ -200,33 +200,81 @@ const RankingPage = () => {
           </div>
         </div>
 
-        {/* Tabs de Categorias */}
-        <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg">
-          <CardContent className="pt-6">
-            <Tabs value={categoriaAtual} onValueChange={setCategoriaAtual} className="w-full">
-              <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto gap-1">
-                <TabsTrigger value="masculino" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-masculino">
-                  MASCULINO
-                </TabsTrigger>
-                <TabsTrigger value="feminino" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-feminino">
-                  FEMININO
-                </TabsTrigger>
-                <TabsTrigger value="pcd-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-m">
-                  PCD / M
-                </TabsTrigger>
-                <TabsTrigger value="pcd-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-f">
-                  PCD / F
-                </TabsTrigger>
-                <TabsTrigger value="cadeirante-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-cadeirante-m">
-                  CADEIRANTE / M
-                </TabsTrigger>
-                <TabsTrigger value="cadeirante-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-cadeirante-f">
-                  CADEIRANTE / F
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
+        {/* Seletor de Tipo de Ranking */}
+        <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
+          <CardContent className="p-0">
+            <div className="grid grid-cols-2">
+              {/* Opção Profissional/Amador */}
+              <button 
+                className={`py-4 px-6 flex items-center justify-center gap-3 transition-all ${
+                  tipoRanking === 'profissional' 
+                    ? 'bg-emerald-500 text-white' 
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                }`}
+                onClick={() => setTipoRanking('profissional')}
+                data-testid="tipo-ranking-profissional"
+              >
+                <Trophy className="w-5 h-5" />
+                <div className="text-left">
+                  <p className="font-semibold">Ranking Profissional/Amador</p>
+                  <p className={`text-xs ${tipoRanking === 'profissional' ? 'text-emerald-100' : 'text-slate-400'}`}>
+                    Pontuação por colocação
+                  </p>
+                </div>
+              </button>
+              
+              {/* Opção Povão */}
+              <button 
+                className={`py-4 px-6 flex items-center justify-center gap-3 transition-all ${
+                  tipoRanking === 'povao' 
+                    ? 'bg-purple-500 text-white' 
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                }`}
+                onClick={() => setTipoRanking('povao')}
+                data-testid="tipo-ranking-povao"
+              >
+                <Users className="w-5 h-5" />
+                <div className="text-left">
+                  <p className="font-semibold">Ranking do Povão</p>
+                  <p className={`text-xs ${tipoRanking === 'povao' ? 'text-purple-100' : 'text-slate-400'}`}>
+                    Pace Livre - Pontuação por distância
+                  </p>
+                </div>
+              </button>
+            </div>
           </CardContent>
         </Card>
+
+        {/* Ranking Profissional/Amador */}
+        {tipoRanking === 'profissional' && (
+          <>
+            {/* Tabs de Categorias */}
+            <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg">
+              <CardContent className="pt-6">
+                <Tabs value={categoriaAtual} onValueChange={setCategoriaAtual} className="w-full">
+                  <TabsList className="grid w-full grid-cols-2 lg:grid-cols-6 h-auto gap-1">
+                    <TabsTrigger value="masculino" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-masculino">
+                      MASCULINO
+                    </TabsTrigger>
+                    <TabsTrigger value="feminino" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-feminino">
+                      FEMININO
+                    </TabsTrigger>
+                    <TabsTrigger value="pcd-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-m">
+                      PCD / M
+                    </TabsTrigger>
+                    <TabsTrigger value="pcd-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-pcd-f">
+                      PCD / F
+                    </TabsTrigger>
+                    <TabsTrigger value="cadeirante-m" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-cadeirante-m">
+                      CADEIRANTE / M
+                    </TabsTrigger>
+                    <TabsTrigger value="cadeirante-f" className="font-semibold py-3 text-xs lg:text-sm" data-testid="tab-cadeirante-f">
+                      CADEIRANTE / F
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
+              </CardContent>
+            </Card>
 
         {/* Layout: Filtros + Tabela */}
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
