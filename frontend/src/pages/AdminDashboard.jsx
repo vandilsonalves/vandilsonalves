@@ -1038,12 +1038,22 @@ const AdminDashboard = () => {
                           <div className="flex-1 min-w-0">
                             <h3 className="font-semibold truncate">{atleta.nome}</h3>
                             <p className="text-sm text-slate-500">{atleta.equipe}</p>
-                            <div className="flex gap-2 mt-1">
+                            <div className="flex flex-wrap gap-2 mt-1">
                               <Badge variant="outline" className="text-xs">
                                 {atleta.categoria?.toUpperCase()}
                               </Badge>
                               <Badge variant="outline" className="text-xs">
                                 {atleta.genero === 'M' ? 'Masc' : 'Fem'}
+                              </Badge>
+                              {/* Badge de Modalidade */}
+                              <Badge 
+                                className={`text-xs ${
+                                  atleta.modalidade_usuario === 'povao_pace_livre' 
+                                    ? 'bg-purple-100 text-purple-700 border-purple-300' 
+                                    : 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                                }`}
+                              >
+                                {atleta.modalidade_usuario === 'povao_pace_livre' ? 'Povão' : 'Pro/Amador'}
                               </Badge>
                             </div>
                           </div>
