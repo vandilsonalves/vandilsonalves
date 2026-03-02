@@ -913,24 +913,36 @@ const AdminDashboard = () => {
                           <p className="text-sm font-medium mb-2 flex items-center gap-2">
                             <Image className="w-4 h-4 text-blue-500" />
                             Foto do Pódio
+                            <span className="text-xs text-blue-500 font-normal">(clique para ampliar)</span>
                           </p>
-                          <div className="relative inline-block">
+                          <div className="relative inline-block group">
                             <img 
                               src={resultado.foto_podio_url.startsWith('http') ? resultado.foto_podio_url : `${BACKEND_URL}${resultado.foto_podio_url}`}
                               alt="Foto do Pódio"
-                              className="max-h-48 rounded-lg border border-slate-200 object-cover"
+                              className="max-h-48 rounded-lg border border-slate-200 object-cover cursor-pointer transition-all hover:ring-4 hover:ring-blue-300"
+                              onClick={() => handleViewFoto(resultado.foto_podio_url)}
+                              data-testid={`foto-podio-${resultado.id}`}
                             />
+                            <div 
+                              className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center cursor-pointer"
+                              onClick={() => handleViewFoto(resultado.foto_podio_url)}
+                            >
+                              <Eye className="w-8 h-8 text-white" />
+                            </div>
                             <Button
                               size="sm"
                               variant="destructive"
-                              className="absolute top-2 right-2"
-                              onClick={() => handleDeleteFotoPodio(resultado.id)}
+                              className="absolute top-2 right-2 z-10"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteFotoPodio(resultado.id);
+                              }}
                             >
                               <Trash2 className="w-3 h-3" />
                             </Button>
                           </div>
                           <p className="text-xs text-slate-500 mt-1">
-                            ⏰ A foto será auto-excluída em 24h após aprovação/reprovação
+                            A foto será auto-excluída em 24h após aprovação/reprovação
                           </p>
                         </div>
                       )}
