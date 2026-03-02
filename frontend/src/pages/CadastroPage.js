@@ -51,7 +51,16 @@ const CadastroPage = () => {
   };
 
   const handleChange = (field, value) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
+    setFormData(prev => {
+      const newData = { ...prev, [field]: value };
+      
+      // Se categoria mudou para PCD ou Cadeirante, forçar modalidade profissional
+      if (field === 'categoria' && (value === 'pcd' || value === 'cadeirante')) {
+        newData.modalidade_usuario = 'profissional_amador';
+      }
+      
+      return newData;
+    });
   };
 
   return (
