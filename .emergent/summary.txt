@@ -1,81 +1,77 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou a criação de uma plataforma completa de ranking de corrida chamada Ranking Run Pró. Os requisitos evoluíram significativamente, começando com um sistema de ranking duplo (Nacional e Estadual) e culminando em uma plataforma completa com múltiplos papéis (atleta, admin) e funcionalidades avançadas.
+O usuário solicitou a criação de uma nova modalidade de ranking paralela chamada Ranking do Povão – Pace Livre. Esta modalidade é destinada a corredores que participam de provas pela distância percorrida, e não pela colocação ou tempo.
 
-**REQUISITOS DO PRODUTO:**
-1.  **Sistema de Ranking:**
-    *   Rankings Nacionais e Estaduais, filtráveis por categoria, faixa etária, equipe e cidade.
-    *   Sistema de pontuação específico para diferentes categorias.
-    *   Selo P para atletas com poucas provas.
-2.  **Autenticação e Perfis de Atleta:**
-    *   Cadastro e login para atletas e administradores.
-    *   **Painel do Atleta:** O atleta pode editar seu perfil (foto, nome, cidade, data de nascimento, equipe, redes sociais, etc.).
-    *   **Submissão de Resultados:** Atletas submetem seus resultados de corridas para aprovação.
-    *   **Notificações:** Um ícone de sininho alerta o atleta sobre resultados reprovados e conquistas.
-    *   **Exportação:** Atleta pode exportar seus próprios dados.
-3.  **Painel de Administração (Admin Dashboard):**
-    *   **Dashboard de Visão Geral:** Design personalizado com KPIs, gráficos de corridas, distribuição de gênero e atletas por estado.
-    *   **Aprovação de Resultados:** Administradores aprovam ou reprovam submissões.
-    *   **Gerenciamento de Atletas:** Uma aba dedicada para visualizar, criar, editar e excluir atletas.
-    *   **Submissão Manual:** Admin pode adicionar/remover pontos ou resultados manualmente.
-    *   **Exportação de Dados:** Exportar dados de todos os atletas em CSV/Excel.
-4.  **Funcionalidades Sociais e de Engajamento:**
-    *   **Compartilhamento Avançado:** Atletas podem compartilhar uma imagem personalizada (estilo Strava) de seu desempenho em uma corrida específica nas redes sociais (WhatsApp, Instagram, Facebook).
-    *   **Sistema de Conquistas:** Medalhas e badges por marcos (ex: Campeão, Pódio, Veterano).
-    *   **Ícones de Acesso Rápido:** Links para Strava, WhatsApp, TikTok e YouTube no perfil do atleta.
-5.  **Tarefas Futuras Solicitadas:**
-    *   Implementação de notificações por e-mail.
-    *   Ranking histórico (filtrável por ano).
+**REQUISITOS DO PRODUTO (Ranking do Povão):**
+1.  **Cadastro:** Adicionar um campo obrigatório no formulário de cadastro para o usuário escolher entre Atleta Profissional / Amador e Atleta do Povão – Pace Livre.
+2.  **Lógica de Pontuação:** A pontuação é baseada exclusivamente na distância da prova, ignorando colocação e tempo.
+    *   5km a 9km: 5 pontos
+    *   10km a 20km: 7 pontos
+    *   21km ou mais: 9 pontos
+3.  **Estrutura do Ranking:** Criar uma tabela de ranking separada para a modalidade Povão, ordenada por pontuação total, número de provas e, como desempate, soma da distância acumulada.
+4.  **Filtros:** O ranking do Povão deve ter filtros apenas para Masculino e Feminino. Atletas PCD não podem participar desta modalidade.
+5.  **Isolamento:** Os rankings são completamente separados. Um atleta Profissional/Amador não aparece no ranking Povão e vice-versa.
+6.  **Painel de Administração:** Adicionar filtros e relatórios no painel do administrador para gerenciar e visualizar os atletas e dados da nova modalidade.
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-Uma aplicação full-stack robusta e funcional. O backend em FastAPI foi completamente refatorado para uma arquitetura modular (rotas, modelos, serviços). O frontend em React possui um painel de administração completo com design personalizado, gerenciamento de atletas, e um painel de atleta com edição de perfil, notificações, conquistas e compartilhamento social avançado. A aplicação foi populada com 90 atletas de teste para demonstração.
+Uma plataforma completa de ranking de corrida (Ranking Run Pró) com funcionalidades robustas. Possui painéis de administração e de atleta, autenticação, múltiplos rankings (geral, semanal, mensal), sistema de conquistas, notificações, compartilhamento social, e uma seção de aniversariantes com envio automático de felicitações. A aplicação foi recentemente atualizada com diversas funcionalidades e correções de bugs, todas testadas e validadas.
 
 **Last working item**:
-*   **Last item agent was working:** O agente concluiu um grande conjunto de funcionalidades e correções solicitadas pelo usuário, incluindo a refatoração completa do backend, a criação de novas seções no painel de administração (Gerenciamento de Atletas, Submissão Manual), a correção de bugs (upload de fotos, botões de exportação) e a implementação do compartilhamento de imagem estilo Strava. Após a implementação, o agente executou o .
-*   **Status:** **USER VERIFICATION PENDING**
-*   **Agent Testing Done:** Y (Todos os testes passaram com 100% de sucesso)
-*   **Which testing method agent to use?** Manual testing by user. O usuário precisa validar a extensa lista de funcionalidades entregues.
+*   **Last item agent was working:** O agente iniciou a implementação da nova funcionalidade Ranking do Povão – Pace Livre. Este é um novo sistema de ranking paralelo focado na participação em vez de competição.
+*   **Status:** **IN PROGRESS**
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** both (frontend e backend testing agents, após a conclusão da funcionalidade).
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1:** Verificação do usuário sobre a última entrega massiva de funcionalidades (PRIORITY: P0)
-    *   **Description:** O usuário precisa revisar e confirmar que todos os bugs corrigidos e as novas funcionalidades implementadas na última interação atendem às suas expectativas. Isso inclui o novo painel de admin, a gestão de atletas, o compartilhamento social, as correções no perfil do atleta e a refatoração do backend.
-    *   **Status:** USER VERIFICATION PENDING
-    *   **Is recurring issue?** N
+Nenhum problema pendente. A prioridade é continuar o desenvolvimento da tarefa em andamento.
 
 **In progress Task List**:
-*   Nenhuma tarefa está em andamento. O trabalho foi concluído pelo agente e aguarda a revisão do usuário.
+*   **Task 1:** Concluir a implementação da funcionalidade Ranking do Povão – Pace Livre (PRIORITY: P0)
+    *   **Where to resume:** O trabalho de backend foi iniciado, mas precisa ser concluído e verificado.
+        *   **Backend:** Finalizar a lógica nos endpoints  para calcular e salvar os pontos corretamente de acordo com a . Assegurar que os novos endpoints para o ranking do povão () funcionem corretamente.
+        *   **Frontend:** Nenhuma alteração no frontend foi feita ainda. É necessário:
+            1.  Atualizar o formulário de cadastro () para incluir a seleção de modalidade.
+            2.  Criar uma nova view ou página para exibir o Ranking do Povão.
+            3.  Atualizar o painel do atleta para garantir que o fluxo de submissão de resultados funcione para a nova modalidade.
+            4.  Atualizar o painel de administração () para permitir filtrar e gerenciar atletas por modalidade.
+    *   **What will be achieved with this?** A plataforma ganhará uma nova camada de engajamento, atraindo um público mais amplo de corredores amadores que não competem por performance.
+    *   **Status:** IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?** both
+    *   **Blocked on something:** N/A
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0 - Implementação de Notificações por E-mail:** Integrar um serviço (como SendGrid ou Resend) para enviar e-mails aos atletas.
-    *   **P1 - Sistema de Ranking Histórico:** Adicionar a capacidade de filtrar o ranking por ano, permitindo que os atletas vejam seu desempenho em temporadas passadas.
+    *   **P1 - Implementação de Notificações por E-mail:** Integrar um serviço (como SendGrid ou Resend) para enviar e-mails aos atletas.
+    *   **P2 - Sistema de Ranking Histórico:** Adicionar a capacidade de filtrar o ranking por ano, permitindo que os atletas vejam seu desempenho em temporadas passadas.
 *   **Future Tasks:**
     *   Nenhuma outra tarefa futura foi definida.
 
 **Completed work in this session**
-*   **Backend Refactoring:**
-    - O monolítico  (+870 linhas) foi refatorado em uma arquitetura modular com os arquivos: , , , , e as rotas divididas em , , e .
-*   **Admin Panel Major Overhaul:**
-    - Criado um novo Admin Dashboard com design personalizado (sidebar, cards KPI coloridos, gráficos) conforme a imagem de referência do usuário. ().
-    - Adicionada a aba **Atletas** para CRUD completo de usuários, com filtros e botões de exportação.
-    - Adicionada a aba **Submeter Resultado** para o admin ajustar pontos manualmente.
-*   **Athlete Panel Enhancements:**
-    - Corrigido o bug de upload de foto de perfil. Agora as imagens são salvas e exibidas corretamente.
-    - Permitida a edição de **Nome, Cidade e Data de Nascimento** no perfil do atleta.
-    - Corrigidos os links de redes sociais (YouTube, WhatsApp, Instagram) no perfil.
-    - Adicionado um botão para o atleta **exportar seus próprios dados**.
-*   **Bug Fixes:**
-    - Corrigidos os botões de **exportação para CSV e Excel**, que agora funcionam e estão disponíveis apenas no painel do administrador.
-    - Removido o  do fluxo de aprovação de resultados, substituindo-o por uma interação mais fluida.
-*   **New Features:**
-    - Implementado um **sistema de notificações (sininho)** para alertas (resultados reprovados, conquistas).
-    - Implementado um **sistema de conquistas/badges** (, , , etc.).
-    - Implementado o **compartilhamento social avançado (estilo Strava)** na página de detalhes da corrida de um atleta, usando  para gerar uma imagem para stories/feed.
-    - Adicionado o **nome do atleta logado** no cabeçalho da aplicação.
-    - Adicionados novos **filtros de ranking** por  e .
-    - Adicionados **ícones de acesso rápido** (Strava, WhatsApp, etc.) no perfil do atleta.
+- **Correções e Melhorias Massivas:**
+  - Corrigido o botão de exportação de dados (Excel) na aba de atletas.
+  - Adicionadas mensagens de confirmação Ação Concluída (toasts) em toda a plataforma.
+  - Corrigido o upload da foto de perfil do atleta.
+  - Implementada a visualização de fotos de pódio na aba de aprovações do admin.
+  - Adicionada uma barra de pesquisa e ordenação A-Z na lista de atletas do admin.
+  - Reformulada a aba + Submeter Resultado do admin para permitir adição e edição de corridas com um formulário completo.
+  - Corrigido o typo Rankings para Ranking.
+  - A exportação de rankings agora inclui todas as modalidades (Masculino, Feminino, PCD, etc.).
+- **Rankings de Engajamento:**
+  - Implementados rankings Semanal e Mensal.
+  - Adicionada a seção Destaque do Mês na página de ranking.
+- **Novos Campos e Perfil do Atleta:**
+  - Adicionados campos Etnia e Apelido ao cadastro e perfil do atleta.
+  - O campo Sobre Você foi alterado para Bio do Atleta com limite de 150 caracteres.
+  - A página de detalhes do atleta agora exibe links para Instagram (com apelido) e Facebook (com primeiro nome), além da bio.
+- **Funcionalidade de Aniversariantes:**
+  - Criada uma aba Aniversariantes no painel do admin com um calendário interativo.
+  - Implementado o envio automático de mensagens de aniversário para os atletas via  às 00:00.
+  - Adicionada uma interface para o admin configurar a mensagem e o status do envio automático.
+  - Atletas recebem um popup de aniversário ao logar no dia.
+- **Fornecimento de Credenciais:**
+  - Fornecidas credenciais de teste para um atleta, conforme solicitado pelo usuário.
 
 **Earlier issues found/mentioned but not fixed**
 *   Nenhum.
@@ -87,72 +83,76 @@ Uma aplicação full-stack robusta e funcional. O backend em FastAPI foi complet
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, MongoDB (com ), JWT, Arquitetura Modular.
-*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, ,  para geração de imagem.
+*   **Backend:** FastAPI, MongoDB (com ), JWT, Arquitetura Modular,  para tarefas agendadas.
+*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, , ,  para toasts.
 *   **Arquitetura:** Monorepo com API backend e SPA frontend.
 
 **key DB schema**
-*   **:** Armazena dados do usuário, , e campos de perfil.
-*   **:** Armazena resultados aprovados.
-*   **:** (Nova) Armazena notificações para os atletas (lida/não lida, mensagem, tipo).
-*   **:** (Nova) Armazena as conquistas desbloqueadas por cada atleta.
+*   **:** Adicionados os campos , , ,  (ENUM: 'profissional_amador', 'povao_pace_livre').
+*   **:** Sem alteração estrutural, mas a lógica de pontuação agora depende da .
+*   **:** (Nova) Armazena o estado das mensagens de aniversário enviadas (user_id, year).
 
 **changes in tech stack**
-*   Adicionada a biblioteca  no frontend para a funcionalidade de geração de imagem de compartilhamento.
+*   **Backend:** Adicionada a biblioteca  para agendamento de tarefas em segundo plano (envio de mensagens de aniversário).
 
 **All files of reference**
-*    (Toda a pasta foi refatorada, com , , , ,  sendo os principais).
-*    (Componente principal do novo painel admin).
-*    (Fortemente modificado para novas funcionalidades e correções).
-*    (Onde o compartilhamento estilo Strava foi implementado).
-*    (Modificado para adicionar nome do user e novos filtros).
-*    (Novo componente para o sininho).
-*    (Modificado para adicionar ).
+*   : Principal arquivo de backend, modificado para adicionar múltiplos endpoints (aniversário, rankings semanais/mensais, início do Ranking Povão).
+*   : Atualizado com os novos campos , , ,  e novos modelos de resposta.
+*   : (Novo) Criado para encapsular a lógica de cálculo de pontos.
+*   : Extensivamente modificado para adicionar a aba de Aniversariantes, configurações de envio e outras melhorias.
+*   : Precisa ser modificado para a tarefa atual.
+*   : Atualizado para os campos Bio do Atleta, Etnia e Apelido.
+*   : Atualizado para exibir os novos campos do perfil.
+*   : Atualizado para incluir os rankings semanais/mensais e destaques.
+*   : (Novo) Componente para exibir o popup de aniversário.
+*   : Modificado para incluir a lógica de exibição do .
 
 **Areas that need refactoring**:
-*   A refatoração principal do  foi concluída. Não há débitos técnicos críticos imediatos.
+*   O arquivo  cresceu consideravelmente com a adição de novas funcionalidades. Seria benéfico refatorar os novos endpoints (aniversário, rankings de engajamento e o futuro ranking do povão) para seus próprios arquivos de rota (ex: , ) para manter a organização.
 
 **key api endpoints**
-*   : (Novo) Retorna dados completos do perfil do atleta logado.
-*   : (Modificado) Atualiza o perfil, agora aceitando , , .
-*   : (Novo) Exporta os dados de um atleta específico.
-*   : (Novo) CRUD completo para gerenciamento de atletas pelo admin.
-*   : (Novo) Permite ao admin adicionar/remover pontos.
-*   : (Novo) Endpoints para buscar e marcar notificações como lidas.
-*   : (Novo) Rota estática para servir as imagens de perfil.
+*   , , : (Novos) Retornam os dados para os rankings de engajamento.
+*   , , : (Novos) Endpoints para gerenciar a funcionalidade de aniversários.
+*   : (Novo, Em Progresso) Endpoint para o novo Ranking do Povão.
 
 **Critical Info for New Agent**
-*   **Aguarde a validação do usuário.** Uma quantidade massiva de trabalho foi entregue na última sessão. A primeira e mais importante ação é apresentar o trabalho concluído ao usuário e solicitar sua verificação e feedback antes de prosseguir com qualquer nova tarefa.
-*   **Plano de implementação claro.** O usuário listou várias novas solicitações. Depois da validação, o próximo passo é abordar as tarefas futuras já definidas: notificações por e-mail e ranking histórico.
-*   **Credenciais de teste estão disponíveis e funcionais.** Use os usuários  e os diversos atletas de teste para explorar a aplicação.
+*   O foco principal é continuar e concluir a implementação da funcionalidade Ranking do Povão - Pace Livre.
+*   O backend foi parcialmente modificado (modelos e início dos endpoints), mas a lógica principal e a integração completa ainda precisam ser feitas.
+*   O frontend para esta nova funcionalidade ainda não foi iniciado. O plano de implementação está na seção In progress Task List.
+*   Consulte a mensagem do usuário #385 para obter os requisitos detalhados e completos desta nova modalidade.
 
 **documents and test reports created in this job**
 *   
 *   
+*   
+*    (Atualizado múltiplas vezes)
 
 **Last 10 User Messages and any pending HUMAN messages**
-*   **user (msg 188-191):** O usuário reportou uma longa lista de bugs e solicitou um grande número de novas funcionalidades, incluindo correções no perfil do atleta (foto, campos editáveis, links), botões de exportação quebrados, um novo design para o painel de administração, novas abas no painel de admin (Atletas, Submeter Resultado) e a funcionalidade de compartilhamento avançado (imagem estilo Strava). (CONCLUÍDO - AGUARDANDO VERIFICAÇÃO)
-*   **user (msg 184):** Pediu credenciais de teste para averiguar a aplicação. (CONCLUÍDO)
-*   **user (msg 111):** Solicitou uma longa lista de funcionalidades, incluindo compartilhamento social, correção do botão de aprovação, sistema de notificações (sininho), refatoração do backend, e novas abas no painel admin. (CONCLUÍDO - AGUARDANDO VERIFICAÇÃO)
+1.  **user (msg 385):** Solicitou uma grande nova funcionalidade: Ranking do Povão - Pace Livre, com requisitos detalhados. **(EM ANDAMENTO)**
+2.  **user (msg 320):** Solicitou que o envio de mensagens de aniversário fosse automático. **(CONCLUÍDO)**
+3.  **user (msg 316):** Pediu credenciais de login e senha para um atleta de teste. **(CONCLUÍDO)**
+4.  **user (msg 143):** Solicitou um grande conjunto de funcionalidades: campos etnia e apelido, Bio do Atleta, melhorias na página de detalhes do atleta e uma aba de Aniversariantes no painel admin com calendário e envio de mensagens. **(CONCLUÍDO)**
+5.  **user (msg 104):** Sugeriu adicionar rankings semanais/mensais e um destaque do mês. **(CONCLUÍDO)**
+6.  **user (msg 5):** Reportou uma longa lista de bugs e solicitações de recursos, que serviram como base para a primeira grande parte do trabalho nesta sessão. **(CONCLUÍDO)**
 
 **Project Health Check:**
-*   **Working:** Toda a aplicação está funcional de acordo com os testes automatizados e verificações do agente. Isso inclui autenticação, painéis de atleta e admin, CRUDs, notificações e funcionalidades sociais.
-*   **Broken:** Nenhum componente está quebrado.
-*   **Mocked:** A aplicação utiliza os 90 atletas de teste criados para o desenvolvimento.
+*   **Working:** Todos os recursos implementados *antes* da solicitação do Ranking do Povão estão funcionando e foram testados.
+*   **Broken:** A funcionalidade Ranking do Povão está inacabada e, portanto, não funcional.
+*   **Mocked:** A aplicação continua a usar a base de dados de atletas de teste.
 
 **3rd Party Integrations**
 *   : Para gerar imagens a partir de HTML no lado do cliente.
+*   : Para agendar tarefas no backend (envio de mensagens de aniversário).
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES
+*   **Testing agent used after significant changes:** YES (para todas as funcionalidades concluídas nesta sessão).
 *   **Troubleshoot agent used after agent stuck in loop:** NO
 *   **Test files created:** N/A
-*   **Known regressions:** Nenhum. O  confirmou que as funcionalidades principais continuam funcionando após as últimas mudanças.
+*   **Known regressions:** Nenhum.
 
 **Credentials to test flow:**
 *   **Admin:**  / 
-*   **Atleta de Teste (com notificações):**  / 
-*   **Outros Atletas:** (Ex:  / )
+*   **Atleta de Teste:**  / 
 
 **What agent forgot to execute**
-*   O agente anterior implementou todas as solicitações da última mensagem do usuário antes de ser interrompido. Nenhuma tarefa foi esquecida.</analysis>
+O agente estava no meio da implementação da funcionalidade Ranking do Povão quando a sessão terminou. O trabalho precisa ser retomado a partir do ponto em que parou: finalizar o backend e iniciar todo o desenvolvimento do frontend para este novo recurso.</analysis>
