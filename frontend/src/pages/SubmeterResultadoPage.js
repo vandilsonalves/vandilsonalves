@@ -332,7 +332,7 @@ const SubmeterResultadoPage = () => {
 
               <Button
                 type="submit"
-                className="w-full bg-emerald-600 hover:bg-emerald-700"
+                className={`w-full ${isPovao ? 'bg-purple-600 hover:bg-purple-700' : 'bg-emerald-600 hover:bg-emerald-700'}`}
                 disabled={loading}
                 size="lg"
               >
