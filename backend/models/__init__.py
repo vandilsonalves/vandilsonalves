@@ -29,6 +29,8 @@ class Usuario(BaseModel):
     # Novos campos
     etnia: str = ""  # Branco, Negro, Indígena, Pardo, Amarelo
     apelido: str = ""
+    # Modalidade - profissional_amador ou povao_pace_livre
+    modalidade_usuario: str = "profissional_amador"
 
 class UsuarioRegister(BaseModel):
     nome: str
@@ -43,6 +45,8 @@ class UsuarioRegister(BaseModel):
     # Novos campos
     etnia: str = ""
     apelido: str = ""
+    # Modalidade obrigatória
+    modalidade_usuario: str = "profissional_amador"
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
