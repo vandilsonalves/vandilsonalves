@@ -10,7 +10,17 @@ import os
 import uuid
 from datetime import datetime, timedelta
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+# Read from .env file directly
+def get_base_url():
+    env_path = '/app/frontend/.env'
+    if os.path.exists(env_path):
+        with open(env_path, 'r') as f:
+            for line in f:
+                if line.startswith('REACT_APP_BACKEND_URL='):
+                    return line.split('=', 1)[1].strip().rstrip('/')
+    return os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
+
+BASE_URL = get_base_url()
 API = f"{BASE_URL}/api"
 
 # Test credentials
