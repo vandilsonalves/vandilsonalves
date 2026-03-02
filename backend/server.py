@@ -27,7 +27,7 @@ from models import (
     ResultadoPendente, ResultadoSubmissao, AprovacaoRequest,
     Corrida, RankingAnual, RankingResponse, AtletaDetalhes,
     CorridaResponse, EvolucaoMensal, Notificacao, Conquista, ConquistaAtleta,
-    MensagemAniversario
+    MensagemAniversario, RankingPovao
 )
 from services import (
     verify_password, get_password_hash, create_access_token,
