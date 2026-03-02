@@ -123,6 +123,9 @@ class Corrida(BaseModel):
     distancia: str
     data: str
     ano: int
+    # Povão - pontos calculados por distância
+    pontos_povao: int = 0
+    modalidade: str = "profissional_amador"  # profissional_amador ou povao_pace_livre
 
 class RankingAnual(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -138,6 +141,22 @@ class RankingAnual(BaseModel):
     ranking_nacional: int = 0
     ranking_estadual: int = 0
     ranking_categoria: int = 0
+    # Modalidade
+    modalidade: str = "profissional_amador"
+
+# Ranking Povão
+class RankingPovao(BaseModel):
+    model_config = ConfigDict(extra="ignore")
+    
+    usuario_id: str
+    ano: int
+    pontos_total: int
+    total_corridas: int
+    distancia_acumulada: float = 0  # Para desempate
+    estado: str
+    genero: str
+    ranking_geral: int = 0
+    ranking_genero: int = 0
 
 class RankingResponse(BaseModel):
     id: str
