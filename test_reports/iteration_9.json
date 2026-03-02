@@ -1,0 +1,122 @@
+{
+  "summary": "Iteration 9: Transfer Modality Feature Testing Complete. All backend tests (9/9) passed. All UI tests passed. The 'Transferir' button and modal work correctly in Admin Dashboard.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable component",
+        "issues": ["Minor HTML hydration warning: <tr> inside <span> - doesn't affect functionality but shows in console logs (pre-existing from previous iteration)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_transferencia_modalidade.py",
+    "/app/test_reports/pytest/pytest_transferencia_modalidade.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_transferencia_modalidade.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all UI tests passed)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "None required - used existing athletes",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Transfer modality feature fully tested. Endpoint POST /api/admin/atletas/{id}/transferir-modalidade working. Modal shows athlete info, current and new modality, points recalculation rules, and notification warning.",
+  "verified_features": {
+    "transfer_endpoint": {
+      "description": "POST /api/admin/atletas/{id}/transferir-modalidade exists and works",
+      "status": "PASS",
+      "tests": [
+        "test_transfer_endpoint_exists",
+        "test_transfer_response_structure"
+      ]
+    },
+    "transfer_blocked_for_pcd": {
+      "description": "PCD athletes cannot be transferred to Povão",
+      "status": "PASS",
+      "test": "test_transfer_pcd_athlete_blocked",
+      "error_message": "Atletas PCD e Cadeirante não podem ser transferidos para o Ranking do Povão"
+    },
+    "transfer_blocked_for_cadeirante": {
+      "description": "Cadeirante athletes cannot be transferred to Povão",
+      "status": "PASS",
+      "test": "test_transfer_cadeirante_athlete_blocked"
+    },
+    "transfer_button_visibility": {
+      "description": "Transfer button only appears for NORMAL category athletes (not PCD/Cadeirante)",
+      "status": "PASS",
+      "ui_test": "Verified via Playwright - 40 transfer buttons for NORMAL athletes, 0 for PCD/Cadeirante"
+    },
+    "transfer_modal_content": {
+      "description": "Modal shows athlete info, current/new modality, rules explanation",
+      "status": "PASS",
+      "verified_elements": [
+        "Athlete name and team",
+        "Current modality (Atual)",
+        "New modality (Nova)",
+        "Points recalculation rules by distance for Pro->Povão",
+        "Points recalculation rules by position for Povão->Pro",
+        "Warning about notification to athlete"
+      ]
+    },
+    "ranking_isolation": {
+      "description": "Pro/Amador athletes don't appear in Povão ranking and vice versa",
+      "status": "PASS",
+      "tests": [
+        "test_ranking_povao_excludes_pro_athletes",
+        "test_ranking_pro_excludes_povao_athletes"
+      ]
+    },
+    "notification_creation": {
+      "description": "Transfer creates notification for athlete",
+      "status": "PASS",
+      "test": "test_transfer_creates_notification"
+    },
+    "modalidade_filter": {
+      "description": "Admin can filter athletes by modality (Todas, Profissional/Amador, Ranking do Povão)",
+      "status": "PASS",
+      "ui_test": "All 3 filter buttons exist and work"
+    }
+  },
+  "api_test_results": {
+    "transfer_pro_to_povao": {
+      "endpoint": "POST /api/admin/atletas/{id}/transferir-modalidade",
+      "status": 200,
+      "response_structure": {
+        "message": "Atleta transferido com sucesso para Ranking do Povão!",
+        "stats": {
+          "corridas_processadas": "number",
+          "pontos_antigos": "number",
+          "pontos_novos": "number",
+          "modalidade_anterior": "profissional_amador",
+          "modalidade_nova": "povao_pace_livre"
+        }
+      }
+    },
+    "transfer_pcd_blocked": {
+      "endpoint": "POST /api/admin/atletas/{pcd_id}/transferir-modalidade",
+      "status": 400,
+      "error": "Atletas PCD e Cadeirante não podem ser transferidos para o Ranking do Povão"
+    },
+    "transfer_nonexistent": {
+      "endpoint": "POST /api/admin/atletas/nonexistent-id/transferir-modalidade",
+      "status": 404
+    }
+  },
+  "backend_tests_passed": 9,
+  "backend_tests_failed": 0,
+  "ui_tests_passed": 10,
+  "ui_tests_failed": 0
+}

@@ -929,6 +929,94 @@ async def admin_delete_atleta(atleta_id: str, admin: dict = Depends(get_admin_us
     
     return {"message": "Atleta excluído com sucesso!"}
 
+
+@api_router.post("/admin/atletas/{atleta_id}/transferir-modalidade")
+async def admin_transferir_modalidade(atleta_id: str, admin: dict = Depends(get_admin_user)):
+    """
+    Transfere atleta entre modalidades (Profissional/Amador <-> Povão).
+    
+    - Profissional -> Povão: Perde pontos por colocação, recalcula por distância
+    - Povão -> Profissional: Perde pontos por distância, recalcula por colocação
+    """
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    # Verificar se é PCD ou Cadeirante (não podem ir para Povão)
+    if atleta.get("categoria") in ["pcd", "cadeirante"]:
+        modalidade_atual = atleta.get("modalidade_usuario", "profissional_amador")
+        if modalidade_atual == "profissional_amador":
+            raise HTTPException(
+                status_code=400, 
+                detail="Atletas PCD e Cadeirante não podem ser transferidos para o Ranking do Povão"
+            )
+    
+    # Determinar nova modalidade
+    modalidade_atual = atleta.get("modalidade_usuario", "profissional_amador")
+    nova_modalidade = "povao_pace_livre" if modalidade_atual == "profissional_amador" else "profissional_amador"
+    
+    # Buscar todas as corridas do atleta
+    corridas = await db.corridas.find({"usuario_id": atleta_id}, {"_id": 0}).to_list(None)
+    
+    # Estatísticas para retorno
+    stats = {
+        "corridas_processadas": len(corridas),
+        "pontos_antigos": sum(c.get("pontos", 0) for c in corridas),
+        "pontos_novos": 0,
+        "modalidade_anterior": modalidade_atual,
+        "modalidade_nova": nova_modalidade
+    }
+    
+    # Recalcular pontos de cada corrida baseado na nova modalidade
+    for corrida in corridas:
+        if nova_modalidade == "povao_pace_livre":
+            # Transferindo para Povão: calcular por distância
+            distancia = corrida.get("distancia", "5KM")
+            novos_pontos = calcular_pontos_povao(distancia)
+        else:
+            # Transferindo para Profissional: calcular por colocação
+            colocacao = corrida.get("colocacao", 0)
+            categoria = atleta.get("categoria", "normal")
+            novos_pontos = calcular_pontos_colocacao(colocacao, categoria)
+        
+        stats["pontos_novos"] += novos_pontos
+        
+        # Atualizar pontos da corrida no banco
+        await db.corridas.update_one(
+            {"id": corrida["id"]},
+            {"$set": {"pontos": novos_pontos}}
+        )
+    
+    # Atualizar modalidade do atleta
+    await db.usuarios.update_one(
+        {"id": atleta_id},
+        {"$set": {"modalidade_usuario": nova_modalidade}}
+    )
+    
+    # Remover do ranking antigo
+    await db.ranking_anual.delete_many({"usuario_id": atleta_id})
+    
+    # Recalcular rankings
+    await calcular_ranking()
+    await calcular_ranking_povao()
+    
+    # Criar notificação para o atleta
+    notificacao = {
+        "id": str(uuid.uuid4()),
+        "usuario_id": atleta_id,
+        "tipo": "transferencia_modalidade",
+        "titulo": "Transferência de Modalidade",
+        "mensagem": f"Você foi transferido para o {'Ranking do Povão - Pace Livre' if nova_modalidade == 'povao_pace_livre' else 'Ranking Profissional/Amador'}. Seus pontos foram recalculados.",
+        "lida": False,
+        "data": datetime.now(timezone.utc).isoformat()
+    }
+    await db.notificacoes.insert_one(notificacao)
+    
+    return {
+        "message": f"Atleta transferido com sucesso para {'Ranking do Povão' if nova_modalidade == 'povao_pace_livre' else 'Ranking Profissional/Amador'}!",
+        "stats": stats
+    }
+
 @api_router.get("/admin/atletas/export")
 async def admin_export_atletas(categoria: str = "all", admin: dict = Depends(get_admin_user)):
     """Exporta lista de atletas em Excel"""

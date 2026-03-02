@@ -17,7 +17,7 @@ import {
   Users, AlertCircle, TrendingUp, BarChart3, PieChart,
   Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
   UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X,
-  Cake, Send, Gift, ChevronLeft
+  Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
@@ -80,6 +80,11 @@ const AdminDashboard = () => {
   const [showAtletaModal, setShowAtletaModal] = useState(false);
   const [atletaEditando, setAtletaEditando] = useState(null);
   const [showAddAtletaModal, setShowAddAtletaModal] = useState(false);
+  
+  // Transferência de Modalidade
+  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [atletaTransferindo, setAtletaTransferindo] = useState(null);
+  const [transferLoading, setTransferLoading] = useState(false);
   
   // Submeter Resultado (Admin) - Novo formato completo
   const [atletaSelecionado, setAtletaSelecionado] = useState('');
@@ -539,6 +544,38 @@ const AdminDashboard = () => {
     const fullUrl = fotoUrl.startsWith('http') ? fotoUrl : `${BACKEND_URL}${fotoUrl}`;
     setFotoModalUrl(fullUrl);
     setShowFotoModal(true);
+  };
+
+  // Função para transferir atleta entre modalidades
+  const handleTransferirModalidade = async () => {
+    if (!atletaTransferindo) return;
+    
+    setTransferLoading(true);
+    try {
+      const response = await axios.post(
+        `${API}/admin/atletas/${atletaTransferindo.id}/transferir-modalidade`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const { stats } = response.data;
+      const modalidadeNova = stats.modalidade_nova === 'povao_pace_livre' ? 'Ranking do Povão' : 'Ranking Profissional/Amador';
+      
+      toast.success('Transferência Concluída!', {
+        description: `${atletaTransferindo.nome} transferido para ${modalidadeNova}. Pontos: ${stats.pontos_antigos} → ${stats.pontos_novos}`
+      });
+      
+      setShowTransferModal(false);
+      setAtletaTransferindo(null);
+      fetchAtletas();
+      fetchStats();
+    } catch (error) {
+      toast.error('Erro na Transferência', {
+        description: error.response?.data?.detail || 'Erro ao transferir atleta'
+      });
+    } finally {
+      setTransferLoading(false);
+    }
   };
 
   const handleExportAtletas = async () => {
@@ -1290,6 +1327,7 @@ const AdminDashboard = () => {
                             size="sm"
                             variant="outline"
                             onClick={() => navigate(`/atleta/${atleta.id}`)}
+                            title="Ver Perfil"
                           >
                             <Eye className="w-4 h-4" />
                           </Button>
@@ -1300,13 +1338,34 @@ const AdminDashboard = () => {
                               setAtletaEditando(atleta);
                               setShowAtletaModal(true);
                             }}
+                            title="Editar"
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
+                          {/* Botão de Transferir Modalidade */}
+                          {atleta.categoria === 'normal' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className={`${
+                                atleta.modalidade_usuario === 'povao_pace_livre'
+                                  ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
+                                  : 'border-purple-500 text-purple-600 hover:bg-purple-50'
+                              }`}
+                              onClick={() => {
+                                setAtletaTransferindo(atleta);
+                                setShowTransferModal(true);
+                              }}
+                              title={`Transferir para ${atleta.modalidade_usuario === 'povao_pace_livre' ? 'Profissional/Amador' : 'Ranking do Povão'}`}
+                            >
+                              <ArrowRightLeft className="w-4 h-4" />
+                            </Button>
+                          )}
                           <Button
                             size="sm"
                             variant="destructive"
                             onClick={() => handleDeleteAtleta(atleta.id)}
+                            title="Excluir"
                           >
                             <Trash2 className="w-4 h-4" />
                           </Button>
@@ -2154,6 +2213,144 @@ const AdminDashboard = () => {
                 />
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Transferência de Modalidade */}
+        <Dialog open={showTransferModal} onOpenChange={setShowTransferModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <ArrowRightLeft className="w-5 h-5 text-purple-500" />
+                Transferir Modalidade
+              </DialogTitle>
+            </DialogHeader>
+            
+            {atletaTransferindo && (
+              <div className="space-y-4">
+                {/* Info do Atleta */}
+                <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="h-12 w-12">
+                      <AvatarImage src={atletaTransferindo.foto_url?.startsWith('http') ? atletaTransferindo.foto_url : `${BACKEND_URL}${atletaTransferindo.foto_url}`} />
+                      <AvatarFallback className="bg-emerald-600 text-white">
+                        {atletaTransferindo.nome?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <h3 className="font-semibold">{atletaTransferindo.nome}</h3>
+                      <p className="text-sm text-slate-500">{atletaTransferindo.equipe || 'Sem equipe'}</p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Seta de Transferência */}
+                <div className="flex items-center justify-center gap-4 py-2">
+                  <div className={`px-4 py-2 rounded-lg text-center ${
+                    atletaTransferindo.modalidade_usuario === 'povao_pace_livre'
+                      ? 'bg-purple-100 text-purple-700'
+                      : 'bg-emerald-100 text-emerald-700'
+                  }`}>
+                    <p className="text-xs font-medium">Atual</p>
+                    <p className="font-semibold">
+                      {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? 'Ranking do Povão' : 'Profissional/Amador'}
+                    </p>
+                  </div>
+                  
+                  <ArrowRightLeft className="w-6 h-6 text-slate-400" />
+                  
+                  <div className={`px-4 py-2 rounded-lg text-center ${
+                    atletaTransferindo.modalidade_usuario === 'povao_pace_livre'
+                      ? 'bg-emerald-100 text-emerald-700'
+                      : 'bg-purple-100 text-purple-700'
+                  }`}>
+                    <p className="text-xs font-medium">Nova</p>
+                    <p className="font-semibold">
+                      {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? 'Profissional/Amador' : 'Ranking do Povão'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Aviso Importante */}
+                <Alert className={`${
+                  atletaTransferindo.modalidade_usuario === 'povao_pace_livre'
+                    ? 'bg-emerald-50 border-emerald-200'
+                    : 'bg-purple-50 border-purple-200'
+                }`}>
+                  <AlertCircle className={`w-4 h-4 ${
+                    atletaTransferindo.modalidade_usuario === 'povao_pace_livre'
+                      ? 'text-emerald-600'
+                      : 'text-purple-600'
+                  }`} />
+                  <AlertDescription className={`${
+                    atletaTransferindo.modalidade_usuario === 'povao_pace_livre'
+                      ? 'text-emerald-800'
+                      : 'text-purple-800'
+                  }`}>
+                    {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? (
+                      <>
+                        <strong>Povão → Profissional/Amador:</strong><br />
+                        Os pontos serão recalculados baseados na <strong>colocação</strong> de cada corrida.
+                        Se a colocação original não pontuava (acima de 10º lugar), a corrida terá 0 pontos.
+                      </>
+                    ) : (
+                      <>
+                        <strong>Profissional/Amador → Povão:</strong><br />
+                        Os pontos serão recalculados baseados na <strong>distância</strong> de cada corrida:
+                        <ul className="list-disc list-inside mt-1 text-sm">
+                          <li>5km a 9km = 5 pontos</li>
+                          <li>10km a 20km = 7 pontos</li>
+                          <li>21km ou mais = 9 pontos</li>
+                        </ul>
+                      </>
+                    )}
+                  </AlertDescription>
+                </Alert>
+
+                {/* Confirmação */}
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/30 rounded-lg border border-amber-200">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                    <strong>Atenção:</strong> Esta ação irá remover o atleta do ranking atual e 
+                    recalcular todos os pontos baseado na nova modalidade. O atleta receberá uma 
+                    notificação sobre a transferência.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            <DialogFooter className="gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setShowTransferModal(false);
+                  setAtletaTransferindo(null);
+                }}
+                disabled={transferLoading}
+              >
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleTransferirModalidade}
+                disabled={transferLoading}
+                className={`${
+                  atletaTransferindo?.modalidade_usuario === 'povao_pace_livre'
+                    ? 'bg-emerald-600 hover:bg-emerald-700'
+                    : 'bg-purple-600 hover:bg-purple-700'
+                }`}
+              >
+                {transferLoading ? (
+                  <>
+                    <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                    Transferindo...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRightLeft className="w-4 h-4 mr-2" />
+                    Confirmar Transferência
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
       </div>
