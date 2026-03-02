@@ -248,16 +248,19 @@ const SubmeterResultadoPage = () => {
                   />
                 </div>
 
-                <div>
-                  <Label>Seu Tempo (HH:MM:SS) *</Label>
-                  <Input
-                    type="time"
-                    step="1"
-                    value={formData.tempo}
-                    onChange={(e) => handleChange('tempo', e.target.value)}
-                    required
-                  />
-                </div>
+                {/* Campo de Tempo - oculto para Povão */}
+                {!isPovao && (
+                  <div>
+                    <Label>Seu Tempo (HH:MM:SS) *</Label>
+                    <Input
+                      type="time"
+                      step="1"
+                      value={formData.tempo}
+                      onChange={(e) => handleChange('tempo', e.target.value)}
+                      required
+                    />
+                  </div>
+                )}
 
                 <div className="md:col-span-2">
                   <Label>Link do Resultado (Site de Cronometragem) *</Label>
