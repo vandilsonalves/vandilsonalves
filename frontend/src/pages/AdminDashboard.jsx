@@ -1967,6 +1967,30 @@ const AdminDashboard = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Modal de Visualização da Foto do Pódio */}
+        <Dialog open={showFotoModal} onOpenChange={setShowFotoModal}>
+          <DialogContent className="max-w-4xl p-0 bg-black/90">
+            <div className="relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute top-2 right-2 z-10 bg-black/50 hover:bg-black/70 text-white"
+                onClick={() => setShowFotoModal(false)}
+              >
+                <X className="w-6 h-6" />
+              </Button>
+              {fotoModalUrl && (
+                <img 
+                  src={fotoModalUrl}
+                  alt="Foto do Pódio - Ampliada"
+                  className="w-full h-auto max-h-[85vh] object-contain rounded-lg"
+                  data-testid="foto-podio-modal"
+                />
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
