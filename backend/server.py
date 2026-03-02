@@ -89,6 +89,13 @@ async def register_atleta(dados: UsuarioRegister):
     if existing:
         raise HTTPException(status_code=400, detail="Email já cadastrado")
     
+    # Validar: PCD e Cadeirante não podem participar do Povão
+    if dados.modalidade_usuario == "povao_pace_livre" and dados.categoria in ["pcd", "cadeirante"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="A modalidade 'Ranking do Povão - Pace Livre' não está disponível para atletas PCD ou Cadeirantes."
+        )
+    
     faixa = calcular_faixa_etaria(dados.data_nascimento)
     
     usuario = Usuario(
@@ -106,7 +113,8 @@ async def register_atleta(dados: UsuarioRegister):
         role="atleta",
         is_active=True,
         etnia=dados.etnia,
-        apelido=dados.apelido
+        apelido=dados.apelido,
+        modalidade_usuario=dados.modalidade_usuario
     )
     
     doc = usuario.model_dump()
@@ -121,7 +129,8 @@ async def register_atleta(dados: UsuarioRegister):
             "id": usuario.id,
             "nome": usuario.nome,
             "email": usuario.email,
-            "role": usuario.role
+            "role": usuario.role,
+            "modalidade_usuario": usuario.modalidade_usuario
         }
     }
 
