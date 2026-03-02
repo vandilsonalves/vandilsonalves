@@ -124,12 +124,20 @@ const SubmeterResultadoPage = () => {
 
         <Card className="shadow-xl">
           <CardHeader className="text-center">
-            <CardTitle className="text-3xl font-bold text-emerald-600">
+            <CardTitle className={`text-3xl font-bold ${isPovao ? 'text-purple-600' : 'text-emerald-600'}`}>
               Submeter Resultado
             </CardTitle>
             <p className="text-slate-600 mt-2">
-              Preencha os dados da sua corrida (Prazo: 6 dias após o evento)
+              {isPovao 
+                ? 'Ranking do Povão - Pace Livre (Pontuação por distância)'
+                : 'Preencha os dados da sua corrida (Prazo: 6 dias após o evento)'
+              }
             </p>
+            {isPovao && (
+              <div className="mt-3 inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
+                <span className="font-semibold">Modalidade: Pace Livre</span>
+              </div>
+            )}
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
