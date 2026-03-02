@@ -27,6 +27,13 @@ const RankingPage = () => {
   const [loading, setLoading] = useState(false);
   const [showDestaques, setShowDestaques] = useState(true);
   
+  // Ranking do Povão
+  const [tipoRanking, setTipoRanking] = useState('profissional'); // 'profissional' ou 'povao'
+  const [generoPovao, setGeneroPovao] = useState('M');
+  const [rankingPovao, setRankingPovao] = useState([]);
+  const [povaoStats, setPovaoStats] = useState(null);
+  const [loadingPovao, setLoadingPovao] = useState(false);
+  
   // Filtros
   const [filtroNome, setFiltroNome] = useState('');
   const [filtroColocacao, setFiltroColocacao] = useState('');
