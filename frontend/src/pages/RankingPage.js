@@ -735,11 +735,11 @@ const RankingPage = () => {
                   <div className="text-center py-12 text-slate-600 dark:text-slate-400">
                     Carregando ranking do Povão...
                   </div>
-                ) : rankingPovao.length === 0 ? (
+                ) : rankingPovaoFiltrado.length === 0 ? (
                   <div className="text-center py-12 text-slate-500">
                     <Users className="w-12 h-12 mx-auto mb-3 text-slate-300" />
-                    <p>Nenhum atleta cadastrado nesta modalidade ainda.</p>
-                    <p className="text-sm mt-2">Seja o primeiro a participar do Ranking do Povão!</p>
+                    <p>Nenhum atleta encontrado com os filtros aplicados.</p>
+                    <p className="text-sm mt-2">Tente limpar os filtros ou buscar por outros critérios.</p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
@@ -755,7 +755,7 @@ const RankingPage = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {rankingPovao.map((atleta, index) => (
+                        {rankingPovaoFiltrado.map((atleta, index) => (
                           <tr 
                             key={atleta.atleta_id} 
                             className="border-b border-purple-100 dark:border-purple-800 hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-colors"
