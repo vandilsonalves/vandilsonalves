@@ -1873,17 +1873,24 @@ async def get_atleta_detalhes(atleta_id: str):
     if not usuario:
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
-    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+    modalidade_usuario = usuario.get("modalidade_usuario", "profissional_amador")
     
-    melhor_corrida = await db.corridas.find_one(
-        {"usuario_id": atleta_id},
-        {"_id": 0},
-        sort=[("colocacao", 1)]
-    )
-    
-    melhor_colocacao = melhor_corrida["colocacao"] if melhor_corrida else 0
-    total_corridas = ranking["total_corridas"] if ranking else 0
-    pontos_carreira = ranking["pontos_total"] if ranking else 0
+    # Buscar ranking de acordo com a modalidade
+    if modalidade_usuario == "povao_pace_livre":
+        ranking = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+        melhor_colocacao = 0  # Não se aplica ao Povão
+        total_corridas = ranking["total_corridas"] if ranking else 0
+        pontos_carreira = ranking["pontos_total"] if ranking else 0
+    else:
+        ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+        melhor_corrida = await db.corridas.find_one(
+            {"usuario_id": atleta_id},
+            {"_id": 0},
+            sort=[("colocacao", 1)]
+        )
+        melhor_colocacao = melhor_corrida["colocacao"] if melhor_corrida else 0
+        total_corridas = ranking["total_corridas"] if ranking else 0
+        pontos_carreira = ranking["pontos_total"] if ranking else 0
     
     min_corridas = get_min_corridas_categoria(usuario["categoria"])
     
@@ -1905,7 +1912,8 @@ async def get_atleta_detalhes(atleta_id: str):
         apelido=usuario.get("apelido", ""),
         etnia=usuario.get("etnia", ""),
         instagram_url=usuario.get("instagram_url", ""),
-        facebook_url=usuario.get("facebook_url", "")
+        facebook_url=usuario.get("facebook_url", ""),
+        modalidade_usuario=modalidade_usuario
     )
 
 @api_router.get("/atletas/{atleta_id}/corridas", response_model=List[CorridaResponse])
