@@ -1321,7 +1321,7 @@ async def get_povao_stats():
 
 @api_router.get("/ranking/semanal")
 async def get_ranking_semanal(categoria: str = "masculino"):
-    """Retorna o ranking semanal baseado em corridas da última semana"""
+    """Retorna o ranking semanal baseado em corridas da última semana (apenas Profissional/Amador)"""
     cat_map = {
         "masculino": ("normal", "M"),
         "feminino": ("normal", "F"),
@@ -1357,21 +1357,25 @@ async def get_ranking_semanal(categoria: str = "masculino"):
     posicao = 1
     for agg in agregados:
         usuario = await db.usuarios.find_one({"id": agg["_id"]}, {"_id": 0})
+        # Filtrar apenas atletas Profissional/Amador (não Povão)
         if usuario and usuario.get("categoria") == cat_db and usuario.get("genero") == gen_db:
-            ranking.append({
-                "posicao": posicao,
-                "atleta_id": agg["_id"],
-                "nome": usuario["nome"],
-                "equipe": usuario["equipe"],
-                "cidade": usuario["cidade"],
-                "estado": usuario["estado"],
-                "foto_url": usuario.get("foto_url", ""),
-                "pontos_semana": agg["pontos_semana"],
-                "corridas_semana": agg["corridas_semana"]
-            })
-            posicao += 1
-            if posicao > 10:  # Top 10
-                break
+            # Verificar modalidade - apenas profissional_amador ou não definido (default)
+            modalidade = usuario.get("modalidade_usuario", "profissional_amador")
+            if modalidade != "povao_pace_livre":
+                ranking.append({
+                    "posicao": posicao,
+                    "atleta_id": agg["_id"],
+                    "nome": usuario["nome"],
+                    "equipe": usuario["equipe"],
+                    "cidade": usuario["cidade"],
+                    "estado": usuario["estado"],
+                    "foto_url": usuario.get("foto_url", ""),
+                    "pontos_semana": agg["pontos_semana"],
+                    "corridas_semana": agg["corridas_semana"]
+                })
+                posicao += 1
+                if posicao > 10:  # Top 10
+                    break
     
     return {
         "periodo": f"{inicio_semana} a {fim_semana}",
@@ -1382,7 +1386,7 @@ async def get_ranking_semanal(categoria: str = "masculino"):
 
 @api_router.get("/ranking/mensal")
 async def get_ranking_mensal(categoria: str = "masculino", mes: int = None, ano: int = None):
-    """Retorna o ranking mensal baseado em corridas do mês"""
+    """Retorna o ranking mensal baseado em corridas do mês (apenas Profissional/Amador)"""
     cat_map = {
         "masculino": ("normal", "M"),
         "feminino": ("normal", "F"),
@@ -1425,21 +1429,25 @@ async def get_ranking_mensal(categoria: str = "masculino", mes: int = None, ano:
     posicao = 1
     for agg in agregados:
         usuario = await db.usuarios.find_one({"id": agg["_id"]}, {"_id": 0})
+        # Filtrar apenas atletas Profissional/Amador (não Povão)
         if usuario and usuario.get("categoria") == cat_db and usuario.get("genero") == gen_db:
-            ranking.append({
-                "posicao": posicao,
-                "atleta_id": agg["_id"],
-                "nome": usuario["nome"],
-                "equipe": usuario["equipe"],
-                "cidade": usuario["cidade"],
-                "estado": usuario["estado"],
-                "foto_url": usuario.get("foto_url", ""),
-                "pontos_mes": agg["pontos_mes"],
-                "corridas_mes": agg["corridas_mes"]
-            })
-            posicao += 1
-            if posicao > 10:  # Top 10
-                break
+            # Verificar modalidade - apenas profissional_amador ou não definido (default)
+            modalidade = usuario.get("modalidade_usuario", "profissional_amador")
+            if modalidade != "povao_pace_livre":
+                ranking.append({
+                    "posicao": posicao,
+                    "atleta_id": agg["_id"],
+                    "nome": usuario["nome"],
+                    "equipe": usuario["equipe"],
+                    "cidade": usuario["cidade"],
+                    "estado": usuario["estado"],
+                    "foto_url": usuario.get("foto_url", ""),
+                    "pontos_mes": agg["pontos_mes"],
+                    "corridas_mes": agg["corridas_mes"]
+                })
+                posicao += 1
+                if posicao > 10:  # Top 10
+                    break
     
     meses_nome = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
                   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
