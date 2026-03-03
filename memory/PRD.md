@@ -182,16 +182,21 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 32. ✅ **Ranking Run Inside** - Sistema completo de análise de perfis Instagram:
     - **Nova aba no Admin**: "Ranking Run Inside" com ícone dedicado
+    - **Barra de Pesquisa Inteligente** (03/03/2026):
+      - Input para @username com busca automática via Social Blade
+      - Botão "Buscar Dados" tenta buscar métricas automaticamente
+      - Fallback gracioso: se bloqueado, mostra mensagem e abre formulário manual
+      - Link "Ou preencha os dados manualmente" sempre disponível
     - **Formulário de entrada manual**: Administrador insere dados do perfil:
       - Dados básicos: username, nome completo, nicho
       - Métricas: seguidores, seguindo, total de posts
       - Engajamento: média de likes, comentários, views de Reels
       - Frequência: posts por semana, dias desde último post, crescimento 30 dias
-      - Análise de Bio: descrição, keywords, CTA, link, clareza
+      - Análise de Bio: descrição, keywords, CTA, link, **clareza (select: excelente/boa/regular/ruim)**
       - Distribuição de formatos: % Reels, Carrossel, Fotos
       - Indicadores anti-fake: picos anormais, comentários repetitivos, horários artificiais
     - **Motor de cálculo (8 métricas com 0-10)**:
-      - Bio, Frequência, Engajamento, Crescimento, Consistência, Padrões (anti-fake), Reels, Formatos
+      - Bio (com clareza ponderada), Frequência, Engajamento, Crescimento, Consistência, Padrões (anti-fake), Reels, Formatos
     - **Score Final (0-100)**: Média ponderada das notas (Engajamento 30%, Crescimento/Consistência/Padrões 15%, Reels 10%, outros 5%)
     - **Sistema de Classificação**:
       - Elite Platinum: 95-100
@@ -212,6 +217,7 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
       - XLSX: Relatório completo em Excel
       - CSV: Dados em formato CSV
     - **Endpoints**:
+      - GET `/api/admin/instagram/buscar/{username}` - Busca automática via Social Blade
       - POST `/api/admin/instagram/analisar` - Criar análise
       - GET `/api/admin/instagram/analises` - Listar análises
       - GET `/api/admin/instagram/analises/{id}` - Detalhes com gráficos
