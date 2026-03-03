@@ -178,17 +178,63 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Notificação automática enviada ao atleta
     - Endpoint: POST `/api/admin/atletas/{id}/transferir-modalidade`
 
+## Nova Funcionalidade (03/03/2026)
+
+32. ✅ **Ranking Run Inside** - Sistema completo de análise de perfis Instagram:
+    - **Nova aba no Admin**: "Ranking Run Inside" com ícone dedicado
+    - **Formulário de entrada manual**: Administrador insere dados do perfil:
+      - Dados básicos: username, nome completo, nicho
+      - Métricas: seguidores, seguindo, total de posts
+      - Engajamento: média de likes, comentários, views de Reels
+      - Frequência: posts por semana, dias desde último post, crescimento 30 dias
+      - Análise de Bio: descrição, keywords, CTA, link, clareza
+      - Distribuição de formatos: % Reels, Carrossel, Fotos
+      - Indicadores anti-fake: picos anormais, comentários repetitivos, horários artificiais
+    - **Motor de cálculo (8 métricas com 0-10)**:
+      - Bio, Frequência, Engajamento, Crescimento, Consistência, Padrões (anti-fake), Reels, Formatos
+    - **Score Final (0-100)**: Média ponderada das notas (Engajamento 30%, Crescimento/Consistência/Padrões 15%, Reels 10%, outros 5%)
+    - **Sistema de Classificação**:
+      - Elite Platinum: 95-100
+      - Elite Gold: 90-94
+      - Premium: 80-89
+      - Profissional: 70-79
+      - Regular: 60-69
+      - Alto Risco: <60
+    - **Dashboard Visual com Gráficos (recharts)**:
+      - Gráfico Radar: 8 métricas visualizadas
+      - Gráfico Gauge/Velocímetro: Score de Influência
+      - Gráfico de Barras Horizontal: Notas individuais
+      - Gráfico de Pizza: Distribuição de formatos
+      - Gráfico de Barras Comparativo: Perfil vs Média do Nicho
+    - **Recomendações Personalizadas**: Sistema gera dicas baseadas nas notas
+    - **Histórico de Análises**: Lista todas análises salvas com ações ver/excluir
+    - **Exportação**:
+      - XLSX: Relatório completo em Excel
+      - CSV: Dados em formato CSV
+    - **Endpoints**:
+      - POST `/api/admin/instagram/analisar` - Criar análise
+      - GET `/api/admin/instagram/analises` - Listar análises
+      - GET `/api/admin/instagram/analises/{id}` - Detalhes com gráficos
+      - DELETE `/api/admin/instagram/analises/{id}` - Excluir análise
+      - GET `/api/admin/instagram/export/{id}` - Exportar XLSX
+      - GET `/api/admin/instagram/export-csv/{id}` - Exportar CSV
+
 ---
 
 ## Próximos Passos (Backlog)
 1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
 2. **P2**: Ranking histórico por ano (filtro por temporada)
-3. Melhorias de performance (cache)
-4. Integração real com Strava API
+3. **P2**: Ranking Run Inside - Exportação PDF com visual do dashboard
+4. Melhorias de performance (cache)
+5. Integração real com Strava API
+6. **Roadmap Run Inside (Futuro)**:
+   - Machine Learning para análise preditiva
+   - API pública para marcas consultarem scores
+   - Selo digital verificável para influenciadores certificados
 
 ---
 
-Última atualização: 02/03/2026
+Última atualização: 03/03/2026
 1. ✅ Botão "Exportar Dados" na aba Atletas - funcional com download de Excel
 2. ✅ Mensagem "Ação Concluída" em todas as alterações (toast.success)
 3. ✅ Upload de foto de perfil do atleta - corrigido com timestamp para forçar reload
