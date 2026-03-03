@@ -17,7 +17,7 @@ import {
   Users, AlertCircle, TrendingUp, BarChart3, PieChart,
   Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
   UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X,
-  Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw
+  Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw, Loader2
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -141,6 +141,9 @@ const AdminDashboard = () => {
   const [loadingInstagram, setLoadingInstagram] = useState(false);
   const [showInstagramForm, setShowInstagramForm] = useState(false);
   const [instagramResult, setInstagramResult] = useState(null);
+  const [instagramSearchUsername, setInstagramSearchUsername] = useState('');
+  const [instagramSearchLoading, setInstagramSearchLoading] = useState(false);
+  const [instagramSearchError, setInstagramSearchError] = useState('');
   const [instagramFormData, setInstagramFormData] = useState({
     username: '',
     nome_completo: '',
@@ -160,7 +163,7 @@ const AdminDashboard = () => {
     bio_keywords: true,
     bio_cta: false,
     bio_link: true,
-    bio_clareza: true,
+    bio_clareza: 'boa',
     percentual_reels: 50,
     percentual_carrossel: 30,
     percentual_foto: 20,
@@ -413,6 +416,63 @@ const AdminDashboard = () => {
     }
   };
 
+  // Função para buscar dados do Instagram via Social Blade
+  const handleInstagramSearch = async () => {
+    if (!instagramSearchUsername.trim()) {
+      toast.error('Username obrigatório', { description: 'Digite o @username do perfil' });
+      return;
+    }
+
+    setInstagramSearchLoading(true);
+    setInstagramSearchError('');
+
+    try {
+      const cleanUsername = instagramSearchUsername.trim().replace('@', '');
+      const response = await axios.get(`${API}/admin/instagram/buscar/${cleanUsername}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (response.data.success && response.data.data) {
+        // Preencher formulário com dados encontrados
+        const data = response.data.data;
+        setInstagramFormData(prev => ({
+          ...prev,
+          username: data.username || cleanUsername,
+          nome_completo: data.nome_completo || '',
+          seguidores: data.seguidores || '',
+          seguindo: data.seguindo || '',
+          total_posts: data.total_posts || '',
+          media_likes: data.media_likes || '',
+          media_comentarios: data.media_comentarios || ''
+        }));
+        setShowInstagramForm(true);
+        toast.success('Dados encontrados!', { 
+          description: `@${data.username}: ${data.seguidores?.toLocaleString()} seguidores${data.grade ? ` • Grade: ${data.grade}` : ''}` 
+        });
+      } else {
+        setInstagramSearchError(response.data.error || 'Perfil não encontrado');
+        // Abrir formulário manual mesmo assim
+        setInstagramFormData(prev => ({
+          ...prev,
+          username: cleanUsername
+        }));
+        setShowInstagramForm(true);
+        toast.warning('Busca automática falhou', { 
+          description: 'Preencha os dados manualmente' 
+        });
+      }
+    } catch (error) {
+      const errorMsg = typeof error.response?.data?.detail === 'string' 
+        ? error.response?.data?.detail 
+        : 'Erro na busca. Preencha os dados manualmente.';
+      setInstagramSearchError(errorMsg);
+      setShowInstagramForm(true);
+      toast.warning('Busca automática falhou', { description: errorMsg });
+    } finally {
+      setInstagramSearchLoading(false);
+    }
+  };
+
   const handleInstagramAnalyze = async () => {
     // Validar campos obrigatórios
     const required = ['username', 'seguidores', 'seguindo', 'total_posts', 'media_likes', 'media_comentarios'];
@@ -443,7 +503,8 @@ const AdminDashboard = () => {
         percentual_foto: parseFloat(instagramFormData.percentual_foto) || 20,
         picos_anormais: parseInt(instagramFormData.picos_anormais) || 0,
         comentarios_repetitivos: parseInt(instagramFormData.comentarios_repetitivos) || 0,
-        horarios_artificiais: parseInt(instagramFormData.horarios_artificiais) || 0
+        horarios_artificiais: parseInt(instagramFormData.horarios_artificiais) || 0,
+        bio_clareza: instagramFormData.bio_clareza || 'boa'
       };
 
       const response = await axios.post(`${API}/admin/instagram/analisar`, payload, {
@@ -452,12 +513,23 @@ const AdminDashboard = () => {
 
       setInstagramResult(response.data);
       setShowInstagramForm(false);
+      setInstagramSearchUsername('');
       fetchInstagramAnalises();
       toast.success('Análise Concluída!', { 
         description: `Score: ${response.data.analysis.score_final}/100 - ${response.data.analysis.classificacao}` 
       });
     } catch (error) {
-      toast.error('Erro na Análise', { description: error.response?.data?.detail || 'Erro ao analisar perfil' });
+      // Tratar erro de validação Pydantic (que é um array)
+      let errorMsg = 'Erro ao analisar perfil';
+      if (error.response?.data?.detail) {
+        if (typeof error.response.data.detail === 'string') {
+          errorMsg = error.response.data.detail;
+        } else if (Array.isArray(error.response.data.detail)) {
+          // Pydantic validation errors
+          errorMsg = error.response.data.detail.map(e => e.msg || e.message || 'Erro de validação').join(', ');
+        }
+      }
+      toast.error('Erro na Análise', { description: errorMsg });
     } finally {
       setLoadingInstagram(false);
     }
@@ -520,7 +592,7 @@ const AdminDashboard = () => {
       bio_keywords: true,
       bio_cta: false,
       bio_link: true,
-      bio_clareza: true,
+      bio_clareza: 'boa',
       percentual_reels: 50,
       percentual_carrossel: 30,
       percentual_foto: 20,
@@ -2092,14 +2164,71 @@ const AdminDashboard = () => {
                 </h2>
                 <p className="text-slate-500">Análise de Perfis Instagram - Sistema de Score de Influenciadores</p>
               </div>
-              <Button 
-                onClick={() => { resetInstagramForm(); setShowInstagramForm(true); }}
-                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Análise
-              </Button>
             </div>
+
+            {/* Barra de Pesquisa */}
+            {!instagramResult && !showInstagramForm && (
+              <Card className="bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 border-pink-200 dark:border-pink-800">
+                <CardContent className="p-6">
+                  <div className="text-center mb-6">
+                    <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
+                      Buscar Perfil do Instagram
+                    </h3>
+                    <p className="text-slate-600 dark:text-slate-400 text-sm">
+                      Digite o @username para buscar dados automaticamente via Social Blade
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto">
+                    <div className="flex-1 relative">
+                      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
+                      <Input
+                        placeholder="@username (ex: rankingrun)"
+                        value={instagramSearchUsername}
+                        onChange={(e) => setInstagramSearchUsername(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleInstagramSearch()}
+                        className="pl-10 h-12 text-lg"
+                        disabled={instagramSearchLoading}
+                      />
+                    </div>
+                    <Button
+                      onClick={handleInstagramSearch}
+                      disabled={instagramSearchLoading || !instagramSearchUsername.trim()}
+                      className="h-12 px-6 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+                    >
+                      {instagramSearchLoading ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Buscando...
+                        </>
+                      ) : (
+                        <>
+                          <Search className="w-4 h-4 mr-2" />
+                          Buscar Dados
+                        </>
+                      )}
+                    </Button>
+                  </div>
+
+                  {instagramSearchError && (
+                    <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-center">
+                      <p className="text-amber-700 dark:text-amber-300 text-sm">
+                        {instagramSearchError}
+                      </p>
+                    </div>
+                  )}
+
+                  <div className="mt-6 text-center">
+                    <button
+                      onClick={() => { resetInstagramForm(); setShowInstagramForm(true); }}
+                      className="text-sm text-pink-600 dark:text-pink-400 hover:underline"
+                    >
+                      Ou preencha os dados manualmente →
+                    </button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Resultado da Análise */}
             {instagramResult && (
@@ -2376,7 +2505,7 @@ const AdminDashboard = () => {
                     <div className="text-center py-12">
                       <Activity className="w-12 h-12 mx-auto mb-3 text-slate-300" />
                       <p className="text-slate-500">Nenhuma análise realizada ainda.</p>
-                      <p className="text-sm text-slate-400 mt-1">Clique em "Nova Análise" para começar.</p>
+                      <p className="text-sm text-slate-400 mt-1">Use a barra de pesquisa acima para começar.</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
@@ -2585,8 +2714,7 @@ const AdminDashboard = () => {
                         { key: 'bio_descricao', label: 'Tem Descrição' },
                         { key: 'bio_keywords', label: 'Tem Keywords' },
                         { key: 'bio_cta', label: 'Tem CTA' },
-                        { key: 'bio_link', label: 'Tem Link' },
-                        { key: 'bio_clareza', label: 'É Clara' }
+                        { key: 'bio_link', label: 'Tem Link' }
                       ].map(({ key, label }) => (
                         <div key={key} className="flex items-center gap-2">
                           <input
@@ -2599,6 +2727,19 @@ const AdminDashboard = () => {
                           <Label htmlFor={key}>{label}</Label>
                         </div>
                       ))}
+                      <div className="flex items-center gap-2">
+                        <Label>Clareza:</Label>
+                        <select
+                          value={instagramFormData.bio_clareza}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, bio_clareza: e.target.value})}
+                          className="rounded border-slate-300 px-2 py-1 text-sm"
+                        >
+                          <option value="excelente">Excelente</option>
+                          <option value="boa">Boa</option>
+                          <option value="regular">Regular</option>
+                          <option value="ruim">Ruim</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
 

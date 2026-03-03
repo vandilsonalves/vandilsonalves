@@ -15,6 +15,9 @@ import random
 from jose import JWTError, jwt
 import csv
 import io
+import re
+import httpx
+from bs4 import BeautifulSoup
 from openpyxl import Workbook
 from openpyxl.styles import Font, PatternFill, Alignment
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
@@ -2547,6 +2550,194 @@ async def get_logs_aniversario(admin: dict = Depends(get_admin_user)):
 
 
 # ========== RANKING RUN INSIDE - INSTAGRAM ANALYTICS ==========
+
+@api_router.get("/admin/instagram/buscar/{username}")
+async def buscar_dados_instagram(username: str, admin: dict = Depends(get_admin_user)):
+    """
+    Busca dados públicos de um perfil Instagram via Social Blade.
+    Retorna os dados encontrados ou erro se não conseguir buscar.
+    """
+    # Limpar username (remover @ se houver)
+    username = username.strip().lstrip('@').lower()
+    
+    if not username:
+        raise HTTPException(status_code=400, detail="Username é obrigatório")
+    
+    try:
+        # Configurar headers para parecer um navegador real
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Cache-Control': 'max-age=0'
+        }
+        
+        url = f"https://socialblade.com/instagram/user/{username}"
+        
+        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
+            response = await client.get(url, headers=headers)
+            
+            if response.status_code == 404:
+                return {
+                    "success": False,
+                    "error": "Perfil não encontrado no Social Blade",
+                    "data": None
+                }
+            
+            if response.status_code != 200:
+                return {
+                    "success": False,
+                    "error": f"Erro ao acessar Social Blade (código {response.status_code})",
+                    "data": None
+                }
+            
+            html = response.text
+            soup = BeautifulSoup(html, 'html.parser')
+            
+            # Extrair dados da página
+            data = {
+                "username": username,
+                "nome_completo": "",
+                "seguidores": 0,
+                "seguindo": 0,
+                "total_posts": 0,
+                "engagement_rate": 0,
+                "media_likes": 0,
+                "media_comentarios": 0,
+                "grade": "",
+                "sb_rank": "",
+                "followers_rank": "",
+                "engagement_rank": "",
+                "crescimento_14_dias": 0
+            }
+            
+            # Buscar estatísticas principais (header)
+            # Os dados aparecem em divs específicas
+            stat_divs = soup.find_all('div', class_='YouTubeUserTopInfo')
+            
+            # Tentar extrair de diferentes seletores
+            # Pattern 1: Procurar por texto "Followers", "Following", etc.
+            for span in soup.find_all('span'):
+                text = span.get_text(strip=True)
+                parent_text = span.parent.get_text(strip=True) if span.parent else ""
+                
+                # Buscar números próximos de labels conhecidos
+                if 'Followers' in parent_text:
+                    num_match = re.search(r'([\d,]+)\s*Followers', parent_text)
+                    if num_match:
+                        data['seguidores'] = int(num_match.group(1).replace(',', ''))
+                
+                if 'Following' in parent_text:
+                    num_match = re.search(r'([\d,]+)\s*Following', parent_text)
+                    if num_match:
+                        data['seguindo'] = int(num_match.group(1).replace(',', ''))
+                
+                if 'Media' in parent_text and 'Count' in parent_text:
+                    num_match = re.search(r'([\d,]+)\s*Media', parent_text)
+                    if num_match:
+                        data['total_posts'] = int(num_match.group(1).replace(',', ''))
+            
+            # Buscar em formato alternativo (tabela de estatísticas)
+            for p in soup.find_all('p'):
+                text = p.get_text(strip=True)
+                
+                # Engagement Rate
+                if 'Engagement' in text and '%' in text:
+                    er_match = re.search(r'([\d.]+)%', text)
+                    if er_match:
+                        data['engagement_rate'] = float(er_match.group(1))
+                
+                # Average Likes
+                if 'Average' in text and 'Like' in text:
+                    likes_match = re.search(r'([\d,]+)', text)
+                    if likes_match:
+                        data['media_likes'] = float(likes_match.group(1).replace(',', ''))
+            
+            # Grade (nota do Social Blade)
+            grade_elem = soup.find('div', id='afd-header-grade')
+            if grade_elem:
+                data['grade'] = grade_elem.get_text(strip=True)
+            else:
+                # Tentar outro seletor
+                for div in soup.find_all('div'):
+                    if div.get('style') and 'font-size' in div.get('style', ''):
+                        text = div.get_text(strip=True)
+                        if text in ['A++', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F']:
+                            data['grade'] = text
+                            break
+            
+            # Extrair números da página usando regex mais agressivo
+            page_text = soup.get_text()
+            
+            # Seguidores
+            if data['seguidores'] == 0:
+                followers_match = re.search(r'([\d,]+)\s*(?:Followers|followers|Seguidores)', page_text)
+                if followers_match:
+                    data['seguidores'] = int(followers_match.group(1).replace(',', ''))
+            
+            # Following
+            if data['seguindo'] == 0:
+                following_match = re.search(r'([\d,]+)\s*(?:Following|following|Seguindo)', page_text)
+                if following_match:
+                    data['seguindo'] = int(following_match.group(1).replace(',', ''))
+            
+            # Media Count / Posts
+            if data['total_posts'] == 0:
+                media_match = re.search(r'(?:Media|Posts|Publicações)[^\d]*([\d,]+)', page_text, re.IGNORECASE)
+                if not media_match:
+                    media_match = re.search(r'([\d,]+)[^\d]*(?:Media|Posts)', page_text, re.IGNORECASE)
+                if media_match:
+                    data['total_posts'] = int(media_match.group(1).replace(',', ''))
+            
+            # Engagement Rate
+            if data['engagement_rate'] == 0:
+                er_match = re.search(r'Engagement[^\d]*([\d.]+)%', page_text, re.IGNORECASE)
+                if er_match:
+                    data['engagement_rate'] = float(er_match.group(1))
+            
+            # Average Likes
+            if data['media_likes'] == 0:
+                likes_match = re.search(r'Average\s*Likes[^\d]*([\d,]+)', page_text, re.IGNORECASE)
+                if likes_match:
+                    data['media_likes'] = float(likes_match.group(1).replace(',', ''))
+            
+            # Average Comments
+            comments_match = re.search(r'Average\s*Comments[^\d]*([\d.,]+)', page_text, re.IGNORECASE)
+            if comments_match:
+                data['media_comentarios'] = float(comments_match.group(1).replace(',', ''))
+            
+            # Verificar se conseguimos dados mínimos
+            if data['seguidores'] == 0 and data['total_posts'] == 0:
+                return {
+                    "success": False,
+                    "error": "Não foi possível extrair dados do perfil. O Social Blade pode ter bloqueado a requisição ou o perfil não existe.",
+                    "data": None
+                }
+            
+            return {
+                "success": True,
+                "error": None,
+                "data": data,
+                "source": "socialblade"
+            }
+            
+    except httpx.TimeoutException:
+        return {
+            "success": False,
+            "error": "Timeout ao acessar Social Blade. Tente novamente.",
+            "data": None
+        }
+    except Exception as e:
+        logging.error(f"Erro ao buscar dados do Instagram: {str(e)}")
+        return {
+            "success": False,
+            "error": f"Erro interno: {str(e)}",
+            "data": None
+        }
+
 
 @api_router.post("/admin/instagram/analisar")
 async def analisar_perfil_instagram(dados: InstagramProfileInput, admin: dict = Depends(get_admin_user)):

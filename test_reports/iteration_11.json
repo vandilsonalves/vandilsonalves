@@ -1,0 +1,109 @@
+{
+  "summary": "Iteration 11: Bug fixes and new features for 'Ranking Run Inside' (Instagram Analytics) feature tested and verified. All 11 backend tests passed (100%). Frontend UI verified with Playwright - search bar, manual form, bio_clareza select, analysis history all working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable component",
+        "issues": ["Pre-existing HTML hydration warning: <tr> inside <span> - doesn't affect functionality"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_instagram_ranking_inside_iter11.py",
+    "/app/test_reports/pytest/pytest_iter11_instagram.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_instagram_ranking_inside_iter11.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (All UI flows verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "Test analyses created and cleaned up automatically. Existing analyses: @test_user_iter11 (84.9), @rankingrun (74.3), @teste_runner (79.6)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Ranking Run Inside feature fully tested in Iteration 11. Bug fix verified: bio_clareza changed from boolean to string select with options (excelente, boa, regular, ruim). Frontend error handling improved - no more 'Objects are not valid as React child' error. Instagram search via Social Blade may return 403 (blocked) which is EXPECTED behavior - system shows fallback message to fill manually.",
+  "verified_features": {
+    "bug_fix_pydantic_error": {
+      "issue": "Frontend showed 'Objects are not valid as React child' when Pydantic validation failed",
+      "status": "FIXED",
+      "verification": "Frontend now handles error.response.data.detail properly whether string or array"
+    },
+    "search_bar": {
+      "endpoint": "GET /api/admin/instagram/buscar/{username}",
+      "status": "WORKING",
+      "note": "Social Blade may block (403) - shows user-friendly fallback message 'Busca automática falhou'"
+    },
+    "manual_form_link": {
+      "element": "Link 'Ou preencha os dados manualmente'",
+      "status": "WORKING",
+      "note": "Opens full form dialog when clicked"
+    },
+    "bio_clareza_select": {
+      "field": "bio_clareza",
+      "type": "Select (dropdown)",
+      "options": ["excelente", "boa", "regular", "ruim"],
+      "status": "WORKING",
+      "note": "Changed from boolean to string select"
+    },
+    "analyze_endpoint": {
+      "endpoint": "POST /api/admin/instagram/analisar",
+      "status": "WORKING",
+      "note": "Accepts bio_clareza as string, calculates score correctly"
+    },
+    "analysis_history": {
+      "endpoint": "GET /api/admin/instagram/analises",
+      "status": "WORKING",
+      "note": "Shows list with score, classification badge, view/delete buttons"
+    },
+    "analysis_dashboard": {
+      "features": "Radar chart, gauge, comparativo, formatos charts",
+      "status": "WORKING"
+    }
+  },
+  "backend_api_tests": {
+    "test_instagram_search_endpoint_returns_proper_structure": "PASS - Returns {success, error, data} structure",
+    "test_instagram_search_nonexistent_username": "PASS - Handles non-existent users gracefully",
+    "test_instagram_analyze_with_bio_clareza_string": "PASS - bio_clareza='excelente' gives nota_bio=10.0",
+    "test_instagram_analyze_with_bio_clareza_ruim": "PASS - bio_clareza='ruim' gives nota_bio=0.0",
+    "test_instagram_analyze_with_bio_clareza_boa": "PASS - bio_clareza='boa' gives nota_bio ~7.5",
+    "test_list_instagram_analyses": "PASS - Returns list with required fields",
+    "test_get_single_analysis_with_graphs": "PASS - Returns analysis with graficos_data",
+    "test_delete_analysis": "PASS - Delete and verify 404",
+    "test_validation_error_handling": "PASS - Proper error response",
+    "test_export_xlsx": "PASS - Returns XLSX file",
+    "test_export_csv": "PASS - Returns CSV file"
+  },
+  "frontend_ui_tests": {
+    "admin_login": "PASS - Login as admin@runpro.com works",
+    "admin_dashboard_navigation": "PASS - Admin button leads to admin panel",
+    "ranking_run_inside_tab": "PASS - Menu item visible and clickable",
+    "search_bar_ui": "PASS - Input field with @username placeholder, Buscar Dados button",
+    "search_fallback_message": "PASS - Shows 'Busca automática falhou' toast when blocked",
+    "manual_form_link": "PASS - 'Ou preencha os dados manualmente' opens form",
+    "manual_form_fields": "PASS - All 14 form fields visible including bio_clareza select",
+    "analysis_history_list": "PASS - Shows 3 analyses with scores and badges",
+    "view_delete_buttons": "PASS - Eye and trash icons visible for each analysis"
+  },
+  "bio_clareza_score_calculation": {
+    "formula": "desc*1.5 + keywords*3.0 + cta*2.0 + link*1.5 + clareza_score",
+    "clareza_scores": {
+      "excelente": 2.0,
+      "boa": 1.5,
+      "regular": 1.0,
+      "ruim": 0.0
+    },
+    "max_score": 10.0
+  }
+}
