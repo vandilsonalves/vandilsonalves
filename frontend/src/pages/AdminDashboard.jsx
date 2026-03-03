@@ -20,7 +20,11 @@ import {
   Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area } from 'recharts';
+import { 
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
+  PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area,
+  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar
+} from 'recharts';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -35,6 +39,8 @@ const ESTADOS_BR = [
 ];
 
 // Menu items para sidebar
+import { Instagram, Radar } from 'lucide-react';
+
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
   { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
@@ -43,6 +49,7 @@ const menuItems = [
   { id: 'graficos', label: 'Gráficos', icon: BarChart3 },
   { id: 'ranking', label: 'Ranking', icon: Trophy },
   { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
+  { id: 'instagram', label: 'Ranking Run Inside', icon: Activity },
 ];
 
 const AdminDashboard = () => {
@@ -129,6 +136,39 @@ const AdminDashboard = () => {
   const [envioAutomatico, setEnvioAutomatico] = useState(false);
   const [showConfigModal, setShowConfigModal] = useState(false);
 
+  // Instagram Analytics (Ranking Run Inside)
+  const [instagramAnalises, setInstagramAnalises] = useState([]);
+  const [loadingInstagram, setLoadingInstagram] = useState(false);
+  const [showInstagramForm, setShowInstagramForm] = useState(false);
+  const [instagramResult, setInstagramResult] = useState(null);
+  const [instagramFormData, setInstagramFormData] = useState({
+    username: '',
+    nome_completo: '',
+    nicho: 'corrida',
+    seguidores: '',
+    seguindo: '',
+    total_posts: '',
+    media_likes: '',
+    media_comentarios: '',
+    media_views_reels: '',
+    posts_por_semana: '',
+    dias_ultimo_post: '',
+    crescimento_30_dias: '',
+    desvio_intervalo_posts: '',
+    desvio_engajamento: '',
+    bio_descricao: true,
+    bio_keywords: true,
+    bio_cta: false,
+    bio_link: true,
+    bio_clareza: true,
+    percentual_reels: 50,
+    percentual_carrossel: 30,
+    percentual_foto: 20,
+    picos_anormais: 0,
+    comentarios_repetitivos: 0,
+    horarios_artificiais: 0
+  });
+
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -147,6 +187,9 @@ const AdminDashboard = () => {
     if (activeMenu === 'aniversariantes') {
       fetchAniversariantes();
       fetchConfigAniversario();
+    }
+    if (activeMenu === 'instagram') {
+      fetchInstagramAnalises();
     }
   }, [activeMenu, filtroCategoria, mesCalendario, anoCalendario]);
 
@@ -353,6 +396,139 @@ const AdminDashboard = () => {
     } catch (error) {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao enviar mensagens' });
     }
+  };
+
+  // ===== INSTAGRAM ANALYTICS (RANKING RUN INSIDE) =====
+  const fetchInstagramAnalises = async () => {
+    setLoadingInstagram(true);
+    try {
+      const response = await axios.get(`${API}/admin/instagram/analises`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setInstagramAnalises(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar análises Instagram:', error);
+    } finally {
+      setLoadingInstagram(false);
+    }
+  };
+
+  const handleInstagramAnalyze = async () => {
+    // Validar campos obrigatórios
+    const required = ['username', 'seguidores', 'seguindo', 'total_posts', 'media_likes', 'media_comentarios'];
+    const missing = required.filter(field => !instagramFormData[field]);
+    
+    if (missing.length > 0) {
+      toast.error('Campos obrigatórios', { description: 'Preencha todos os campos obrigatórios' });
+      return;
+    }
+
+    setLoadingInstagram(true);
+    try {
+      const payload = {
+        ...instagramFormData,
+        seguidores: parseInt(instagramFormData.seguidores) || 0,
+        seguindo: parseInt(instagramFormData.seguindo) || 0,
+        total_posts: parseInt(instagramFormData.total_posts) || 0,
+        media_likes: parseFloat(instagramFormData.media_likes) || 0,
+        media_comentarios: parseFloat(instagramFormData.media_comentarios) || 0,
+        media_views_reels: parseFloat(instagramFormData.media_views_reels) || 0,
+        posts_por_semana: parseFloat(instagramFormData.posts_por_semana) || 0,
+        dias_ultimo_post: parseInt(instagramFormData.dias_ultimo_post) || 0,
+        crescimento_30_dias: parseFloat(instagramFormData.crescimento_30_dias) || 0,
+        desvio_intervalo_posts: parseFloat(instagramFormData.desvio_intervalo_posts) || 0,
+        desvio_engajamento: parseFloat(instagramFormData.desvio_engajamento) || 0,
+        percentual_reels: parseFloat(instagramFormData.percentual_reels) || 50,
+        percentual_carrossel: parseFloat(instagramFormData.percentual_carrossel) || 30,
+        percentual_foto: parseFloat(instagramFormData.percentual_foto) || 20,
+        picos_anormais: parseInt(instagramFormData.picos_anormais) || 0,
+        comentarios_repetitivos: parseInt(instagramFormData.comentarios_repetitivos) || 0,
+        horarios_artificiais: parseInt(instagramFormData.horarios_artificiais) || 0
+      };
+
+      const response = await axios.post(`${API}/admin/instagram/analisar`, payload, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      setInstagramResult(response.data);
+      setShowInstagramForm(false);
+      fetchInstagramAnalises();
+      toast.success('Análise Concluída!', { 
+        description: `Score: ${response.data.analysis.score_final}/100 - ${response.data.analysis.classificacao}` 
+      });
+    } catch (error) {
+      toast.error('Erro na Análise', { description: error.response?.data?.detail || 'Erro ao analisar perfil' });
+    } finally {
+      setLoadingInstagram(false);
+    }
+  };
+
+  const handleDeleteInstagramAnalysis = async (analysisId) => {
+    if (!window.confirm('Tem certeza que deseja excluir esta análise?')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/instagram/analises/${analysisId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Ação Concluída', { description: 'Análise excluída!' });
+      fetchInstagramAnalises();
+      if (instagramResult?.analysis?.id === analysisId) {
+        setInstagramResult(null);
+      }
+    } catch (error) {
+      toast.error('Erro', { description: 'Erro ao excluir análise' });
+    }
+  };
+
+  const handleExportInstagram = async (analysisId, format) => {
+    const endpoint = format === 'xlsx' 
+      ? `${API}/admin/instagram/export/${analysisId}`
+      : `${API}/admin/instagram/export-csv/${analysisId}`;
+    
+    window.open(endpoint + `?token=${token}`, '_blank');
+  };
+
+  const getClassificacaoColor = (classificacao) => {
+    const colors = {
+      'Elite Platinum': 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white',
+      'Elite Gold': 'bg-gradient-to-r from-yellow-500 to-amber-500 text-white',
+      'Premium': 'bg-gradient-to-r from-purple-500 to-violet-500 text-white',
+      'Profissional': 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white',
+      'Regular': 'bg-gradient-to-r from-slate-500 to-gray-500 text-white',
+      'Alto Risco': 'bg-gradient-to-r from-red-500 to-rose-500 text-white'
+    };
+    return colors[classificacao] || 'bg-slate-500 text-white';
+  };
+
+  const resetInstagramForm = () => {
+    setInstagramFormData({
+      username: '',
+      nome_completo: '',
+      nicho: 'corrida',
+      seguidores: '',
+      seguindo: '',
+      total_posts: '',
+      media_likes: '',
+      media_comentarios: '',
+      media_views_reels: '',
+      posts_por_semana: '',
+      dias_ultimo_post: '',
+      crescimento_30_dias: '',
+      desvio_intervalo_posts: '',
+      desvio_engajamento: '',
+      bio_descricao: true,
+      bio_keywords: true,
+      bio_cta: false,
+      bio_link: true,
+      bio_clareza: true,
+      percentual_reels: 50,
+      percentual_carrossel: 30,
+      percentual_foto: 20,
+      picos_anormais: 0,
+      comentarios_repetitivos: 0,
+      horarios_artificiais: 0
+    });
+    setInstagramResult(null);
   };
 
   const handleAprovar = async (resultadoId) => {
@@ -1901,6 +2077,625 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* RANKING RUN INSIDE - INSTAGRAM ANALYTICS */}
+        {activeMenu === 'instagram' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Activity className="w-6 h-6 text-pink-500" />
+                  Ranking Run Inside
+                </h2>
+                <p className="text-slate-500">Análise de Perfis Instagram - Sistema de Score de Influenciadores</p>
+              </div>
+              <Button 
+                onClick={() => { resetInstagramForm(); setShowInstagramForm(true); }}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Análise
+              </Button>
+            </div>
+
+            {/* Resultado da Análise */}
+            {instagramResult && (
+              <div className="space-y-6">
+                {/* Card Principal do Score */}
+                <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-0 shadow-2xl overflow-hidden">
+                  <CardContent className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      {/* Perfil */}
+                      <div className="text-center lg:text-left">
+                        <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
+                          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-2xl font-bold">
+                            @
+                          </div>
+                          <div>
+                            <h3 className="text-2xl font-bold">@{instagramResult.analysis.username}</h3>
+                            <p className="text-slate-400">{instagramResult.analysis.nome_completo || 'Influenciador'}</p>
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
+                          <Badge className="bg-slate-700 text-slate-200">{instagramResult.analysis.nicho}</Badge>
+                          <Badge className={getClassificacaoColor(instagramResult.analysis.classificacao)}>
+                            {instagramResult.analysis.classificacao}
+                          </Badge>
+                        </div>
+                      </div>
+
+                      {/* Score Gauge */}
+                      <div className="text-center">
+                        <div className="relative w-40 h-40 mx-auto">
+                          <svg className="w-full h-full transform -rotate-90">
+                            <circle
+                              cx="80" cy="80" r="70"
+                              stroke="#334155"
+                              strokeWidth="12"
+                              fill="none"
+                            />
+                            <circle
+                              cx="80" cy="80" r="70"
+                              stroke={instagramResult.analysis.score_final >= 80 ? '#10B981' : 
+                                      instagramResult.analysis.score_final >= 60 ? '#F59E0B' : '#EF4444'}
+                              strokeWidth="12"
+                              fill="none"
+                              strokeDasharray={`${(instagramResult.analysis.score_final / 100) * 440} 440`}
+                              strokeLinecap="round"
+                            />
+                          </svg>
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <span className="text-4xl font-bold">{instagramResult.analysis.score_final}</span>
+                            <span className="text-sm text-slate-400">/100</span>
+                          </div>
+                        </div>
+                        <p className="mt-2 text-lg font-semibold">Score de Influência</p>
+                      </div>
+
+                      {/* Métricas Rápidas */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-slate-700/50 p-4 rounded-xl text-center">
+                          <div className="text-2xl font-bold text-pink-400">
+                            {instagramResult.analysis.seguidores.toLocaleString()}
+                          </div>
+                          <div className="text-sm text-slate-400">Seguidores</div>
+                        </div>
+                        <div className="bg-slate-700/50 p-4 rounded-xl text-center">
+                          <div className="text-2xl font-bold text-blue-400">
+                            {instagramResult.analysis.engagement_rate}%
+                          </div>
+                          <div className="text-sm text-slate-400">Engajamento</div>
+                        </div>
+                        <div className="bg-slate-700/50 p-4 rounded-xl text-center">
+                          <div className="text-2xl font-bold text-green-400">
+                            {instagramResult.analysis.total_posts}
+                          </div>
+                          <div className="text-sm text-slate-400">Posts</div>
+                        </div>
+                        <div className="bg-slate-700/50 p-4 rounded-xl text-center">
+                          <div className="text-2xl font-bold text-amber-400">
+                            {(instagramResult.analysis.indice_anomalia * 100).toFixed(1)}%
+                          </div>
+                          <div className="text-sm text-slate-400">Índice Anomalia</div>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Gráficos */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Radar Chart - 8 Métricas */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Activity className="w-5 h-5 text-purple-500" />
+                        Análise Radar (8 Métricas)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RadarChart data={instagramResult.graficos_data.radar.labels.map((label, i) => ({
+                            metric: label,
+                            value: instagramResult.graficos_data.radar.values[i],
+                            fullMark: 10
+                          }))}>
+                            <PolarGrid stroke="#E5E7EB" />
+                            <PolarAngleAxis dataKey="metric" tick={{ fill: '#6B7280', fontSize: 11 }} />
+                            <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fill: '#9CA3AF', fontSize: 10 }} />
+                            <RechartsRadar name="Perfil" dataKey="value" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.5} />
+                          </RadarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Notas Individuais */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <BarChart3 className="w-5 h-5 text-blue-500" />
+                        Notas Individuais (0-10)
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[300px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart 
+                            data={instagramResult.graficos_data.radar.labels.map((label, i) => ({
+                              name: label,
+                              nota: instagramResult.graficos_data.radar.values[i]
+                            }))}
+                            layout="vertical"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                            <XAxis type="number" domain={[0, 10]} stroke="#9CA3AF" />
+                            <YAxis dataKey="name" type="category" stroke="#9CA3AF" width={90} tick={{ fontSize: 11 }} />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Bar dataKey="nota" radius={[0, 4, 4, 0]}>
+                              {instagramResult.graficos_data.radar.values.map((value, index) => (
+                                <Cell key={`cell-${index}`} fill={value >= 7 ? '#10B981' : value >= 5 ? '#F59E0B' : '#EF4444'} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Distribuição de Formatos */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <PieChart className="w-5 h-5 text-pink-500" />
+                        Distribuição de Formatos
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPie>
+                            <Pie
+                              data={instagramResult.graficos_data.formatos.labels.map((label, i) => ({
+                                name: label,
+                                value: instagramResult.graficos_data.formatos.values[i]
+                              }))}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={90}
+                              paddingAngle={5}
+                              dataKey="value"
+                              label={({ name, value }) => `${name}: ${value}%`}
+                            >
+                              <Cell fill="#EC4899" />
+                              <Cell fill="#8B5CF6" />
+                              <Cell fill="#3B82F6" />
+                            </Pie>
+                            <Tooltip />
+                            <Legend />
+                          </RechartsPie>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Comparativo com Média do Nicho */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <TrendingUp className="w-5 h-5 text-emerald-500" />
+                        Comparativo vs Média do Nicho
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={instagramResult.graficos_data.comparativo.labels.map((label, i) => ({
+                            name: label,
+                            perfil: instagramResult.graficos_data.comparativo.perfil[i],
+                            media: instagramResult.graficos_data.comparativo.media_nicho[i]
+                          }))}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                            <XAxis dataKey="name" stroke="#9CA3AF" />
+                            <YAxis stroke="#9CA3AF" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Legend />
+                            <Bar dataKey="perfil" name="Perfil Analisado" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
+                            <Bar dataKey="media" name="Média do Nicho" fill="#94A3B8" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Recomendações */}
+                <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/30 dark:to-indigo-900/30 border-0">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <AlertCircle className="w-5 h-5 text-blue-500" />
+                      Recomendações Personalizadas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ul className="space-y-2">
+                      {instagramResult.recomendacoes.map((rec, i) => (
+                        <li key={i} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
+                          <span className="mt-1 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />
+                          {rec}
+                        </li>
+                      ))}
+                    </ul>
+                  </CardContent>
+                </Card>
+
+                {/* Botões de Ação */}
+                <div className="flex flex-wrap gap-3">
+                  <Button 
+                    onClick={() => handleExportInstagram(instagramResult.analysis.id, 'xlsx')}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar XLSX
+                  </Button>
+                  <Button 
+                    onClick={() => handleExportInstagram(instagramResult.analysis.id, 'csv')}
+                    variant="outline"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Exportar CSV
+                  </Button>
+                  <Button 
+                    onClick={() => setInstagramResult(null)}
+                    variant="outline"
+                  >
+                    Fechar Resultado
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            {/* Histórico de Análises */}
+            {!instagramResult && (
+              <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="w-5 h-5 text-slate-500" />
+                    Histórico de Análises
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  {loadingInstagram ? (
+                    <div className="text-center py-12 text-slate-500">Carregando análises...</div>
+                  ) : instagramAnalises.length === 0 ? (
+                    <div className="text-center py-12">
+                      <Activity className="w-12 h-12 mx-auto mb-3 text-slate-300" />
+                      <p className="text-slate-500">Nenhuma análise realizada ainda.</p>
+                      <p className="text-sm text-slate-400 mt-1">Clique em "Nova Análise" para começar.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {instagramAnalises.map((analysis) => (
+                        <div 
+                          key={analysis.id}
+                          className="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-900 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="w-12 h-12 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-white font-bold">
+                              @
+                            </div>
+                            <div>
+                              <h4 className="font-semibold">@{analysis.username}</h4>
+                              <p className="text-sm text-slate-500">
+                                {analysis.seguidores?.toLocaleString()} seguidores • {analysis.nicho}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-4">
+                            <div className="text-center">
+                              <div className="text-2xl font-bold text-purple-600">{analysis.score_final}</div>
+                              <Badge className={getClassificacaoColor(analysis.classificacao)}>
+                                {analysis.classificacao}
+                              </Badge>
+                            </div>
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={async () => {
+                                  const response = await axios.get(`${API}/admin/instagram/analises/${analysis.id}`, {
+                                    headers: { Authorization: `Bearer ${token}` }
+                                  });
+                                  setInstagramResult(response.data);
+                                }}
+                              >
+                                <Eye className="w-4 h-4" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="destructive"
+                                onClick={() => handleDeleteInstagramAnalysis(analysis.id)}
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Modal Nova Análise */}
+            <Dialog open={showInstagramForm} onOpenChange={setShowInstagramForm}>
+              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Activity className="w-5 h-5 text-pink-500" />
+                    Nova Análise de Perfil Instagram
+                  </DialogTitle>
+                </DialogHeader>
+
+                <div className="space-y-6 py-4">
+                  {/* Dados Básicos */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <Users className="w-4 h-4" /> Dados do Perfil
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>@Username *</Label>
+                        <Input
+                          value={instagramFormData.username}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, username: e.target.value.replace('@', '')})}
+                          placeholder="usuario"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nome Completo</Label>
+                        <Input
+                          value={instagramFormData.nome_completo}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, nome_completo: e.target.value})}
+                          placeholder="João Silva"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Nicho</Label>
+                        <Select 
+                          value={instagramFormData.nicho} 
+                          onValueChange={(v) => setInstagramFormData({...instagramFormData, nicho: v})}
+                        >
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="corrida">Corrida</SelectItem>
+                            <SelectItem value="fitness">Fitness</SelectItem>
+                            <SelectItem value="esportivo">Esportivo</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Métricas Numéricas */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4" /> Métricas do Perfil
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label>Seguidores *</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.seguidores}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, seguidores: e.target.value})}
+                          placeholder="10000"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Seguindo *</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.seguindo}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, seguindo: e.target.value})}
+                          placeholder="500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Total de Posts *</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.total_posts}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, total_posts: e.target.value})}
+                          placeholder="150"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Posts/Semana</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={instagramFormData.posts_por_semana}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, posts_por_semana: e.target.value})}
+                          placeholder="3.5"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Engajamento */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <TrendingUp className="w-4 h-4" /> Engajamento (Média últimos 18 posts)
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="space-y-2">
+                        <Label>Média de Likes *</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.media_likes}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, media_likes: e.target.value})}
+                          placeholder="500"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Média de Comentários *</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.media_comentarios}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, media_comentarios: e.target.value})}
+                          placeholder="25"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Média Views Reels</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.media_views_reels}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, media_views_reels: e.target.value})}
+                          placeholder="2000"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Crescimento 30d (%)</Label>
+                        <Input
+                          type="number"
+                          step="0.1"
+                          value={instagramFormData.crescimento_30_dias}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, crescimento_30_dias: e.target.value})}
+                          placeholder="5.0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Bio */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <FileText className="w-4 h-4" /> Análise da Bio
+                    </h3>
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                      {[
+                        { key: 'bio_descricao', label: 'Tem Descrição' },
+                        { key: 'bio_keywords', label: 'Tem Keywords' },
+                        { key: 'bio_cta', label: 'Tem CTA' },
+                        { key: 'bio_link', label: 'Tem Link' },
+                        { key: 'bio_clareza', label: 'É Clara' }
+                      ].map(({ key, label }) => (
+                        <div key={key} className="flex items-center gap-2">
+                          <input
+                            type="checkbox"
+                            id={key}
+                            checked={instagramFormData[key]}
+                            onChange={(e) => setInstagramFormData({...instagramFormData, [key]: e.target.checked})}
+                            className="rounded border-slate-300"
+                          />
+                          <Label htmlFor={key}>{label}</Label>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Formatos */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2">
+                      <PieChart className="w-4 h-4" /> Distribuição de Formatos (%)
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Reels (%)</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.percentual_reels}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, percentual_reels: parseFloat(e.target.value) || 0})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Carrossel (%)</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.percentual_carrossel}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, percentual_carrossel: parseFloat(e.target.value) || 0})}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Fotos (%)</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.percentual_foto}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, percentual_foto: parseFloat(e.target.value) || 0})}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Anti-Fake */}
+                  <div className="space-y-4">
+                    <h3 className="font-semibold text-lg flex items-center gap-2 text-red-500">
+                      <AlertCircle className="w-4 h-4" /> Indicadores Anti-Fake
+                    </h3>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <Label>Picos Anormais</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.picos_anormais}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, picos_anormais: parseInt(e.target.value) || 0})}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Comentários Repetitivos</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.comentarios_repetitivos}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, comentarios_repetitivos: parseInt(e.target.value) || 0})}
+                          placeholder="0"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label>Horários Artificiais</Label>
+                        <Input
+                          type="number"
+                          value={instagramFormData.horarios_artificiais}
+                          onChange={(e) => setInstagramFormData({...instagramFormData, horarios_artificiais: parseInt(e.target.value) || 0})}
+                          placeholder="0"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowInstagramForm(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleInstagramAnalyze}
+                    disabled={loadingInstagram}
+                    className="bg-gradient-to-r from-pink-500 to-purple-500"
+                  >
+                    {loadingInstagram ? (
+                      <>
+                        <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+                        Analisando...
+                      </>
+                    ) : (
+                      <>
+                        <Activity className="w-4 h-4 mr-2" />
+                        Analisar Perfil
+                      </>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
 

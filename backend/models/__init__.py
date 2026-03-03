@@ -2,7 +2,7 @@
 from pydantic import BaseModel, Field, ConfigDict, EmailStr
 from typing import Optional, List
 import uuid
-from datetime import datetime
+from datetime import datetime, timezone
 
 class Usuario(BaseModel):
     model_config = ConfigDict(extra="ignore")
@@ -239,3 +239,102 @@ class ConquistaAtleta(BaseModel):
     usuario_id: str
     conquista_codigo: str
     data_conquista: str = Field(default_factory=lambda: datetime.now().isoformat())
+
+
+
+# ========== RANKING RUN INSIDE - INSTAGRAM ANALYTICS ==========
+
+class InstagramProfileInput(BaseModel):
+    """Dados de entrada para análise de perfil Instagram"""
+    model_config = ConfigDict(extra="ignore")
+    
+    username: str
+    nome_completo: Optional[str] = None
+    nicho: str = "corrida"  # corrida, fitness, esportivo
+    
+    # Métricas básicas do perfil
+    seguidores: int
+    seguindo: int
+    total_posts: int
+    
+    # Métricas de engajamento (últimos 18 posts)
+    media_likes: float
+    media_comentarios: float
+    media_views_reels: float = 0
+    
+    # Frequência e crescimento
+    posts_por_semana: float
+    dias_ultimo_post: int = 0
+    crescimento_30_dias: float = 0  # percentual
+    
+    # Consistência (desvios padrão)
+    desvio_intervalo_posts: float = 0  # dias
+    desvio_engajamento: float = 0
+    
+    # Análise de Bio (campos booleanos para check simples)
+    bio_descricao: bool = True  # Perfil tem descrição na bio?
+    bio_keywords: bool = True  # Bio tem palavras-chave do nicho?
+    bio_cta: bool = False  # Bio tem call-to-action?
+    bio_link: bool = True  # Bio tem link externo?
+    bio_clareza: str = "boa"  # Qualidade: "excelente", "boa", "regular", "ruim"
+    
+    # Distribuição de formatos (soma = 100%)
+    percentual_reels: float = 50
+    percentual_carrossel: float = 30
+    percentual_foto: float = 20
+    
+    # Indicadores anti-fake
+    picos_anormais: int = 0  # número de picos suspeitos
+    comentarios_repetitivos: int = 0  # comentários genéricos/bots
+    horarios_artificiais: int = 0  # posts em horários não naturais
+
+
+class InstagramAnalysis(BaseModel):
+    """Resultado completo da análise"""
+    model_config = ConfigDict(extra="ignore")
+    
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    
+    # Dados do perfil
+    username: str
+    nome_completo: Optional[str] = None
+    nicho: str
+    seguidores: int
+    seguindo: int
+    total_posts: int
+    
+    # Notas individuais (0-10)
+    nota_bio: float
+    nota_frequencia: float
+    nota_engajamento: float
+    nota_crescimento: float
+    nota_consistencia: float
+    nota_padroes: float  # anti-fake
+    nota_reels: float
+    nota_formatos: float
+    
+    # Score final (0-100)
+    score_final: float
+    classificacao: str  # Elite Platinum, Elite Gold, Premium, etc.
+    
+    # Métricas calculadas
+    engagement_rate: float
+    engagement_rate_reels: float
+    indice_anomalia: float
+    
+    # Comparativo com média do nicho
+    comparativo_engajamento: float  # percentual acima/abaixo da média
+    comparativo_crescimento: float
+    
+    # Metadados
+    data_analise: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    analisado_por: str  # ID do admin
+
+
+class InstagramAnalysisResponse(BaseModel):
+    """Resposta da API com análise"""
+    model_config = ConfigDict(extra="ignore")
+    
+    analysis: InstagramAnalysis
+    graficos_data: dict  # Dados estruturados para gráficos
+    recomendacoes: List[str]

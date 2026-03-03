@@ -1,77 +1,78 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou a criação de uma nova modalidade de ranking paralela chamada Ranking do Povão – Pace Livre. Esta modalidade é destinada a corredores que participam de provas pela distância percorrida, e não pela colocação ou tempo.
+O usuário solicitou inicialmente a criação de uma nova modalidade de ranking chamada Ranking do Povão – Pace Livre. Após a conclusão, o usuário solicitou uma nova e grande funcionalidade chamada Ranking Run Inside, uma ferramenta de análise de perfis do Instagram para ser integrada ao painel do administrador.
 
-**REQUISITOS DO PRODUTO (Ranking do Povão):**
-1.  **Cadastro:** Adicionar um campo obrigatório no formulário de cadastro para o usuário escolher entre Atleta Profissional / Amador e Atleta do Povão – Pace Livre.
-2.  **Lógica de Pontuação:** A pontuação é baseada exclusivamente na distância da prova, ignorando colocação e tempo.
-    *   5km a 9km: 5 pontos
-    *   10km a 20km: 7 pontos
-    *   21km ou mais: 9 pontos
-3.  **Estrutura do Ranking:** Criar uma tabela de ranking separada para a modalidade Povão, ordenada por pontuação total, número de provas e, como desempate, soma da distância acumulada.
-4.  **Filtros:** O ranking do Povão deve ter filtros apenas para Masculino e Feminino. Atletas PCD não podem participar desta modalidade.
-5.  **Isolamento:** Os rankings são completamente separados. Um atleta Profissional/Amador não aparece no ranking Povão e vice-versa.
-6.  **Painel de Administração:** Adicionar filtros e relatórios no painel do administrador para gerenciar e visualizar os atletas e dados da nova modalidade.
+**REQUISITOS DO PRODUTO (Ranking Run Inside - Versão Manual Simplificada):**
+1.  **Aba no Admin:** Criar uma nova aba Ranking Run Inside no painel do administrador.
+2.  **Entrada Manual de Dados:** Em vez de usar a API do Instagram, o administrador irá inserir manualmente os dados de um perfil (ex: @username, seguidores, média de curtidas, etc.) através de um formulário.
+3.  **Motor de Cálculo:** Com base nos dados inseridos, o backend calculará um Score de Influência de 0 a 100, usando as fórmulas matemáticas e ponderações fornecidas.
+4.  **Classificação Automática:** O sistema atribuirá um selo ao perfil com base no score final (ex: Elite Platinum, Premium, Alto Risco).
+5.  **Dashboard Visual:** Exibir os resultados em um dashboard com múltiplos gráficos modernos (Radar, Velocímetro/Gauge, Barras, etc.) para cada perfil analisado.
+6.  **Listagem e Gerenciamento:** O administrador poderá ver uma lista de todas as análises salvas, visualizar detalhes e excluí-las.
+7.  **Exportação:** Permitir a exportação dos dados da análise (XLSX, CSV, PDF).
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-Uma plataforma completa de ranking de corrida (Ranking Run Pró) com funcionalidades robustas. Possui painéis de administração e de atleta, autenticação, múltiplos rankings (geral, semanal, mensal), sistema de conquistas, notificações, compartilhamento social, e uma seção de aniversariantes com envio automático de felicitações. A aplicação foi recentemente atualizada com diversas funcionalidades e correções de bugs, todas testadas e validadas.
+Uma plataforma de ranking de corrida funcional com duas modalidades distintas e totalmente separadas: Ranking Profissional/Amador (baseado em performance) e Ranking do Povão (baseado em participação). A plataforma possui um painel de administração robusto com funcionalidades para gerenciamento de atletas, aprovação de resultados, gráficos de dashboard e a recém-adicionada funcionalidade de transferência de atletas entre modalidades. A base de dados utilizada é MongoDB.
 
 **Last working item**:
-*   **Last item agent was working:** O agente iniciou a implementação da nova funcionalidade Ranking do Povão – Pace Livre. Este é um novo sistema de ranking paralelo focado na participação em vez de competição.
+*   **Last item agent was working:** O agente estava depurando um erro crítico na recém-criada funcionalidade Ranking Run Inside. Todos os novos endpoints de backend () estavam retornando erro 404 (Not Found).
+    *   O agente identificou corretamente a causa raiz: no arquivo , os endpoints da nova funcionalidade foram definidos **após** a linha , fazendo com que não fossem registrados pelo FastAPI.
 *   **Status:** **IN PROGRESS**
 *   **Agent Testing Done:** N
-*   **Which testing method agent to use?** both (frontend e backend testing agents, após a conclusão da funcionalidade).
+*   **Which testing method agent to use?** backend testing agent
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-Nenhum problema pendente. A prioridade é continuar o desenvolvimento da tarefa em andamento.
+*   **Issue 1:** Endpoints da API Ranking Run Inside retornam 404 Not Found (PRIORIDADE: P0 - BLOQUEADOR)
+    *   **Attempted fixes:** O agente iniciou uma operação de  para mover o bloco de código dos endpoints do Instagram para uma posição **antes** da linha  no arquivo . A última ação foi uma tentativa de remover o bloco de código duplicado do final do arquivo.
+    *   **Next debug checklist:**
+        1.  Verificar se o arquivo  foi corrigido corretamente, garantindo que os endpoints do Ranking Run Inside estão definidos antes de  e que não há código duplicado.
+        2.  Reiniciar o serviço de backend (backend: stopped
+backend: started).
+        3.  Testar os endpoints usando  para confirmar que agora retornam 200 OK (ex: ).
+    *   **Why fix this issue?** Este é um bloqueador completo para a funcionalidade Ranking Run Inside. O frontend não pode interagir com o backend até que os endpoints estejam acessíveis.
+    *   **Status:** IN PROGRESS
+    *   **Is recurring issue?** N
+    *   **Should Test frontend/backend/both after fix?** backend
+    *   **Blocked on other issue:** Não
 
 **In progress Task List**:
-*   **Task 1:** Concluir a implementação da funcionalidade Ranking do Povão – Pace Livre (PRIORITY: P0)
-    *   **Where to resume:** O trabalho de backend foi iniciado, mas precisa ser concluído e verificado.
-        *   **Backend:** Finalizar a lógica nos endpoints  para calcular e salvar os pontos corretamente de acordo com a . Assegurar que os novos endpoints para o ranking do povão () funcionem corretamente.
-        *   **Frontend:** Nenhuma alteração no frontend foi feita ainda. É necessário:
-            1.  Atualizar o formulário de cadastro () para incluir a seleção de modalidade.
-            2.  Criar uma nova view ou página para exibir o Ranking do Povão.
-            3.  Atualizar o painel do atleta para garantir que o fluxo de submissão de resultados funcione para a nova modalidade.
-            4.  Atualizar o painel de administração () para permitir filtrar e gerenciar atletas por modalidade.
-    *   **What will be achieved with this?** A plataforma ganhará uma nova camada de engajamento, atraindo um público mais amplo de corredores amadores que não competem por performance.
+*   **Task 1:** Concluir a implementação da funcionalidade Ranking Run Inside (PRIORITY: P0)
+    *   **Where to resume:** Após corrigir o **Issue 1**, continuar testando o fluxo completo da funcionalidade:
+        1.  Preencher e enviar o formulário de nova análise no frontend.
+        2.  Verificar se a requisição POST para  funciona e se a análise é salva no banco de dados.
+        3.  Confirmar que o dashboard de análise é exibido corretamente com todos os gráficos (Radar, Gauge, etc.) e o Score Final calculado.
+        4.  Testar a exclusão de uma análise.
+        5.  Implementar a funcionalidade de exportação (XLSX, CSV, PDF).
+    *   **What will be achieved with this?** Uma nova ferramenta estratégica para o administrador analisar e certificar influenciadores digitais, conforme solicitado.
     *   **Status:** IN PROGRESS
     *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on something:** N/A
+    *   **Blocked on something:** Issue 1
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
     *   **P1 - Implementação de Notificações por E-mail:** Integrar um serviço (como SendGrid ou Resend) para enviar e-mails aos atletas.
-    *   **P2 - Sistema de Ranking Histórico:** Adicionar a capacidade de filtrar o ranking por ano, permitindo que os atletas vejam seu desempenho em temporadas passadas.
-*   **Future Tasks:**
-    *   Nenhuma outra tarefa futura foi definida.
+    *   **P2 - Sistema de Ranking Histórico:** Adicionar a capacidade de filtrar o ranking por ano.
+*   **Future Tasks (Roadmap do Ranking Run Inside):**
+    *   Implementar Machine Learning para análise preditiva.
+    *   Criar uma API pública para marcas consultarem os scores.
+    *   Desenvolver um selo digital verificável para influenciadores certificados.
 
 **Completed work in this session**
-- **Correções e Melhorias Massivas:**
-  - Corrigido o botão de exportação de dados (Excel) na aba de atletas.
-  - Adicionadas mensagens de confirmação Ação Concluída (toasts) em toda a plataforma.
-  - Corrigido o upload da foto de perfil do atleta.
-  - Implementada a visualização de fotos de pódio na aba de aprovações do admin.
-  - Adicionada uma barra de pesquisa e ordenação A-Z na lista de atletas do admin.
-  - Reformulada a aba + Submeter Resultado do admin para permitir adição e edição de corridas com um formulário completo.
-  - Corrigido o typo Rankings para Ranking.
-  - A exportação de rankings agora inclui todas as modalidades (Masculino, Feminino, PCD, etc.).
-- **Rankings de Engajamento:**
-  - Implementados rankings Semanal e Mensal.
-  - Adicionada a seção Destaque do Mês na página de ranking.
-- **Novos Campos e Perfil do Atleta:**
-  - Adicionados campos Etnia e Apelido ao cadastro e perfil do atleta.
-  - O campo Sobre Você foi alterado para Bio do Atleta com limite de 150 caracteres.
-  - A página de detalhes do atleta agora exibe links para Instagram (com apelido) e Facebook (com primeiro nome), além da bio.
-- **Funcionalidade de Aniversariantes:**
-  - Criada uma aba Aniversariantes no painel do admin com um calendário interativo.
-  - Implementado o envio automático de mensagens de aniversário para os atletas via  às 00:00.
-  - Adicionada uma interface para o admin configurar a mensagem e o status do envio automático.
-  - Atletas recebem um popup de aniversário ao logar no dia.
-- **Fornecimento de Credenciais:**
-  - Fornecidas credenciais de teste para um atleta, conforme solicitado pelo usuário.
+- **Implementação Completa do Ranking do Povão:**
+  - Adicionado campo de seleção de modalidade no cadastro.
+  - Lógica de pontuação por distância implementada no backend.
+  - Criada view separada no frontend com estatísticas e tabela de ranking própria.
+  - Adicionados filtros por gênero na página do Ranking do Povão.
+- **Correções Críticas de Bugs:**
+  - **Mistura de Modalidades:** Corrigido bug grave onde atletas do Povão apareciam nos rankings Profissional/Amador (Geral, Semanal, Mensal).
+  - **Visualização de Foto:** Implementado modal para visualizar a foto do pódio em tamanho maior na tela de aprovações do admin.
+- **Melhorias no Dashboard do Admin:**
+  - Adicionados novos gráficos: Distribuição por Modalidade, Estatísticas do Ranking do Povão, e Top 10 Equipes/Assessorias.
+- **Funcionalidade de Transferência de Atletas:**
+  - Implementado endpoint e botão na UI para transferir atletas entre as modalidades Profissional/Amador e Povão.
+  - A transferência recalcula automaticamente os pontos do atleta de acordo com as regras da nova modalidade.
 
 **Earlier issues found/mentioned but not fixed**
 *   Nenhum.
@@ -83,69 +84,61 @@ Nenhum problema pendente. A prioridade é continuar o desenvolvimento da tarefa 
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, MongoDB (com ), JWT, Arquitetura Modular,  para tarefas agendadas.
-*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, , ,  para toasts.
+*   **Backend:** FastAPI, MongoDB (com ), JWT, .
+*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, .
 *   **Arquitetura:** Monorepo com API backend e SPA frontend.
 
 **key DB schema**
-*   **:** Adicionados os campos , , ,  (ENUM: 'profissional_amador', 'povao_pace_livre').
-*   **:** Sem alteração estrutural, mas a lógica de pontuação agora depende da .
-*   **:** (Nova) Armazena o estado das mensagens de aniversário enviadas (user_id, year).
+*   **:** Adicionado campo  (ENUM: 'profissional_amador', 'povao_pace_livre').
+*   **:** (Nova) Armazena os dados brutos inseridos manualmente para uma análise de perfil do Instagram.
+*   **:** (Nova) Armazena os scores calculados e a classificação final para uma análise.
 
 **changes in tech stack**
-*   **Backend:** Adicionada a biblioteca  para agendamento de tarefas em segundo plano (envio de mensagens de aniversário).
+*   Nenhuma. O agente corretamente manteve o stack existente (MongoDB/FastAPI/React) para a nova funcionalidade, conforme acordado com o usuário (Opção A), apesar da especificação inicial do usuário mencionar PostgreSQL/Next.js.
 
 **All files of reference**
-*   : Principal arquivo de backend, modificado para adicionar múltiplos endpoints (aniversário, rankings semanais/mensais, início do Ranking Povão).
-*   : Atualizado com os novos campos , , ,  e novos modelos de resposta.
-*   : (Novo) Criado para encapsular a lógica de cálculo de pontos.
-*   : Extensivamente modificado para adicionar a aba de Aniversariantes, configurações de envio e outras melhorias.
-*   : Precisa ser modificado para a tarefa atual.
-*   : Atualizado para os campos Bio do Atleta, Etnia e Apelido.
-*   : Atualizado para exibir os novos campos do perfil.
-*   : Atualizado para incluir os rankings semanais/mensais e destaques.
-*   : (Novo) Componente para exibir o popup de aniversário.
-*   : Modificado para incluir a lógica de exibição do .
+*   : Arquivo principal do backend. Contém os novos endpoints (atualmente quebrados) para o Ranking Run Inside. A correção do bug precisa ser aplicada aqui.
+*   : Contém os novos modelos Pydantic , , etc.
+*   : Contém toda a nova interface para a aba Ranking Run Inside, incluindo o formulário, os estados e a renderização dos gráficos.
 
 **Areas that need refactoring**:
-*   O arquivo  cresceu consideravelmente com a adição de novas funcionalidades. Seria benéfico refatorar os novos endpoints (aniversário, rankings de engajamento e o futuro ranking do povão) para seus próprios arquivos de rota (ex: , ) para manter a organização.
+*   O arquivo  está excessivamente grande. A lógica da funcionalidade Ranking Run Inside (endpoints, motor de cálculo) deve ser extraída para um novo arquivo dedicado, como , e importada como um novo .
 
 **key api endpoints**
-*   , , : (Novos) Retornam os dados para os rankings de engajamento.
-*   , , : (Novos) Endpoints para gerenciar a funcionalidade de aniversários.
-*   : (Novo, Em Progresso) Endpoint para o novo Ranking do Povão.
+*    (GET, POST): Para listar e criar novas análises. **(Atualmente quebrado - 404)**
+*    (GET, DELETE): Para obter detalhes e excluir uma análise. **(Atualmente quebrado - 404)**
+*    (GET): Para exportar os dados de uma análise. **(Atualmente quebrado - 404)**
 
 **Critical Info for New Agent**
-*   O foco principal é continuar e concluir a implementação da funcionalidade Ranking do Povão - Pace Livre.
-*   O backend foi parcialmente modificado (modelos e início dos endpoints), mas a lógica principal e a integração completa ainda precisam ser feitas.
-*   O frontend para esta nova funcionalidade ainda não foi iniciado. O plano de implementação está na seção In progress Task List.
-*   Consulte a mensagem do usuário #385 para obter os requisitos detalhados e completos desta nova modalidade.
+*   **Foco Imediato:** Sua primeira tarefa é corrigir o erro 404 nos endpoints do Instagram, conforme detalhado na seção All Pending/In progress Issue list. O arquivo  tem a definição dos endpoints no lugar errado.
+*   **Decisão de Arquitetura:** O usuário forneceu uma especificação técnica complexa para o Ranking Run Inside (com PostgreSQL, Next.js, API do Instagram). No entanto, após uma pergunta de esclarecimento do agente, o usuário escolheu a **Opção A**: um sistema manual simplificado usando o stack tecnológico **existente** (MongoDB, FastAPI, React). Você deve continuar com esta abordagem e não tentar implementar a integração automática com a API do Instagram ou migrar o banco de dados.
 
 **documents and test reports created in this job**
+*   
 *   
 *   
 *   
 *    (Atualizado múltiplas vezes)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user (msg 385):** Solicitou uma grande nova funcionalidade: Ranking do Povão - Pace Livre, com requisitos detalhados. **(EM ANDAMENTO)**
-2.  **user (msg 320):** Solicitou que o envio de mensagens de aniversário fosse automático. **(CONCLUÍDO)**
-3.  **user (msg 316):** Pediu credenciais de login e senha para um atleta de teste. **(CONCLUÍDO)**
-4.  **user (msg 143):** Solicitou um grande conjunto de funcionalidades: campos etnia e apelido, Bio do Atleta, melhorias na página de detalhes do atleta e uma aba de Aniversariantes no painel admin com calendário e envio de mensagens. **(CONCLUÍDO)**
-5.  **user (msg 104):** Sugeriu adicionar rankings semanais/mensais e um destaque do mês. **(CONCLUÍDO)**
-6.  **user (msg 5):** Reportou uma longa lista de bugs e solicitações de recursos, que serviram como base para a primeira grande parte do trabalho nesta sessão. **(CONCLUÍDO)**
+1.  **user (msg 305):** Solicitou a criação de uma nova e grande funcionalidade, Ranking Run Inside, para análise de perfis do Instagram, fornecendo um documento de especificação técnica detalhado.
+2.  **agent (msg 307):** Apresentou duas opções de implementação: A) Sistema manual com o stack atual, B) Sistema automático com novo stack e integração de API.
+3.  **user (msg 308):** Escolheu explicitamente a **Opção A - Sistema Manual**.
+4.  **user (msg 250):** Solicitou a funcionalidade de Transferir atletas entre modalidades no painel do admin. **(CONCLUÍDO)**
+5.  **user (msg 161):** Reportou um bug crítico de atletas do Povão aparecendo no ranking Profissional e solicitou filtros para a página do Ranking do Povão. **(CONCLUÍDO)**
+6.  **user (msg 104):** Reportou que a foto do pódio não abria nas aprovações, que o top 10 misturava atletas e pediu mais gráficos no dashboard do admin. **(CONCLUÍDO)**
 
 **Project Health Check:**
-*   **Working:** Todos os recursos implementados *antes* da solicitação do Ranking do Povão estão funcionando e foram testados.
-*   **Broken:** A funcionalidade Ranking do Povão está inacabada e, portanto, não funcional.
-*   **Mocked:** A aplicação continua a usar a base de dados de atletas de teste.
+*   **Working:** Toda a aplicação principal, incluindo os dois sistemas de ranking (Profissional e Povão), painel de admin, transferência de atletas e gráficos do dashboard.
+*   **Broken:** A funcionalidade Ranking Run Inside está completamente inoperante devido ao erro 404 nos endpoints do backend.
+*   **Mocked:** A aplicação continua a operar com dados de teste.
 
 **3rd Party Integrations**
 *   : Para gerar imagens a partir de HTML no lado do cliente.
 *   : Para agendar tarefas no backend (envio de mensagens de aniversário).
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES (para todas as funcionalidades concluídas nesta sessão).
+*   **Testing agent used after significant changes:** YES (usado com sucesso para todas as funcionalidades concluídas).
 *   **Troubleshoot agent used after agent stuck in loop:** NO
 *   **Test files created:** N/A
 *   **Known regressions:** Nenhum.
@@ -155,4 +148,4 @@ Nenhum problema pendente. A prioridade é continuar o desenvolvimento da tarefa 
 *   **Atleta de Teste:**  / 
 
 **What agent forgot to execute**
-O agente estava no meio da implementação da funcionalidade Ranking do Povão quando a sessão terminou. O trabalho precisa ser retomado a partir do ponto em que parou: finalizar o backend e iniciar todo o desenvolvimento do frontend para este novo recurso.</analysis>
+O agente não esqueceu, mas foi interrompido durante a correção de um bug. Ele estava no meio de uma operação de  para mover o código dos endpoints do Instagram no arquivo . A tarefa precisa ser retomada a partir da verificação e finalização dessa correção.</analysis>

@@ -167,3 +167,236 @@ CONQUISTAS = {
         "pontos_bonus": 10
     }
 }
+
+
+
+# ========== RANKING RUN INSIDE - SCORING ENGINE ==========
+
+def normalize_score(value: float, min_val: float = 0, max_val: float = 10) -> float:
+    """Normaliza um valor entre min_val e max_val"""
+    return max(min_val, min(value, max_val))
+
+
+def calcular_nota_bio(desc: bool, keywords: bool, cta: bool, link: bool, clareza: str) -> float:
+    """
+    Calcula nota da bio (0-10)
+    Desc*1.5 + Keywords*3 + CTA*2 + Link*1.5 + Clareza (baseado em string)
+    """
+    # Mapear clareza string para pontuação
+    clareza_pontos = {
+        "excelente": 2.0,
+        "boa": 1.5,
+        "regular": 1.0,
+        "ruim": 0.0
+    }
+    clareza_score = clareza_pontos.get(clareza.lower() if isinstance(clareza, str) else "boa", 1.0)
+    
+    score = (
+        (1.5 if desc else 0) +
+        (3.0 if keywords else 0) +
+        (2.0 if cta else 0) +
+        (1.5 if link else 0) +
+        clareza_score
+    )
+    return normalize_score(score)
+
+
+def calcular_nota_frequencia(posts_por_semana: float, dias_ultimo_post: int) -> float:
+    """
+    Calcula nota de frequência (0-10)
+    Base: (posts_por_semana / 5) * 10
+    Penalização: -2 se dias_ultimo_post > 14
+    """
+    nota = min((posts_por_semana / 5) * 10, 10)
+    
+    if dias_ultimo_post > 14:
+        nota -= 2
+    
+    return normalize_score(nota)
+
+
+def calcular_nota_engajamento(media_likes: float, media_comentarios: float, 
+                               media_views_reels: float, seguidores: int) -> tuple:
+    """
+    Calcula nota de engajamento e retorna (nota, ER_post, ER_reels)
+    ER_Post = ((Likes + Comentarios) / Seguidores) * 100
+    ER_Reels = (Views / Seguidores) * 100
+    ER_Final = (ER_Post * 0.6) + (ER_Reels * 0.4)
+    Nota = (ER_Final / 4) * 10
+    """
+    if seguidores == 0:
+        return (0, 0, 0)
+    
+    er_post = ((media_likes + media_comentarios) / seguidores) * 100
+    er_reels = (media_views_reels / seguidores) * 100 if media_views_reels > 0 else er_post * 0.8
+    er_final = (er_post * 0.6) + (er_reels * 0.4)
+    
+    nota = (er_final / 4) * 10
+    return (normalize_score(nota), round(er_post, 2), round(er_reels, 2))
+
+
+def calcular_nota_crescimento(crescimento_percentual: float) -> float:
+    """
+    Calcula nota de crescimento (0-10)
+    Base: (crescimento_percentual / 10) * 10
+    Penalização: -3 se crescimento > 15% em período curto (suspeito)
+    """
+    nota = (crescimento_percentual / 10) * 10
+    
+    # Penalizar crescimento muito rápido (suspeito de compra de seguidores)
+    if crescimento_percentual > 15:
+        nota -= 3
+    
+    return normalize_score(nota)
+
+
+def calcular_nota_consistencia(desvio_intervalo: float, desvio_engajamento: float) -> float:
+    """
+    Calcula nota de consistência (0-10)
+    Nota = 10 - ((desvio_intervalo / 7) * 6) - (desvio_engajamento / 5)
+    """
+    nota = 10 - ((desvio_intervalo / 7) * 6) - (desvio_engajamento / 5)
+    return normalize_score(nota)
+
+
+def calcular_nota_padroes(picos_anormais: int, comentarios_repetitivos: int, 
+                          horarios_artificiais: int, total_posts: int) -> tuple:
+    """
+    Calcula nota de padrões anti-fake (0-10)
+    Indice_Anomalia = (picos + repetitivos + artificiais) / total_posts
+    Nota = 10 - (Indice_Anomalia * 10)
+    """
+    if total_posts == 0:
+        return (10, 0)
+    
+    total_anomalias = picos_anormais + comentarios_repetitivos + horarios_artificiais
+    indice_anomalia = total_anomalias / total_posts
+    
+    nota = 10 - (indice_anomalia * 10)
+    return (normalize_score(nota), round(indice_anomalia, 4))
+
+
+def calcular_nota_reels(media_views_reels: float, seguidores: int) -> float:
+    """
+    Calcula nota de alcance de Reels (0-10)
+    Base: (ER_Reels / 4) * 10
+    """
+    if seguidores == 0:
+        return 0
+    
+    er_reels = (media_views_reels / seguidores) * 100
+    nota = (er_reels / 4) * 10
+    return normalize_score(nota)
+
+
+def calcular_nota_formatos(percentual_reels: float, percentual_carrossel: float, 
+                            percentual_foto: float, er_medio: float) -> float:
+    """
+    Calcula nota de diversidade de formatos (0-10)
+    Score = (ER por formato) / 3
+    Nota = (Score / 4) * 10
+    """
+    # Simular ER por formato com base na distribuição
+    er_reels = er_medio * (percentual_reels / 100) * 1.2  # Reels geralmente tem mais alcance
+    er_carrossel = er_medio * (percentual_carrossel / 100) * 1.1
+    er_foto = er_medio * (percentual_foto / 100) * 0.9
+    
+    score_formatos = (er_reels + er_carrossel + er_foto) / 3
+    nota = (score_formatos / 4) * 10
+    return normalize_score(nota)
+
+
+def calcular_score_final(notas: dict) -> float:
+    """
+    Calcula score final (0-100) com ponderação:
+    - Engajamento: 30%
+    - Crescimento: 15%
+    - Consistência: 15%
+    - Padrões: 15%
+    - Alcance Reels: 10%
+    - Frequência: 5%
+    - Bio: 5%
+    - Formatos: 5%
+    """
+    score = (
+        (notas['engajamento'] * 0.30) +
+        (notas['crescimento'] * 0.15) +
+        (notas['consistencia'] * 0.15) +
+        (notas['padroes'] * 0.15) +
+        (notas['reels'] * 0.10) +
+        (notas['frequencia'] * 0.05) +
+        (notas['bio'] * 0.05) +
+        (notas['formatos'] * 0.05)
+    )
+    return round(score * 10, 1)
+
+
+def classificar_influenciador(score: float) -> str:
+    """
+    Classifica o influenciador com base no score (0-100)
+    """
+    if score >= 95:
+        return "Elite Platinum"
+    elif score >= 90:
+        return "Elite Gold"
+    elif score >= 80:
+        return "Premium"
+    elif score >= 70:
+        return "Profissional"
+    elif score >= 60:
+        return "Regular"
+    else:
+        return "Alto Risco"
+
+
+def gerar_recomendacoes(notas: dict, dados: dict) -> list:
+    """
+    Gera recomendações personalizadas baseadas nas notas
+    """
+    recomendacoes = []
+    
+    if notas['frequencia'] < 6:
+        recomendacoes.append("Aumente a frequência de posts para pelo menos 3-5 por semana")
+    
+    if notas['engajamento'] < 6:
+        recomendacoes.append("Melhore o engajamento com CTAs nos posts e interação com seguidores")
+    
+    if notas['consistencia'] < 6:
+        recomendacoes.append("Mantenha uma regularidade maior nos horários e intervalos de postagem")
+    
+    if notas['padroes'] < 7:
+        recomendacoes.append("Atenção: padrões suspeitos detectados. Evite práticas de automação")
+    
+    if notas['bio'] < 7:
+        recomendacoes.append("Otimize sua bio com CTA claro, link e palavras-chave do nicho")
+    
+    if notas['reels'] < 6:
+        recomendacoes.append("Invista mais em Reels - formato com maior alcance orgânico")
+    
+    if dados.get('crescimento_30_dias', 0) < 2:
+        recomendacoes.append("Trabalhe estratégias para aumentar o crescimento orgânico")
+    
+    if not recomendacoes:
+        recomendacoes.append("Excelente perfil! Continue mantendo a qualidade e consistência")
+    
+    return recomendacoes
+
+
+# Médias de referência por nicho (para comparativo)
+MEDIAS_NICHO = {
+    "corrida": {
+        "engagement_rate": 3.5,
+        "crescimento_medio": 5.0,
+        "posts_semana": 4.0
+    },
+    "fitness": {
+        "engagement_rate": 4.0,
+        "crescimento_medio": 6.0,
+        "posts_semana": 5.0
+    },
+    "esportivo": {
+        "engagement_rate": 3.8,
+        "crescimento_medio": 5.5,
+        "posts_semana": 4.5
+    }
+}

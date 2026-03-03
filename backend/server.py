@@ -27,13 +27,17 @@ from models import (
     ResultadoPendente, ResultadoSubmissao, AprovacaoRequest,
     Corrida, RankingAnual, RankingResponse, AtletaDetalhes,
     CorridaResponse, EvolucaoMensal, Notificacao, Conquista, ConquistaAtleta,
-    MensagemAniversario, RankingPovao
+    MensagemAniversario, RankingPovao, InstagramProfileInput, InstagramAnalysis, InstagramAnalysisResponse
 )
 from services import (
     verify_password, get_password_hash, create_access_token,
     calcular_faixa_etaria, gerar_foto_url, calcular_pontos_colocacao,
     get_min_corridas_categoria, SECRET_KEY, ALGORITHM, CONQUISTAS,
-    calcular_pontos_povao, extrair_distancia_km
+    calcular_pontos_povao, extrair_distancia_km,
+    calcular_nota_bio, calcular_nota_frequencia, calcular_nota_engajamento,
+    calcular_nota_crescimento, calcular_nota_consistencia, calcular_nota_padroes,
+    calcular_nota_reels, calcular_nota_formatos, calcular_score_final,
+    classificar_influenciador, gerar_recomendacoes, MEDIAS_NICHO
 )
 
 ROOT_DIR = Path(__file__).parent
@@ -2088,7 +2092,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://people-league.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://admin-analytics-52.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
@@ -2542,6 +2546,379 @@ async def get_logs_aniversario(admin: dict = Depends(get_admin_user)):
     return {"logs": logs}
 
 
+# ========== RANKING RUN INSIDE - INSTAGRAM ANALYTICS ==========
+
+@api_router.post("/admin/instagram/analisar")
+async def analisar_perfil_instagram(dados: InstagramProfileInput, admin: dict = Depends(get_admin_user)):
+    """
+    Analisa um perfil do Instagram com dados inseridos manualmente
+    Retorna score, classificação e dados para gráficos
+    """
+    # Calcular nota Bio
+    nota_bio = calcular_nota_bio(
+        dados.bio_descricao, dados.bio_keywords, dados.bio_cta,
+        dados.bio_link, dados.bio_clareza
+    )
+    
+    # Calcular nota Frequência
+    nota_frequencia = calcular_nota_frequencia(
+        dados.posts_por_semana, dados.dias_ultimo_post
+    )
+    
+    # Calcular nota Engajamento
+    nota_engajamento, er_post, er_reels = calcular_nota_engajamento(
+        dados.media_likes, dados.media_comentarios,
+        dados.media_views_reels, dados.seguidores
+    )
+    
+    # Calcular nota Crescimento
+    nota_crescimento = calcular_nota_crescimento(dados.crescimento_30_dias)
+    
+    # Calcular nota Consistência
+    nota_consistencia = calcular_nota_consistencia(
+        dados.desvio_intervalo_posts, dados.desvio_engajamento
+    )
+    
+    # Calcular nota Padrões (Anti-Fake)
+    nota_padroes, indice_anomalia = calcular_nota_padroes(
+        dados.picos_anormais, dados.comentarios_repetitivos,
+        dados.horarios_artificiais, dados.total_posts
+    )
+    
+    # Calcular nota Reels
+    nota_reels = calcular_nota_reels(dados.media_views_reels, dados.seguidores)
+    
+    # Calcular nota Formatos
+    er_medio = er_post
+    nota_formatos = calcular_nota_formatos(
+        dados.percentual_reels, dados.percentual_carrossel,
+        dados.percentual_foto, er_medio
+    )
+    
+    # Montar dicionário de notas
+    notas = {
+        'bio': nota_bio,
+        'frequencia': nota_frequencia,
+        'engajamento': nota_engajamento,
+        'crescimento': nota_crescimento,
+        'consistencia': nota_consistencia,
+        'padroes': nota_padroes,
+        'reels': nota_reels,
+        'formatos': nota_formatos
+    }
+    
+    # Calcular score final
+    score_final = calcular_score_final(notas)
+    
+    # Classificar
+    classificacao = classificar_influenciador(score_final)
+    
+    # Comparativo com média do nicho
+    media_nicho = MEDIAS_NICHO.get(dados.nicho, MEDIAS_NICHO['corrida'])
+    comparativo_engajamento = round(((er_post / media_nicho['engagement_rate']) - 1) * 100, 1) if media_nicho['engagement_rate'] > 0 else 0
+    comparativo_crescimento = round(((dados.crescimento_30_dias / media_nicho['crescimento_medio']) - 1) * 100, 1) if media_nicho['crescimento_medio'] > 0 else 0
+    
+    # Gerar recomendações
+    recomendacoes = gerar_recomendacoes(notas, {
+        'crescimento_30_dias': dados.crescimento_30_dias
+    })
+    
+    # Criar objeto de análise
+    analysis = InstagramAnalysis(
+        username=dados.username,
+        nome_completo=dados.nome_completo,
+        nicho=dados.nicho,
+        seguidores=dados.seguidores,
+        seguindo=dados.seguindo,
+        total_posts=dados.total_posts,
+        nota_bio=round(nota_bio, 2),
+        nota_frequencia=round(nota_frequencia, 2),
+        nota_engajamento=round(nota_engajamento, 2),
+        nota_crescimento=round(nota_crescimento, 2),
+        nota_consistencia=round(nota_consistencia, 2),
+        nota_padroes=round(nota_padroes, 2),
+        nota_reels=round(nota_reels, 2),
+        nota_formatos=round(nota_formatos, 2),
+        score_final=score_final,
+        classificacao=classificacao,
+        engagement_rate=er_post,
+        engagement_rate_reels=er_reels,
+        indice_anomalia=indice_anomalia,
+        comparativo_engajamento=comparativo_engajamento,
+        comparativo_crescimento=comparativo_crescimento,
+        analisado_por=admin['id']
+    )
+    
+    # Salvar no banco
+    analysis_dict = analysis.model_dump()
+    await db.instagram_analyses.insert_one(analysis_dict)
+    
+    # Preparar dados para gráficos
+    graficos_data = {
+        "radar": {
+            "labels": ["Bio", "Frequência", "Engajamento", "Crescimento", 
+                      "Consistência", "Padrões", "Reels", "Formatos"],
+            "values": [nota_bio, nota_frequencia, nota_engajamento, nota_crescimento,
+                      nota_consistencia, nota_padroes, nota_reels, nota_formatos],
+            "max": 10
+        },
+        "gauge": {
+            "value": score_final,
+            "min": 0,
+            "max": 100,
+            "ranges": [
+                {"min": 0, "max": 60, "color": "#EF4444", "label": "Alto Risco"},
+                {"min": 60, "max": 70, "color": "#F59E0B", "label": "Regular"},
+                {"min": 70, "max": 80, "color": "#3B82F6", "label": "Profissional"},
+                {"min": 80, "max": 90, "color": "#8B5CF6", "label": "Premium"},
+                {"min": 90, "max": 95, "color": "#F59E0B", "label": "Elite Gold"},
+                {"min": 95, "max": 100, "color": "#10B981", "label": "Elite Platinum"}
+            ]
+        },
+        "comparativo": {
+            "labels": ["Engajamento", "Crescimento", "Frequência"],
+            "perfil": [er_post, dados.crescimento_30_dias, dados.posts_por_semana],
+            "media_nicho": [media_nicho['engagement_rate'], media_nicho['crescimento_medio'], media_nicho['posts_semana']]
+        },
+        "formatos": {
+            "labels": ["Reels", "Carrossel", "Fotos"],
+            "values": [dados.percentual_reels, dados.percentual_carrossel, dados.percentual_foto]
+        },
+        "metricas": {
+            "seguidores": dados.seguidores,
+            "seguindo": dados.seguindo,
+            "posts": dados.total_posts,
+            "er_post": er_post,
+            "er_reels": er_reels,
+            "crescimento": dados.crescimento_30_dias,
+            "indice_anomalia": indice_anomalia * 100
+        }
+    }
+    
+    return InstagramAnalysisResponse(
+        analysis=analysis,
+        graficos_data=graficos_data,
+        recomendacoes=recomendacoes
+    )
+
+
+@api_router.get("/admin/instagram/analises")
+async def listar_analises_instagram(admin: dict = Depends(get_admin_user)):
+    """Lista todas as análises de Instagram já realizadas"""
+    analyses = await db.instagram_analyses.find(
+        {}, {"_id": 0}
+    ).sort("data_analise", -1).to_list(100)
+    
+    return analyses
+
+
+@api_router.get("/admin/instagram/analises/{analysis_id}")
+async def obter_analise_instagram(analysis_id: str, admin: dict = Depends(get_admin_user)):
+    """Obtém uma análise específica por ID"""
+    analysis = await db.instagram_analyses.find_one(
+        {"id": analysis_id}, {"_id": 0}
+    )
+    
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análise não encontrada")
+    
+    media_nicho = MEDIAS_NICHO.get(analysis.get('nicho', 'corrida'), MEDIAS_NICHO['corrida'])
+    
+    graficos_data = {
+        "radar": {
+            "labels": ["Bio", "Frequência", "Engajamento", "Crescimento", 
+                      "Consistência", "Padrões", "Reels", "Formatos"],
+            "values": [
+                analysis['nota_bio'], analysis['nota_frequencia'], 
+                analysis['nota_engajamento'], analysis['nota_crescimento'],
+                analysis['nota_consistencia'], analysis['nota_padroes'], 
+                analysis['nota_reels'], analysis['nota_formatos']
+            ],
+            "max": 10
+        },
+        "gauge": {
+            "value": analysis['score_final'],
+            "min": 0,
+            "max": 100,
+            "ranges": [
+                {"min": 0, "max": 60, "color": "#EF4444", "label": "Alto Risco"},
+                {"min": 60, "max": 70, "color": "#F59E0B", "label": "Regular"},
+                {"min": 70, "max": 80, "color": "#3B82F6", "label": "Profissional"},
+                {"min": 80, "max": 90, "color": "#8B5CF6", "label": "Premium"},
+                {"min": 90, "max": 95, "color": "#F59E0B", "label": "Elite Gold"},
+                {"min": 95, "max": 100, "color": "#10B981", "label": "Elite Platinum"}
+            ]
+        },
+        "comparativo": {
+            "labels": ["Engajamento", "Crescimento", "Frequência"],
+            "perfil": [analysis['engagement_rate'], analysis.get('comparativo_crescimento', 0), 4],
+            "media_nicho": [media_nicho['engagement_rate'], media_nicho['crescimento_medio'], media_nicho['posts_semana']]
+        },
+        "formatos": {
+            "labels": ["Reels", "Carrossel", "Fotos"],
+            "values": [50, 30, 20]  # Valores padrão se não armazenados
+        },
+        "metricas": {
+            "seguidores": analysis.get('seguidores', 0),
+            "seguindo": analysis.get('seguindo', 0),
+            "posts": analysis.get('total_posts', 0),
+            "er_post": analysis.get('engagement_rate', 0),
+            "er_reels": analysis.get('engagement_rate_reels', 0),
+            "crescimento": analysis.get('comparativo_crescimento', 0),
+            "indice_anomalia": analysis.get('indice_anomalia', 0) * 100
+        }
+    }
+    
+    # Gerar recomendações baseadas nas notas
+    notas = {
+        'bio': analysis['nota_bio'],
+        'frequencia': analysis['nota_frequencia'],
+        'engajamento': analysis['nota_engajamento'],
+        'crescimento': analysis['nota_crescimento'],
+        'consistencia': analysis['nota_consistencia'],
+        'padroes': analysis['nota_padroes'],
+        'reels': analysis['nota_reels'],
+        'formatos': analysis['nota_formatos']
+    }
+    recomendacoes = gerar_recomendacoes(notas, {'crescimento_30_dias': analysis.get('comparativo_crescimento', 0)})
+    
+    return {
+        "analysis": analysis,
+        "graficos_data": graficos_data,
+        "recomendacoes": recomendacoes
+    }
+
+
+@api_router.delete("/admin/instagram/analises/{analysis_id}")
+async def deletar_analise_instagram(analysis_id: str, admin: dict = Depends(get_admin_user)):
+    """Deleta uma análise por ID"""
+    result = await db.instagram_analyses.delete_one({"id": analysis_id})
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Análise não encontrada")
+    
+    return {"message": "Análise excluída com sucesso"}
+
+
+@api_router.get("/admin/instagram/export/{analysis_id}")
+async def exportar_analise_xlsx(analysis_id: str, admin: dict = Depends(get_admin_user)):
+    """Exporta análise em formato XLSX"""
+    analysis = await db.instagram_analyses.find_one(
+        {"id": analysis_id}, {"_id": 0}
+    )
+    
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análise não encontrada")
+    
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Análise Instagram"
+    
+    ws.merge_cells('A1:D1')
+    ws['A1'] = f"Ranking Run Inside - Análise de @{analysis['username']}"
+    ws['A1'].font = Font(bold=True, size=16)
+    
+    ws['A3'] = "Data da Análise:"
+    ws['B3'] = analysis['data_analise'][:10]
+    ws['A4'] = "Classificação:"
+    ws['B4'] = analysis['classificacao']
+    ws['A5'] = "Score Final:"
+    ws['B5'] = f"{analysis['score_final']}/100"
+    
+    ws['A7'] = "MÉTRICAS DO PERFIL"
+    ws['A7'].font = Font(bold=True)
+    
+    metricas = [
+        ("Seguidores", analysis['seguidores']),
+        ("Seguindo", analysis['seguindo']),
+        ("Total de Posts", analysis['total_posts']),
+        ("Engagement Rate", f"{analysis['engagement_rate']}%"),
+    ]
+    
+    for i, (label, value) in enumerate(metricas, start=8):
+        ws[f'A{i}'] = label
+        ws[f'B{i}'] = value
+    
+    row = 13
+    ws[f'A{row}'] = "NOTAS INDIVIDUAIS (0-10)"
+    ws[f'A{row}'].font = Font(bold=True)
+    
+    notas = [
+        ("Bio", analysis['nota_bio']),
+        ("Frequência", analysis['nota_frequencia']),
+        ("Engajamento", analysis['nota_engajamento']),
+        ("Crescimento", analysis['nota_crescimento']),
+        ("Consistência", analysis['nota_consistencia']),
+        ("Padrões", analysis['nota_padroes']),
+        ("Reels", analysis['nota_reels']),
+        ("Formatos", analysis['nota_formatos'])
+    ]
+    
+    for i, (label, value) in enumerate(notas, start=row+1):
+        ws[f'A{i}'] = label
+        ws[f'B{i}'] = value
+    
+    ws.column_dimensions['A'].width = 25
+    ws.column_dimensions['B'].width = 20
+    
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
+    
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={
+            "Content-Disposition": f"attachment; filename=analise_{analysis['username']}.xlsx"
+        }
+    )
+
+
+@api_router.get("/admin/instagram/export-csv/{analysis_id}")
+async def exportar_analise_csv(analysis_id: str, admin: dict = Depends(get_admin_user)):
+    """Exporta análise em formato CSV"""
+    analysis = await db.instagram_analyses.find_one(
+        {"id": analysis_id}, {"_id": 0}
+    )
+    
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análise não encontrada")
+    
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    writer.writerow(["Ranking Run Inside - Análise de Instagram"])
+    writer.writerow([])
+    writer.writerow(["Campo", "Valor"])
+    writer.writerow(["Username", f"@{analysis['username']}"])
+    writer.writerow(["Score Final", analysis['score_final']])
+    writer.writerow(["Classificação", analysis['classificacao']])
+    writer.writerow([])
+    writer.writerow(["Métricas"])
+    writer.writerow(["Seguidores", analysis['seguidores']])
+    writer.writerow(["Engagement Rate", f"{analysis['engagement_rate']}%"])
+    writer.writerow([])
+    writer.writerow(["Notas (0-10)"])
+    writer.writerow(["Bio", analysis['nota_bio']])
+    writer.writerow(["Frequência", analysis['nota_frequencia']])
+    writer.writerow(["Engajamento", analysis['nota_engajamento']])
+    writer.writerow(["Crescimento", analysis['nota_crescimento']])
+    writer.writerow(["Consistência", analysis['nota_consistencia']])
+    writer.writerow(["Padrões", analysis['nota_padroes']])
+    writer.writerow(["Reels", analysis['nota_reels']])
+    writer.writerow(["Formatos", analysis['nota_formatos']])
+    
+    output.seek(0)
+    
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={
+            "Content-Disposition": f"attachment; filename=analise_{analysis['username']}.csv"
+        }
+    )
+
+
 # ==================== INCLUDE ROUTER ====================
 
 app.include_router(api_router)
@@ -2635,6 +3012,7 @@ async def enviar_mensagens_aniversario_automatico():
         
     except Exception as e:
         logger.error(f"❌ Erro no envio automático de aniversários: {str(e)}")
+
 
 
 @app.on_event("startup")

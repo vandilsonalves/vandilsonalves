@@ -1,0 +1,135 @@
+{
+  "summary": "Iteration 10: Instagram Analytics (Ranking Run Inside) feature testing completed. All 12 backend API tests passed (100%). Frontend UI tested - tab visible, form working, existing analysis displayed with score 79.6 and 'Profissional' classification.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable component",
+        "issues": ["Minor HTML hydration warning: <tr> inside <span> - pre-existing issue, doesn't affect functionality"]
+      },
+      {
+        "screen": "Admin Dashboard charts",
+        "issues": ["Console warning about chart width/height being -1 during initial load - likely a timing issue with ResponsiveContainer"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_instagram_analytics.py",
+    "/app/test_reports/pytest/pytest_instagram_analytics.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_instagram_analytics.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (All UI flows verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "Existing analysis 'teste_runner' with score 79.6 used for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Instagram Analytics (Ranking Run Inside) feature fully implemented and working. All 6 endpoints tested: POST /api/admin/instagram/analisar, GET /api/admin/instagram/analises, GET /api/admin/instagram/analises/{id}, DELETE /api/admin/instagram/analises/{id}, GET /api/admin/instagram/export/{id} (XLSX), GET /api/admin/instagram/export-csv/{id}. Score calculation uses 8 metrics with weighted average. Classifications: Elite Platinum (95+), Elite Gold (90-94), Premium (80-89), Profissional (70-79), Regular (60-69), Alto Risco (<60).",
+  "verified_features": {
+    "backend_endpoints": {
+      "POST_analisar": {
+        "endpoint": "/api/admin/instagram/analisar",
+        "status": "PASS",
+        "description": "Creates analysis with score calculation (0-100), 8 metrics, classification, graph data"
+      },
+      "GET_analises": {
+        "endpoint": "/api/admin/instagram/analises",
+        "status": "PASS",
+        "description": "Lists all analyses sorted by date descending"
+      },
+      "GET_analise_by_id": {
+        "endpoint": "/api/admin/instagram/analises/{id}",
+        "status": "PASS",
+        "description": "Returns analysis details with graph data (radar, gauge, comparativo, formatos)"
+      },
+      "DELETE_analise": {
+        "endpoint": "/api/admin/instagram/analises/{id}",
+        "status": "PASS",
+        "description": "Deletes analysis, returns 404 for non-existent"
+      },
+      "GET_export_xlsx": {
+        "endpoint": "/api/admin/instagram/export/{id}",
+        "status": "PASS",
+        "description": "Exports analysis to XLSX format"
+      },
+      "GET_export_csv": {
+        "endpoint": "/api/admin/instagram/export-csv/{id}",
+        "status": "PASS",
+        "description": "Exports analysis to CSV format"
+      }
+    },
+    "frontend_ui": {
+      "ranking_run_inside_tab": {
+        "status": "PASS",
+        "description": "Tab visible in admin sidebar, navigable via data-testid='menu-instagram'"
+      },
+      "nova_analise_form": {
+        "status": "PASS",
+        "description": "Dialog opens with full form: Dados do Perfil, Métricas, Engajamento, Bio Analysis, Formatos, Anti-Fake indicators"
+      },
+      "historico_analises": {
+        "status": "PASS",
+        "description": "Displays existing analyses with username, followers, score, classification badge"
+      },
+      "analysis_actions": {
+        "status": "PASS",
+        "description": "View (eye icon) and Delete (trash icon) buttons visible for each analysis"
+      }
+    },
+    "score_calculation": {
+      "status": "PASS",
+      "metrics_tested": ["nota_bio", "nota_frequencia", "nota_engajamento", "nota_crescimento", "nota_consistencia", "nota_padroes", "nota_reels", "nota_formatos"],
+      "validation": "High quality profile gets higher score than low quality profile"
+    },
+    "classification_system": {
+      "status": "PASS",
+      "classifications": {
+        "Elite Platinum": "95-100",
+        "Elite Gold": "90-94",
+        "Premium": "80-89",
+        "Profissional": "70-79",
+        "Regular": "60-69",
+        "Alto Risco": "<60"
+      }
+    }
+  },
+  "api_test_results": {
+    "create_analysis": {
+      "endpoint": "POST /api/admin/instagram/analisar",
+      "status": 200,
+      "response_structure": ["analysis", "graficos_data", "recomendacoes"]
+    },
+    "list_analyses": {
+      "endpoint": "GET /api/admin/instagram/analises",
+      "status": 200,
+      "existing_analysis": "@teste_runner with score 79.6 (Profissional)"
+    },
+    "export_xlsx": {
+      "endpoint": "GET /api/admin/instagram/export/{id}",
+      "status": 200,
+      "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    },
+    "export_csv": {
+      "endpoint": "GET /api/admin/instagram/export-csv/{id}",
+      "status": 200,
+      "content_type": "text/csv"
+    }
+  },
+  "backend_tests_passed": 12,
+  "backend_tests_failed": 0,
+  "ui_tests_passed": 6,
+  "ui_tests_failed": 0
+}
