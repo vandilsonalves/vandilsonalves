@@ -258,6 +258,14 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
       - GET `/api/liga-assessorias/estados`
       - GET `/api/liga-assessorias/cidades`
 
+36. ✅ **Liga Nacional de Assessorias - Bloco A (Melhorias)**:
+    - **Liga movida para página pública**: 3ª aba "Ranking de Equipes" no seletor principal
+    - **Filtro de Cidade**: Ao selecionar "Por Cidade", aparece dropdown de Estado e depois Cidade
+    - **Endpoints públicos**: Todos os endpoints da Liga agora são acessíveis sem autenticação
+    - **Botão "Promover a Dono de Assessoria"**: No Admin, atletas com equipe têm botão amarelo para promoção
+    - **Modal de confirmação**: Ao clicar em promover, abre modal com detalhes e confirmação
+    - **Endpoint de promoção**: POST `/api/admin/atletas/{id}/promover-dono-assessoria`
+
 ## Próximos Passos - Liga de Assessorias (Fases 2-4)
 **Fase 2 - Rankings Públicos e Filtros**:
 - Exibir rankings na página pública (3 abas: Mensal, Anual, Histórico)
