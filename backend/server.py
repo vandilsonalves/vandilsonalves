@@ -1144,6 +1144,161 @@ async def promover_dono_assessoria(atleta_id: str, admin: dict = Depends(get_adm
     }
 
 
+@api_router.post("/admin/popular-dados-teste")
+async def popular_dados_teste(admin: dict = Depends(get_admin_user)):
+    """Exclui atletas existentes e cria 160 novos atletas de teste"""
+    import random
+    
+    # Excluir atletas existentes (exceto admin)
+    await db.usuarios.delete_many({"role": "atleta"})
+    await db.corridas.delete_many({})
+    
+    EQUIPES = [
+        "Assessoria CAFAV", "Run Pro Team", "Elite Runners BA", "Speed Force SP",
+        "Maratona Club RJ", "Corredores MG", "Ultra Running RS", "Fast Track ES",
+        "Victory Run PE", "Champions SC", "Power Runners DF", "Trail Blazers GO"
+    ]
+    
+    ESTADOS_CIDADES = {
+        "SP": ["São Paulo", "Campinas", "Santos"],
+        "RJ": ["Rio de Janeiro", "Niterói"],
+        "MG": ["Belo Horizonte", "Uberlândia"],
+        "BA": ["Salvador", "Feira de Santana"],
+        "RS": ["Porto Alegre", "Caxias do Sul"],
+        "PR": ["Curitiba", "Londrina"],
+        "SC": ["Florianópolis", "Joinville"],
+        "PE": ["Recife", "Olinda"],
+        "ES": ["Vitória", "Vila Velha"],
+        "GO": ["Goiânia"],
+        "DF": ["Brasília"]
+    }
+    
+    NOMES_M = ["Lucas", "Gabriel", "Pedro", "Rafael", "Matheus", "Bruno", "João", "Carlos",
+               "André", "Felipe", "Marcos", "Diego", "Thiago", "Daniel", "Eduardo", "Ricardo",
+               "Leonardo", "Gustavo", "Rodrigo", "Fernando"]
+    
+    NOMES_F = ["Ana", "Maria", "Julia", "Fernanda", "Camila", "Beatriz", "Amanda", "Patricia",
+               "Carla", "Bruna", "Larissa", "Juliana", "Aline", "Gabriela", "Mariana", "Leticia",
+               "Raquel", "Priscila", "Vanessa", "Michele"]
+    
+    SOBRENOMES = ["Silva", "Santos", "Oliveira", "Souza", "Lima", "Pereira", "Costa", "Ferreira",
+                  "Rodrigues", "Almeida", "Nascimento", "Carvalho", "Gomes", "Martins", "Araújo"]
+    
+    ETNIAS = ["Branco", "Negro", "Pardo", "Indígena", "Amarelo", "Mulato"]
+    
+    BIOS = [
+        "Apaixonado por corrida desde criança. Cada quilômetro é uma vitória!",
+        "Correr é minha terapia. Vivo para superar meus limites a cada dia.",
+        "Atleta dedicado, sempre em busca de melhorar meu pace.",
+        "A corrida me ensinou disciplina e perseverança. Nunca desisto!",
+        "Correr é mais que esporte, é estilo de vida. #RunForLife",
+        "Cada maratona concluída é um troféu na minha história.",
+        "A estrada é minha companheira. Correr me faz livre!",
+        "Do sofá para a maratona. Minha transformação começou correndo.",
+        "Corredor amador com coração de campeão!",
+        "Treino forte, corro mais forte. Essa é minha filosofia."
+    ]
+    
+    FACEBOOK = "https://www.facebook.com/assessoriaesportivacafva?locale=pt_BR"
+    INSTAGRAM = "https://www.instagram.com/rankingrun/"
+    
+    atletas = []
+    idx = 0
+    
+    configs = [
+        # Profissional/Amador
+        {"qtd": 20, "genero": "M", "categoria": "normal", "modalidade": "profissional_amador", "nomes": NOMES_M},
+        {"qtd": 20, "genero": "F", "categoria": "normal", "modalidade": "profissional_amador", "nomes": NOMES_F},
+        {"qtd": 20, "genero": "M", "categoria": "pcd", "modalidade": "profissional_amador", "nomes": NOMES_M},
+        {"qtd": 20, "genero": "F", "categoria": "pcd", "modalidade": "profissional_amador", "nomes": NOMES_F},
+        {"qtd": 20, "genero": "M", "categoria": "cadeirante", "modalidade": "profissional_amador", "nomes": NOMES_M},
+        {"qtd": 20, "genero": "F", "categoria": "cadeirante", "modalidade": "profissional_amador", "nomes": NOMES_F},
+        # Povão
+        {"qtd": 20, "genero": "M", "categoria": "normal", "modalidade": "povao_pace_livre", "nomes": NOMES_M},
+        {"qtd": 20, "genero": "F", "categoria": "normal", "modalidade": "povao_pace_livre", "nomes": NOMES_F},
+    ]
+    
+    for cfg in configs:
+        for i in range(cfg["qtd"]):
+            idx += 1
+            estado = random.choice(list(ESTADOS_CIDADES.keys()))
+            cidade = random.choice(ESTADOS_CIDADES[estado])
+            equipe = random.choice(EQUIPES)
+            nome = f"{random.choice(cfg['nomes'])} {random.choice(SOBRENOMES)}"
+            
+            peso = random.randint(65, 85) if cfg["genero"] == "M" else random.randint(50, 70)
+            altura = random.randint(168, 188) if cfg["genero"] == "M" else random.randint(155, 175)
+            ano_nasc = random.randint(1981, 2006)
+            
+            atleta = {
+                "id": str(uuid.uuid4()),
+                "nome": nome,
+                "email": f"{nome.lower().replace(' ', '_')}_{idx}@email.com",
+                "password_hash": get_password_hash("atleta123"),
+                "role": "atleta",
+                "genero": cfg["genero"],
+                "categoria": cfg["categoria"],
+                "modalidade_usuario": cfg["modalidade"],
+                "equipe": equipe,
+                "estado": estado,
+                "cidade": cidade,
+                "etnia": random.choice(ETNIAS),
+                "data_nascimento": f"{ano_nasc}-{random.randint(1,12):02d}-{random.randint(1,28):02d}",
+                "peso": peso,
+                "altura": altura,
+                "bio": random.choice(BIOS),
+                "facebook": FACEBOOK,
+                "instagram": INSTAGRAM,
+                "pontos_carreira": random.randint(50, 500),
+                "pontos_povao": random.randint(20, 200) if cfg["modalidade"] == "povao_pace_livre" else 0,
+                "total_corridas": random.randint(5, 30),
+                "aprovado": True
+            }
+            atletas.append(atleta)
+    
+    await db.usuarios.insert_many(atletas)
+    
+    # Criar corridas de teste
+    corridas = []
+    provas = ["Maratona de São Paulo", "Meia do Rio", "10K Brasília", "Corrida de Rua BH", "Ultra Trail RS"]
+    
+    for atleta in atletas[:100]:
+        num_corridas = random.randint(2, 8)
+        for _ in range(num_corridas):
+            colocacao = random.randint(1, 50)
+            pontos = 100 if colocacao == 1 else (80 - (colocacao-2)*10 if colocacao <= 5 else 15)
+            
+            corrida = {
+                "id": str(uuid.uuid4()),
+                "usuario_id": atleta["id"],
+                "usuario_nome": atleta["nome"],
+                "prova": random.choice(provas),
+                "data": f"2026-{random.randint(1,3):02d}-{random.randint(1,28):02d}",
+                "distancia": random.choice([5, 10, 21, 42]),
+                "tempo": f"{random.randint(0,3)}:{random.randint(10,59):02d}:{random.randint(0,59):02d}",
+                "colocacao": colocacao,
+                "pontos": pontos,
+                "pontos_povao": random.randint(10, 50) if atleta["modalidade_usuario"] == "povao_pace_livre" else 0,
+                "categoria": atleta["categoria"],
+                "genero": atleta["genero"],
+                "modalidade": atleta["modalidade_usuario"],
+                "estado": atleta["estado"],
+                "cidade": atleta["cidade"],
+                "equipe": atleta["equipe"],
+                "status": "aprovado"
+            }
+            corridas.append(corrida)
+    
+    if corridas:
+        await db.corridas.insert_many(corridas)
+    
+    return {
+        "message": "Dados de teste criados com sucesso!",
+        "total_atletas": len(atletas),
+        "total_corridas": len(corridas)
+    }
+
+
 @api_router.get("/admin/atletas/export")
 async def admin_export_atletas(categoria: str = "all", admin: dict = Depends(get_admin_user)):
     """Exporta lista de atletas em Excel"""
@@ -4158,7 +4313,8 @@ async def get_ranking_assessorias(
                 "estado": "$estado",
                 "cidade": "$cidade"
             }},
-            "total_atletas": {"$sum": 1}
+            "total_atletas": {"$sum": 1},
+            "data_mais_antiga": {"$min": "$id"}  # IDs são ordenados por criação
         }},
         {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "", None]}}}
     ]
@@ -4225,15 +4381,22 @@ async def get_ranking_assessorias(
             "total_resultados": total_resultados,
             "total_primeiros": total_primeiros,
             "total_podios": total_podios,
-            "atletas": equipe["atletas"][:10]  # Limitar a 10 atletas na listagem
+            "atletas": equipe["atletas"][:10],  # Limitar a 10 atletas na listagem
+            "data_mais_antiga": equipe.get("data_mais_antiga", "")
         })
     
-    # Ordenar por pontos_total (desc), depois por critérios de desempate
+    # CRITÉRIOS DE DESEMPATE OFICIAIS (em ordem):
+    # 1️⃣ Maior número de 1º lugares
+    # 2️⃣ Maior número de atletas ativos
+    # 3️⃣ Maior número total de resultados aprovados
+    # 4️⃣ Assessoria com maior número de atletas cadastrados no período
+    # 5️⃣ Data de cadastro mais antiga na plataforma
     ranking_assessorias.sort(key=lambda x: (
         -x["pontos_total"],
-        -x["total_primeiros"],
-        -x["total_atletas"],
-        -x["total_resultados"]
+        -x["total_primeiros"],      # 1º - Mais 1º lugares
+        -x["total_atletas"],        # 2º - Mais atletas ativos
+        -x["total_resultados"],     # 3º - Mais resultados aprovados
+        x["data_mais_antiga"]       # 5º - Cadastro mais antigo (menor ID = mais antigo)
     ))
     
     # Adicionar posição

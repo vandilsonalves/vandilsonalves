@@ -9,6 +9,8 @@ import CadastroPage from "@/pages/CadastroPage";
 import SubmeterResultadoPage from "@/pages/SubmeterResultadoPage";
 import AdminDashboard from "@/pages/AdminDashboard.jsx";
 import PerfilAtletaPage from "@/pages/PerfilAtletaPage.jsx";
+import AssessoriaPage from "@/pages/AssessoriaPage.jsx";
+import DonoAssessoriaDashboard from "@/pages/DonoAssessoriaDashboard.jsx";
 import BirthdayPopup from "@/components/BirthdayPopup";
 
 function App() {
@@ -22,6 +24,8 @@ function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/cadastro" element={<CadastroPage />} />
             <Route path="/atleta/:id" element={<AtletaDetalhes />} />
+            <Route path="/assessoria/:nome" element={<AssessoriaPage />} />
+            <Route path="/minha-assessoria" element={<DonoAssessoriaDashboard />} />
             <Route path="/submeter-resultado" element={<SubmeterResultadoPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/perfil" element={<PerfilAtletaPage />} />

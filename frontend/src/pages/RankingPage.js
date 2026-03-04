@@ -303,6 +303,12 @@ const RankingPage = () => {
                     Admin
                   </Button>
                 )}
+                {user?.role === 'dono_assessoria' && (
+                  <Button onClick={() => navigate('/minha-assessoria')} variant="outline" size="sm" className="border-amber-500 text-amber-600 hover:bg-amber-50">
+                    <Award className="w-4 h-4 mr-2" />
+                    Minha Assessoria
+                  </Button>
+                )}
                 {!isAdmin && (
                   <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
                     <User className="w-4 h-4 mr-2" />
@@ -1029,6 +1035,47 @@ const RankingPage = () => {
               </CardContent>
             </Card>
 
+            {/* Tabs de Período - Mensal / Anual / Histórico */}
+            <Card className="overflow-hidden">
+              <CardContent className="p-0">
+                <div className="grid grid-cols-3">
+                  <button 
+                    className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
+                      ligaTipo === 'mensal' 
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
+                        : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
+                    }`}
+                    onClick={() => { setLigaTipo('mensal'); setLigaEstado(''); setLigaCidade(''); }}
+                  >
+                    <span className="text-lg">📅</span>
+                    <span className="font-semibold text-sm">Mensal</span>
+                  </button>
+                  <button 
+                    className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
+                      ligaTipo === 'anual' 
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
+                        : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
+                    }`}
+                    onClick={() => { setLigaTipo('anual'); setLigaEstado(''); setLigaCidade(''); }}
+                  >
+                    <span className="text-lg">📆</span>
+                    <span className="font-semibold text-sm">Anual</span>
+                  </button>
+                  <button 
+                    className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
+                      ligaTipo === 'historico' 
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
+                        : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
+                    }`}
+                    onClick={() => { setLigaTipo('historico'); setLigaEstado(''); setLigaCidade(''); }}
+                  >
+                    <span className="text-lg">📊</span>
+                    <span className="font-semibold text-sm">Histórico</span>
+                  </button>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* Filtros */}
             <Card>
               <CardContent className="p-4">
@@ -1164,7 +1211,7 @@ const RankingPage = () => {
                             className={`border-b border-slate-100 dark:border-slate-800 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors cursor-pointer ${
                               idx < 3 ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
                             }`}
-                            onClick={() => fetchAssessoriaDetalhe(equipe.nome)}
+                            onClick={() => navigate(`/assessoria/${encodeURIComponent(equipe.nome)}`)}
                           >
                             <td className="py-3 px-2 md:px-4">
                               <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
