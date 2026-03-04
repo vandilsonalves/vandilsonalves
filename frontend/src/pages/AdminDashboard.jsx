@@ -47,7 +47,6 @@ const menuItems = [
   { id: 'atletas', label: 'Atletas', icon: Users },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
   { id: 'ranking', label: 'Ranking', icon: Trophy },
-  { id: 'assessorias', label: 'Assessorias/Equipes', icon: Award },
   { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
   { id: 'instagram', label: 'Ranking Run Inside', icon: Activity },
 ];
@@ -167,6 +166,11 @@ const AdminDashboard = () => {
   const [cidadesComAssessorias, setCidadesComAssessorias] = useState([]);
   const [assessoriaDetalhe, setAssessoriaDetalhe] = useState(null);
   const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
+
+  // Promover Dono de Assessoria
+  const [showPromoverModal, setShowPromoverModal] = useState(false);
+  const [atletaPromover, setAtletaPromover] = useState(null);
+  const [promoverLoading, setPromoverLoading] = useState(false);
 
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
@@ -695,6 +699,28 @@ const AdminDashboard = () => {
       fetchStats();
     } catch (error) {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao excluir' });
+    }
+  };
+
+  // Promover atleta a Dono de Assessoria
+  const handlePromoverDonoAssessoria = async () => {
+    if (!atletaPromover) return;
+    
+    setPromoverLoading(true);
+    try {
+      await axios.post(`${API}/admin/atletas/${atletaPromover.id}/promover-dono-assessoria`, {}, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Promoção Concluída', { 
+        description: `${atletaPromover.nome} agora é Dono de Assessoria!` 
+      });
+      setShowPromoverModal(false);
+      setAtletaPromover(null);
+      fetchAtletas();
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao promover' });
+    } finally {
+      setPromoverLoading(false);
     }
   };
 
@@ -1762,6 +1788,21 @@ const AdminDashboard = () => {
                               title={`Transferir para ${atleta.modalidade_usuario === 'povao_pace_livre' ? 'Profissional/Amador' : 'Ranking do Povão'}`}
                             >
                               <ArrowRightLeft className="w-4 h-4" />
+                            </Button>
+                          )}
+                          {/* Botão Promover a Dono de Assessoria */}
+                          {atleta.equipe && atleta.equipe !== 'Sem equipe' && atleta.role !== 'dono_assessoria' && (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="border-amber-500 text-amber-600 hover:bg-amber-50"
+                              onClick={() => {
+                                setAtletaPromover(atleta);
+                                setShowPromoverModal(true);
+                              }}
+                              title="Promover a Dono de Assessoria"
+                            >
+                              <Award className="w-4 h-4" />
                             </Button>
                           )}
                           <Button
@@ -3299,6 +3340,71 @@ const AdminDashboard = () => {
                 </Button>
               </div>
             )}
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Promover Dono de Assessoria */}
+        <Dialog open={showPromoverModal} onOpenChange={setShowPromoverModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Award className="w-5 h-5 text-amber-500" />
+                Promover a Dono de Assessoria
+              </DialogTitle>
+            </DialogHeader>
+            {atletaPromover && (
+              <div className="space-y-4">
+                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                  <div className="flex items-center gap-3">
+                    <Avatar className="w-12 h-12">
+                      {atletaPromover.foto_url && (
+                        <AvatarImage src={atletaPromover.foto_url.startsWith('http') ? atletaPromover.foto_url : `${BACKEND_URL}${atletaPromover.foto_url}`} />
+                      )}
+                      <AvatarFallback className="bg-amber-500 text-white text-lg">
+                        {atletaPromover.nome?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-semibold text-lg">{atletaPromover.nome}</p>
+                      <p className="text-sm text-slate-600">Equipe: <strong>{atletaPromover.equipe}</strong></p>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="text-sm text-slate-600 space-y-2">
+                  <p><strong>Ao promover, este atleta terá acesso a:</strong></p>
+                  <ul className="list-disc list-inside space-y-1 text-slate-500">
+                    <li>Dashboard exclusivo da assessoria</li>
+                    <li>Cadastro e gerenciamento de atletas da equipe</li>
+                    <li>Visualização de métricas e rankings</li>
+                    <li>Envio de mensagens para atletas</li>
+                    <li>Download de selos oficiais</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPromoverModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                className="bg-amber-500 hover:bg-amber-600" 
+                onClick={handlePromoverDonoAssessoria}
+                disabled={promoverLoading}
+              >
+                {promoverLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    Promovendo...
+                  </>
+                ) : (
+                  <>
+                    <Award className="w-4 h-4 mr-2" />
+                    Confirmar Promoção
+                  </>
+                )}
+              </Button>
+            </DialogFooter>
           </DialogContent>
         </Dialog>
 

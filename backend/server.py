@@ -1118,6 +1118,32 @@ async def admin_transferir_modalidade(atleta_id: str, admin: dict = Depends(get_
         "stats": stats
     }
 
+
+@api_router.post("/admin/atletas/{atleta_id}/promover-dono-assessoria")
+async def promover_dono_assessoria(atleta_id: str, admin: dict = Depends(get_admin_user)):
+    """Promove um atleta a Dono de Assessoria"""
+    
+    # Buscar atleta
+    atleta = await db.usuarios.find_one({"id": atleta_id, "role": "atleta"}, {"_id": 0})
+    
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    if not atleta.get("equipe") or atleta.get("equipe") == "Sem equipe":
+        raise HTTPException(status_code=400, detail="Atleta precisa estar vinculado a uma equipe para ser promovido")
+    
+    # Atualizar role do atleta
+    await db.usuarios.update_one(
+        {"id": atleta_id},
+        {"$set": {"role": "dono_assessoria"}}
+    )
+    
+    return {
+        "message": f"Atleta {atleta['nome']} promovido a Dono de Assessoria!",
+        "equipe": atleta.get("equipe")
+    }
+
+
 @api_router.get("/admin/atletas/export")
 async def admin_export_atletas(categoria: str = "all", admin: dict = Depends(get_admin_user)):
     """Exporta lista de atletas em Excel"""
@@ -4090,8 +4116,7 @@ async def enviar_mensagens_aniversario_automatico():
 async def get_ranking_assessorias(
     tipo: str = "nacional",  # nacional, estadual, cidade, mensal, anual, historico
     estado: str = None,
-    cidade: str = None,
-    current_user: dict = Depends(get_current_user)
+    cidade: str = None
 ):
     """
     Retorna ranking das assessorias baseado no sistema ROE-RR
@@ -4247,7 +4272,7 @@ async def get_ranking_assessorias(
 
 
 @api_router.get("/liga-assessorias/stats")
-async def get_stats_liga_assessorias(current_user: dict = Depends(get_current_user)):
+async def get_stats_liga_assessorias():
     """Retorna estatísticas gerais da Liga de Assessorias"""
     
     # Total de assessorias ativas (excluindo "Sem equipe")
@@ -4293,7 +4318,7 @@ async def get_stats_liga_assessorias(current_user: dict = Depends(get_current_us
 
 
 @api_router.get("/liga-assessorias/assessoria/{nome_equipe}")
-async def get_detalhes_assessoria(nome_equipe: str, current_user: dict = Depends(get_current_user)):
+async def get_detalhes_assessoria(nome_equipe: str):
     """Retorna detalhes completos de uma assessoria específica"""
     from datetime import datetime
     import urllib.parse
@@ -4350,7 +4375,7 @@ async def get_detalhes_assessoria(nome_equipe: str, current_user: dict = Depends
     evolucao_sorted = sorted(evolucao_mensal.items(), key=lambda x: x[0])[-6:]
     
     # Determinar ranking atual (simplificado)
-    ranking_data = await get_ranking_assessorias(tipo="nacional", current_user=current_user)
+    ranking_data = await get_ranking_assessorias(tipo="nacional")
     posicao_atual = next(
         (e["posicao"] for e in ranking_data["ranking"] if e["nome"] == nome_decoded),
         None

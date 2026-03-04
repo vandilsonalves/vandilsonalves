@@ -5,34 +5,47 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const RankingPage = () => {
   const navigate = useNavigate();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, token, isAdmin, logout } = useAuth();
   const [categoriaAtual, setCategoriaAtual] = useState('masculino');
   const [rankingData, setRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showDestaques, setShowDestaques] = useState(true);
   
   // Ranking do Povão
-  const [tipoRanking, setTipoRanking] = useState('profissional'); // 'profissional' ou 'povao'
+  const [tipoRanking, setTipoRanking] = useState('profissional'); // 'profissional', 'povao' ou 'equipes'
   const [generoPovao, setGeneroPovao] = useState('M');
   const [rankingPovao, setRankingPovao] = useState([]);
   const [povaoStats, setPovaoStats] = useState(null);
   const [loadingPovao, setLoadingPovao] = useState(false);
+  
+  // Liga de Assessorias (Equipes)
+  const [ligaRanking, setLigaRanking] = useState([]);
+  const [ligaStats, setLigaStats] = useState(null);
+  const [ligaTipo, setLigaTipo] = useState('nacional');
+  const [ligaEstado, setLigaEstado] = useState('');
+  const [ligaCidade, setLigaCidade] = useState('');
+  const [loadingLiga, setLoadingLiga] = useState(false);
+  const [estadosComAssessorias, setEstadosComAssessorias] = useState([]);
+  const [cidadesComAssessorias, setCidadesComAssessorias] = useState([]);
+  const [assessoriaDetalhe, setAssessoriaDetalhe] = useState(null);
+  const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
   
   // Filtros
   const [filtroNome, setFiltroNome] = useState('');
@@ -170,6 +183,96 @@ const RankingPage = () => {
     setFiltroCidadePovao('');
   };
 
+  // ============ LIGA DE ASSESSORIAS - ROE-RR ============
+  useEffect(() => {
+    if (tipoRanking === 'equipes') {
+      fetchLigaRanking();
+      fetchLigaStats();
+      fetchEstadosComAssessorias();
+    }
+  }, [tipoRanking, ligaTipo, ligaEstado, ligaCidade]);
+
+  const fetchLigaRanking = async () => {
+    setLoadingLiga(true);
+    try {
+      let url = `${API}/liga-assessorias/ranking?tipo=${ligaTipo}`;
+      if (ligaTipo === 'estadual' && ligaEstado) {
+        url += `&estado=${ligaEstado}`;
+      }
+      if (ligaTipo === 'cidade' && ligaCidade) {
+        url += `&cidade=${encodeURIComponent(ligaCidade)}`;
+      }
+      
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(url, { headers });
+      setLigaRanking(response.data.ranking || []);
+    } catch (error) {
+      console.error('Erro ao buscar ranking liga:', error);
+      setLigaRanking([]);
+    } finally {
+      setLoadingLiga(false);
+    }
+  };
+
+  const fetchLigaStats = async () => {
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API}/liga-assessorias/stats`, { headers });
+      setLigaStats(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar stats liga:', error);
+    }
+  };
+
+  const fetchEstadosComAssessorias = async () => {
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API}/liga-assessorias/estados`, { headers });
+      setEstadosComAssessorias(response.data || []);
+    } catch (error) {
+      console.error('Erro ao buscar estados:', error);
+    }
+  };
+
+  const fetchCidadesComAssessorias = async (estado) => {
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API}/liga-assessorias/cidades?estado=${estado}`, { headers });
+      setCidadesComAssessorias(response.data || []);
+    } catch (error) {
+      console.error('Erro ao buscar cidades:', error);
+    }
+  };
+
+  const fetchAssessoriaDetalhe = async (nome) => {
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API}/liga-assessorias/assessoria/${encodeURIComponent(nome)}`, { headers });
+      setAssessoriaDetalhe(response.data);
+      setShowAssessoriaModal(true);
+    } catch (error) {
+      console.error('Erro ao buscar detalhes:', error);
+    }
+  };
+
+  const getSeloIcon = (selo) => {
+    switch(selo) {
+      case 'ouro': return '🥇';
+      case 'prata': return '🥈';
+      case 'bronze': return '🥉';
+      default: return '🏅';
+    }
+  };
+
+  const getSeloColor = (selo) => {
+    switch(selo) {
+      case 'ouro': return 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white';
+      case 'prata': return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white';
+      case 'bronze': return 'bg-gradient-to-r from-amber-700 to-orange-800 text-white';
+      default: return 'bg-slate-600 text-white';
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="container mx-auto px-4 py-8">
@@ -232,10 +335,10 @@ const RankingPage = () => {
         {/* Seletor de Tipo de Ranking */}
         <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
           <CardContent className="p-0">
-            <div className="grid grid-cols-2">
+            <div className="grid grid-cols-3">
               {/* Opção Profissional/Amador */}
               <button 
-                className={`py-4 px-6 flex items-center justify-center gap-3 transition-all ${
+                className={`py-4 px-4 flex items-center justify-center gap-2 transition-all ${
                   tipoRanking === 'profissional' 
                     ? 'bg-emerald-500 text-white' 
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
@@ -245,7 +348,7 @@ const RankingPage = () => {
               >
                 <Trophy className="w-5 h-5" />
                 <div className="text-left">
-                  <p className="font-semibold">Ranking Profissional/Amador</p>
+                  <p className="font-semibold text-sm">Ranking Profissional/Amador</p>
                   <p className={`text-xs ${tipoRanking === 'profissional' ? 'text-emerald-100' : 'text-slate-400'}`}>
                     Pontuação por colocação
                   </p>
@@ -254,7 +357,7 @@ const RankingPage = () => {
               
               {/* Opção Povão */}
               <button 
-                className={`py-4 px-6 flex items-center justify-center gap-3 transition-all ${
+                className={`py-4 px-4 flex items-center justify-center gap-2 transition-all ${
                   tipoRanking === 'povao' 
                     ? 'bg-purple-500 text-white' 
                     : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
@@ -264,9 +367,28 @@ const RankingPage = () => {
               >
                 <Users className="w-5 h-5" />
                 <div className="text-left">
-                  <p className="font-semibold">Ranking do Povão</p>
+                  <p className="font-semibold text-sm">Ranking do Povão</p>
                   <p className={`text-xs ${tipoRanking === 'povao' ? 'text-purple-100' : 'text-slate-400'}`}>
                     Pace Livre - Pontuação por distância
+                  </p>
+                </div>
+              </button>
+
+              {/* Opção Equipes/Assessorias */}
+              <button 
+                className={`py-4 px-4 flex items-center justify-center gap-2 transition-all ${
+                  tipoRanking === 'equipes' 
+                    ? 'bg-amber-500 text-white' 
+                    : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-100'
+                }`}
+                onClick={() => setTipoRanking('equipes')}
+                data-testid="tipo-ranking-equipes"
+              >
+                <Award className="w-5 h-5" />
+                <div className="text-left">
+                  <p className="font-semibold text-sm">Ranking de Equipes</p>
+                  <p className={`text-xs ${tipoRanking === 'equipes' ? 'text-amber-100' : 'text-slate-400'}`}>
+                    Liga Nacional de Assessorias
                   </p>
                 </div>
               </button>
@@ -818,6 +940,421 @@ const RankingPage = () => {
             </div>
           </div>
         )}
+
+        {/* RANKING DE EQUIPES - LIGA NACIONAL DE ASSESSORIAS */}
+        {tipoRanking === 'equipes' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="text-center mb-8">
+              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full text-sm font-medium mb-4">
+                <Trophy className="w-4 h-4" />
+                Classificação Oficial ROE-RR
+              </div>
+              <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
+                Liga Nacional de Assessorias Ranking Run
+              </h2>
+              <p className="text-slate-500 mt-2 max-w-2xl mx-auto">
+                Sistema técnico de pontuação que avalia assessorias esportivas de corrida de rua no Brasil
+              </p>
+            </div>
+
+            {/* Stats Cards */}
+            {ligaStats && (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                <Card className="bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-amber-100 text-xs md:text-sm">Total Assessorias</p>
+                        <p className="text-2xl md:text-3xl font-bold">{ligaStats.total_assessorias}</p>
+                      </div>
+                      <Award className="w-8 h-8 md:w-10 md:h-10 text-amber-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-emerald-500 to-green-600 text-white">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-emerald-100 text-xs md:text-sm">Atletas Vinculados</p>
+                        <p className="text-2xl md:text-3xl font-bold">{ligaStats.total_atletas_vinculados}</p>
+                      </div>
+                      <Users className="w-8 h-8 md:w-10 md:h-10 text-emerald-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-blue-100 text-xs md:text-sm">Resultados Aprovados</p>
+                        <p className="text-2xl md:text-3xl font-bold">{ligaStats.total_resultados_aprovados}</p>
+                      </div>
+                      <CheckCircle className="w-8 h-8 md:w-10 md:h-10 text-blue-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+                  <CardContent className="p-4 md:p-6">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="text-purple-100 text-xs md:text-sm">Estados Ativos</p>
+                        <p className="text-2xl md:text-3xl font-bold">{ligaStats.distribuicao_estados?.length || 0}</p>
+                      </div>
+                      <MapPin className="w-8 h-8 md:w-10 md:h-10 text-purple-200" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+            )}
+
+            {/* Sistema de Pontuação Info */}
+            <Card className="bg-slate-50 dark:bg-slate-800/50 border-dashed">
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-center justify-center gap-2 md:gap-4 text-xs md:text-sm">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">Sistema de Pontuação:</span>
+                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
+                    <Users className="w-3 h-3 mr-1" /> Atleta = +0,5
+                  </Badge>
+                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
+                    <CheckCircle className="w-3 h-3 mr-1" /> Resultado = +1,0
+                  </Badge>
+                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
+                    🥈 2º-5º = +0,5
+                  </Badge>
+                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
+                    🥇 1º = +1,0
+                  </Badge>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Filtros */}
+            <Card>
+              <CardContent className="p-4">
+                <div className="flex flex-wrap items-center gap-4">
+                  <div className="flex items-center gap-2">
+                    <Label className="text-sm font-medium">Tipo de Ranking:</Label>
+                    <Select value={ligaTipo} onValueChange={(v) => {
+                      setLigaTipo(v);
+                      setLigaEstado('');
+                      setLigaCidade('');
+                    }}>
+                      <SelectTrigger className="w-36 md:w-40">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="nacional">🌍 Nacional</SelectItem>
+                        <SelectItem value="estadual">🗺️ Estadual</SelectItem>
+                        <SelectItem value="cidade">🏙️ Por Cidade</SelectItem>
+                        <SelectItem value="mensal">📅 Mensal</SelectItem>
+                        <SelectItem value="anual">📆 Anual</SelectItem>
+                        <SelectItem value="historico">📊 Histórico</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {ligaTipo === 'estadual' && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">Estado:</Label>
+                      <Select value={ligaEstado} onValueChange={(v) => {
+                        setLigaEstado(v);
+                        fetchCidadesComAssessorias(v);
+                      }}>
+                        <SelectTrigger className="w-28 md:w-32">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {estadosComAssessorias.map(uf => (
+                            <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+
+                  {ligaTipo === 'cidade' && (
+                    <>
+                      <div className="flex items-center gap-2">
+                        <Label className="text-sm">Estado:</Label>
+                        <Select value={ligaEstado} onValueChange={(v) => {
+                          setLigaEstado(v);
+                          setLigaCidade('');
+                          fetchCidadesComAssessorias(v);
+                        }}>
+                          <SelectTrigger className="w-24 md:w-32">
+                            <SelectValue placeholder="UF" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {estadosComAssessorias.map(uf => (
+                              <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      {ligaEstado && (
+                        <div className="flex items-center gap-2">
+                          <Label className="text-sm">Cidade:</Label>
+                          <Select value={ligaCidade} onValueChange={setLigaCidade}>
+                            <SelectTrigger className="w-32 md:w-40">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {cidadesComAssessorias.map(c => (
+                                <SelectItem key={c} value={c}>{c}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={fetchLigaRanking}
+                    disabled={loadingLiga}
+                  >
+                    <RefreshCw className={`w-4 h-4 mr-2 ${loadingLiga ? 'animate-spin' : ''}`} />
+                    Atualizar
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Tabela de Ranking */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Trophy className="w-5 h-5 text-amber-500" />
+                  🏆 Ranking das Assessorias
+                  <Badge variant="secondary" className="ml-2">
+                    {ligaRanking.length} assessorias
+                  </Badge>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {loadingLiga ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+                  </div>
+                ) : ligaRanking.length === 0 ? (
+                  <div className="text-center py-12 text-slate-500">
+                    <Award className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                    <p>Nenhuma assessoria encontrada</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b border-slate-200 dark:border-slate-700 bg-amber-50 dark:bg-amber-900/20">
+                          <th className="text-left py-3 px-2 md:px-4 font-semibold text-amber-800 dark:text-amber-200">Pos</th>
+                          <th className="text-left py-3 px-2 md:px-4 font-semibold text-amber-800 dark:text-amber-200">UF</th>
+                          <th className="text-left py-3 px-2 md:px-4 font-semibold text-amber-800 dark:text-amber-200">Assessoria</th>
+                          <th className="text-left py-3 px-2 md:px-4 font-semibold text-amber-800 dark:text-amber-200 hidden md:table-cell">Cidade</th>
+                          <th className="text-center py-3 px-2 md:px-4 font-semibold text-amber-800 dark:text-amber-200">Atletas</th>
+                          <th className="text-right py-3 px-2 md:px-4 font-semibold text-amber-800 dark:text-amber-200">Pontos</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {ligaRanking.map((equipe, idx) => (
+                          <tr 
+                            key={equipe.nome} 
+                            className={`border-b border-slate-100 dark:border-slate-800 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors cursor-pointer ${
+                              idx < 3 ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
+                            }`}
+                            onClick={() => fetchAssessoriaDetalhe(equipe.nome)}
+                          >
+                            <td className="py-3 px-2 md:px-4">
+                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
+                                idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                                idx === 1 ? 'bg-slate-300 text-slate-700' :
+                                idx === 2 ? 'bg-amber-600 text-white' :
+                                'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
+                              }`}>
+                                {equipe.posicao}
+                              </span>
+                            </td>
+                            <td className="py-3 px-2 md:px-4">
+                              <Badge variant="outline">{equipe.estado}</Badge>
+                            </td>
+                            <td className="py-3 px-2 md:px-4">
+                              <div className="flex items-center gap-2">
+                                <span className="text-lg">{getSeloIcon(equipe.selo)}</span>
+                                <span className="font-medium text-amber-700 dark:text-amber-300 hover:underline">
+                                  {equipe.nome}
+                                </span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-2 md:px-4 text-slate-600 dark:text-slate-400 hidden md:table-cell">
+                              {equipe.cidade}
+                            </td>
+                            <td className="py-3 px-2 md:px-4 text-center">
+                              <span className="font-semibold text-emerald-600">{equipe.total_atletas}</span>
+                            </td>
+                            <td className="py-3 px-2 md:px-4 text-right">
+                              <span className="text-xl font-bold text-amber-600">{equipe.pontos_total}</span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+        {/* Modal Detalhes da Assessoria */}
+        <Dialog open={showAssessoriaModal} onOpenChange={setShowAssessoriaModal}>
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-3">
+                <Award className="w-6 h-6 text-amber-500" />
+                {assessoriaDetalhe?.nome}
+                {assessoriaDetalhe?.selo && (
+                  <Badge className={getSeloColor(assessoriaDetalhe.selo)}>
+                    {getSeloIcon(assessoriaDetalhe.selo)} SELO {assessoriaDetalhe.selo.toUpperCase()}
+                  </Badge>
+                )}
+              </DialogTitle>
+            </DialogHeader>
+
+            {assessoriaDetalhe && (
+              <div className="space-y-6">
+                {/* Info Principal */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="bg-amber-50 dark:bg-amber-900/20">
+                    <CardContent className="p-4 text-center">
+                      <Trophy className="w-6 h-6 mx-auto text-amber-500 mb-2" />
+                      <p className="text-2xl font-bold text-amber-600">{assessoriaDetalhe.posicao_nacional || '-'}º</p>
+                      <p className="text-xs text-slate-500">Posição Nacional</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-emerald-50 dark:bg-emerald-900/20">
+                    <CardContent className="p-4 text-center">
+                      <Users className="w-6 h-6 mx-auto text-emerald-500 mb-2" />
+                      <p className="text-2xl font-bold text-emerald-600">{assessoriaDetalhe.total_atletas}</p>
+                      <p className="text-xs text-slate-500">Atletas Ativos</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-blue-50 dark:bg-blue-900/20">
+                    <CardContent className="p-4 text-center">
+                      <CheckCircle className="w-6 h-6 mx-auto text-blue-500 mb-2" />
+                      <p className="text-2xl font-bold text-blue-600">{assessoriaDetalhe.total_resultados}</p>
+                      <p className="text-xs text-slate-500">Resultados</p>
+                    </CardContent>
+                  </Card>
+                  <Card className="bg-purple-50 dark:bg-purple-900/20">
+                    <CardContent className="p-4 text-center">
+                      <Award className="w-6 h-6 mx-auto text-purple-500 mb-2" />
+                      <p className="text-2xl font-bold text-purple-600">{assessoriaDetalhe.pontos_total}</p>
+                      <p className="text-xs text-slate-500">Pontos Total</p>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Localização e Pódios */}
+                <div className="flex flex-wrap gap-4">
+                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
+                    <MapPin className="w-4 h-4" />
+                    {assessoriaDetalhe.cidade}/{assessoriaDetalhe.estado}
+                  </div>
+                  <Badge variant="outline" className="bg-yellow-50">
+                    🥇 {assessoriaDetalhe.total_primeiros} primeiros lugares
+                  </Badge>
+                  <Badge variant="outline" className="bg-slate-50">
+                    🏅 {assessoriaDetalhe.total_podios} pódios (2º-5º)
+                  </Badge>
+                </div>
+
+                {/* Atletas */}
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm flex items-center gap-2">
+                      <Users className="w-4 h-4" />
+                      Atletas da Equipe ({assessoriaDetalhe.atletas?.length || 0})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="flex flex-wrap gap-2">
+                      {assessoriaDetalhe.atletas?.slice(0, 20).map((atleta) => (
+                        <div 
+                          key={atleta.id}
+                          className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
+                          title={`${atleta.nome} - ${atleta.pontos || 0} pontos`}
+                          onClick={() => {
+                            setShowAssessoriaModal(false);
+                            navigate(`/atleta/${atleta.id}`);
+                          }}
+                        >
+                          <Avatar className="w-8 h-8">
+                            {atleta.foto_url ? (
+                              <AvatarImage src={atleta.foto_url.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
+                            ) : null}
+                            <AvatarFallback className="text-xs bg-emerald-100 text-emerald-700">
+                              {atleta.nome?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="text-xs">
+                            <p className="font-medium truncate max-w-[100px]">{atleta.nome?.split(' ')[0]}</p>
+                            <p className="text-slate-500">{atleta.pontos || 0} pts</p>
+                          </div>
+                        </div>
+                      ))}
+                      {assessoriaDetalhe.atletas?.length > 20 && (
+                        <div className="flex items-center justify-center w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-500">
+                          +{assessoriaDetalhe.atletas.length - 20} mais
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Evolução Mensal */}
+                {assessoriaDetalhe.evolucao_mensal && assessoriaDetalhe.evolucao_mensal.length > 0 && (
+                  <Card>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-sm flex items-center gap-2">
+                        <TrendingUp className="w-4 h-4" />
+                        Evolução Mensal
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ResponsiveContainer width="100%" height={200}>
+                        <AreaChart data={assessoriaDetalhe.evolucao_mensal}>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
+                          <XAxis dataKey="mes" stroke="#9CA3AF" tick={{ fontSize: 10 }} />
+                          <YAxis stroke="#9CA3AF" />
+                          <Tooltip />
+                          <Area type="monotone" dataKey="resultados" fill="#F59E0B" stroke="#D97706" fillOpacity={0.3} name="Resultados" />
+                        </AreaChart>
+                      </ResponsiveContainer>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Selo Digital Oficial */}
+                <Card className={`${getSeloColor(assessoriaDetalhe.selo)} border-0`}>
+                  <CardContent className="p-6 text-center">
+                    <div className="text-4xl mb-2">{getSeloIcon(assessoriaDetalhe.selo)}</div>
+                    <h3 className="text-lg font-bold">SELO {assessoriaDetalhe.selo?.toUpperCase()}</h3>
+                    <p className="text-sm opacity-90">Liga Nacional de Assessorias Ranking Run</p>
+                    <p className="text-xs opacity-75 mt-1">Classificação Oficial ROE-RR – 2026</p>
+                  </CardContent>
+                </Card>
+
+                {/* Botão de Contato */}
+                <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700">
+                  <Send className="w-4 h-4 mr-2" />
+                  Quero treinar com essa assessoria
+                </Button>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </div>
     </div>
   );
