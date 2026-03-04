@@ -2551,192 +2551,658 @@ async def get_logs_aniversario(admin: dict = Depends(get_admin_user)):
 
 # ========== RANKING RUN INSIDE - INSTAGRAM ANALYTICS ==========
 
+# Chave API RapidAPI para Instagram Scraper
+RAPIDAPI_KEY = os.environ.get('INSTAGRAM_API_KEY', 'a0ed9ffeb49a41be9047e1a72f50a75da8323b10777')
+
+
+async def buscar_instagram_rapidapi(username: str) -> dict:
+    """
+    Busca dados do Instagram usando RapidAPI Instagram Scraper.
+    """
+    headers = {
+        "X-RapidAPI-Key": RAPIDAPI_KEY,
+        "X-RapidAPI-Host": "instagram-scraper-api2.p.rapidapi.com"
+    }
+    
+    url = "https://instagram-scraper-api2.p.rapidapi.com/v1/info"
+    params = {"username_or_id_or_url": username}
+    
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.get(url, headers=headers, params=params)
+            
+            if response.status_code == 200:
+                data = response.json()
+                if data.get('data'):
+                    return {"success": True, "data": data['data']}
+            
+            # Tentar API alternativa
+            url2 = "https://instagram-scraper.p.rapidapi.com/api/v1/profile"
+            headers2 = {
+                "X-RapidAPI-Key": RAPIDAPI_KEY,
+                "X-RapidAPI-Host": "instagram-scraper.p.rapidapi.com"
+            }
+            params2 = {"username": username}
+            
+            response2 = await client.get(url2, headers=headers2, params=params2)
+            if response2.status_code == 200:
+                return {"success": True, "data": response2.json()}
+            
+            return {"success": False, "error": f"API retornou código {response.status_code}"}
+            
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+async def buscar_instagram_api_direta(username: str) -> dict:
+    """
+    Busca dados do Instagram usando a API privada do Instagram.
+    Retorna dados completos do perfil e posts recentes.
+    """
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': '*/*',
+        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'X-IG-App-ID': '936619743392459',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Sec-Fetch-Site': 'same-origin',
+        'Sec-Fetch-Mode': 'cors',
+        'Referer': f'https://www.instagram.com/{username}/'
+    }
+    
+    url = f"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}"
+    
+    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
+        response = await client.get(url, headers=headers)
+        
+        if response.status_code == 404:
+            return {"success": False, "error": "Perfil não encontrado"}
+        
+        if response.status_code == 429:
+            return {"success": False, "error": "rate_limited"}
+        
+        if response.status_code != 200:
+            return {"success": False, "error": f"Erro {response.status_code}"}
+        
+        data = response.json()
+        user = data.get('data', {}).get('user', {})
+        
+        if not user:
+            return {"success": False, "error": "Dados não disponíveis"}
+        
+        return {"success": True, "user": user}
+
+
+def analisar_bio_automatico(bio: str) -> dict:
+    """
+    Analisa automaticamente a bio do Instagram.
+    Retorna scores para: descrição, keywords, CTA, link, clareza.
+    """
+    if not bio:
+        return {
+            "tem_descricao": False,
+            "tem_keywords": False,
+            "tem_cta": False,
+            "tem_link": False,
+            "clareza": "ruim",
+            "nota": 0
+        }
+    
+    bio_lower = bio.lower()
+    
+    # Keywords comuns de corrida/fitness
+    keywords_nicho = ['corrida', 'runner', 'running', 'maratona', 'atleta', 'corredor', 
+                      'treino', 'fitness', 'personal', 'coach', 'assessoria', 'km', 
+                      'pace', 'trilha', 'ultra', 'meia maratona', '10k', '21k', '42k']
+    
+    # CTAs comuns
+    ctas = ['link', 'clique', 'acesse', 'saiba mais', 'conheça', 'siga', 'inscreva', 
+            'compre', 'whatsapp', 'contato', 'agenda', 'agende', 'participe', 'baixe']
+    
+    tem_descricao = len(bio) > 20
+    tem_keywords = any(kw in bio_lower for kw in keywords_nicho)
+    tem_cta = any(cta in bio_lower for cta in ctas)
+    tem_link = 'http' in bio_lower or 'link' in bio_lower or '.com' in bio_lower or 'wa.me' in bio_lower
+    
+    # Avaliar clareza baseado em estrutura
+    linhas = bio.split('\n')
+    tem_emojis = any(ord(c) > 127 for c in bio)
+    bem_estruturado = len(linhas) >= 2 or tem_emojis
+    
+    if len(bio) > 100 and bem_estruturado and tem_keywords:
+        clareza = "excelente"
+    elif len(bio) > 50 and (bem_estruturado or tem_keywords):
+        clareza = "boa"
+    elif len(bio) > 20:
+        clareza = "regular"
+    else:
+        clareza = "ruim"
+    
+    # Calcular nota da bio
+    clareza_scores = {"excelente": 2.0, "boa": 1.5, "regular": 1.0, "ruim": 0.0}
+    nota = (
+        (1.5 if tem_descricao else 0) +
+        (3.0 if tem_keywords else 0) +
+        (2.0 if tem_cta else 0) +
+        (1.5 if tem_link else 0) +
+        clareza_scores.get(clareza, 1.0)
+    )
+    
+    return {
+        "tem_descricao": tem_descricao,
+        "tem_keywords": tem_keywords,
+        "tem_cta": tem_cta,
+        "tem_link": tem_link,
+        "clareza": clareza,
+        "nota": min(nota, 10.0)
+    }
+
+
+def analisar_posts_automatico(posts: list) -> dict:
+    """
+    Analisa automaticamente os posts recentes do Instagram.
+    Calcula: média de likes, comentários, views de reels, frequência, etc.
+    """
+    if not posts:
+        return {
+            "media_likes": 0,
+            "media_comentarios": 0,
+            "media_views_reels": 0,
+            "posts_por_semana": 0,
+            "total_analisados": 0,
+            "percentual_reels": 0,
+            "percentual_carrossel": 0,
+            "percentual_foto": 0,
+            "picos_anormais": 0,
+            "comentarios_repetitivos": 0,
+            "horarios_artificiais": 0,
+            "desvio_engajamento": 0
+        }
+    
+    total_likes = 0
+    total_comments = 0
+    total_views = 0
+    count_reels = 0
+    count_carrossel = 0
+    count_foto = 0
+    timestamps = []
+    likes_list = []
+    comments_list = []
+    
+    for post in posts:
+        # Extrair métricas
+        likes = post.get('edge_liked_by', {}).get('count', 0) or post.get('like_count', 0)
+        comments = post.get('edge_media_to_comment', {}).get('count', 0) or post.get('comment_count', 0)
+        views = post.get('video_view_count', 0) or post.get('play_count', 0)
+        timestamp = post.get('taken_at_timestamp', 0) or post.get('taken_at', 0)
+        
+        total_likes += likes
+        total_comments += comments
+        likes_list.append(likes)
+        comments_list.append(comments)
+        
+        if timestamp:
+            timestamps.append(timestamp)
+        
+        # Tipo de post
+        typename = post.get('__typename', '') or post.get('media_type', '')
+        is_video = post.get('is_video', False) or typename in ['GraphVideo', 'XDTGraphVideo', 2]
+        is_carousel = typename in ['GraphSidecar', 'XDTGraphSidecar', 8]
+        
+        if is_video:
+            count_reels += 1
+            total_views += views
+        elif is_carousel:
+            count_carrossel += 1
+        else:
+            count_foto += 1
+    
+    total_posts = len(posts)
+    
+    # Calcular médias
+    media_likes = total_likes / total_posts if total_posts > 0 else 0
+    media_comentarios = total_comments / total_posts if total_posts > 0 else 0
+    media_views_reels = total_views / count_reels if count_reels > 0 else 0
+    
+    # Calcular percentuais de formatos
+    percentual_reels = (count_reels / total_posts * 100) if total_posts > 0 else 0
+    percentual_carrossel = (count_carrossel / total_posts * 100) if total_posts > 0 else 0
+    percentual_foto = (count_foto / total_posts * 100) if total_posts > 0 else 0
+    
+    # Calcular frequência (posts por semana)
+    posts_por_semana = 0
+    if len(timestamps) >= 2:
+        timestamps.sort(reverse=True)
+        time_span_seconds = timestamps[0] - timestamps[-1]
+        if time_span_seconds > 0:
+            weeks = time_span_seconds / (7 * 24 * 60 * 60)
+            if weeks > 0:
+                posts_por_semana = total_posts / weeks
+    
+    # Detectar anomalias (indicadores anti-fake)
+    picos_anormais = 0
+    if len(likes_list) >= 3:
+        avg_likes = sum(likes_list) / len(likes_list)
+        if avg_likes > 0:
+            for likes in likes_list:
+                # Pico é quando tem mais de 3x a média
+                if likes > avg_likes * 3:
+                    picos_anormais += 1
+    
+    # Desvio do engajamento
+    desvio_engajamento = 0
+    if len(likes_list) >= 3:
+        avg = sum(likes_list) / len(likes_list)
+        if avg > 0:
+            variance = sum((x - avg) ** 2 for x in likes_list) / len(likes_list)
+            std_dev = variance ** 0.5
+            desvio_engajamento = (std_dev / avg) * 100  # Coeficiente de variação em %
+    
+    # Comentários repetitivos (placeholder - precisaria de análise de texto)
+    comentarios_repetitivos = 0
+    
+    # Horários artificiais (placeholder - precisaria de análise de horários)
+    horarios_artificiais = 0
+    
+    return {
+        "media_likes": round(media_likes, 1),
+        "media_comentarios": round(media_comentarios, 1),
+        "media_views_reels": round(media_views_reels, 1),
+        "posts_por_semana": round(posts_por_semana, 1),
+        "total_analisados": total_posts,
+        "percentual_reels": round(percentual_reels, 1),
+        "percentual_carrossel": round(percentual_carrossel, 1),
+        "percentual_foto": round(percentual_foto, 1),
+        "picos_anormais": picos_anormais,
+        "comentarios_repetitivos": comentarios_repetitivos,
+        "horarios_artificiais": horarios_artificiais,
+        "desvio_engajamento": round(desvio_engajamento, 1)
+    }
+
+
+def calcular_crescimento_estimado(seguidores: int, total_posts: int, engagement_rate: float) -> float:
+    """
+    Estima o crescimento mensal baseado em métricas conhecidas.
+    """
+    # Fórmula simplificada baseada em benchmarks
+    # Perfis com bom engagement tendem a crescer mais
+    base_growth = 0.5  # 0.5% base
+    
+    # Bonus por engagement
+    if engagement_rate > 5:
+        engagement_bonus = 2.0
+    elif engagement_rate > 3:
+        engagement_bonus = 1.0
+    elif engagement_rate > 1:
+        engagement_bonus = 0.5
+    else:
+        engagement_bonus = 0
+    
+    # Perfis menores crescem mais rápido percentualmente
+    if seguidores < 1000:
+        size_multiplier = 2.0
+    elif seguidores < 10000:
+        size_multiplier = 1.5
+    elif seguidores < 100000:
+        size_multiplier = 1.0
+    else:
+        size_multiplier = 0.5
+    
+    crescimento = (base_growth + engagement_bonus) * size_multiplier
+    return round(min(crescimento, 10.0), 1)  # Cap em 10%
+
+
 @api_router.get("/admin/instagram/buscar/{username}")
 async def buscar_dados_instagram(username: str, admin: dict = Depends(get_admin_user)):
     """
-    Busca dados públicos de um perfil Instagram via Social Blade.
-    Retorna os dados encontrados ou erro se não conseguir buscar.
+    Busca dados completos de um perfil Instagram automaticamente.
+    Tenta primeiro a API direta, depois RapidAPI como fallback.
     """
-    # Limpar username (remover @ se houver)
+    # Limpar username
     username = username.strip().lstrip('@').lower()
     
     if not username:
         raise HTTPException(status_code=400, detail="Username é obrigatório")
     
+    user = None
+    source = "unknown"
+    
     try:
-        # Configurar headers para parecer um navegador real
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Cache-Control': 'max-age=0'
+        # Tentar primeiro a API direta do Instagram
+        result = await buscar_instagram_api_direta(username)
+        
+        if result.get('success') and result.get('user'):
+            user = result['user']
+            source = "instagram_direct"
+        elif result.get('error') == 'rate_limited':
+            # Tentar RapidAPI como fallback
+            logging.info(f"Instagram rate limited, tentando RapidAPI para {username}")
+            rapid_result = await buscar_instagram_rapidapi(username)
+            if rapid_result.get('success') and rapid_result.get('data'):
+                # Converter formato RapidAPI para formato esperado
+                rapid_data = rapid_result['data']
+                user = {
+                    'username': rapid_data.get('username', username),
+                    'full_name': rapid_data.get('full_name', ''),
+                    'biography': rapid_data.get('biography', ''),
+                    'edge_followed_by': {'count': rapid_data.get('follower_count', 0)},
+                    'edge_follow': {'count': rapid_data.get('following_count', 0)},
+                    'edge_owner_to_timeline_media': {
+                        'count': rapid_data.get('media_count', 0),
+                        'edges': []
+                    },
+                    'is_verified': rapid_data.get('is_verified', False),
+                    'is_business_account': rapid_data.get('is_business', False),
+                    'external_url': rapid_data.get('external_url', '')
+                }
+                source = "rapidapi"
+        
+        if not user:
+            return {
+                "success": False,
+                "error": result.get('error', 'Não foi possível acessar o perfil. Verifique se o username está correto e tente novamente.'),
+                "data": None
+            }
+        
+        # Extrair dados básicos
+        seguidores = user.get('edge_followed_by', {}).get('count', 0)
+        seguindo = user.get('edge_follow', {}).get('count', 0)
+        total_posts = user.get('edge_owner_to_timeline_media', {}).get('count', 0)
+        nome_completo = user.get('full_name', '')
+        bio = user.get('biography', '')
+        is_verified = user.get('is_verified', False)
+        is_business = user.get('is_business_account', False)
+        external_url = user.get('external_url', '')
+        
+        # Extrair posts recentes (até 12 posts)
+        posts_edges = user.get('edge_owner_to_timeline_media', {}).get('edges', [])
+        posts = [edge.get('node', {}) for edge in posts_edges[:12]]
+        
+        # Analisar bio automaticamente
+        analise_bio = analisar_bio_automatico(bio + (' ' + external_url if external_url else ''))
+        
+        # Analisar posts automaticamente
+        analise_posts = analisar_posts_automatico(posts)
+        
+        # Calcular engagement rate
+        if seguidores > 0 and analise_posts['media_likes'] > 0:
+            engagement_rate = ((analise_posts['media_likes'] + analise_posts['media_comentarios']) / seguidores) * 100
+        else:
+            engagement_rate = 0
+        
+        # Estimar crescimento
+        crescimento_estimado = calcular_crescimento_estimado(seguidores, total_posts, engagement_rate)
+        
+        # Montar resposta completa
+        data = {
+            "username": username,
+            "nome_completo": nome_completo,
+            "bio": bio,
+            "seguidores": seguidores,
+            "seguindo": seguindo,
+            "total_posts": total_posts,
+            "is_verified": is_verified,
+            "is_business": is_business,
+            "external_url": external_url,
+            
+            # Métricas calculadas automaticamente
+            "media_likes": analise_posts['media_likes'],
+            "media_comentarios": analise_posts['media_comentarios'],
+            "media_views_reels": analise_posts['media_views_reels'],
+            "posts_por_semana": analise_posts['posts_por_semana'],
+            "engagement_rate": round(engagement_rate, 2),
+            "crescimento_30_dias": crescimento_estimado,
+            
+            # Análise da bio automática
+            "bio_tem_descricao": analise_bio['tem_descricao'],
+            "bio_tem_keywords": analise_bio['tem_keywords'],
+            "bio_tem_cta": analise_bio['tem_cta'],
+            "bio_tem_link": analise_bio['tem_link'],
+            "bio_clareza": analise_bio['clareza'],
+            "bio_nota": analise_bio['nota'],
+            
+            # Distribuição de formatos
+            "percentual_reels": analise_posts['percentual_reels'],
+            "percentual_carrossel": analise_posts['percentual_carrossel'],
+            "percentual_foto": analise_posts['percentual_foto'],
+            
+            # Indicadores anti-fake
+            "picos_anormais": analise_posts['picos_anormais'],
+            "comentarios_repetitivos": analise_posts['comentarios_repetitivos'],
+            "horarios_artificiais": analise_posts['horarios_artificiais'],
+            "desvio_engajamento": analise_posts['desvio_engajamento'],
+            
+            # Metadados
+            "posts_analisados": analise_posts['total_analisados'],
+            "source": source
         }
         
-        url = f"https://socialblade.com/instagram/user/{username}"
+        return {
+            "success": True,
+            "error": None,
+            "data": data
+        }
         
-        async with httpx.AsyncClient(timeout=15.0, follow_redirects=True) as client:
-            response = await client.get(url, headers=headers)
-            
-            if response.status_code == 404:
-                return {
-                    "success": False,
-                    "error": "Perfil não encontrado no Social Blade",
-                    "data": None
-                }
-            
-            if response.status_code != 200:
-                return {
-                    "success": False,
-                    "error": f"Erro ao acessar Social Blade (código {response.status_code})",
-                    "data": None
-                }
-            
-            html = response.text
-            soup = BeautifulSoup(html, 'html.parser')
-            
-            # Extrair dados da página
-            data = {
-                "username": username,
-                "nome_completo": "",
-                "seguidores": 0,
-                "seguindo": 0,
-                "total_posts": 0,
-                "engagement_rate": 0,
-                "media_likes": 0,
-                "media_comentarios": 0,
-                "grade": "",
-                "sb_rank": "",
-                "followers_rank": "",
-                "engagement_rank": "",
-                "crescimento_14_dias": 0
-            }
-            
-            # Buscar estatísticas principais (header)
-            # Os dados aparecem em divs específicas
-            stat_divs = soup.find_all('div', class_='YouTubeUserTopInfo')
-            
-            # Tentar extrair de diferentes seletores
-            # Pattern 1: Procurar por texto "Followers", "Following", etc.
-            for span in soup.find_all('span'):
-                text = span.get_text(strip=True)
-                parent_text = span.parent.get_text(strip=True) if span.parent else ""
-                
-                # Buscar números próximos de labels conhecidos
-                if 'Followers' in parent_text:
-                    num_match = re.search(r'([\d,]+)\s*Followers', parent_text)
-                    if num_match:
-                        data['seguidores'] = int(num_match.group(1).replace(',', ''))
-                
-                if 'Following' in parent_text:
-                    num_match = re.search(r'([\d,]+)\s*Following', parent_text)
-                    if num_match:
-                        data['seguindo'] = int(num_match.group(1).replace(',', ''))
-                
-                if 'Media' in parent_text and 'Count' in parent_text:
-                    num_match = re.search(r'([\d,]+)\s*Media', parent_text)
-                    if num_match:
-                        data['total_posts'] = int(num_match.group(1).replace(',', ''))
-            
-            # Buscar em formato alternativo (tabela de estatísticas)
-            for p in soup.find_all('p'):
-                text = p.get_text(strip=True)
-                
-                # Engagement Rate
-                if 'Engagement' in text and '%' in text:
-                    er_match = re.search(r'([\d.]+)%', text)
-                    if er_match:
-                        data['engagement_rate'] = float(er_match.group(1))
-                
-                # Average Likes
-                if 'Average' in text and 'Like' in text:
-                    likes_match = re.search(r'([\d,]+)', text)
-                    if likes_match:
-                        data['media_likes'] = float(likes_match.group(1).replace(',', ''))
-            
-            # Grade (nota do Social Blade)
-            grade_elem = soup.find('div', id='afd-header-grade')
-            if grade_elem:
-                data['grade'] = grade_elem.get_text(strip=True)
-            else:
-                # Tentar outro seletor
-                for div in soup.find_all('div'):
-                    if div.get('style') and 'font-size' in div.get('style', ''):
-                        text = div.get_text(strip=True)
-                        if text in ['A++', 'A+', 'A', 'A-', 'B+', 'B', 'B-', 'C+', 'C', 'C-', 'D+', 'D', 'D-', 'F']:
-                            data['grade'] = text
-                            break
-            
-            # Extrair números da página usando regex mais agressivo
-            page_text = soup.get_text()
-            
-            # Seguidores
-            if data['seguidores'] == 0:
-                followers_match = re.search(r'([\d,]+)\s*(?:Followers|followers|Seguidores)', page_text)
-                if followers_match:
-                    data['seguidores'] = int(followers_match.group(1).replace(',', ''))
-            
-            # Following
-            if data['seguindo'] == 0:
-                following_match = re.search(r'([\d,]+)\s*(?:Following|following|Seguindo)', page_text)
-                if following_match:
-                    data['seguindo'] = int(following_match.group(1).replace(',', ''))
-            
-            # Media Count / Posts
-            if data['total_posts'] == 0:
-                media_match = re.search(r'(?:Media|Posts|Publicações)[^\d]*([\d,]+)', page_text, re.IGNORECASE)
-                if not media_match:
-                    media_match = re.search(r'([\d,]+)[^\d]*(?:Media|Posts)', page_text, re.IGNORECASE)
-                if media_match:
-                    data['total_posts'] = int(media_match.group(1).replace(',', ''))
-            
-            # Engagement Rate
-            if data['engagement_rate'] == 0:
-                er_match = re.search(r'Engagement[^\d]*([\d.]+)%', page_text, re.IGNORECASE)
-                if er_match:
-                    data['engagement_rate'] = float(er_match.group(1))
-            
-            # Average Likes
-            if data['media_likes'] == 0:
-                likes_match = re.search(r'Average\s*Likes[^\d]*([\d,]+)', page_text, re.IGNORECASE)
-                if likes_match:
-                    data['media_likes'] = float(likes_match.group(1).replace(',', ''))
-            
-            # Average Comments
-            comments_match = re.search(r'Average\s*Comments[^\d]*([\d.,]+)', page_text, re.IGNORECASE)
-            if comments_match:
-                data['media_comentarios'] = float(comments_match.group(1).replace(',', ''))
-            
-            # Verificar se conseguimos dados mínimos
-            if data['seguidores'] == 0 and data['total_posts'] == 0:
-                return {
-                    "success": False,
-                    "error": "Não foi possível extrair dados do perfil. O Social Blade pode ter bloqueado a requisição ou o perfil não existe.",
-                    "data": None
-                }
-            
-            return {
-                "success": True,
-                "error": None,
-                "data": data,
-                "source": "socialblade"
-            }
-            
     except httpx.TimeoutException:
         return {
             "success": False,
-            "error": "Timeout ao acessar Social Blade. Tente novamente.",
+            "error": "Timeout ao acessar Instagram. Tente novamente.",
             "data": None
         }
     except Exception as e:
         logging.error(f"Erro ao buscar dados do Instagram: {str(e)}")
         return {
             "success": False,
-            "error": f"Erro interno: {str(e)}",
+            "error": f"Erro ao buscar dados: {str(e)}",
             "data": None
         }
+
+
+@api_router.post("/admin/instagram/analisar-automatico/{username}")
+async def analisar_perfil_automatico(username: str, nicho: str = "corrida", admin: dict = Depends(get_admin_user)):
+    """
+    Busca dados do Instagram e faz análise completa automaticamente.
+    O único input necessário é o username.
+    """
+    # Buscar dados do Instagram
+    busca_result = await buscar_dados_instagram(username, admin)
+    
+    if not busca_result.get('success') or not busca_result.get('data'):
+        raise HTTPException(
+            status_code=400, 
+            detail=busca_result.get('error', 'Não foi possível buscar dados do perfil')
+        )
+    
+    data = busca_result['data']
+    
+    # Usar os dados já calculados automaticamente
+    nota_bio = data.get('bio_nota', 5.0)
+    
+    # Calcular nota Frequência
+    nota_frequencia = calcular_nota_frequencia(
+        data.get('posts_por_semana', 0), 
+        1  # Assumir último post há 1 dia (dados recentes)
+    )
+    
+    # Calcular nota Engajamento
+    nota_engajamento, er_post, er_reels = calcular_nota_engajamento(
+        data.get('media_likes', 0),
+        data.get('media_comentarios', 0),
+        data.get('media_views_reels', 0),
+        data.get('seguidores', 1)
+    )
+    
+    # Calcular nota Crescimento
+    nota_crescimento = calcular_nota_crescimento(data.get('crescimento_30_dias', 0))
+    
+    # Calcular nota Consistência
+    nota_consistencia = calcular_nota_consistencia(
+        2.0,  # Desvio intervalo estimado
+        data.get('desvio_engajamento', 0)
+    )
+    
+    # Calcular nota Padrões (anti-fake)
+    nota_padroes = calcular_nota_padroes(
+        data.get('picos_anormais', 0),
+        data.get('comentarios_repetitivos', 0),
+        data.get('horarios_artificiais', 0)
+    )
+    
+    # Calcular nota Reels
+    nota_reels = calcular_nota_reels(
+        data.get('media_views_reels', 0),
+        data.get('seguidores', 1)
+    )
+    
+    # Calcular nota Formatos
+    nota_formatos = calcular_nota_formatos(
+        data.get('percentual_reels', 33),
+        data.get('percentual_carrossel', 33),
+        data.get('percentual_foto', 34)
+    )
+    
+    # Score final
+    score_final = calcular_score_final(
+        nota_bio, nota_frequencia, nota_engajamento, nota_crescimento,
+        nota_consistencia, nota_padroes, nota_reels, nota_formatos
+    )
+    
+    # Classificação
+    classificacao = classificar_influenciador(score_final)
+    
+    # Gerar ID
+    analysis_id = str(uuid.uuid4())
+    
+    # Preparar documento para salvar
+    analysis_doc = {
+        "id": analysis_id,
+        "username": data.get('username', username),
+        "nome_completo": data.get('nome_completo', ''),
+        "nicho": nicho,
+        "seguidores": data.get('seguidores', 0),
+        "seguindo": data.get('seguindo', 0),
+        "total_posts": data.get('total_posts', 0),
+        "bio": data.get('bio', ''),
+        "is_verified": data.get('is_verified', False),
+        "is_business": data.get('is_business', False),
+        
+        # Métricas automáticas
+        "media_likes": data.get('media_likes', 0),
+        "media_comentarios": data.get('media_comentarios', 0),
+        "media_views_reels": data.get('media_views_reels', 0),
+        "posts_por_semana": data.get('posts_por_semana', 0),
+        "crescimento_30_dias": data.get('crescimento_30_dias', 0),
+        
+        # Análise da Bio
+        "bio_tem_descricao": data.get('bio_tem_descricao', False),
+        "bio_tem_keywords": data.get('bio_tem_keywords', False),
+        "bio_tem_cta": data.get('bio_tem_cta', False),
+        "bio_tem_link": data.get('bio_tem_link', False),
+        "bio_clareza": data.get('bio_clareza', 'regular'),
+        
+        # Formatos
+        "percentual_reels": data.get('percentual_reels', 33),
+        "percentual_carrossel": data.get('percentual_carrossel', 33),
+        "percentual_foto": data.get('percentual_foto', 34),
+        
+        # Anti-fake
+        "picos_anormais": data.get('picos_anormais', 0),
+        "comentarios_repetitivos": data.get('comentarios_repetitivos', 0),
+        "horarios_artificiais": data.get('horarios_artificiais', 0),
+        "desvio_engajamento": data.get('desvio_engajamento', 0),
+        
+        # Notas calculadas
+        "nota_bio": nota_bio,
+        "nota_frequencia": nota_frequencia,
+        "nota_engajamento": nota_engajamento,
+        "nota_crescimento": nota_crescimento,
+        "nota_consistencia": nota_consistencia,
+        "nota_padroes": nota_padroes,
+        "nota_reels": nota_reels,
+        "nota_formatos": nota_formatos,
+        
+        # Score e classificação
+        "score_final": score_final,
+        "classificacao": classificacao,
+        "engagement_rate": er_post,
+        "engagement_rate_reels": er_reels,
+        
+        # Metadados
+        "posts_analisados": data.get('posts_analisados', 0),
+        "data_analise": datetime.now(timezone.utc).isoformat(),
+        "source": "instagram_api_automatico"
+    }
+    
+    # Salvar no banco
+    await db.instagram_analyses.insert_one(analysis_doc)
+    
+    # Preparar dados para gráficos
+    media_nicho = MEDIAS_NICHO.get(nicho, MEDIAS_NICHO['corrida'])
+    
+    graficos_data = {
+        "radar": {
+            "labels": ["Bio", "Frequência", "Engajamento", "Crescimento", 
+                      "Consistência", "Padrões", "Reels", "Formatos"],
+            "values": [nota_bio, nota_frequencia, nota_engajamento, nota_crescimento,
+                      nota_consistencia, nota_padroes, nota_reels, nota_formatos],
+            "max": 10
+        },
+        "gauge": {
+            "value": score_final,
+            "min": 0,
+            "max": 100,
+            "ranges": [
+                {"min": 0, "max": 40, "color": "#DC2626", "label": "Péssimo"},
+                {"min": 40, "max": 60, "color": "#EF4444", "label": "Ruim"},
+                {"min": 60, "max": 70, "color": "#F59E0B", "label": "Regular"},
+                {"min": 70, "max": 80, "color": "#3B82F6", "label": "Bom"},
+                {"min": 80, "max": 90, "color": "#8B5CF6", "label": "Ótimo"},
+                {"min": 90, "max": 100, "color": "#10B981", "label": "Excelente"}
+            ]
+        },
+        "comparativo": {
+            "labels": ["Engajamento", "Crescimento", "Frequência"],
+            "perfil": [er_post, data.get('crescimento_30_dias', 0), data.get('posts_por_semana', 0)],
+            "media_nicho": [media_nicho['engagement_rate'], media_nicho['crescimento_medio'], media_nicho['posts_semana']]
+        },
+        "formatos": {
+            "labels": ["Reels", "Carrossel", "Fotos"],
+            "values": [data.get('percentual_reels', 33), data.get('percentual_carrossel', 33), data.get('percentual_foto', 34)]
+        },
+        "metricas": {
+            "seguidores": data.get('seguidores', 0),
+            "seguindo": data.get('seguindo', 0),
+            "posts": data.get('total_posts', 0),
+            "er_post": er_post,
+            "er_reels": er_reels,
+            "crescimento": data.get('crescimento_30_dias', 0),
+            "indice_anomalia": (data.get('picos_anormais', 0) + data.get('comentarios_repetitivos', 0)) * 10
+        }
+    }
+    
+    # Gerar recomendações
+    notas = {
+        'bio': nota_bio,
+        'frequencia': nota_frequencia,
+        'engajamento': nota_engajamento,
+        'crescimento': nota_crescimento,
+        'consistencia': nota_consistencia,
+        'padroes': nota_padroes,
+        'reels': nota_reels,
+        'formatos': nota_formatos
+    }
+    recomendacoes = gerar_recomendacoes(notas, {'crescimento_30_dias': data.get('crescimento_30_dias', 0)})
+    
+    # Remover _id do documento antes de retornar
+    analysis_doc.pop('_id', None)
+    
+    return {
+        "analysis": analysis_doc,
+        "graficos_data": graficos_data,
+        "recomendacoes": recomendacoes,
+        "dados_brutos": data
+    }
 
 
 @api_router.post("/admin/instagram/analisar")

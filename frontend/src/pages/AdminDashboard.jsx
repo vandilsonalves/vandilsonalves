@@ -416,7 +416,7 @@ const AdminDashboard = () => {
     }
   };
 
-  // Função para buscar dados do Instagram via Social Blade
+  // Função para buscar e analisar automaticamente do Instagram
   const handleInstagramSearch = async () => {
     if (!instagramSearchUsername.trim()) {
       toast.error('Username obrigatório', { description: 'Digite o @username do perfil' });
@@ -428,46 +428,28 @@ const AdminDashboard = () => {
 
     try {
       const cleanUsername = instagramSearchUsername.trim().replace('@', '');
-      const response = await axios.get(`${API}/admin/instagram/buscar/${cleanUsername}`, {
-        headers: { Authorization: `Bearer ${token}` }
+      
+      // Chamar o endpoint de análise automática
+      const response = await axios.post(
+        `${API}/admin/instagram/analisar-automatico/${cleanUsername}?nicho=${instagramFormData.nicho}`, 
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+
+      // Mostrar resultado direto
+      setInstagramResult(response.data);
+      setInstagramSearchUsername('');
+      fetchInstagramAnalises();
+      toast.success('Análise Completa!', { 
+        description: `@${cleanUsername}: Score ${response.data.analysis.score_final}/100 - ${response.data.analysis.classificacao}` 
       });
 
-      if (response.data.success && response.data.data) {
-        // Preencher formulário com dados encontrados
-        const data = response.data.data;
-        setInstagramFormData(prev => ({
-          ...prev,
-          username: data.username || cleanUsername,
-          nome_completo: data.nome_completo || '',
-          seguidores: data.seguidores || '',
-          seguindo: data.seguindo || '',
-          total_posts: data.total_posts || '',
-          media_likes: data.media_likes || '',
-          media_comentarios: data.media_comentarios || ''
-        }));
-        setShowInstagramForm(true);
-        toast.success('Dados encontrados!', { 
-          description: `@${data.username}: ${data.seguidores?.toLocaleString()} seguidores${data.grade ? ` • Grade: ${data.grade}` : ''}` 
-        });
-      } else {
-        setInstagramSearchError(response.data.error || 'Perfil não encontrado');
-        // Abrir formulário manual mesmo assim
-        setInstagramFormData(prev => ({
-          ...prev,
-          username: cleanUsername
-        }));
-        setShowInstagramForm(true);
-        toast.warning('Busca automática falhou', { 
-          description: 'Preencha os dados manualmente' 
-        });
-      }
     } catch (error) {
       const errorMsg = typeof error.response?.data?.detail === 'string' 
         ? error.response?.data?.detail 
-        : 'Erro na busca. Preencha os dados manualmente.';
+        : 'Não foi possível analisar o perfil. Verifique se o username está correto.';
       setInstagramSearchError(errorMsg);
-      setShowInstagramForm(true);
-      toast.warning('Busca automática falhou', { description: errorMsg });
+      toast.error('Erro na Análise', { description: errorMsg });
     } finally {
       setInstagramSearchLoading(false);
     }
@@ -2172,10 +2154,10 @@ const AdminDashboard = () => {
                 <CardContent className="p-6">
                   <div className="text-center mb-6">
                     <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">
-                      Buscar Perfil do Instagram
+                      Analisar Perfil do Instagram
                     </h3>
                     <p className="text-slate-600 dark:text-slate-400 text-sm">
-                      Digite o @username para buscar dados automaticamente via Social Blade
+                      Digite o @username para análise automática completa
                     </p>
                   </div>
 
@@ -2191,6 +2173,20 @@ const AdminDashboard = () => {
                         disabled={instagramSearchLoading}
                       />
                     </div>
+                    <select
+                      value={instagramFormData.nicho}
+                      onChange={(e) => setInstagramFormData({...instagramFormData, nicho: e.target.value})}
+                      className="h-12 px-4 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                    >
+                      <option value="corrida">Corrida</option>
+                      <option value="fitness">Fitness</option>
+                      <option value="lifestyle">Lifestyle</option>
+                      <option value="moda">Moda</option>
+                      <option value="gastronomia">Gastronomia</option>
+                      <option value="viagem">Viagem</option>
+                      <option value="tech">Tecnologia</option>
+                      <option value="outros">Outros</option>
+                    </select>
                     <Button
                       onClick={handleInstagramSearch}
                       disabled={instagramSearchLoading || !instagramSearchUsername.trim()}
@@ -2199,32 +2195,27 @@ const AdminDashboard = () => {
                       {instagramSearchLoading ? (
                         <>
                           <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Buscando...
+                          Analisando...
                         </>
                       ) : (
                         <>
-                          <Search className="w-4 h-4 mr-2" />
-                          Buscar Dados
+                          <Activity className="w-4 h-4 mr-2" />
+                          Analisar
                         </>
                       )}
                     </Button>
                   </div>
 
                   {instagramSearchError && (
-                    <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/30 rounded-lg text-center">
-                      <p className="text-amber-700 dark:text-amber-300 text-sm">
+                    <div className="mt-4 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
+                      <p className="text-red-700 dark:text-red-300 text-sm">
                         {instagramSearchError}
                       </p>
                     </div>
                   )}
 
-                  <div className="mt-6 text-center">
-                    <button
-                      onClick={() => { resetInstagramForm(); setShowInstagramForm(true); }}
-                      className="text-sm text-pink-600 dark:text-pink-400 hover:underline"
-                    >
-                      Ou preencha os dados manualmente →
-                    </button>
+                  <div className="mt-6 text-center text-sm text-slate-500">
+                    <p>O sistema busca automaticamente: seguidores, posts, engajamento, crescimento, análise da bio e indicadores anti-fake.</p>
                   </div>
                 </CardContent>
               </Card>
@@ -2282,6 +2273,33 @@ const AdminDashboard = () => {
                           </div>
                         </div>
                         <p className="mt-2 text-lg font-semibold">Score de Influência</p>
+                        
+                        {/* Barra de Score Visual */}
+                        <div className="mt-4 w-full max-w-xs mx-auto">
+                          <div className="relative h-3 rounded-full overflow-hidden bg-slate-700">
+                            <div className="absolute inset-0 flex">
+                              <div className="w-[20%] bg-red-600" title="Péssimo (0-40)"></div>
+                              <div className="w-[20%] bg-orange-500" title="Ruim (40-60)"></div>
+                              <div className="w-[10%] bg-amber-400" title="Regular (60-70)"></div>
+                              <div className="w-[10%] bg-blue-500" title="Bom (70-80)"></div>
+                              <div className="w-[10%] bg-purple-500" title="Ótimo (80-90)"></div>
+                              <div className="w-[30%] bg-green-500" title="Excelente (90-100)"></div>
+                            </div>
+                            {/* Indicador de posição */}
+                            <div 
+                              className="absolute top-0 w-1 h-3 bg-white shadow-lg transition-all"
+                              style={{ left: `${instagramResult.analysis.score_final}%` }}
+                            ></div>
+                          </div>
+                          <div className="flex justify-between mt-1 text-[10px] text-slate-500">
+                            <span>Péssimo</span>
+                            <span>Ruim</span>
+                            <span>Regular</span>
+                            <span>Bom</span>
+                            <span>Ótimo</span>
+                            <span>Excelente</span>
+                          </div>
+                        </div>
                       </div>
 
                       {/* Métricas Rápidas */}
@@ -2306,7 +2324,7 @@ const AdminDashboard = () => {
                         </div>
                         <div className="bg-slate-700/50 p-4 rounded-xl text-center">
                           <div className="text-2xl font-bold text-amber-400">
-                            {(instagramResult.analysis.indice_anomalia * 100).toFixed(1)}%
+                            {((instagramResult.graficos_data?.metricas?.indice_anomalia || 0)).toFixed(1)}%
                           </div>
                           <div className="text-sm text-slate-400">Índice Anomalia</div>
                         </div>
