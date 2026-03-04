@@ -239,14 +239,47 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Validações: senha atual correta, mínimo 6 caracteres, confirmação idêntica
     - Endpoint: POST `/api/atletas/alterar-senha`
 
-## Próximos Passos (Backlog)
+35. ✅ **Liga Nacional de Assessorias Ranking Run - Fase 1**:
+    - **Nova aba no Admin**: "Assessorias/Equipes" com dashboard completo
+    - **Sistema de Pontuação ROE-RR**:
+      - +0,5 por atleta cadastrado e vinculado
+      - +1,0 por resultado aprovado
+      - +0,5 adicional para 2º-5º lugar
+      - +1,0 adicional para 1º lugar
+    - **Estatísticas**: Total assessorias, atletas vinculados, resultados, estados ativos
+    - **6 Tipos de Ranking**: Nacional, Estadual, Cidade, Mensal, Anual, Histórico
+    - **Sistema de Selos**: Ouro (Top 20), Prata (21-50), Bronze (51+)
+    - **Tabela de Ranking**: Posição, Selo, Assessoria, UF, Cidade, Atletas, 1º lugares, Resultados, Pontos
+    - **Modal de Detalhes**: Estatísticas, lista de atletas, gráfico de evolução mensal
+    - **Endpoints**:
+      - GET `/api/liga-assessorias/stats`
+      - GET `/api/liga-assessorias/ranking?tipo=nacional`
+      - GET `/api/liga-assessorias/assessoria/{nome}`
+      - GET `/api/liga-assessorias/estados`
+      - GET `/api/liga-assessorias/cidades`
+
+## Próximos Passos - Liga de Assessorias (Fases 2-4)
+**Fase 2 - Rankings Públicos e Filtros**:
+- Exibir rankings na página pública (3 abas: Mensal, Anual, Histórico)
+- Critérios de desempate completos
+
+**Fase 3 - Página da Assessoria Pública**:
+- Página exclusiva para cada assessoria
+- Botão "Quero treinar com essa assessoria"
+- Selo digital oficial para download
+
+**Fase 4 - Painel do Dono de Assessoria**:
+- Novo role "dono_assessoria"
+- Dashboard exclusivo com métricas da equipe
+- Cadastrar atletas, enviar mensagens, baixar selo
+
+## Backlog Geral
 1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
 2. **P2**: Ranking histórico por ano (filtro por temporada)
 3. **P2**: Ranking Run Inside - Exportação PDF com visual do dashboard
-4. **P2**: Painel de Colaborador para donos de assessorias
-5. Melhorias de performance (cache)
-6. Integração real com Strava API
-7. **Roadmap Run Inside (Futuro)**:
+4. Melhorias de performance (cache)
+5. Integração real com Strava API
+6. **Roadmap Run Inside (Futuro)**:
    - Machine Learning para análise preditiva
    - API pública para marcas consultarem scores
    - Selo digital verificável para influenciadores certificados
