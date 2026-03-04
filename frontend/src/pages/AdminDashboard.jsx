@@ -46,7 +46,6 @@ const menuItems = [
   { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
   { id: 'atletas', label: 'Atletas', icon: Users },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
-  { id: 'graficos', label: 'Gráficos', icon: BarChart3 },
   { id: 'ranking', label: 'Ranking', icon: Trophy },
   { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
   { id: 'instagram', label: 'Ranking Run Inside', icon: Activity },
@@ -69,6 +68,8 @@ const AdminDashboard = () => {
   const [statsEquipes, setStatsEquipes] = useState([]);
   const [statsPovao, setStatsPovao] = useState(null);
   const [statsModalidade, setStatsModalidade] = useState({ profissional: 0, povao: 0 });
+  const [statsEtnia, setStatsEtnia] = useState([]);
+  const [statsEquipesPorEstado, setStatsEquipesPorEstado] = useState([]);
   
   // Modal de visualização de foto do pódio
   const [showFotoModal, setShowFotoModal] = useState(false);
@@ -206,13 +207,15 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes] = await Promise.all([
+      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes, etniaRes, equipesPorEstadoRes] = await Promise.all([
         axios.get(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/estados`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/ranking/povao/stats`)
+        axios.get(`${API}/ranking/povao/stats`),
+        axios.get(`${API}/admin/stats/etnia`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/stats/equipes-por-estado`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
       setStats(statsRes.data);
@@ -221,6 +224,8 @@ const AdminDashboard = () => {
       setStatsFaixa(faixaRes.data);
       setCorridasPorMes(corridasRes.data);
       setStatsPovao(povaoRes.data);
+      setStatsEtnia(etniaRes.data);
+      setStatsEquipesPorEstado(equipesPorEstadoRes.data);
       
       // Calcular estatísticas de equipes a partir dos atletas
       const atletasRes = await axios.get(`${API}/admin/atletas`, { headers: { Authorization: `Bearer ${token}` } });
@@ -1220,6 +1225,117 @@ const AdminDashboard = () => {
                     )}
                   </CardContent>
                 </Card>
+
+                {/* Novos Gráficos - Linha 3: Faixa Etária e Etnia */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Distribuição por Faixa Etária */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Users className="w-5 h-5 text-cyan-500" />
+                        Distribuição por Faixa Etária
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={statsFaixa}>
+                            <defs>
+                              <linearGradient id="colorFaixa" x1="0" y1="0" x2="0" y2="1">
+                                <stop offset="0%" stopColor="#06B6D4" stopOpacity={1}/>
+                                <stop offset="100%" stopColor="#0891B2" stopOpacity={1}/>
+                              </linearGradient>
+                            </defs>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                            <XAxis 
+                              dataKey="faixa" 
+                              stroke="#9CA3AF" 
+                              fontSize={10} 
+                              angle={-20} 
+                              textAnchor="end"
+                              height={60}
+                            />
+                            <YAxis stroke="#9CA3AF" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Bar dataKey="total" fill="url(#colorFaixa)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Distribuição por Etnia */}
+                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                    <CardHeader>
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                        <Users className="w-5 h-5 text-amber-500" />
+                        Distribuição por Etnia
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="h-[280px]">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <RechartsPie>
+                            <Pie
+                              data={statsEtnia.map(e => ({ name: e.etnia, value: e.total, color: e.cor }))}
+                              cx="50%"
+                              cy="50%"
+                              innerRadius={50}
+                              outerRadius={90}
+                              paddingAngle={3}
+                              dataKey="value"
+                              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
+                            >
+                              {statsEtnia.map((entry, index) => (
+                                <Cell key={`cell-etnia-${index}`} fill={entry.cor} />
+                              ))}
+                            </Pie>
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                            <Legend />
+                          </RechartsPie>
+                        </ResponsiveContainer>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Equipes/Assessorias por Estado */}
+                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+                  <CardHeader>
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
+                      <Database className="w-5 h-5 text-indigo-500" />
+                      Quantidade de Equipes/Assessorias por Estado
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="h-[350px]">
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={statsEquipesPorEstado} layout="vertical">
+                          <defs>
+                            <linearGradient id="colorEquipesEstado" x1="0" y1="0" x2="1" y2="0">
+                              <stop offset="0%" stopColor="#6366F1" stopOpacity={1}/>
+                              <stop offset="100%" stopColor="#8B5CF6" stopOpacity={1}/>
+                            </linearGradient>
+                          </defs>
+                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
+                          <XAxis type="number" stroke="#9CA3AF" />
+                          <YAxis 
+                            dataKey="estado" 
+                            type="category" 
+                            stroke="#9CA3AF" 
+                            width={50}
+                            tick={{ fontSize: 12 }}
+                          />
+                          <Tooltip 
+                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} 
+                            formatter={(value) => [`${value} equipes`, 'Total']}
+                          />
+                          <Bar dataKey="total" fill="url(#colorEquipesEstado)" radius={[0, 4, 4, 0]} />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    </div>
+                  </CardContent>
+                </Card>
               </>
             )}
           </div>
@@ -1767,65 +1883,6 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
-          </div>
-        )}
-
-        {/* Gráficos View */}
-        {activeMenu === 'graficos' && (
-          <div className="space-y-6">
-            {loadingStats ? (
-              <div className="text-center py-12">Carregando...</div>
-            ) : (
-              <>
-                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-emerald-500" />
-                      Distribuição por Categoria e Gênero
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[400px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={prepareCategoriasData()}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis dataKey="name" stroke="#9CA3AF" />
-                          <YAxis stroke="#9CA3AF" />
-                          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                          <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                            {prepareCategoriasData().map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <PieChart className="w-5 h-5 text-emerald-500" />
-                      Distribuição por Faixa Etária
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={statsFaixa}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis dataKey="faixa" stroke="#9CA3AF" />
-                          <YAxis stroke="#9CA3AF" />
-                          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                          <Bar dataKey="total" fill="#8B5CF6" radius={[4, 4, 0, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
           </div>
         )}
 

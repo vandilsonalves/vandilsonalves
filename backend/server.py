@@ -846,7 +846,62 @@ async def get_corridas_por_mes(admin: dict = Depends(get_admin_user)):
     return [{"mes": r["_id"], "total": r["count"]} for r in result]
 
 
-# ==================== ADMIN - GERENCIAMENTO DE ATLETAS ====================
+@api_router.get("/admin/stats/etnia")
+async def get_stats_etnia(admin: dict = Depends(get_admin_user)):
+    """Distribuição por etnia"""
+    pipeline = [
+        {"$match": {"role": "atleta"}},
+        {"$group": {"_id": "$etnia", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    
+    # Mapear cores para cada etnia
+    cores = {
+        "Branco": "#3B82F6",
+        "Pardo": "#F59E0B", 
+        "Negro": "#10B981",
+        "Amarelo": "#EF4444",
+        "Indígena": "#8B5CF6",
+        "": "#94A3B8"  # Não informado
+    }
+    
+    return [
+        {
+            "etnia": r["_id"] if r["_id"] else "Não Informado",
+            "total": r["count"],
+            "cor": cores.get(r["_id"], "#94A3B8")
+        } 
+        for r in result if r["count"] > 0
+    ]
+
+
+@api_router.get("/admin/stats/equipes-por-estado")
+async def get_stats_equipes_por_estado(admin: dict = Depends(get_admin_user)):
+    """Quantidade de Equipes/Assessorias por Estado"""
+    pipeline = [
+        {"$match": {"role": "atleta", "equipe": {"$ne": "", "$exists": True}}},
+        {"$group": {
+            "_id": {
+                "estado": "$estado",
+                "equipe": "$equipe"
+            }
+        }},
+        {"$group": {
+            "_id": "$_id.estado",
+            "total_equipes": {"$sum": 1}
+        }},
+        {"$sort": {"total_equipes": -1}},
+        {"$limit": 15}
+    ]
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    return [
+        {
+            "estado": r["_id"] if r["_id"] else "N/I",
+            "total": r["total_equipes"]
+        }
+        for r in result if r["_id"]
+    ]
 
 @api_router.get("/admin/atletas")
 async def get_all_atletas(
