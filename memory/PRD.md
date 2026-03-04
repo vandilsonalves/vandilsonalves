@@ -227,20 +227,33 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 ---
 
+## Novas Funcionalidades (04/03/2026)
+33. ✅ **Melhorias no Formulário de Cadastro**:
+    - **Cidade dependente do Estado**: Campo cidade desabilitado até selecionar UF, depois preenchido com cidades via API IBGE
+    - **Equipe/Assessoria com autocomplete**: Dropdown com busca, sugestão de equipes existentes e opção "Sem equipe"
+    - **Dropdown de Etnia**: 6 opções (Branco, Negro, Pardo, Indígena, Amarelo, Mulato)
+
+34. ✅ **Alterar Senha no Perfil do Atleta**:
+    - Seção expansível no perfil do atleta
+    - Campos: senha atual, nova senha, confirmação
+    - Validações: senha atual correta, mínimo 6 caracteres, confirmação idêntica
+    - Endpoint: POST `/api/atletas/alterar-senha`
+
 ## Próximos Passos (Backlog)
 1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
 2. **P2**: Ranking histórico por ano (filtro por temporada)
 3. **P2**: Ranking Run Inside - Exportação PDF com visual do dashboard
-4. Melhorias de performance (cache)
-5. Integração real com Strava API
-6. **Roadmap Run Inside (Futuro)**:
+4. **P2**: Painel de Colaborador para donos de assessorias
+5. Melhorias de performance (cache)
+6. Integração real com Strava API
+7. **Roadmap Run Inside (Futuro)**:
    - Machine Learning para análise preditiva
    - API pública para marcas consultarem scores
    - Selo digital verificável para influenciadores certificados
 
 ---
 
-Última atualização: 03/03/2026
+Última atualização: 04/03/2026
 1. ✅ Botão "Exportar Dados" na aba Atletas - funcional com download de Excel
 2. ✅ Mensagem "Ação Concluída" em todas as alterações (toast.success)
 3. ✅ Upload de foto de perfil do atleta - corrigido com timestamp para forçar reload
