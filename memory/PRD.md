@@ -266,22 +266,32 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - **Modal de confirmação**: Ao clicar em promover, abre modal com detalhes e confirmação
     - **Endpoint de promoção**: POST `/api/admin/atletas/{id}/promover-dono-assessoria`
 
-## Próximos Passos - Liga de Assessorias (Fases 2-4)
-**Fase 2 - Rankings Públicos e Filtros**:
-- Exibir rankings na página pública (3 abas: Mensal, Anual, Histórico)
-- Critérios de desempate completos
+37. ✅ **Liga Nacional de Assessorias - Bloco B (Fases 2, 3, 4)**:
+    - **Fase 2 - Rankings por Período**:
+      - 3 abas visuais: Mensal, Anual, Histórico
+      - Critérios de desempate oficiais: 1º lugares → atletas → resultados → data cadastro
+    - **Fase 3 - Página Pública da Assessoria** (`/assessoria/{nome}`):
+      - Stats: posição, atletas, resultados, pontos
+      - Conquistas: primeiros lugares, pódios
+      - Lista de atletas com avatares (clicável para perfil)
+      - Selo Digital Oficial com botão "Baixar Selo Oficial"
+      - Botão "Quero Treinar com Essa Assessoria"
+    - **Fase 4 - Painel do Dono de Assessoria** (`/minha-assessoria`):
+      - Dashboard exclusivo com métricas da equipe
+      - Rankings: Nacional, Estadual, Mensal, Anual
+      - Lista de atletas com exportação CSV
+      - Sistema de mensagens para atletas
+      - Download de selo oficial
+      - Botão "Minha Assessoria" no header (usuários com role dono_assessoria)
 
-**Fase 3 - Página da Assessoria Pública**:
-- Página exclusiva para cada assessoria
-- Botão "Quero treinar com essa assessoria"
-- Selo digital oficial para download
+38. ✅ **Dados de Teste Atualizados**:
+    - 160 atletas criados (12 assessorias)
+    - Profissional/Amador: 20 M, 20 F, 20 PCD-M, 20 PCD-F, 20 Cad-M, 20 Cad-F
+    - Povão: 20 M, 20 F
+    - 515 corridas de teste geradas
+    - Todos os atletas com dados completos (bio, Facebook, Instagram)
 
-**Fase 4 - Painel do Dono de Assessoria**:
-- Novo role "dono_assessoria"
-- Dashboard exclusivo com métricas da equipe
-- Cadastrar atletas, enviar mensagens, baixar selo
-
-## Backlog Geral
+## Próximos Passos (Backlog)
 1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
 2. **P2**: Ranking histórico por ano (filtro por temporada)
 3. **P2**: Ranking Run Inside - Exportação PDF com visual do dashboard
