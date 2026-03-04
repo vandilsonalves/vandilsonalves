@@ -3988,9 +3988,7 @@ async def exportar_analise_csv(analysis_id: str, admin: dict = Depends(get_admin
     )
 
 
-# ==================== INCLUDE ROUTER ====================
-
-app.include_router(api_router)
+# ==================== INCLUDE ROUTER (movido para o final) ====================
 
 app.add_middleware(
     CORSMiddleware,
@@ -4082,6 +4080,350 @@ async def enviar_mensagens_aniversario_automatico():
     except Exception as e:
         logger.error(f"❌ Erro no envio automático de aniversários: {str(e)}")
 
+
+
+# ============================================================
+# LIGA NACIONAL DE ASSESSORIAS - RANKING OFICIAL ROE-RR
+# ============================================================
+
+@api_router.get("/liga-assessorias/ranking")
+async def get_ranking_assessorias(
+    tipo: str = "nacional",  # nacional, estadual, cidade, mensal, anual, historico
+    estado: str = None,
+    cidade: str = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retorna ranking das assessorias baseado no sistema ROE-RR
+    
+    Sistema de Pontuação:
+    - +0,5 por atleta cadastrado e vinculado
+    - +1,0 por resultado aprovado
+    - +0,5 adicional para 2º-5º lugar
+    - +1,0 adicional para 1º lugar
+    """
+    from datetime import datetime
+    
+    agora = datetime.now()
+    ano_atual = agora.year
+    mes_atual = agora.month
+    
+    # Filtro de período baseado no tipo
+    filtro_corridas = {}
+    if tipo == "mensal":
+        # Primeiro dia do mês atual
+        inicio_mes = f"{ano_atual}-{mes_atual:02d}-01"
+        filtro_corridas["data"] = {"$gte": inicio_mes}
+    elif tipo == "anual":
+        inicio_ano = f"{ano_atual}-01-01"
+        filtro_corridas["data"] = {"$gte": inicio_ano}
+    # historico e nacional não têm filtro de data
+    
+    # Buscar todas as equipes distintas com atletas
+    pipeline_equipes = [
+        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"], "$exists": True}}},
+        {"$group": {
+            "_id": "$equipe",
+            "estado": {"$first": "$estado"},
+            "cidade": {"$first": "$cidade"},
+            "atletas": {"$push": {
+                "id": "$id",
+                "nome": "$nome",
+                "foto_url": "$foto_url",
+                "estado": "$estado",
+                "cidade": "$cidade"
+            }},
+            "total_atletas": {"$sum": 1}
+        }},
+        {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "", None]}}}
+    ]
+    
+    # Filtro por estado/cidade para rankings estaduais e por cidade
+    if tipo == "estadual" and estado:
+        pipeline_equipes[0]["$match"]["estado"] = estado
+    elif tipo == "cidade" and cidade:
+        pipeline_equipes[0]["$match"]["cidade"] = cidade
+    
+    equipes_raw = await db.usuarios.aggregate(pipeline_equipes).to_list(None)
+    
+    ranking_assessorias = []
+    
+    for equipe in equipes_raw:
+        nome_equipe = equipe["_id"]
+        atletas_ids = [a["id"] for a in equipe["atletas"]]
+        
+        # Pontuação base: 0,5 por atleta cadastrado
+        pontos_cadastro = len(atletas_ids) * 0.5
+        
+        # Buscar corridas dos atletas desta equipe
+        filtro_corridas_equipe = {
+            "usuario_id": {"$in": atletas_ids},
+            **filtro_corridas
+        }
+        
+        corridas = await db.corridas.find(filtro_corridas_equipe, {"_id": 0}).to_list(None)
+        
+        # Calcular pontos por resultados
+        pontos_resultados = 0
+        total_primeiros = 0
+        total_podios = 0  # 2º-5º
+        total_resultados = len(corridas)
+        
+        for corrida in corridas:
+            # +1 ponto por resultado aprovado
+            pontos_resultados += 1.0
+            
+            colocacao = corrida.get("colocacao", 0)
+            modalidade = corrida.get("modalidade", "profissional_amador")
+            
+            # Bônus apenas para profissional/amador
+            if modalidade == "profissional_amador" and colocacao > 0:
+                if colocacao == 1:
+                    # +1 adicional para 1º lugar
+                    pontos_resultados += 1.0
+                    total_primeiros += 1
+                elif 2 <= colocacao <= 5:
+                    # +0,5 adicional para 2º-5º lugar
+                    pontos_resultados += 0.5
+                    total_podios += 1
+        
+        pontos_total = pontos_cadastro + pontos_resultados
+        
+        ranking_assessorias.append({
+            "nome": nome_equipe,
+            "estado": equipe.get("estado", ""),
+            "cidade": equipe.get("cidade", ""),
+            "total_atletas": equipe["total_atletas"],
+            "pontos_cadastro": pontos_cadastro,
+            "pontos_resultados": pontos_resultados,
+            "pontos_total": round(pontos_total, 1),
+            "total_resultados": total_resultados,
+            "total_primeiros": total_primeiros,
+            "total_podios": total_podios,
+            "atletas": equipe["atletas"][:10]  # Limitar a 10 atletas na listagem
+        })
+    
+    # Ordenar por pontos_total (desc), depois por critérios de desempate
+    ranking_assessorias.sort(key=lambda x: (
+        -x["pontos_total"],
+        -x["total_primeiros"],
+        -x["total_atletas"],
+        -x["total_resultados"]
+    ))
+    
+    # Adicionar posição
+    for idx, equipe in enumerate(ranking_assessorias):
+        equipe["posicao"] = idx + 1
+        
+        # Determinar selo
+        if tipo in ["nacional", "historico", "anual"]:
+            if idx < 20:
+                equipe["selo"] = "ouro"
+            elif idx < 50:
+                equipe["selo"] = "prata"
+            else:
+                equipe["selo"] = "bronze"
+        elif tipo == "estadual":
+            if idx < 10:
+                equipe["selo"] = "prata"
+            else:
+                equipe["selo"] = "bronze"
+        else:
+            equipe["selo"] = "bronze"
+    
+    return {
+        "tipo": tipo,
+        "periodo": {
+            "mensal": f"{agora.strftime('%B %Y')}",
+            "anual": str(ano_atual),
+            "historico": "Todo período",
+            "nacional": "Todo período",
+            "estadual": f"Estado: {estado}" if estado else "Todos",
+            "cidade": f"Cidade: {cidade}" if cidade else "Todas"
+        }.get(tipo, ""),
+        "total_assessorias": len(ranking_assessorias),
+        "ranking": ranking_assessorias
+    }
+
+
+@api_router.get("/liga-assessorias/stats")
+async def get_stats_liga_assessorias(current_user: dict = Depends(get_current_user)):
+    """Retorna estatísticas gerais da Liga de Assessorias"""
+    
+    # Total de assessorias ativas (excluindo "Sem equipe")
+    pipeline_total = [
+        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"], "$exists": True}}},
+        {"$group": {"_id": "$equipe"}},
+        {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "", None]}}},
+        {"$count": "total"}
+    ]
+    result = await db.usuarios.aggregate(pipeline_total).to_list(1)
+    total_assessorias = result[0]["total"] if result else 0
+    
+    # Total de atletas vinculados
+    total_atletas_vinculados = await db.usuarios.count_documents({
+        "role": "atleta",
+        "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"], "$exists": True}
+    })
+    
+    # Total de resultados aprovados
+    total_resultados = await db.corridas.count_documents({})
+    
+    # Distribuição por estado
+    pipeline_estados = [
+        {"$match": {"role": "atleta", "equipe": {"$ne": "", "$exists": True}}},
+        {"$group": {
+            "_id": {"estado": "$estado", "equipe": "$equipe"}
+        }},
+        {"$group": {
+            "_id": "$_id.estado",
+            "total_equipes": {"$sum": 1}
+        }},
+        {"$sort": {"total_equipes": -1}},
+        {"$limit": 10}
+    ]
+    dist_estados = await db.usuarios.aggregate(pipeline_estados).to_list(None)
+    
+    return {
+        "total_assessorias": total_assessorias,
+        "total_atletas_vinculados": total_atletas_vinculados,
+        "total_resultados_aprovados": total_resultados,
+        "distribuicao_estados": [{"estado": e["_id"], "equipes": e["total_equipes"]} for e in dist_estados if e["_id"]]
+    }
+
+
+@api_router.get("/liga-assessorias/assessoria/{nome_equipe}")
+async def get_detalhes_assessoria(nome_equipe: str, current_user: dict = Depends(get_current_user)):
+    """Retorna detalhes completos de uma assessoria específica"""
+    from datetime import datetime
+    import urllib.parse
+    
+    nome_decoded = urllib.parse.unquote(nome_equipe)
+    
+    # Buscar atletas da equipe
+    atletas = await db.usuarios.find(
+        {"role": "atleta", "equipe": nome_decoded},
+        {"_id": 0, "password_hash": 0}
+    ).to_list(None)
+    
+    if not atletas:
+        raise HTTPException(status_code=404, detail="Assessoria não encontrada")
+    
+    atletas_ids = [a["id"] for a in atletas]
+    
+    # Buscar todas as corridas dos atletas
+    corridas = await db.corridas.find(
+        {"usuario_id": {"$in": atletas_ids}},
+        {"_id": 0}
+    ).to_list(None)
+    
+    # Calcular estatísticas
+    pontos_cadastro = len(atletas) * 0.5
+    pontos_resultados = 0
+    total_primeiros = 0
+    total_podios = 0
+    
+    # Evolução mensal (últimos 6 meses)
+    from collections import defaultdict
+    evolucao_mensal = defaultdict(lambda: {"resultados": 0, "pontos": 0})
+    
+    for corrida in corridas:
+        pontos_resultados += 1.0
+        colocacao = corrida.get("colocacao", 0)
+        modalidade = corrida.get("modalidade", "profissional_amador")
+        
+        if modalidade == "profissional_amador" and colocacao > 0:
+            if colocacao == 1:
+                pontos_resultados += 1.0
+                total_primeiros += 1
+            elif 2 <= colocacao <= 5:
+                pontos_resultados += 0.5
+                total_podios += 1
+        
+        # Agrupar por mês
+        mes = corrida.get("data", "")[:7]  # YYYY-MM
+        if mes:
+            evolucao_mensal[mes]["resultados"] += 1
+            evolucao_mensal[mes]["pontos"] += corrida.get("pontos", 0) + corrida.get("pontos_povao", 0)
+    
+    # Ordenar evolução
+    evolucao_sorted = sorted(evolucao_mensal.items(), key=lambda x: x[0])[-6:]
+    
+    # Determinar ranking atual (simplificado)
+    ranking_data = await get_ranking_assessorias(tipo="nacional", current_user=current_user)
+    posicao_atual = next(
+        (e["posicao"] for e in ranking_data["ranking"] if e["nome"] == nome_decoded),
+        None
+    )
+    
+    # Determinar selo
+    selo = "bronze"
+    if posicao_atual:
+        if posicao_atual <= 20:
+            selo = "ouro"
+        elif posicao_atual <= 50:
+            selo = "prata"
+    
+    return {
+        "nome": nome_decoded,
+        "estado": atletas[0].get("estado", "") if atletas else "",
+        "cidade": atletas[0].get("cidade", "") if atletas else "",
+        "total_atletas": len(atletas),
+        "pontos_cadastro": pontos_cadastro,
+        "pontos_resultados": round(pontos_resultados, 1),
+        "pontos_total": round(pontos_cadastro + pontos_resultados, 1),
+        "total_resultados": len(corridas),
+        "total_primeiros": total_primeiros,
+        "total_podios": total_podios,
+        "posicao_nacional": posicao_atual,
+        "selo": selo,
+        "atletas": [{
+            "id": a["id"],
+            "nome": a["nome"],
+            "foto_url": a.get("foto_url", ""),
+            "categoria": a.get("categoria", ""),
+            "genero": a.get("genero", ""),
+            "pontos": a.get("pontos_carreira", 0)
+        } for a in atletas],
+        "evolucao_mensal": [
+            {"mes": m, "resultados": d["resultados"], "pontos": d["pontos"]}
+            for m, d in evolucao_sorted
+        ]
+    }
+
+
+@api_router.get("/liga-assessorias/estados")
+async def get_estados_com_assessorias():
+    """Lista estados que têm assessorias cadastradas"""
+    pipeline = [
+        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None], "$exists": True}}},
+        {"$group": {"_id": "$estado"}},
+        {"$match": {"_id": {"$nin": [None, ""]}}},
+        {"$sort": {"_id": 1}}
+    ]
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    return [e["_id"] for e in result]
+
+
+@api_router.get("/liga-assessorias/cidades")
+async def get_cidades_com_assessorias(estado: str = None):
+    """Lista cidades que têm assessorias cadastradas"""
+    match_filter = {"role": "atleta", "equipe": {"$nin": ["", None], "$exists": True}}
+    if estado:
+        match_filter["estado"] = estado
+    
+    pipeline = [
+        {"$match": match_filter},
+        {"$group": {"_id": "$cidade"}},
+        {"$match": {"_id": {"$nin": [None, ""]}}},
+        {"$sort": {"_id": 1}}
+    ]
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    return [c["_id"] for c in result]
+
+
+# ==================== INCLUDE ROUTER ====================
+app.include_router(api_router)
 
 
 @app.on_event("startup")

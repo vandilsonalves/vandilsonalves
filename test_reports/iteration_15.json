@@ -1,0 +1,115 @@
+{
+  "summary": "Iteration 15: Tested Liga Nacional de Assessorias Ranking Run (Phase 1) - ROE-RR System. All 21 backend tests passed (100%). All 10 frontend UI checks passed (100%). Feature fully implemented and working.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Admin Dashboard - Liga Assessorias",
+        "issues": ["Pre-existing HTML hydration warning: <tr> inside <span> - doesn't affect functionality (same as RankingPage)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_liga_assessorias.py",
+    "/app/test_reports/pytest/pytest_liga_assessorias.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_liga_assessorias.py"
+  ],
+  "success_rate": {
+    "backend": "100% (21/21 tests passed)",
+    "frontend": "100% (10/10 UI checks passed)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "No new seed data created - used existing 22 assessorias, 99 atletas, 959 resultados",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Liga Nacional de Assessorias (Phase 1) fully tested. All requested features working: menu item, stats cards, pontuação system, ranking table with selos, modal with details and evolution chart.",
+  "verified_features": {
+    "menu_assessorias_equipes": {
+      "description": "Nova aba 'Assessorias/Equipes' no menu lateral do Admin",
+      "status": "WORKING",
+      "data_testid": "menu-assessorias"
+    },
+    "stats_cards": {
+      "description": "Cards de estatísticas: Total Assessorias (22), Atletas Vinculados (99), Resultados Aprovados (959), Estados Ativos (10)",
+      "status": "WORKING",
+      "endpoint": "GET /api/liga-assessorias/stats"
+    },
+    "sistema_pontuacao": {
+      "description": "Sistema de pontuação explicado na interface: +0,5 atleta, +1,0 resultado, +0,5 2º-5º, +1,0 1º",
+      "status": "WORKING"
+    },
+    "filtro_tipo_ranking": {
+      "description": "Filtro de Tipo de Ranking: Nacional, Estadual, Cidade, Mensal, Anual, Histórico",
+      "status": "WORKING",
+      "endpoint": "GET /api/liga-assessorias/ranking?tipo=nacional"
+    },
+    "tabela_ranking": {
+      "description": "Tabela com colunas: Posição, Selo, Assessoria, UF, Cidade, Atletas, 1º lugares, Resultados, Pontos, Ações",
+      "status": "WORKING"
+    },
+    "selos_posicao": {
+      "description": "Selos OURO (1-20), PRATA (21-50), BRONZE (51+) baseados na posição",
+      "status": "WORKING"
+    },
+    "modal_detalhes": {
+      "description": "Modal de detalhes ao clicar em uma assessoria com estatísticas, atletas e gráfico",
+      "status": "WORKING",
+      "endpoint": "GET /api/liga-assessorias/assessoria/{nome}"
+    },
+    "grafico_evolucao": {
+      "description": "Gráfico de evolução mensal no modal (últimos 6 meses)",
+      "status": "WORKING"
+    }
+  },
+  "backend_api_tests": {
+    "test_get_liga_stats_returns_200": "PASS - Returns stats with total_assessorias, total_atletas_vinculados",
+    "test_liga_stats_has_valid_values": "PASS - Values are valid integers",
+    "test_liga_stats_distribuicao_estados": "PASS - Returns state distribution",
+    "test_get_ranking_nacional_returns_200": "PASS - Returns ranking with tipo=nacional",
+    "test_ranking_structure_has_required_fields": "PASS - All required fields present",
+    "test_ranking_selo_values": "PASS - Selos are ouro/prata/bronze based on position",
+    "test_ranking_estadual_filter": "PASS - Filters by state correctly",
+    "test_ranking_mensal": "PASS - Returns monthly ranking",
+    "test_ranking_anual": "PASS - Returns annual ranking",
+    "test_ranking_historico": "PASS - Returns historical ranking",
+    "test_ranking_ordering_by_points": "PASS - Ordered by points descending",
+    "test_get_assessoria_details_returns_200": "PASS - Returns assessoria details",
+    "test_assessoria_details_structure": "PASS - All required fields present",
+    "test_assessoria_evolucao_mensal": "PASS - Returns evolution data",
+    "test_assessoria_not_found_returns_404": "PASS - 404 for non-existent",
+    "test_get_estados_returns_list": "PASS - Returns list of 13 states",
+    "test_get_cidades_returns_list": "PASS - Returns list of cities",
+    "test_get_cidades_filtered_by_estado": "PASS - Filters cities by state",
+    "test_points_calculation_consistency": "PASS - Points = 0.5*atletas + resultados + bonus",
+    "test_ranking_requires_auth": "PASS - Returns 401/403 without auth",
+    "test_stats_requires_auth": "PASS - Returns 401/403 without auth"
+  },
+  "frontend_ui_tests": {
+    "liga_nacional_title": "PASS - 'Liga Nacional de Assessorias Ranking Run' visible",
+    "roe_rr_classification": "PASS - 'Classificação Oficial ROE-RR' badge visible",
+    "total_assessorias_card": "PASS - Shows 22 assessorias",
+    "atletas_vinculados_card": "PASS - Shows 99 atletas",
+    "resultados_aprovados_card": "PASS - Shows 959 resultados",
+    "estados_ativos_card": "PASS - Shows 10 estados",
+    "sistema_pontuacao": "PASS - Pontuação rules displayed",
+    "ranking_table": "PASS - Table with ranking data visible",
+    "tipo_ranking_filter": "PASS - Filter dropdown available",
+    "modal_with_details": "PASS - Modal opens with assessoria details and evolution chart"
+  },
+  "top_3_assessorias": [
+    {"posicao": 1, "nome": "Campinas Running", "pontos": 166.5, "atletas": 10, "primeiros": 21},
+    {"posicao": 2, "nome": "Run Fast", "pontos": 151.5, "atletas": 9, "primeiros": 26},
+    {"posicao": 3, "nome": "Corredores SP", "pontos": 134.5, "atletas": 7, "primeiros": 17}
+  ]
+}
