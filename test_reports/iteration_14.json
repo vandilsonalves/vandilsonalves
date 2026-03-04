@@ -1,0 +1,104 @@
+{
+  "summary": "Iteration 14: Tested Cadastro improvements (Estado->Cidade, Equipe autocomplete, Etnia dropdown) and Password Change feature. Fixed 2 bugs: (1) hash_password -> get_password_hash in server.py line 422, (2) API prefix missing in CadastroPage.js. All 9 backend tests passed (100%). Frontend UI verified - all features working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable component",
+        "issues": ["Pre-existing HTML hydration warning: <tr> inside <span> - doesn't affect functionality"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_cadastro_senha.py",
+    "/app/test_reports/pytest/pytest_cadastro_senha.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "bugs_fixed": [
+    {
+      "file": "/app/backend/server.py",
+      "line": 422,
+      "issue": "Used undefined function 'hash_password' instead of imported 'get_password_hash'",
+      "fix": "Changed hash_password(nova_senha) to get_password_hash(nova_senha)"
+    },
+    {
+      "file": "/app/frontend/src/pages/CadastroPage.js",
+      "line": 13,
+      "issue": "API variable missing /api prefix, causing 404 for /ranking/equipes",
+      "fix": "Changed const API = process.env.REACT_APP_BACKEND_URL to const API = `${process.env.REACT_APP_BACKEND_URL}/api`"
+    }
+  ],
+  "updated_files": [
+    "/app/backend/server.py",
+    "/app/frontend/src/pages/CadastroPage.js",
+    "/app/frontend/src/pages/PerfilAtletaPage.jsx",
+    "/app/backend/tests/test_cadastro_senha.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (All UI flows verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"},
+    "atleta": {"email": "leonardocarvalhofilho_normal_1@email.com", "password": "atleta123"}
+  },
+  "seed_data_creation": "No new seed data created",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Cadastro and Password Change features fully tested in Iteration 14. All requested features working correctly. IBGE API integration for cities is EXTERNAL (real API). Password tests include change-and-revert to maintain test data integrity.",
+  "verified_features": {
+    "cadastro_estado_cidade": {
+      "description": "Cidade field disabled until UF selected, then populated with IBGE cities",
+      "status": "WORKING",
+      "api": "https://servicodados.ibge.gov.br/api/v1/localidades/estados/{UF}/municipios"
+    },
+    "cadastro_equipe_autocomplete": {
+      "description": "Equipe/Assessoria dropdown with autocomplete and 'Sem equipe' option",
+      "status": "WORKING",
+      "endpoint": "GET /api/ranking/equipes"
+    },
+    "cadastro_etnia_dropdown": {
+      "description": "Etnia dropdown with 6 options: Branco, Negro, Pardo, Indígena, Amarelo, Mulato",
+      "status": "WORKING"
+    },
+    "perfil_alterar_senha": {
+      "description": "Expandable section to change password with validation",
+      "status": "WORKING",
+      "endpoint": "POST /api/atletas/alterar-senha",
+      "validations": [
+        "Wrong current password shows error",
+        "Mismatched confirmation rejected",
+        "Password too short rejected",
+        "Successful change allows login with new password"
+      ]
+    }
+  },
+  "backend_api_tests": {
+    "test_get_equipes_returns_list": "PASS - Returns list of equipes",
+    "test_equipes_include_common_teams": "PASS - List not empty",
+    "test_login_success": "PASS - Authenticates with valid credentials",
+    "test_login_invalid_credentials": "PASS - Returns 401 for invalid credentials",
+    "test_password_change_wrong_current": "PASS - Returns 400 with 'incorreta' message",
+    "test_password_change_success_and_revert": "PASS - Changes password, verifies login, reverts",
+    "test_password_change_mismatched_confirmation": "PASS - Returns 400 for mismatch",
+    "test_password_change_too_short": "PASS - Returns 400 for short password",
+    "test_get_meu_perfil": "PASS - Returns athlete profile data"
+  },
+  "frontend_ui_tests": {
+    "cadastro_page_load": "PASS - Page loads correctly",
+    "cidade_disabled_initially": "PASS - Shows 'Selecione o estado primeiro'",
+    "cidade_enabled_after_estado": "PASS - Enabled with IBGE cities (e.g., Adamantina, Adolfo...)",
+    "equipe_autocomplete": "PASS - Shows dropdown on focus with 'Sem equipe' option",
+    "equipe_filter": "PASS - Filters when typing (e.g., 'Run' shows Run Fast, Runners BR...)",
+    "etnia_dropdown": "PASS - Shows all 6 options",
+    "profile_alterar_senha_section": "PASS - Expandable section with Fechar/Expandir toggle",
+    "profile_senha_fields": "PASS - Senha Atual, Nova Senha, Confirmar Nova Senha visible",
+    "profile_wrong_password_error": "PASS - Toast shows 'Erro - Senha atual incorreta'"
+  }
+}

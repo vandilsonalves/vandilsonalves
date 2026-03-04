@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Save, User, Mail, MapPin, Users, Trophy, 
   Facebook, Instagram, Phone, FileText, Camera, Check, Loader2,
-  Share2, Award, ExternalLink, Download, Calendar
+  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -81,8 +81,17 @@ const PerfilAtletaPage = () => {
   const [bio, setBio] = useState('');
   const [etnia, setEtnia] = useState('');
   const [apelido, setApelido] = useState('');
+  
+  // Estados para alteração de senha
+  const [showAlterarSenha, setShowAlterarSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [novaSenha, setNovaSenha] = useState('');
+  const [confirmarSenha, setConfirmarSenha] = useState('');
+  const [savingSenha, setSavingSenha] = useState(false);
+  const [showSenhaAtual, setShowSenhaAtual] = useState(false);
+  const [showNovaSenha, setShowNovaSenha] = useState(false);
 
-  const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo'];
+  const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo', 'Mulato'];
 
   useEffect(() => {
     if (!user || !token) {
@@ -181,6 +190,57 @@ const PerfilAtletaPage = () => {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao salvar alterações' });
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleAlterarSenha = async () => {
+    if (!senhaAtual || !novaSenha || !confirmarSenha) {
+      setError('Preencha todos os campos de senha');
+      toast.error('Erro', { description: 'Preencha todos os campos de senha' });
+      return;
+    }
+    
+    if (novaSenha !== confirmarSenha) {
+      setError('A nova senha e confirmação não conferem');
+      toast.error('Erro', { description: 'A nova senha e confirmação não conferem' });
+      return;
+    }
+    
+    if (novaSenha.length < 6) {
+      setError('A nova senha deve ter pelo menos 6 caracteres');
+      toast.error('Erro', { description: 'A nova senha deve ter pelo menos 6 caracteres' });
+      return;
+    }
+    
+    setSavingSenha(true);
+    setError('');
+    
+    try {
+      await axios.post(`${API}/atletas/alterar-senha`, {
+        senha_atual: senhaAtual,
+        nova_senha: novaSenha,
+        confirmar_senha: confirmarSenha
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      setSuccess('Ação Concluída - Senha alterada com sucesso!');
+      toast.success('Ação Concluída', { description: 'Senha alterada com sucesso!' });
+      
+      // Limpar campos
+      setSenhaAtual('');
+      setNovaSenha('');
+      setConfirmarSenha('');
+      setShowAlterarSenha(false);
+      
+      setTimeout(() => setSuccess(''), 3000);
+    } catch (error) {
+      console.error('Erro ao alterar senha:', error);
+      const msg = error.response?.data?.detail || 'Erro ao alterar senha';
+      setError(msg);
+      toast.error('Erro', { description: msg });
+    } finally {
+      setSavingSenha(false);
     }
   };
 
@@ -710,6 +770,100 @@ const PerfilAtletaPage = () => {
                   className="bg-slate-900 border-slate-600 text-white"
                   data-testid="input-apelido"
                 />
+              </div>
+
+              {/* Seção Alterar Senha */}
+              <div className="pt-4 border-t border-slate-700">
+                <div 
+                  className="flex items-center justify-between cursor-pointer"
+                  onClick={() => setShowAlterarSenha(!showAlterarSenha)}
+                  data-testid="toggle-alterar-senha"
+                >
+                  <Label className="text-slate-300 flex items-center gap-2 cursor-pointer">
+                    <Lock className="w-4 h-4" />
+                    Alterar Senha
+                  </Label>
+                  <span className="text-xs text-slate-500">
+                    {showAlterarSenha ? 'Fechar ▲' : 'Expandir ▼'}
+                  </span>
+                </div>
+                
+                {showAlterarSenha && (
+                  <div className="mt-4 space-y-4 p-4 bg-slate-900/50 rounded-lg">
+                    <div className="space-y-2">
+                      <Label className="text-slate-400 text-sm">Senha Atual</Label>
+                      <div className="relative">
+                        <Input
+                          type={showSenhaAtual ? "text" : "password"}
+                          value={senhaAtual}
+                          onChange={(e) => setSenhaAtual(e.target.value)}
+                          placeholder="Digite sua senha atual"
+                          className="bg-slate-900 border-slate-600 text-white pr-10"
+                          data-testid="input-senha-atual"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowSenhaAtual(!showSenhaAtual)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          {showSenhaAtual ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-slate-400 text-sm">Nova Senha</Label>
+                      <div className="relative">
+                        <Input
+                          type={showNovaSenha ? "text" : "password"}
+                          value={novaSenha}
+                          onChange={(e) => setNovaSenha(e.target.value)}
+                          placeholder="Mínimo 6 caracteres"
+                          className="bg-slate-900 border-slate-600 text-white pr-10"
+                          data-testid="input-nova-senha"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowNovaSenha(!showNovaSenha)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                        >
+                          {showNovaSenha ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label className="text-slate-400 text-sm">Confirmar Nova Senha</Label>
+                      <Input
+                        type="password"
+                        value={confirmarSenha}
+                        onChange={(e) => setConfirmarSenha(e.target.value)}
+                        placeholder="Repita a nova senha"
+                        className="bg-slate-900 border-slate-600 text-white"
+                        data-testid="input-confirmar-senha"
+                      />
+                    </div>
+                    
+                    <Button
+                      onClick={handleAlterarSenha}
+                      disabled={savingSenha}
+                      className="w-full bg-amber-600 hover:bg-amber-500"
+                      data-testid="btn-alterar-senha"
+                    >
+                      {savingSenha ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Alterando...
+                        </>
+                      ) : (
+                        <>
+                          <Lock className="w-4 h-4 mr-2" />
+                          Alterar Senha
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                )}
               </div>
 
               {/* Botão Salvar */}

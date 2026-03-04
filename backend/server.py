@@ -392,6 +392,44 @@ async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get
     
     return {"message": "Perfil atualizado com sucesso!"}
 
+
+@api_router.post("/atletas/alterar-senha")
+async def alterar_senha_atleta(dados: dict, current_user: dict = Depends(get_current_user)):
+    """Altera a senha do atleta logado"""
+    senha_atual = dados.get("senha_atual", "")
+    nova_senha = dados.get("nova_senha", "")
+    confirmar_senha = dados.get("confirmar_senha", "")
+    
+    if not senha_atual or not nova_senha or not confirmar_senha:
+        raise HTTPException(status_code=400, detail="Todos os campos são obrigatórios")
+    
+    if nova_senha != confirmar_senha:
+        raise HTTPException(status_code=400, detail="A nova senha e confirmação não conferem")
+    
+    if len(nova_senha) < 6:
+        raise HTTPException(status_code=400, detail="A nova senha deve ter pelo menos 6 caracteres")
+    
+    # Buscar usuário com hash da senha
+    usuario = await db.usuarios.find_one({"id": current_user["id"]})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Verificar senha atual
+    if not verify_password(senha_atual, usuario.get("password_hash", "")):
+        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+    
+    # Gerar novo hash
+    novo_hash = get_password_hash(nova_senha)
+    
+    # Atualizar no banco
+    await db.usuarios.update_one(
+        {"id": current_user["id"]},
+        {"$set": {"password_hash": novo_hash}}
+    )
+    
+    return {"message": "Senha alterada com sucesso!"}
+
+
 @api_router.get("/atletas/meu-ranking/export")
 async def export_meu_ranking(current_user: dict = Depends(get_current_user)):
     """Exporta histórico de corridas do atleta logado"""
@@ -2151,7 +2189,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://admin-analytics-52.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://athlete-onboarding-1.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
@@ -2206,14 +2244,15 @@ async def get_faixas_disponiveis():
 
 @api_router.get("/ranking/equipes")
 async def get_equipes_disponiveis():
-    """Lista equipes disponíveis"""
+    """Lista equipes disponíveis (nomes únicos)"""
     pipeline = [
-        {"$match": {"role": "atleta"}},
+        {"$match": {"role": "atleta", "equipe": {"$ne": "", "$exists": True}}},
         {"$group": {"_id": "$equipe"}},
         {"$sort": {"_id": 1}}
     ]
     result = await db.usuarios.aggregate(pipeline).to_list(None)
-    return {"equipes": [e["_id"] for e in result if e["_id"]]}
+    # Retorna array direto para facilitar uso no frontend
+    return [e["_id"] for e in result if e["_id"] and e["_id"].lower() != 'sem equipe']
 
 @api_router.get("/")
 async def root():

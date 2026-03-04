@@ -1,78 +1,75 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou inicialmente a criação de uma nova modalidade de ranking chamada Ranking do Povão – Pace Livre. Após a conclusão, o usuário solicitou uma nova e grande funcionalidade chamada Ranking Run Inside, uma ferramenta de análise de perfis do Instagram para ser integrada ao painel do administrador.
+O usuário solicitou inicialmente a criação de uma nova modalidade de ranking (Ranking do Povão), que foi concluída. Em seguida, solicitou uma grande funcionalidade de análise de perfis do Instagram (Ranking Run Inside), que passou por várias iterações: de um sistema manual para tentativas de automação que falharam devido a chaves de API inválidas e bloqueios, culminando em um sistema híbrido funcional. Depois, o usuário pediu uma refatoração do painel de administração para consolidar todos os gráficos na aba Dashboard e adicionar novos gráficos, o que foi concluído. A solicitação mais recente, atualmente em andamento, é para melhorar o formulário de cadastro e o perfil do atleta com várias funcionalidades de usabilidade e segurança.
 
-**REQUISITOS DO PRODUTO (Ranking Run Inside - Versão Manual Simplificada):**
-1.  **Aba no Admin:** Criar uma nova aba Ranking Run Inside no painel do administrador.
-2.  **Entrada Manual de Dados:** Em vez de usar a API do Instagram, o administrador irá inserir manualmente os dados de um perfil (ex: @username, seguidores, média de curtidas, etc.) através de um formulário.
-3.  **Motor de Cálculo:** Com base nos dados inseridos, o backend calculará um Score de Influência de 0 a 100, usando as fórmulas matemáticas e ponderações fornecidas.
-4.  **Classificação Automática:** O sistema atribuirá um selo ao perfil com base no score final (ex: Elite Platinum, Premium, Alto Risco).
-5.  **Dashboard Visual:** Exibir os resultados em um dashboard com múltiplos gráficos modernos (Radar, Velocímetro/Gauge, Barras, etc.) para cada perfil analisado.
-6.  **Listagem e Gerenciamento:** O administrador poderá ver uma lista de todas as análises salvas, visualizar detalhes e excluí-las.
-7.  **Exportação:** Permitir a exportação dos dados da análise (XLSX, CSV, PDF).
+**PRODUCT REQUIREMENTS:**
+1.  **Melhorias no Cadastro:**
+    *   **Cidade Dependente do Estado:** Ao selecionar um estado (UF), o campo Cidade deve ser habilitado e preenchido com uma lista de cidades correspondentes.
+    *   **Seleção de Equipe/Assessoria:** O campo deve ser um dropdown com autocomplete, sugerindo equipes já cadastradas, mas permitindo que o usuário digite um novo nome ou escolha Sem Equipe.
+    *   **Campo Etnia:** Deve ser um dropdown com as opções: Branco, Negro, Pardo, Indígena, Amarelo, Mulato.
+2.  **Perfil do Atleta:**
+    *   **Mudar Senha:** Adicionar uma seção no perfil do atleta para que ele possa alterar sua própria senha.
+3.  **Planos Futuros (Backlog):**
+    *   **Painel de Colaborador:** Um painel para que donos de assessorias possam gerenciar seus próprios atletas.
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-Uma plataforma de ranking de corrida funcional com duas modalidades distintas e totalmente separadas: Ranking Profissional/Amador (baseado em performance) e Ranking do Povão (baseado em participação). A plataforma possui um painel de administração robusto com funcionalidades para gerenciamento de atletas, aprovação de resultados, gráficos de dashboard e a recém-adicionada funcionalidade de transferência de atletas entre modalidades. A base de dados utilizada é MongoDB.
+Uma plataforma de ranking de corrida totalmente funcional com um backend FastAPI e frontend React. Possui duas modalidades de ranking (Profissional/Amador e Povão), um painel de administração com gerenciamento de usuários, aprovação de resultados e um dashboard consolidado com múltiplos gráficos de análise. A funcionalidade Ranking Run Inside está implementada como um sistema híbrido, onde o backend calcula métricas complexas a partir de dados básicos inseridos pelo administrador. As melhorias no formulário de cadastro e perfil do atleta foram codificadas, mas ainda não foram totalmente testadas.
 
 **Last working item**:
-*   **Last item agent was working:** O agente estava depurando um erro crítico na recém-criada funcionalidade Ranking Run Inside. Todos os novos endpoints de backend () estavam retornando erro 404 (Not Found).
-    *   O agente identificou corretamente a causa raiz: no arquivo , os endpoints da nova funcionalidade foram definidos **após** a linha , fazendo com que não fossem registrados pelo FastAPI.
+*   **Last item agent was working:** O agente estava finalizando a implementação das melhorias solicitadas para o formulário de cadastro e o perfil do atleta. O código para a dependência estado-cidade, o dropdown de equipes, o dropdown de etnia e o formulário de alteração de senha no perfil do atleta já foi adicionado tanto no frontend quanto no backend.
 *   **Status:** **IN PROGRESS**
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** backend testing agent
+*   **Agent Testing Done:** N (Apenas verificação visual do frontend via screenshots foi realizada para a página de cadastro. A funcionalidade de mudança de senha e o fluxo completo não foram testados).
+*   **Which testing method agent to use?** both
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1:** Endpoints da API Ranking Run Inside retornam 404 Not Found (PRIORIDADE: P0 - BLOQUEADOR)
-    *   **Attempted fixes:** O agente iniciou uma operação de  para mover o bloco de código dos endpoints do Instagram para uma posição **antes** da linha  no arquivo . A última ação foi uma tentativa de remover o bloco de código duplicado do final do arquivo.
+*   **Issue 1:** Concluir e testar as melhorias no formulário de cadastro e no perfil do atleta (PRIORIDADE: P0)
+    *   **Attempted fixes:** O agente adicionou o código necessário nos arquivos ,  e . Ele verificou visualmente a página de cadastro com screenshots, confirmando que os novos dropdowns e a lógica de desabilitar o campo de cidade estavam funcionando.
     *   **Next debug checklist:**
-        1.  Verificar se o arquivo  foi corrigido corretamente, garantindo que os endpoints do Ranking Run Inside estão definidos antes de  e que não há código duplicado.
-        2.  Reiniciar o serviço de backend (backend: stopped
-backend: started).
-        3.  Testar os endpoints usando  para confirmar que agora retornam 200 OK (ex: ).
-    *   **Why fix this issue?** Este é um bloqueador completo para a funcionalidade Ranking Run Inside. O frontend não pode interagir com o backend até que os endpoints estejam acessíveis.
+        1.  Acessar a página de **Cadastro** ().
+        2.  Selecionar um estado no campo UF e verificar se o campo Cidade é habilitado e preenchido com a lista correta de cidades.
+        3.  Digitar no campo Equipe/Assessoria e verificar se as equipes existentes são sugeridas.
+        4.  Fazer login como um atleta existente (ex:  / ).
+        5.  Navegar para a página de perfil.
+        6.  Verificar se a seção Alterar Senha está visível.
+        7.  Testar a funcionalidade de alteração de senha (com senha atual correta e incorreta).
+        8.  Fazer logout e tentar fazer login com a nova senha para confirmar a alteração.
+    *   **Why fix this issue?** Para completar a tarefa solicitada pelo usuário, melhorando a usabilidade do cadastro e a segurança da conta do atleta.
     *   **Status:** IN PROGRESS
     *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** backend
+    *   **Should Test frontend/backend/both after fix?** both
     *   **Blocked on other issue:** Não
 
 **In progress Task List**:
-*   **Task 1:** Concluir a implementação da funcionalidade Ranking Run Inside (PRIORITY: P0)
-    *   **Where to resume:** Após corrigir o **Issue 1**, continuar testando o fluxo completo da funcionalidade:
-        1.  Preencher e enviar o formulário de nova análise no frontend.
-        2.  Verificar se a requisição POST para  funciona e se a análise é salva no banco de dados.
-        3.  Confirmar que o dashboard de análise é exibido corretamente com todos os gráficos (Radar, Gauge, etc.) e o Score Final calculado.
-        4.  Testar a exclusão de uma análise.
-        5.  Implementar a funcionalidade de exportação (XLSX, CSV, PDF).
-    *   **What will be achieved with this?** Uma nova ferramenta estratégica para o administrador analisar e certificar influenciadores digitais, conforme solicitado.
+*   **Task 1:** Finalizar e testar as melhorias no cadastro e perfil do atleta (PRIORITY: P0)
+    *   **Where to resume:** A partir da verificação funcional. O agente deve fazer login como atleta para testar a funcionalidade de Alterar Senha no  e, em seguida, testar o fluxo completo de cadastro na .
+    *   **What will be achieved with this?** O formulário de cadastro será mais robusto e à prova de erros, e os usuários terão autonomia para gerenciar suas senhas.
     *   **Status:** IN PROGRESS
     *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on something:** Issue 1
+    *   **Blocked on something:** Nenhum.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
     *   **P1 - Implementação de Notificações por E-mail:** Integrar um serviço (como SendGrid ou Resend) para enviar e-mails aos atletas.
     *   **P2 - Sistema de Ranking Histórico:** Adicionar a capacidade de filtrar o ranking por ano.
-*   **Future Tasks (Roadmap do Ranking Run Inside):**
-    *   Implementar Machine Learning para análise preditiva.
-    *   Criar uma API pública para marcas consultarem os scores.
-    *   Desenvolver um selo digital verificável para influenciadores certificados.
+*   **Future Tasks:**
+    *   **Painel de Colaborador:** Criar um painel para que donos de assessorias possam gerenciar seus atletas.
+    *   **Roadmap Ranking Run Inside:** Implementar Machine Learning, criar API pública e selo digital.
 
 **Completed work in this session**
-- **Implementação Completa do Ranking do Povão:**
-  - Adicionado campo de seleção de modalidade no cadastro.
-  - Lógica de pontuação por distância implementada no backend.
-  - Criada view separada no frontend com estatísticas e tabela de ranking própria.
-  - Adicionados filtros por gênero na página do Ranking do Povão.
-- **Correções Críticas de Bugs:**
-  - **Mistura de Modalidades:** Corrigido bug grave onde atletas do Povão apareciam nos rankings Profissional/Amador (Geral, Semanal, Mensal).
-  - **Visualização de Foto:** Implementado modal para visualizar a foto do pódio em tamanho maior na tela de aprovações do admin.
-- **Melhorias no Dashboard do Admin:**
-  - Adicionados novos gráficos: Distribuição por Modalidade, Estatísticas do Ranking do Povão, e Top 10 Equipes/Assessorias.
-- **Funcionalidade de Transferência de Atletas:**
-  - Implementado endpoint e botão na UI para transferir atletas entre as modalidades Profissional/Amador e Povão.
-  - A transferência recalcula automaticamente os pontos do atleta de acordo com as regras da nova modalidade.
+- **Refatoração do Dashboard do Admin:**
+  - Aba Gráficos foi removida.
+  - Todos os gráficos foram consolidados com sucesso na aba Dashboard.
+  - Adicionados novos gráficos: Distribuição por Faixa Etária, Distribuição por Etnia, e Quantidade de Equipes/Assessorias por Estado.
+- **Evolução do Ranking Run Inside:**
+  - Implementado e testado um sistema híbrido robusto que calcula automaticamente métricas complexas com base em dados de entrada mínimos, após falhas nas tentativas de automação total.
+  - Adicionada uma barra de score visual na página de resultados da análise.
+  - Corrigido o cálculo das notas individuais (Frequência, Crescimento, etc.).
+- **Correção de Bugs Críticos:**
+  - Resolvido erro 404 nos endpoints do Ranking Run Inside.
+  - Corrigido erro de renderização no frontend () ao exibir mensagens de erro.
+  - Corrigido erro nos detalhes da análise () garantindo que a API retornasse os dados necessários para os gráficos.
 
 **Earlier issues found/mentioned but not fixed**
 *   Nenhum.
@@ -84,61 +81,63 @@ backend: started).
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, MongoDB (com ), JWT, .
-*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, .
+*   **Backend:** FastAPI, MongoDB (com ), JWT para autenticação.
+*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui,  para gráficos.
 *   **Arquitetura:** Monorepo com API backend e SPA frontend.
 
 **key DB schema**
-*   **:** Adicionado campo  (ENUM: 'profissional_amador', 'povao_pace_livre').
-*   **:** (Nova) Armazena os dados brutos inseridos manualmente para uma análise de perfil do Instagram.
-*   **:** (Nova) Armazena os scores calculados e a classificação final para uma análise.
+*   **:** O campo  agora suporta mais opções. O campo  é preenchido a partir de uma lista dinâmica. A senha do usuário pode ser atualizada através de um novo endpoint.
 
 **changes in tech stack**
-*   Nenhuma. O agente corretamente manteve o stack existente (MongoDB/FastAPI/React) para a nova funcionalidade, conforme acordado com o usuário (Opção A), apesar da especificação inicial do usuário mencionar PostgreSQL/Next.js.
+*   Nenhuma.
 
 **All files of reference**
-*   : Arquivo principal do backend. Contém os novos endpoints (atualmente quebrados) para o Ranking Run Inside. A correção do bug precisa ser aplicada aqui.
-*   : Contém os novos modelos Pydantic , , etc.
-*   : Contém toda a nova interface para a aba Ranking Run Inside, incluindo o formulário, os estados e a renderização dos gráficos.
+*   : Modificado para adicionar os endpoints , ,  e ajustar o endpoint .
+*   : Fortemente modificado para remover a view de gráficos separada e consolidar todos os componentes de gráfico em um único dashboard.
+*   : Atualizado para incluir a lógica de dependência estado-cidade, autocomplete para equipes e o novo dropdown de etnia.
+*   : Atualizado para adicionar o formulário e a lógica de alteração de senha.
+*   : Link para a antiga página de gráficos foi removido.
 
 **Areas that need refactoring**:
-*   O arquivo  está excessivamente grande. A lógica da funcionalidade Ranking Run Inside (endpoints, motor de cálculo) deve ser extraída para um novo arquivo dedicado, como , e importada como um novo .
+*   O arquivo  continua sendo um grande monolito. A lógica de autenticação, stats, e do Ranking Run Inside poderia ser dividida em s separados para melhor organização.
+*   O arquivo  tornou-se muito extenso. Cada gráfico ou grupo de gráficos poderia ser extraído para seu próprio componente para simplificar a manutenção.
 
 **key api endpoints**
-*    (GET, POST): Para listar e criar novas análises. **(Atualmente quebrado - 404)**
-*    (GET, DELETE): Para obter detalhes e excluir uma análise. **(Atualmente quebrado - 404)**
-*    (GET): Para exportar os dados de uma análise. **(Atualmente quebrado - 404)**
+*    (POST): **Novo.** Permite que um usuário logado altere sua própria senha.
+*    (GET): **Novo.** Fornece dados para o gráfico de distribuição por etnia.
+*    (GET): **Novo.** Fornece dados para o gráfico de equipes por estado.
+*    (GET): **Modificado.** Agora retorna um array simples de strings com os nomes das equipes.
 
 **Critical Info for New Agent**
-*   **Foco Imediato:** Sua primeira tarefa é corrigir o erro 404 nos endpoints do Instagram, conforme detalhado na seção All Pending/In progress Issue list. O arquivo  tem a definição dos endpoints no lugar errado.
-*   **Decisão de Arquitetura:** O usuário forneceu uma especificação técnica complexa para o Ranking Run Inside (com PostgreSQL, Next.js, API do Instagram). No entanto, após uma pergunta de esclarecimento do agente, o usuário escolheu a **Opção A**: um sistema manual simplificado usando o stack tecnológico **existente** (MongoDB, FastAPI, React). Você deve continuar com esta abordagem e não tentar implementar a integração automática com a API do Instagram ou migrar o banco de dados.
+*   **Foco Imediato:** Sua primeira e única tarefa pendente é concluir o teste funcional das melhorias no cadastro e no perfil do atleta. O código já está implementado; agora é necessário validar o comportamento. Comece testando a alteração de senha no perfil do atleta e depois valide o fluxo de cadastro.
+*   **Não Tente Automatizar o Instagram:** O usuário forneceu múltiplas chaves de API que se provaram inválidas. A abordagem atual é um sistema híbrido que funciona. Não tente implementar uma integração com APIs externas (Instagram, Social Blade) a menos que o usuário forneça uma chave válida e testada para um serviço conhecido.
+*   **Backlog:** O usuário já mencionou um painel de colaborador para donos de equipe como uma funcionalidade futura. Mantenha isso no radar para planejamento após a conclusão da tarefa atual.
 
 **documents and test reports created in this job**
 *   
 *   
-*   
-*   
-*    (Atualizado múltiplas vezes)
+*    (Atualizado)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user (msg 305):** Solicitou a criação de uma nova e grande funcionalidade, Ranking Run Inside, para análise de perfis do Instagram, fornecendo um documento de especificação técnica detalhado.
-2.  **agent (msg 307):** Apresentou duas opções de implementação: A) Sistema manual com o stack atual, B) Sistema automático com novo stack e integração de API.
-3.  **user (msg 308):** Escolheu explicitamente a **Opção A - Sistema Manual**.
-4.  **user (msg 250):** Solicitou a funcionalidade de Transferir atletas entre modalidades no painel do admin. **(CONCLUÍDO)**
-5.  **user (msg 161):** Reportou um bug crítico de atletas do Povão aparecendo no ranking Profissional e solicitou filtros para a página do Ranking do Povão. **(CONCLUÍDO)**
-6.  **user (msg 104):** Reportou que a foto do pódio não abria nas aprovações, que o top 10 misturava atletas e pediu mais gráficos no dashboard do admin. **(CONCLUÍDO)**
+1.  **user (msg 420):** Solicitou melhorias no formulário de cadastro (cidade por estado, lista de equipes, opções de etnia) e a adição de uma funcionalidade de mudar senha no perfil do atleta. **(EM ANDAMENTO)**
+2.  **user (msg 361):** Solicitou a remoção da aba Gráficos e a transferência de todos os gráficos para a aba Dashboard, além da criação de novos gráficos. **(CONCLUÍDO)**
+3.  **user (msg 182):** Forneceu feedback detalhado sobre a automação do Ranking Run Inside, rejeitando a abordagem do Social Blade e solicitando que o próprio aplicativo fizesse os cálculos, o que levou à criação do sistema híbrido. **(CONCLUÍDO)**
+4.  **user (msg 248):** Forneceu uma chave RapidAPI e sugeriu a Opção C (Sistema Híbrido), que foi a abordagem implementada. **(CONCLUÍDO)**
+5.  **user (msg 185):** Forneceu uma chave de API que se revelou inválida. **(CONCLUÍDO)**
+6.  **user (msg 94):** Reportou um erro na interface do Ranking Run Inside e solicitou automação da busca de dados. **(CONCLUÍDO)**
 
 **Project Health Check:**
-*   **Working:** Toda a aplicação principal, incluindo os dois sistemas de ranking (Profissional e Povão), painel de admin, transferência de atletas e gráficos do dashboard.
-*   **Broken:** A funcionalidade Ranking Run Inside está completamente inoperante devido ao erro 404 nos endpoints do backend.
-*   **Mocked:** A aplicação continua a operar com dados de teste.
+*   **Working:** Todas as funcionalidades principais, incluindo os dois modos de ranking, o dashboard de admin refatorado e o sistema híbrido Ranking Run Inside.
+*   **Broken:** Nada está quebrado.
+*   **Mocked:** A aplicação continua operando com dados de teste.
+*   **In Progress:** As melhorias na página de cadastro e no perfil do atleta estão codificadas, mas aguardando teste funcional completo.
 
 **3rd Party Integrations**
-*   : Para gerar imagens a partir de HTML no lado do cliente.
-*   : Para agendar tarefas no backend (envio de mensagens de aniversário).
+*   
+*   
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES (usado com sucesso para todas as funcionalidades concluídas).
+*   **Testing agent used after significant changes:** YES (usado com sucesso em funcionalidades anteriores).
 *   **Troubleshoot agent used after agent stuck in loop:** NO
 *   **Test files created:** N/A
 *   **Known regressions:** Nenhum.
@@ -148,4 +147,4 @@ backend: started).
 *   **Atleta de Teste:**  / 
 
 **What agent forgot to execute**
-O agente não esqueceu, mas foi interrompido durante a correção de um bug. Ele estava no meio de uma operação de  para mover o código dos endpoints do Instagram no arquivo . A tarefa precisa ser retomada a partir da verificação e finalização dessa correção.</analysis>
+O agente não esqueceu nada, mas foi interrompido antes de concluir o ciclo de teste da última tarefa. A implementação do código está feita, mas a validação funcional (testar os fluxos de ponta a ponta) ainda precisa ser executada.</analysis>
