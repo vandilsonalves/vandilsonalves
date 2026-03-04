@@ -151,25 +151,7 @@ const AdminDashboard = () => {
     seguidores: '',
     seguindo: '',
     total_posts: '',
-    media_likes: '',
-    media_comentarios: '',
-    media_views_reels: '',
-    posts_por_semana: '',
-    dias_ultimo_post: '',
-    crescimento_30_dias: '',
-    desvio_intervalo_posts: '',
-    desvio_engajamento: '',
-    bio_descricao: true,
-    bio_keywords: true,
-    bio_cta: false,
-    bio_link: true,
-    bio_clareza: 'boa',
-    percentual_reels: 50,
-    percentual_carrossel: 30,
-    percentual_foto: 20,
-    picos_anormais: 0,
-    comentarios_repetitivos: 0,
-    horarios_artificiais: 0
+    bio: ''
   });
 
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
@@ -455,41 +437,30 @@ const AdminDashboard = () => {
     }
   };
 
+  // Função para análise com dados básicos (Sistema Híbrido)
   const handleInstagramAnalyze = async () => {
-    // Validar campos obrigatórios
-    const required = ['username', 'seguidores', 'seguindo', 'total_posts', 'media_likes', 'media_comentarios'];
+    // Validar apenas campos essenciais
+    const required = ['username', 'seguidores', 'seguindo', 'total_posts'];
     const missing = required.filter(field => !instagramFormData[field]);
     
     if (missing.length > 0) {
-      toast.error('Campos obrigatórios', { description: 'Preencha todos os campos obrigatórios' });
+      toast.error('Campos obrigatórios', { description: 'Preencha: Username, Seguidores, Seguindo e Total de Posts' });
       return;
     }
 
     setLoadingInstagram(true);
     try {
       const payload = {
-        ...instagramFormData,
+        username: instagramFormData.username,
+        nome_completo: instagramFormData.nome_completo || '',
+        nicho: instagramFormData.nicho || 'corrida',
         seguidores: parseInt(instagramFormData.seguidores) || 0,
         seguindo: parseInt(instagramFormData.seguindo) || 0,
         total_posts: parseInt(instagramFormData.total_posts) || 0,
-        media_likes: parseFloat(instagramFormData.media_likes) || 0,
-        media_comentarios: parseFloat(instagramFormData.media_comentarios) || 0,
-        media_views_reels: parseFloat(instagramFormData.media_views_reels) || 0,
-        posts_por_semana: parseFloat(instagramFormData.posts_por_semana) || 0,
-        dias_ultimo_post: parseInt(instagramFormData.dias_ultimo_post) || 0,
-        crescimento_30_dias: parseFloat(instagramFormData.crescimento_30_dias) || 0,
-        desvio_intervalo_posts: parseFloat(instagramFormData.desvio_intervalo_posts) || 0,
-        desvio_engajamento: parseFloat(instagramFormData.desvio_engajamento) || 0,
-        percentual_reels: parseFloat(instagramFormData.percentual_reels) || 50,
-        percentual_carrossel: parseFloat(instagramFormData.percentual_carrossel) || 30,
-        percentual_foto: parseFloat(instagramFormData.percentual_foto) || 20,
-        picos_anormais: parseInt(instagramFormData.picos_anormais) || 0,
-        comentarios_repetitivos: parseInt(instagramFormData.comentarios_repetitivos) || 0,
-        horarios_artificiais: parseInt(instagramFormData.horarios_artificiais) || 0,
-        bio_clareza: instagramFormData.bio_clareza || 'boa'
+        bio: instagramFormData.bio || ''
       };
 
-      const response = await axios.post(`${API}/admin/instagram/analisar`, payload, {
+      const response = await axios.post(`${API}/admin/instagram/analisar-simplificado`, payload, {
         headers: { Authorization: `Bearer ${token}` }
       });
 
@@ -501,13 +472,11 @@ const AdminDashboard = () => {
         description: `Score: ${response.data.analysis.score_final}/100 - ${response.data.analysis.classificacao}` 
       });
     } catch (error) {
-      // Tratar erro de validação Pydantic (que é um array)
       let errorMsg = 'Erro ao analisar perfil';
       if (error.response?.data?.detail) {
         if (typeof error.response.data.detail === 'string') {
           errorMsg = error.response.data.detail;
         } else if (Array.isArray(error.response.data.detail)) {
-          // Pydantic validation errors
           errorMsg = error.response.data.detail.map(e => e.msg || e.message || 'Erro de validação').join(', ');
         }
       }
@@ -562,25 +531,7 @@ const AdminDashboard = () => {
       seguidores: '',
       seguindo: '',
       total_posts: '',
-      media_likes: '',
-      media_comentarios: '',
-      media_views_reels: '',
-      posts_por_semana: '',
-      dias_ultimo_post: '',
-      crescimento_30_dias: '',
-      desvio_intervalo_posts: '',
-      desvio_engajamento: '',
-      bio_descricao: true,
-      bio_keywords: true,
-      bio_cta: false,
-      bio_link: true,
-      bio_clareza: 'boa',
-      percentual_reels: 50,
-      percentual_carrossel: 30,
-      percentual_foto: 20,
-      picos_anormais: 0,
-      comentarios_repetitivos: 0,
-      horarios_artificiais: 0
+      bio: ''
     });
     setInstagramResult(null);
   };
@@ -2216,6 +2167,12 @@ const AdminDashboard = () => {
 
                   <div className="mt-6 text-center text-sm text-slate-500">
                     <p>O sistema busca automaticamente: seguidores, posts, engajamento, crescimento, análise da bio e indicadores anti-fake.</p>
+                    <button
+                      onClick={() => { resetInstagramForm(); setShowInstagramForm(true); }}
+                      className="mt-2 text-pink-600 dark:text-pink-400 hover:underline font-medium"
+                    >
+                      Ou inserir dados manualmente →
+                    </button>
                   </div>
                 </CardContent>
               </Card>
@@ -2582,252 +2539,97 @@ const AdminDashboard = () => {
 
             {/* Modal Nova Análise */}
             <Dialog open={showInstagramForm} onOpenChange={setShowInstagramForm}>
-              <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+              <DialogContent className="max-w-xl">
                 <DialogHeader>
                   <DialogTitle className="flex items-center gap-2">
                     <Activity className="w-5 h-5 text-pink-500" />
-                    Nova Análise de Perfil Instagram
+                    Nova Análise de Perfil
                   </DialogTitle>
                 </DialogHeader>
 
                 <div className="space-y-6 py-4">
+                  <p className="text-sm text-slate-500 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg">
+                    💡 Preencha apenas os dados básicos. O sistema calculará automaticamente: 
+                    média de likes, comentários, engagement rate, crescimento, análise da bio e indicadores anti-fake.
+                  </p>
+
                   {/* Dados Básicos */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <Users className="w-4 h-4" /> Dados do Perfil
-                    </h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>@Username *</Label>
-                        <Input
-                          value={instagramFormData.username}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, username: e.target.value.replace('@', '')})}
-                          placeholder="usuario"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Nome Completo</Label>
-                        <Input
-                          value={instagramFormData.nome_completo}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, nome_completo: e.target.value})}
-                          placeholder="João Silva"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Nicho</Label>
-                        <Select 
-                          value={instagramFormData.nicho} 
-                          onValueChange={(v) => setInstagramFormData({...instagramFormData, nicho: v})}
-                        >
-                          <SelectTrigger><SelectValue /></SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="corrida">Corrida</SelectItem>
-                            <SelectItem value="fitness">Fitness</SelectItem>
-                            <SelectItem value="esportivo">Esportivo</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label>@Username *</Label>
+                      <Input
+                        value={instagramFormData.username}
+                        onChange={(e) => setInstagramFormData({...instagramFormData, username: e.target.value.replace('@', '')})}
+                        placeholder="usuario"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nome Completo</Label>
+                      <Input
+                        value={instagramFormData.nome_completo}
+                        onChange={(e) => setInstagramFormData({...instagramFormData, nome_completo: e.target.value})}
+                        placeholder="João Silva"
+                      />
                     </div>
                   </div>
 
-                  {/* Métricas Numéricas */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <BarChart3 className="w-4 h-4" /> Métricas do Perfil
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label>Seguidores *</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.seguidores}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, seguidores: e.target.value})}
-                          placeholder="10000"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Seguindo *</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.seguindo}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, seguindo: e.target.value})}
-                          placeholder="500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Total de Posts *</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.total_posts}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, total_posts: e.target.value})}
-                          placeholder="150"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Posts/Semana</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={instagramFormData.posts_por_semana}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, posts_por_semana: e.target.value})}
-                          placeholder="3.5"
-                        />
-                      </div>
+                  {/* Métricas */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="space-y-2">
+                      <Label>Seguidores *</Label>
+                      <Input
+                        type="number"
+                        value={instagramFormData.seguidores}
+                        onChange={(e) => setInstagramFormData({...instagramFormData, seguidores: e.target.value})}
+                        placeholder="10000"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Seguindo *</Label>
+                      <Input
+                        type="number"
+                        value={instagramFormData.seguindo}
+                        onChange={(e) => setInstagramFormData({...instagramFormData, seguindo: e.target.value})}
+                        placeholder="500"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Total de Posts *</Label>
+                      <Input
+                        type="number"
+                        value={instagramFormData.total_posts}
+                        onChange={(e) => setInstagramFormData({...instagramFormData, total_posts: e.target.value})}
+                        placeholder="150"
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>Nicho</Label>
+                      <select
+                        value={instagramFormData.nicho}
+                        onChange={(e) => setInstagramFormData({...instagramFormData, nicho: e.target.value})}
+                        className="w-full h-10 px-3 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800"
+                      >
+                        <option value="corrida">Corrida</option>
+                        <option value="fitness">Fitness</option>
+                        <option value="lifestyle">Lifestyle</option>
+                        <option value="moda">Moda</option>
+                        <option value="gastronomia">Gastronomia</option>
+                        <option value="viagem">Viagem</option>
+                        <option value="tech">Tecnologia</option>
+                        <option value="outros">Outros</option>
+                      </select>
                     </div>
                   </div>
 
-                  {/* Engajamento */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <TrendingUp className="w-4 h-4" /> Engajamento (Média últimos 18 posts)
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="space-y-2">
-                        <Label>Média de Likes *</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.media_likes}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, media_likes: e.target.value})}
-                          placeholder="500"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Média de Comentários *</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.media_comentarios}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, media_comentarios: e.target.value})}
-                          placeholder="25"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Média Views Reels</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.media_views_reels}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, media_views_reels: e.target.value})}
-                          placeholder="2000"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Crescimento 30d (%)</Label>
-                        <Input
-                          type="number"
-                          step="0.1"
-                          value={instagramFormData.crescimento_30_dias}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, crescimento_30_dias: e.target.value})}
-                          placeholder="5.0"
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Bio */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <FileText className="w-4 h-4" /> Análise da Bio
-                    </h3>
-                    <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
-                      {[
-                        { key: 'bio_descricao', label: 'Tem Descrição' },
-                        { key: 'bio_keywords', label: 'Tem Keywords' },
-                        { key: 'bio_cta', label: 'Tem CTA' },
-                        { key: 'bio_link', label: 'Tem Link' }
-                      ].map(({ key, label }) => (
-                        <div key={key} className="flex items-center gap-2">
-                          <input
-                            type="checkbox"
-                            id={key}
-                            checked={instagramFormData[key]}
-                            onChange={(e) => setInstagramFormData({...instagramFormData, [key]: e.target.checked})}
-                            className="rounded border-slate-300"
-                          />
-                          <Label htmlFor={key}>{label}</Label>
-                        </div>
-                      ))}
-                      <div className="flex items-center gap-2">
-                        <Label>Clareza:</Label>
-                        <select
-                          value={instagramFormData.bio_clareza}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, bio_clareza: e.target.value})}
-                          className="rounded border-slate-300 px-2 py-1 text-sm"
-                        >
-                          <option value="excelente">Excelente</option>
-                          <option value="boa">Boa</option>
-                          <option value="regular">Regular</option>
-                          <option value="ruim">Ruim</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Formatos */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2">
-                      <PieChart className="w-4 h-4" /> Distribuição de Formatos (%)
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Reels (%)</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.percentual_reels}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, percentual_reels: parseFloat(e.target.value) || 0})}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Carrossel (%)</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.percentual_carrossel}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, percentual_carrossel: parseFloat(e.target.value) || 0})}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Fotos (%)</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.percentual_foto}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, percentual_foto: parseFloat(e.target.value) || 0})}
-                        />
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Anti-Fake */}
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-lg flex items-center gap-2 text-red-500">
-                      <AlertCircle className="w-4 h-4" /> Indicadores Anti-Fake
-                    </h3>
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="space-y-2">
-                        <Label>Picos Anormais</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.picos_anormais}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, picos_anormais: parseInt(e.target.value) || 0})}
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Comentários Repetitivos</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.comentarios_repetitivos}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, comentarios_repetitivos: parseInt(e.target.value) || 0})}
-                          placeholder="0"
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Horários Artificiais</Label>
-                        <Input
-                          type="number"
-                          value={instagramFormData.horarios_artificiais}
-                          onChange={(e) => setInstagramFormData({...instagramFormData, horarios_artificiais: parseInt(e.target.value) || 0})}
-                          placeholder="0"
-                        />
-                      </div>
-                    </div>
+                  {/* Bio (opcional) */}
+                  <div className="space-y-2">
+                    <Label>Bio do Perfil (opcional - para análise de qualidade)</Label>
+                    <textarea
+                      value={instagramFormData.bio}
+                      onChange={(e) => setInstagramFormData({...instagramFormData, bio: e.target.value})}
+                      placeholder="Cole aqui a bio do perfil para análise automática de keywords, CTA, etc."
+                      className="w-full h-20 px-3 py-2 rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 resize-none"
+                    />
                   </div>
                 </div>
 

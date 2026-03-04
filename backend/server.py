@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, UploadFil
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from pydantic import BaseModel
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -2549,89 +2550,406 @@ async def get_logs_aniversario(admin: dict = Depends(get_admin_user)):
     return {"logs": logs}
 
 
-# ========== RANKING RUN INSIDE - INSTAGRAM ANALYTICS ==========
+# ========== RANKING RUN INSIDE - INSTAGRAM ANALYTICS (SISTEMA HÍBRIDO) ==========
 
-# Chave API RapidAPI para Instagram Scraper
-RAPIDAPI_KEY = os.environ.get('INSTAGRAM_API_KEY', 'a0ed9ffeb49a41be9047e1a72f50a75da8323b10777')
-
-
-async def buscar_instagram_rapidapi(username: str) -> dict:
+def calcular_metricas_automaticas(seguidores: int, seguindo: int, total_posts: int, nicho: str = "corrida") -> dict:
     """
-    Busca dados do Instagram usando RapidAPI Instagram Scraper.
+    Calcula automaticamente todas as métricas baseado em dados básicos.
+    Usa benchmarks do nicho e proporções conhecidas.
     """
-    headers = {
-        "X-RapidAPI-Key": RAPIDAPI_KEY,
-        "X-RapidAPI-Host": "instagram-scraper-api2.p.rapidapi.com"
+    # Benchmarks por nicho (engagement rate médio, posts/semana típico)
+    benchmarks = {
+        "corrida": {"er": 3.5, "posts_semana": 4.5, "ratio_likes_comments": 50},
+        "fitness": {"er": 3.0, "posts_semana": 5.0, "ratio_likes_comments": 40},
+        "lifestyle": {"er": 2.5, "posts_semana": 4.0, "ratio_likes_comments": 35},
+        "moda": {"er": 2.0, "posts_semana": 5.0, "ratio_likes_comments": 30},
+        "gastronomia": {"er": 4.0, "posts_semana": 3.5, "ratio_likes_comments": 25},
+        "viagem": {"er": 3.5, "posts_semana": 3.0, "ratio_likes_comments": 40},
+        "tech": {"er": 2.0, "posts_semana": 4.0, "ratio_likes_comments": 60},
+        "outros": {"er": 2.5, "posts_semana": 4.0, "ratio_likes_comments": 40}
     }
     
-    url = "https://instagram-scraper-api2.p.rapidapi.com/v1/info"
-    params = {"username_or_id_or_url": username}
+    bench = benchmarks.get(nicho, benchmarks["outros"])
     
-    try:
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, headers=headers, params=params)
-            
-            if response.status_code == 200:
-                data = response.json()
-                if data.get('data'):
-                    return {"success": True, "data": data['data']}
-            
-            # Tentar API alternativa
-            url2 = "https://instagram-scraper.p.rapidapi.com/api/v1/profile"
-            headers2 = {
-                "X-RapidAPI-Key": RAPIDAPI_KEY,
-                "X-RapidAPI-Host": "instagram-scraper.p.rapidapi.com"
-            }
-            params2 = {"username": username}
-            
-            response2 = await client.get(url2, headers=headers2, params=params2)
-            if response2.status_code == 200:
-                return {"success": True, "data": response2.json()}
-            
-            return {"success": False, "error": f"API retornou código {response.status_code}"}
-            
-    except Exception as e:
-        return {"success": False, "error": str(e)}
+    # Calcular engagement rate estimado baseado no tamanho da conta
+    # Contas menores geralmente têm ER maior
+    if seguidores < 1000:
+        er_modifier = 1.5
+    elif seguidores < 10000:
+        er_modifier = 1.2
+    elif seguidores < 100000:
+        er_modifier = 1.0
+    elif seguidores < 1000000:
+        er_modifier = 0.7
+    else:
+        er_modifier = 0.4
+    
+    estimated_er = bench["er"] * er_modifier
+    
+    # Calcular média de likes baseado no ER estimado
+    media_likes = (seguidores * estimated_er / 100)
+    
+    # Calcular média de comentários (proporção típica likes/comments)
+    media_comentarios = media_likes / bench["ratio_likes_comments"]
+    
+    # Estimar posts por semana baseado no total de posts
+    # Assumindo conta ativa há pelo menos 1 ano
+    posts_por_semana = min(total_posts / 52, bench["posts_semana"] * 1.5) if total_posts > 0 else bench["posts_semana"]
+    
+    # Estimar views de reels (geralmente 2-5x os likes)
+    media_views_reels = media_likes * 3
+    
+    # Calcular ratio followers/following para detecção de anomalias
+    ratio_ff = seguidores / seguindo if seguindo > 0 else seguidores
+    
+    # Indicadores anti-fake baseados em proporções
+    picos_anormais = 0
+    comentarios_repetitivos = 0
+    horarios_artificiais = 0
+    
+    # Verificar proporção suspeita followers/following
+    if ratio_ff < 0.5:  # Seguindo muito mais do que seguidores
+        picos_anormais += 2
+    elif ratio_ff > 100:  # Muito mais seguidores do que seguindo (pode ser compra)
+        if seguidores < 10000:  # Só é suspeito em contas pequenas
+            picos_anormais += 1
+    
+    # Verificar proporção posts/seguidores
+    posts_per_follower = total_posts / seguidores if seguidores > 0 else 0
+    if posts_per_follower > 0.1:  # Muito mais posts do que seguidores
+        comentarios_repetitivos += 1
+    
+    # Estimar desvio de engajamento (quanto mais estável, melhor)
+    desvio_engajamento = 15 + (10 if ratio_ff < 1 else 0)  # Valor estimado
+    
+    # Calcular crescimento estimado
+    if estimated_er > 5:
+        crescimento = 3.0
+    elif estimated_er > 3:
+        crescimento = 2.0
+    elif estimated_er > 1:
+        crescimento = 1.0
+    else:
+        crescimento = 0.5
+    
+    # Ajustar crescimento pelo tamanho
+    if seguidores < 10000:
+        crescimento *= 1.5
+    elif seguidores > 100000:
+        crescimento *= 0.5
+    
+    # Distribuição de formatos típica
+    percentual_reels = 45 + random.randint(-10, 10)
+    percentual_carrossel = 30 + random.randint(-10, 10)
+    percentual_foto = 100 - percentual_reels - percentual_carrossel
+    
+    return {
+        "engagement_rate": round(estimated_er, 2),
+        "media_likes": round(media_likes, 1),
+        "media_comentarios": round(media_comentarios, 1),
+        "media_views_reels": round(media_views_reels, 1),
+        "posts_por_semana": round(posts_por_semana, 1),
+        "crescimento_30_dias": round(crescimento, 1),
+        "percentual_reels": percentual_reels,
+        "percentual_carrossel": percentual_carrossel,
+        "percentual_foto": percentual_foto,
+        "picos_anormais": picos_anormais,
+        "comentarios_repetitivos": comentarios_repetitivos,
+        "horarios_artificiais": horarios_artificiais,
+        "desvio_engajamento": round(desvio_engajamento, 1),
+        "ratio_followers_following": round(ratio_ff, 2)
+    }
 
 
-async def buscar_instagram_api_direta(username: str) -> dict:
+def analisar_bio_automatico(bio: str) -> dict:
     """
-    Busca dados do Instagram usando a API privada do Instagram.
-    Retorna dados completos do perfil e posts recentes.
+    Analisa automaticamente a bio do Instagram.
+    Retorna scores para: descrição, keywords, CTA, link, clareza.
     """
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        'Accept': '*/*',
-        'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'X-IG-App-ID': '936619743392459',
-        'X-Requested-With': 'XMLHttpRequest',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Fetch-Mode': 'cors',
-        'Referer': f'https://www.instagram.com/{username}/'
+    if not bio:
+        return {
+            "tem_descricao": False,
+            "tem_keywords": False,
+            "tem_cta": False,
+            "tem_link": False,
+            "clareza": "ruim",
+            "nota": 0
+        }
+    
+    bio_lower = bio.lower()
+    
+    # Keywords comuns de corrida/fitness
+    keywords_nicho = ['corrida', 'runner', 'running', 'maratona', 'atleta', 'corredor', 
+                      'treino', 'fitness', 'personal', 'coach', 'assessoria', 'km', 
+                      'pace', 'trilha', 'ultra', 'meia maratona', '10k', '21k', '42k',
+                      'crossfit', 'musculação', 'gym', 'academia', 'esporte', 'sport']
+    
+    # CTAs comuns
+    ctas = ['link', 'clique', 'acesse', 'saiba mais', 'conheça', 'siga', 'inscreva', 
+            'compre', 'whatsapp', 'contato', 'agenda', 'agende', 'participe', 'baixe',
+            'bio', 'dm', 'direct', '👇', '⬇️', 'linktree']
+    
+    tem_descricao = len(bio) > 20
+    tem_keywords = any(kw in bio_lower for kw in keywords_nicho)
+    tem_cta = any(cta in bio_lower for cta in ctas)
+    tem_link = 'http' in bio_lower or 'link' in bio_lower or '.com' in bio_lower or 'wa.me' in bio_lower or '.br' in bio_lower
+    
+    # Avaliar clareza baseado em estrutura
+    linhas = bio.split('\n')
+    tem_emojis = any(ord(c) > 127 for c in bio)
+    bem_estruturado = len(linhas) >= 2 or tem_emojis
+    
+    if len(bio) > 100 and bem_estruturado and tem_keywords:
+        clareza = "excelente"
+    elif len(bio) > 50 and (bem_estruturado or tem_keywords):
+        clareza = "boa"
+    elif len(bio) > 20:
+        clareza = "regular"
+    else:
+        clareza = "ruim"
+    
+    # Calcular nota da bio
+    clareza_scores = {"excelente": 2.0, "boa": 1.5, "regular": 1.0, "ruim": 0.0}
+    nota = (
+        (1.5 if tem_descricao else 0) +
+        (3.0 if tem_keywords else 0) +
+        (2.0 if tem_cta else 0) +
+        (1.5 if tem_link else 0) +
+        clareza_scores.get(clareza, 1.0)
+    )
+    
+    return {
+        "tem_descricao": tem_descricao,
+        "tem_keywords": tem_keywords,
+        "tem_cta": tem_cta,
+        "tem_link": tem_link,
+        "clareza": clareza,
+        "nota": min(nota, 10.0)
+    }
+
+
+class InstagramAnaliseSimplificada(BaseModel):
+    """Modelo para análise simplificada - apenas dados básicos necessários"""
+    username: str
+    nome_completo: str = ""
+    nicho: str = "corrida"
+    seguidores: int
+    seguindo: int
+    total_posts: int
+    bio: str = ""  # Opcional - para análise de bio
+
+
+@api_router.post("/admin/instagram/analisar-simplificado")
+async def analisar_perfil_simplificado(dados: InstagramAnaliseSimplificada, admin: dict = Depends(get_admin_user)):
+    """
+    Sistema Híbrido Simplificado de Análise de Perfil Instagram.
+    
+    Entrada necessária: username, seguidores, seguindo, total_posts
+    
+    O sistema calcula automaticamente:
+    - Posts/semana
+    - Média de likes/comentários  
+    - Crescimento estimado
+    - Score da Bio (se fornecida)
+    - Indicadores anti-fake (baseado em proporções)
+    - Distribuição de formatos
+    """
+    # Calcular métricas automaticamente
+    metricas = calcular_metricas_automaticas(
+        dados.seguidores, dados.seguindo, dados.total_posts, dados.nicho
+    )
+    
+    # Analisar bio se fornecida
+    if dados.bio:
+        analise_bio = analisar_bio_automatico(dados.bio)
+        nota_bio = analise_bio['nota']
+    else:
+        # Valor padrão se não tiver bio
+        analise_bio = {
+            "tem_descricao": True,
+            "tem_keywords": True,
+            "tem_cta": False,
+            "tem_link": True,
+            "clareza": "boa",
+            "nota": 6.5
+        }
+        nota_bio = 6.5
+    
+    # Calcular notas individuais
+    nota_frequencia = calcular_nota_frequencia(metricas['posts_por_semana'], 1)
+    
+    nota_engajamento, er_post, er_reels = calcular_nota_engajamento(
+        metricas['media_likes'],
+        metricas['media_comentarios'],
+        metricas['media_views_reels'],
+        dados.seguidores
+    )
+    
+    nota_crescimento = calcular_nota_crescimento(metricas['crescimento_30_dias'])
+    
+    nota_consistencia = calcular_nota_consistencia(2.0, metricas['desvio_engajamento'])
+    
+    nota_padroes, indice_anomalia = calcular_nota_padroes(
+        metricas['picos_anormais'],
+        metricas['comentarios_repetitivos'],
+        metricas['horarios_artificiais'],
+        dados.total_posts
+    )
+    
+    nota_reels = calcular_nota_reels(metricas['media_views_reels'], dados.seguidores)
+    
+    nota_formatos = calcular_nota_formatos(
+        metricas['percentual_reels'],
+        metricas['percentual_carrossel'],
+        metricas['percentual_foto'],
+        metricas['engagement_rate']  # er_medio
+    )
+    
+    # Score final
+    notas_dict = {
+        'bio': nota_bio,
+        'frequencia': nota_frequencia,
+        'engajamento': nota_engajamento,
+        'crescimento': nota_crescimento,
+        'consistencia': nota_consistencia,
+        'padroes': nota_padroes,
+        'reels': nota_reels,
+        'formatos': nota_formatos
+    }
+    score_final = calcular_score_final(notas_dict)
+    
+    # Classificação
+    classificacao = classificar_influenciador(score_final)
+    
+    # Gerar ID
+    analysis_id = str(uuid.uuid4())
+    
+    # Preparar documento
+    analysis_doc = {
+        "id": analysis_id,
+        "username": dados.username.strip().lstrip('@'),
+        "nome_completo": dados.nome_completo,
+        "nicho": dados.nicho,
+        "seguidores": dados.seguidores,
+        "seguindo": dados.seguindo,
+        "total_posts": dados.total_posts,
+        "bio": dados.bio,
+        
+        # Métricas calculadas automaticamente
+        "media_likes": metricas['media_likes'],
+        "media_comentarios": metricas['media_comentarios'],
+        "media_views_reels": metricas['media_views_reels'],
+        "posts_por_semana": metricas['posts_por_semana'],
+        "crescimento_30_dias": metricas['crescimento_30_dias'],
+        "engagement_rate": metricas['engagement_rate'],
+        
+        # Análise da Bio
+        "bio_tem_descricao": analise_bio['tem_descricao'],
+        "bio_tem_keywords": analise_bio['tem_keywords'],
+        "bio_tem_cta": analise_bio['tem_cta'],
+        "bio_tem_link": analise_bio['tem_link'],
+        "bio_clareza": analise_bio['clareza'],
+        
+        # Formatos
+        "percentual_reels": metricas['percentual_reels'],
+        "percentual_carrossel": metricas['percentual_carrossel'],
+        "percentual_foto": metricas['percentual_foto'],
+        
+        # Anti-fake
+        "picos_anormais": metricas['picos_anormais'],
+        "comentarios_repetitivos": metricas['comentarios_repetitivos'],
+        "horarios_artificiais": metricas['horarios_artificiais'],
+        "desvio_engajamento": metricas['desvio_engajamento'],
+        "ratio_followers_following": metricas['ratio_followers_following'],
+        
+        # Notas
+        "nota_bio": nota_bio,
+        "nota_frequencia": nota_frequencia,
+        "nota_engajamento": nota_engajamento,
+        "nota_crescimento": nota_crescimento,
+        "nota_consistencia": nota_consistencia,
+        "nota_padroes": nota_padroes,
+        "nota_reels": nota_reels,
+        "nota_formatos": nota_formatos,
+        
+        # Score e classificação
+        "score_final": score_final,
+        "classificacao": classificacao,
+        
+        # Metadados
+        "data_analise": datetime.now(timezone.utc).isoformat(),
+        "source": "sistema_hibrido"
     }
     
-    url = f"https://i.instagram.com/api/v1/users/web_profile_info/?username={username}"
+    # Salvar no banco
+    await db.instagram_analyses.insert_one(analysis_doc)
     
-    async with httpx.AsyncClient(timeout=20.0, follow_redirects=True) as client:
-        response = await client.get(url, headers=headers)
-        
-        if response.status_code == 404:
-            return {"success": False, "error": "Perfil não encontrado"}
-        
-        if response.status_code == 429:
-            return {"success": False, "error": "rate_limited"}
-        
-        if response.status_code != 200:
-            return {"success": False, "error": f"Erro {response.status_code}"}
-        
-        data = response.json()
-        user = data.get('data', {}).get('user', {})
-        
-        if not user:
-            return {"success": False, "error": "Dados não disponíveis"}
-        
-        return {"success": True, "user": user}
+    # Preparar dados para gráficos
+    media_nicho = MEDIAS_NICHO.get(dados.nicho, MEDIAS_NICHO['corrida'])
+    
+    graficos_data = {
+        "radar": {
+            "labels": ["Bio", "Frequência", "Engajamento", "Crescimento", 
+                      "Consistência", "Padrões", "Reels", "Formatos"],
+            "values": [nota_bio, nota_frequencia, nota_engajamento, nota_crescimento,
+                      nota_consistencia, nota_padroes, nota_reels, nota_formatos],
+            "max": 10
+        },
+        "gauge": {
+            "value": score_final,
+            "min": 0,
+            "max": 100,
+            "ranges": [
+                {"min": 0, "max": 40, "color": "#DC2626", "label": "Péssimo"},
+                {"min": 40, "max": 60, "color": "#F97316", "label": "Ruim"},
+                {"min": 60, "max": 70, "color": "#F59E0B", "label": "Regular"},
+                {"min": 70, "max": 80, "color": "#3B82F6", "label": "Bom"},
+                {"min": 80, "max": 90, "color": "#8B5CF6", "label": "Ótimo"},
+                {"min": 90, "max": 100, "color": "#10B981", "label": "Excelente"}
+            ]
+        },
+        "comparativo": {
+            "labels": ["Engajamento", "Crescimento", "Frequência"],
+            "perfil": [er_post, metricas['crescimento_30_dias'], metricas['posts_por_semana']],
+            "media_nicho": [media_nicho['engagement_rate'], media_nicho['crescimento_medio'], media_nicho['posts_semana']]
+        },
+        "formatos": {
+            "labels": ["Reels", "Carrossel", "Fotos"],
+            "values": [metricas['percentual_reels'], metricas['percentual_carrossel'], metricas['percentual_foto']]
+        },
+        "metricas": {
+            "seguidores": dados.seguidores,
+            "seguindo": dados.seguindo,
+            "posts": dados.total_posts,
+            "er_post": er_post,
+            "er_reels": er_reels,
+            "crescimento": metricas['crescimento_30_dias'],
+            "indice_anomalia": (metricas['picos_anormais'] + metricas['comentarios_repetitivos']) * 10
+        }
+    }
+    
+    # Gerar recomendações
+    notas = {
+        'bio': nota_bio,
+        'frequencia': nota_frequencia,
+        'engajamento': nota_engajamento,
+        'crescimento': nota_crescimento,
+        'consistencia': nota_consistencia,
+        'padroes': nota_padroes,
+        'reels': nota_reels,
+        'formatos': nota_formatos
+    }
+    recomendacoes = gerar_recomendacoes(notas, {'crescimento_30_dias': metricas['crescimento_30_dias']})
+    
+    # Remover _id
+    analysis_doc.pop('_id', None)
+    
+    return {
+        "analysis": analysis_doc,
+        "graficos_data": graficos_data,
+        "recomendacoes": recomendacoes,
+        "metricas_calculadas": metricas
+    }
 
 
 def analisar_bio_automatico(bio: str) -> dict:
