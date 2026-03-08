@@ -2542,6 +2542,52 @@ async def get_assessorias_lista():
 async def root():
     return {"message": "Ranking Run Pro API"}
 
+@api_router.post("/admin/setup-assessoria-dono/{equipe_nome}")
+async def setup_assessoria_dono(
+    equipe_nome: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """Setup de teste: define um atleta como dono e adiciona dados da assessoria"""
+    import urllib.parse
+    nome_decoded = urllib.parse.unquote(equipe_nome)
+    
+    # Buscar primeiro atleta da equipe
+    atleta = await db.usuarios.find_one(
+        {"equipe": nome_decoded, "role": "atleta"},
+        {"_id": 0}
+    )
+    
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Nenhum atleta encontrado nesta equipe")
+    
+    # Promover a dono de assessoria
+    await db.usuarios.update_one(
+        {"id": atleta["id"]},
+        {"$set": {"role": "dono_assessoria", "is_dono_assessoria": True}}
+    )
+    
+    # Criar/atualizar registro da assessoria
+    await db.assessorias.update_one(
+        {"nome": nome_decoded},
+        {"$set": {
+            "nome": nome_decoded,
+            "cidade": atleta.get("cidade", ""),
+            "estado": atleta.get("estado", ""),
+            "dono_id": atleta["id"],
+            "dono_nome": atleta["nome"],
+            "mensagem_bio": f"Ajudamos milhares de Atletas pelo Brasil, faça parte do nosso Time!",
+            "foto_url": "",
+            "status": "ativa"
+        }},
+        upsert=True
+    )
+    
+    return {
+        "message": f"Assessoria {nome_decoded} configurada com sucesso!",
+        "dono": atleta["nome"],
+        "dono_id": atleta["id"]
+    }
+
 @api_router.post("/ranking/popular")
 async def popular_dados_teste():
     """Popula banco com 15 atletas por modalidade (90 atletas total) com corridas"""
@@ -4655,6 +4701,34 @@ async def get_detalhes_assessoria(nome_equipe: str):
         elif posicao_atual <= 50:
             selo = "prata"
     
+    # Buscar dados da assessoria (dono, bio, foto)
+    assessoria_doc = await db.assessorias.find_one(
+        {"nome": nome_decoded},
+        {"_id": 0}
+    )
+    
+    # Buscar dono da assessoria
+    dono = await db.usuarios.find_one(
+        {"equipe": nome_decoded, "role": "dono_assessoria"},
+        {"_id": 0}
+    )
+    
+    # Se não encontrar na coleção assessorias, tentar buscar dados do dono
+    responsavel_nome = ""
+    responsavel_id = ""
+    mensagem_bio = ""
+    foto_assessoria = ""
+    
+    if assessoria_doc:
+        responsavel_nome = assessoria_doc.get("dono_nome", "")
+        responsavel_id = assessoria_doc.get("dono_id", "")
+        mensagem_bio = assessoria_doc.get("mensagem_bio", "")
+        foto_assessoria = assessoria_doc.get("foto_url", "")
+    
+    if dono and not responsavel_nome:
+        responsavel_nome = dono.get("nome", "")
+        responsavel_id = dono.get("id", "")
+    
     return {
         "nome": nome_decoded,
         "estado": atletas[0].get("estado", "") if atletas else "",
@@ -4668,6 +4742,10 @@ async def get_detalhes_assessoria(nome_equipe: str):
         "total_podios": total_podios,
         "posicao_nacional": posicao_atual,
         "selo": selo,
+        "responsavel_nome": responsavel_nome,
+        "responsavel_id": responsavel_id,
+        "mensagem_bio": mensagem_bio,
+        "foto_assessoria": foto_assessoria,
         "atletas": [{
             "id": a["id"],
             "nome": a["nome"],

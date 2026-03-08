@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, Send, Mail, Phone, Loader2 } from 'lucide-react';
+import { Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, Send, Mail, Phone, Loader2, Zap, BarChart3, User } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 
@@ -120,10 +120,26 @@ const AssessoriaPage = () => {
                 SELO {assessoria.selo?.toUpperCase()}
               </Badge>
             </h1>
-            <p className="text-slate-500 flex items-center gap-2 mt-1">
-              <MapPin className="w-4 h-4" />
-              {assessoria.cidade}/{assessoria.estado}
-            </p>
+            <div className="space-y-1 mt-2">
+              <p className="text-slate-500 flex items-center gap-2">
+                <MapPin className="w-4 h-4" />
+                {assessoria.cidade}/{assessoria.estado}
+              </p>
+              {/* Responsável pela Assessoria */}
+              {assessoria.responsavel_nome && (
+                <p className="text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-medium">
+                  <Zap className="w-4 h-4" />
+                  Responsável / {assessoria.responsavel_nome}
+                </p>
+              )}
+              {/* Mensagem da BIO */}
+              {assessoria.mensagem_bio && (
+                <p className="text-blue-600 dark:text-blue-400 flex items-center gap-2 text-sm italic">
+                  <BarChart3 className="w-4 h-4 flex-shrink-0" />
+                  <span>"{assessoria.mensagem_bio}"</span>
+                </p>
+              )}
+            </div>
           </div>
         </div>
 
