@@ -449,3 +449,12 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Checkbox "Li e concordo com o Regulamento da Plataforma"
     - Botão "Cadastrar" desabilitado até aceitar o termo
     - 10 seções do regulamento: Disposições Gerais, Cadastro, Modalidades, Pontuação, Submissão de Resultados, Equipes, Avaliação de Corridas, Privacidade, Condutas Proibidas, Disposições Finais
+
+45. ✅ **Campo Equipe/Assessoria com Dropdown** (08/03/2026):
+    - Novo endpoint: GET /api/assessorias/lista (retorna [{nome, cidade, estado}])
+    - Dropdown mostra APENAS equipes cadastradas + opção "INDIVIDUAL"
+    - Opção "INDIVIDUAL" em destaque no topo com badge "Sem equipe"
+    - Assessorias exibem Nome na primeira linha e Cidade/UF na segunda
+    - Atleta NÃO pode escrever livremente - deve selecionar do dropdown
+    - Alerta amarelo aparece ao selecionar "INDIVIDUAL" com mensagem:
+      "Não encontrou sua equipe? É normal! Fale com o Dono(a) da sua Assessoria/Equipe para fazer o cadastro. Assim que ele(a) fizer, você já poderá alterar no seu Perfil."
