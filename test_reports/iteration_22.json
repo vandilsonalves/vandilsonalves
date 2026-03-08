@@ -1,0 +1,113 @@
+{
+  "summary": "Iteration 22: Tested 'Dono de Assessoria' feature on /cadastro page. All 8 features verified working: (1) Section 'Você é Dono de Uma Assessoria/Equipe?' appears when INDIVIDUAL selected, (2) Section has orange background (bg-orange-100), (3) SIM/NÃO buttons with correct data-testid, (4) After SIM: fields appear (Nome, Estado, Cidade, Foto, BIO), (5) After NÃO: fields hidden, (6) BIO has maxLength=200, (7) POST /api/auth/register with is_dono_assessoria=true creates assessoria, (8) User gets role='dono_assessoria' and equipe=assessoria name.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter22_dono_assessoria.py",
+    "/app/test_reports/pytest/pytest_iter22_dono_assessoria.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter22_dono_assessoria.py (new test file)"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8 tests passed)",
+    "frontend": "100% (all dono assessoria features verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "Created multiple TEST_ prefixed assessorias during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Dono de Assessoria feature on cadastro page is fully functional. When INDIVIDUAL is selected, an orange section appears asking if user owns an assessoria. Clicking SIM shows fields: Nome da Assessoria, Estado, Cidade, Foto (optional), Mensagem da BIO (max 200 chars). Clicking NÃO hides these fields. Backend correctly creates assessoria on registration with is_dono_assessoria=true, sets user role to 'dono_assessoria', and equipe to assessoria name.",
+  "verified_features": {
+    "feature_1_section_appears_on_individual": {
+      "trigger": "When INDIVIDUAL is selected from Equipe dropdown",
+      "status": "WORKING",
+      "section_text": "Você é Dono de Uma Assessoria/Equipe?"
+    },
+    "feature_2_orange_background": {
+      "status": "WORKING",
+      "css_class": "bg-orange-100",
+      "color": "rgb(255, 237, 213) - light orange"
+    },
+    "feature_3_sim_nao_buttons": {
+      "status": "WORKING",
+      "sim_selector": "[data-testid='btn-dono-sim']",
+      "nao_selector": "[data-testid='btn-dono-nao']"
+    },
+    "feature_4_fields_on_sim": {
+      "status": "WORKING",
+      "fields": [
+        "Nome da Assessoria/Equipe* - [data-testid='input-nome-assessoria']",
+        "Estado (UF)* - Select dropdown",
+        "Cidade* - Select dropdown (loads based on estado)",
+        "Foto (opcional) - File upload for rectangular image",
+        "Mensagem da BIO* - [data-testid='input-bio-assessoria']"
+      ]
+    },
+    "feature_5_fields_hidden_on_nao": {
+      "status": "WORKING",
+      "behavior": "All assessoria fields hidden when NÃO clicked"
+    },
+    "feature_6_bio_maxlength": {
+      "status": "WORKING",
+      "maxLength": 200,
+      "counter_display": "0/200 caracteres"
+    },
+    "feature_7_backend_creates_assessoria": {
+      "endpoint": "POST /api/auth/register",
+      "payload_fields": ["is_dono_assessoria: true", "assessoria_data: {nome, estado, cidade, mensagem_bio}"],
+      "status": "WORKING",
+      "creates_in": "assessorias collection"
+    },
+    "feature_8_user_role_and_equipe": {
+      "status": "WORKING",
+      "role": "dono_assessoria",
+      "equipe": "Set to assessoria name automatically"
+    }
+  },
+  "backend_test_results": {
+    "TestDonoAssessoriaRegistration": {
+      "test_register_as_dono_assessoria_returns_201": "PASS",
+      "test_register_as_dono_returns_role_dono_assessoria": "PASS",
+      "test_register_as_dono_creates_assessoria": "PASS",
+      "test_register_as_dono_sets_equipe_as_assessoria_name": "PASS"
+    },
+    "TestDonoAssessoriaNormalRegistration": {
+      "test_register_normal_returns_role_atleta": "PASS",
+      "test_register_without_is_dono_flag_returns_role_atleta": "PASS"
+    },
+    "TestDonoAssessoriaValidation": {
+      "test_duplicate_assessoria_name_returns_error": "PASS"
+    },
+    "TestAssessoriasListaWithNewAssessoria": {
+      "test_new_assessoria_appears_in_lista_with_correct_format": "PASS"
+    }
+  },
+  "frontend_ui_checks": {
+    "cadastro_page_loads": "PASS",
+    "section_hidden_initially": "PASS",
+    "section_appears_on_individual": "PASS",
+    "orange_background_present": "PASS",
+    "sim_button_has_data_testid": "PASS",
+    "nao_button_has_data_testid": "PASS",
+    "sim_shows_fields": "PASS",
+    "nao_hides_fields": "PASS",
+    "nome_field_has_data_testid": "PASS",
+    "bio_field_has_data_testid": "PASS",
+    "bio_maxlength_200": "PASS",
+    "foto_upload_optional": "PASS",
+    "estado_select_present": "PASS",
+    "cidade_select_present": "PASS"
+  }
+}

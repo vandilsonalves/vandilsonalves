@@ -106,11 +106,42 @@ async def register_atleta(dados: UsuarioRegister):
     
     faixa = calcular_faixa_etaria(dados.data_nascimento)
     
+    # Definir role e equipe com base em ser dono de assessoria
+    role = "dono_assessoria" if dados.is_dono_assessoria else "atleta"
+    equipe = dados.equipe
+    
+    # Se for dono de assessoria, criar a assessoria
+    if dados.is_dono_assessoria and dados.assessoria_data:
+        # Verificar se assessoria já existe
+        existing_assessoria = await db.assessorias.find_one({
+            "nome": dados.assessoria_data.get("nome")
+        })
+        if existing_assessoria:
+            raise HTTPException(status_code=400, detail="Já existe uma assessoria com este nome")
+        
+        # Criar assessoria
+        assessoria_id = str(uuid.uuid4())
+        assessoria_doc = {
+            "id": assessoria_id,
+            "nome": dados.assessoria_data.get("nome"),
+            "cidade": dados.assessoria_data.get("cidade"),
+            "estado": dados.assessoria_data.get("estado"),
+            "mensagem_bio": dados.assessoria_data.get("mensagem_bio", ""),
+            "foto_url": "",  # Será atualizado se houver upload
+            "dono_id": "",   # Será atualizado após criar o usuário
+            "dono_nome": dados.nome,
+            "status": "ativa",
+            "data_criacao": datetime.now(timezone.utc).isoformat()
+        }
+        
+        # Usar o nome da assessoria como equipe do usuário
+        equipe = dados.assessoria_data.get("nome")
+    
     usuario = Usuario(
         nome=dados.nome,
         email=dados.email,
         password_hash=get_password_hash(dados.password),
-        equipe=dados.equipe,
+        equipe=equipe,
         cidade=dados.cidade,
         estado=dados.estado,
         genero=dados.genero,
@@ -118,7 +149,7 @@ async def register_atleta(dados: UsuarioRegister):
         data_nascimento=dados.data_nascimento,
         faixa_etaria=faixa,
         foto_url=gerar_foto_url(dados.nome),
-        role="atleta",
+        role=role,
         is_active=True,
         etnia=dados.etnia,
         apelido=dados.apelido,
@@ -126,6 +157,17 @@ async def register_atleta(dados: UsuarioRegister):
     )
     
     doc = usuario.model_dump()
+    
+    # Se for dono, adicionar campos extras
+    if dados.is_dono_assessoria and dados.assessoria_data:
+        doc["is_dono_assessoria"] = True
+        doc["assessoria_id"] = assessoria_id
+        doc["assessoria_nome"] = dados.assessoria_data.get("nome")
+        
+        # Atualizar assessoria com o ID do dono
+        assessoria_doc["dono_id"] = usuario.id
+        await db.assessorias.insert_one(assessoria_doc)
+    
     await db.usuarios.insert_one(doc)
     
     token = create_access_token({"sub": usuario.id})
@@ -137,7 +179,7 @@ async def register_atleta(dados: UsuarioRegister):
             "id": usuario.id,
             "nome": usuario.nome,
             "email": usuario.email,
-            "role": usuario.role,
+            "role": role,
             "modalidade_usuario": usuario.modalidade_usuario
         }
     }

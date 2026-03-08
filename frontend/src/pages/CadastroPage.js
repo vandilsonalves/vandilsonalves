@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { UserPlus, Search, ScrollText, CheckCircle2 } from 'lucide-react';
+import { UserPlus, Search, ScrollText, CheckCircle2, HelpCircle, Building2, Upload, FileImage } from 'lucide-react';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -81,6 +81,18 @@ const CadastroPage = () => {
   const [scrolledToBottom, setScrolledToBottom] = useState(false);
   const termoRef = useRef(null);
 
+  // Estados para Dono de Assessoria (3ª Tarefa)
+  const [isDonoAssessoria, setIsDonoAssessoria] = useState(null); // null = não respondeu, true = SIM, false = NÃO
+  const [assessoriaData, setAssessoriaData] = useState({
+    nome_assessoria: '',
+    estado_assessoria: '',
+    cidade_assessoria: '',
+    foto_assessoria: null,
+    mensagem_bio: ''
+  });
+  const [cidadesAssessoria, setCidadesAssessoria] = useState([]);
+  const [loadingCidadesAssessoria, setLoadingCidadesAssessoria] = useState(false);
+
   // Buscar equipes cadastradas ao carregar a página
   useEffect(() => {
     const fetchEquipes = async () => {
@@ -135,6 +147,34 @@ const CadastroPage = () => {
     
     fetchCidades();
   }, [formData.estado]);
+
+  // Buscar cidades da assessoria quando o estado da assessoria mudar
+  useEffect(() => {
+    const fetchCidadesAssessoria = async () => {
+      if (!assessoriaData.estado_assessoria || assessoriaData.estado_assessoria.length !== 2) {
+        setCidadesAssessoria([]);
+        return;
+      }
+      
+      setLoadingCidadesAssessoria(true);
+      try {
+        const response = await axios.get(
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${assessoriaData.estado_assessoria}/municipios`
+        );
+        const cidadesOrdenadas = response.data
+          .map(c => c.nome)
+          .sort((a, b) => a.localeCompare(b));
+        setCidadesAssessoria(cidadesOrdenadas);
+      } catch (err) {
+        console.error('Erro ao buscar cidades da assessoria:', err);
+        setCidadesAssessoria([]);
+      } finally {
+        setLoadingCidadesAssessoria(false);
+      }
+    };
+    
+    fetchCidadesAssessoria();
+  }, [assessoriaData.estado_assessoria]);
   
   // Verificar se pode usar modalidade Povão (PCD e Cadeirante não podem)
   const podeSelecionarPovao = formData.categoria === 'normal' || formData.categoria === '';
@@ -155,11 +195,36 @@ const CadastroPage = () => {
       setShowTermoModal(true);
       return;
     }
+
+    // Validar campos de assessoria se for dono
+    if (isDonoAssessoria === true) {
+      if (!assessoriaData.nome_assessoria || !assessoriaData.estado_assessoria || !assessoriaData.cidade_assessoria || !assessoriaData.mensagem_bio) {
+        setError('Preencha todos os campos obrigatórios da assessoria');
+        return;
+      }
+    }
     
     setLoading(true);
 
     try {
-      await register(formData);
+      // Preparar dados com informações de dono de assessoria
+      const dadosCompletos = {
+        ...formData,
+        is_dono_assessoria: isDonoAssessoria === true,
+        assessoria_data: isDonoAssessoria === true ? {
+          nome: assessoriaData.nome_assessoria,
+          estado: assessoriaData.estado_assessoria,
+          cidade: assessoriaData.cidade_assessoria,
+          mensagem_bio: assessoriaData.mensagem_bio
+        } : null
+      };
+
+      // Se for dono de assessoria, definir a equipe como o nome da assessoria
+      if (isDonoAssessoria === true) {
+        dadosCompletos.equipe = assessoriaData.nome_assessoria;
+      }
+
+      await register(dadosCompletos);
       navigate('/');
     } catch (err) {
       setError(err.response?.data?.detail || 'Erro ao cadastrar');
@@ -444,6 +509,141 @@ const CadastroPage = () => {
                     data-testid="input-apelido"
                   />
                 </div>
+
+                {/* Seção Dono de Assessoria - Aparece APENAS quando selecionou INDIVIDUAL */}
+                {formData.equipe === 'Individual' && (
+                  <div className="md:col-span-2 bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-300 rounded-xl p-4 space-y-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <Building2 className="w-5 h-5 text-orange-600" />
+                        <Label className="text-base font-semibold text-orange-800 dark:text-orange-200">
+                          Você é Dono de Uma Assessoria/Equipe?
+                        </Label>
+                        <div className="relative group">
+                          <HelpCircle className="w-4 h-4 text-orange-500 cursor-help" />
+                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded-lg w-48 z-50">
+                            Se "SIM", realize o cadastro agora mesmo
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Seleção SIM/NÃO */}
+                    <div className="flex gap-3">
+                      <Button
+                        type="button"
+                        variant={isDonoAssessoria === true ? "default" : "outline"}
+                        className={`flex-1 ${isDonoAssessoria === true ? 'bg-orange-500 hover:bg-orange-600' : 'border-orange-300 hover:bg-orange-50'}`}
+                        onClick={() => setIsDonoAssessoria(true)}
+                        data-testid="btn-dono-sim"
+                      >
+                        SIM
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={isDonoAssessoria === false ? "default" : "outline"}
+                        className={`flex-1 ${isDonoAssessoria === false ? 'bg-slate-500 hover:bg-slate-600' : 'border-orange-300 hover:bg-orange-50'}`}
+                        onClick={() => setIsDonoAssessoria(false)}
+                        data-testid="btn-dono-nao"
+                      >
+                        NÃO
+                      </Button>
+                    </div>
+
+                    {/* Campos da Assessoria - Aparecem apenas se SIM */}
+                    {isDonoAssessoria === true && (
+                      <div className="space-y-4 pt-4 border-t border-orange-300">
+                        <div>
+                          <Label className="text-orange-800">Nome da Assessoria/Equipe *</Label>
+                          <Input
+                            value={assessoriaData.nome_assessoria}
+                            onChange={(e) => setAssessoriaData({...assessoriaData, nome_assessoria: e.target.value})}
+                            placeholder="Ex: Team Running Brasil"
+                            className="bg-white"
+                            data-testid="input-nome-assessoria"
+                          />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <Label className="text-orange-800">Estado (UF) *</Label>
+                            <Select 
+                              value={assessoriaData.estado_assessoria} 
+                              onValueChange={(v) => setAssessoriaData({...assessoriaData, estado_assessoria: v, cidade_assessoria: ''})}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder="Selecione" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {ESTADOS_BR.map((estado) => (
+                                  <SelectItem key={estado.uf} value={estado.uf}>{estado.uf} - {estado.nome}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+
+                          <div>
+                            <Label className="text-orange-800">Cidade *</Label>
+                            <Select 
+                              value={assessoriaData.cidade_assessoria} 
+                              onValueChange={(v) => setAssessoriaData({...assessoriaData, cidade_assessoria: v})}
+                              disabled={!assessoriaData.estado_assessoria || loadingCidadesAssessoria}
+                            >
+                              <SelectTrigger className="bg-white">
+                                <SelectValue placeholder={loadingCidadesAssessoria ? "Carregando..." : "Selecione a cidade"} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {cidadesAssessoria.map(cidade => (
+                                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-orange-800">Envie uma Foto da Sua Equipe/Assessoria</Label>
+                          <div className="mt-1">
+                            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-orange-300 rounded-lg bg-white cursor-pointer hover:bg-orange-50 transition">
+                              <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={(e) => setAssessoriaData({...assessoriaData, foto_assessoria: e.target.files[0]})}
+                              />
+                              {assessoriaData.foto_assessoria ? (
+                                <div className="flex items-center gap-2 text-orange-700">
+                                  <FileImage className="w-5 h-5" />
+                                  <span className="text-sm">{assessoriaData.foto_assessoria.name}</span>
+                                </div>
+                              ) : (
+                                <div className="flex items-center gap-2 text-orange-500">
+                                  <Upload className="w-5 h-5" />
+                                  <span className="text-sm">Imagem Retangular (opcional)</span>
+                                </div>
+                              )}
+                            </label>
+                          </div>
+                        </div>
+
+                        <div>
+                          <Label className="text-orange-800">Mensagem da BIO *</Label>
+                          <textarea
+                            value={assessoriaData.mensagem_bio}
+                            onChange={(e) => setAssessoriaData({...assessoriaData, mensagem_bio: e.target.value})}
+                            placeholder="Ex: Ajudamos milhares de Atletas pelo Brasil, faça parte do nosso Time!"
+                            className="w-full mt-1 p-3 border border-orange-300 rounded-lg bg-white resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                            maxLength={200}
+                            data-testid="input-bio-assessoria"
+                          />
+                          <p className="text-xs text-orange-600 mt-1">
+                            {assessoriaData.mensagem_bio.length}/200 caracteres
+                          </p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 {/* Seleção de Modalidade */}
                 <div className="md:col-span-2">

@@ -47,6 +47,9 @@ class UsuarioRegister(BaseModel):
     apelido: str = ""
     # Modalidade obrigatória
     modalidade_usuario: str = "profissional_amador"
+    # Campos para dono de assessoria (3ª Tarefa)
+    is_dono_assessoria: bool = False
+    assessoria_data: Optional[dict] = None
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
