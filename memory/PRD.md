@@ -433,4 +433,19 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 ---
 
-Última atualização: 02/03/2026
+Última atualização: 08/03/2026
+
+## Correções e Melhorias (08/03/2026)
+
+43. ✅ **Bug Fix - Perfil do Atleta** (08/03/2026):
+    - Corrigido erro "Página não encontrada" ao clicar no perfil de um atleta
+    - Problema: KeyError 'faixa_etaria' no endpoint GET /api/atletas/{id}
+    - Solução: Campos obrigatórios agora usam .get() com valores default
+    - Também corrigido endpoint GET /api/atletas/{id}/corridas
+
+44. ✅ **Termo de Aceite no Cadastro** (08/03/2026):
+    - Modal com regulamento completo da plataforma
+    - Usuário deve rolar até o final para habilitar botão "EU CONCORDO"
+    - Checkbox "Li e concordo com o Regulamento da Plataforma"
+    - Botão "Cadastrar" desabilitado até aceitar o termo
+    - 10 seções do regulamento: Disposições Gerais, Cadastro, Modalidades, Pontuação, Submissão de Resultados, Equipes, Avaliação de Corridas, Privacidade, Condutas Proibidas, Disposições Finais
