@@ -324,15 +324,44 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
       - GET `/api/verificar-avaliacao/{corrida_id}` - Verificar se já avaliou
       - GET `/api/minhas-avaliacoes-corridas` - Minhas avaliações
 
-## Próximos Passos - Ranking das Corridas (Fases 3-4)
-**Fase 3 - Selos e Certificações**:
-- Selo "5 Estrelas" (média ≥4.5, min 50 avaliações)
-- Top 10 Brasil / Top 10 Estado
+41. ✅ **Ranking das Corridas - Fase 3 (Sistema de Selos)** (08/03/2026):
+    - **3 Tipos de Selos Automáticos**:
+      - ⭐ **Selo 5 Estrelas**: Média ≥ 4.5 E mínimo 50 avaliações
+      - 🏆 **Top 10 Brasil**: 10 melhores no ranking nacional (min 10 aval.)
+      - 📍 **Top 10 Estado**: 10 melhores por estado
+    - **Exibição no Ranking Público**: Badges exibidos ao lado do nome da corrida
+    - **Lógica no Backend**: Cálculo automático baseado em média e quantidade
 
-**Fase 4 - Dashboard Admin**:
-- Estatísticas completas
-- Corrida mais bem avaliada por estado
-- Proteções anti-fraude
+42. ✅ **Ranking das Corridas - Fase 4 (Dashboard Admin)** (08/03/2026):
+    - **Nova aba "Ranking Corridas"** no menu lateral do Admin Dashboard
+    - **Stats Cards**: Total Corridas, Total Avaliações, Média Geral, Melhor Avaliada
+    - **Gráfico de Distribuição de Notas**: Bar chart com recharts
+    - **Top 10 - Melhores Corridas**: Lista ordenada por pontuação
+    - **Melhores Corridas por Estado**: Grid com badge e média
+    - **Sistema de Selos - Certificações**: 3 tipos de selo com contadores
+    - **Tabela de Gerenciamento**: CRUD completo de corridas
+      - Colunas: Corrida, Organizador, Local, Avaliações, Média, Status, Ações
+      - Botões: Editar (abre modal), Excluir (com confirmação)
+    - **Modal Cadastrar/Editar**: Todos os campos da corrida
+    - **Endpoints Admin**:
+      - GET `/api/admin/ranking-corridas/dashboard`
+      - PUT `/api/corridas-eventos/{id}`
+      - DELETE `/api/corridas-eventos/{id}`
+
+## Próximos Passos - Ranking das Corridas
+**TODAS AS FASES CONCLUÍDAS!** ✅
+- Fase 1: Estrutura base (página, filtros, tabela)
+- Fase 2: Sistema de avaliação (modal 5 critérios IQC)
+- Fase 3: Selos automáticos (5 Estrelas, Top 10)
+- Fase 4: Dashboard Admin (gráficos, CRUD)
+
+## Backlog / Melhorias Futuras
+- **Painel do Dono de Assessoria**: Métricas detalhadas, gestão de atletas
+- **Selo "Atleta Avaliador"**: Badge para atletas que avaliarem 5+ corridas
+- **Notificações por E-mail**: Resend/SendGrid
+- **Ranking histórico por ano**: Filtro de períodos anteriores
+- **Integração com Strava API**: Importação automática de resultados
+- **Proteções anti-fraude**: Detecção de padrões suspeitos de avaliação
 
 ## Backlog Geral
 1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
