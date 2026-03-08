@@ -1,0 +1,186 @@
+{
+  "summary": "Ranking das Corridas (Fase 3 e 4) - All 21 backend tests pass. Frontend verified with Playwright - Admin Dashboard 'Ranking Corridas' tab working with all sections, Public page displaying seals correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Admin Dashboard - Recharts",
+        "issues": ["Console warnings about chart width/height -1 (cosmetic, not affecting functionality)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_ranking_corridas_fase34.py",
+    "/app/test_reports/pytest/pytest_fase34.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_ranking_corridas_fase34.py"
+  ],
+  "success_rate": {
+    "backend": "100% (21/21 tests passed)",
+    "frontend": "100% (all UI elements verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"},
+    "atleta": {"email": "gustavo_carvalho_13@email.com", "password": "atleta123"}
+  },
+  "seed_data_creation": "No new seed data created - using existing Corrida de Natal 2025 with 12 evaluations.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Fase 3 and 4 complete and verified. Sistema de Selos working (Top 10 badge displayed on Corrida de Natal 2025). Admin Dashboard Ranking Corridas section fully functional with stats cards, charts, management table, CRUD operations.",
+  "verified_features": {
+    "backend_endpoints": {
+      "GET /api/admin/ranking-corridas/dashboard": {
+        "status": "WORKING",
+        "returns": ["stats (total_corridas, total_avaliacoes, media_geral)", "melhor_avaliada_nacional", "mais_avaliada_nacional", "melhores_por_estado", "distribuicao_notas", "ranking_top20"]
+      },
+      "POST /api/corridas-eventos": {
+        "status": "WORKING",
+        "note": "Creates new race - requires admin/dono_assessoria auth"
+      },
+      "PUT /api/corridas-eventos/{id}": {
+        "status": "WORKING",
+        "note": "Updates race - uses Form data not JSON"
+      },
+      "DELETE /api/corridas-eventos/{id}": {
+        "status": "WORKING",
+        "note": "Deletes race and associated evaluations - requires admin"
+      },
+      "GET /api/corridas-eventos": {
+        "status": "WORKING",
+        "returns": "List of all races"
+      },
+      "GET /api/corridas-eventos/{id}": {
+        "status": "WORKING",
+        "returns": "Single race details"
+      }
+    },
+    "frontend_admin_dashboard": {
+      "ranking_corridas_menu": {
+        "status": "WORKING",
+        "data_testid": "menu-ranking-corridas"
+      },
+      "stats_cards": {
+        "status": "WORKING",
+        "cards": ["Total Corridas (6)", "Total Avaliações (12)", "Média Geral (4.28)", "Melhor Avaliada (Corrida de Natal 2025)"]
+      },
+      "distribuicao_notas_chart": {
+        "status": "WORKING",
+        "note": "Bar chart showing distribution (nota 3: 1, nota 4: 10, nota 5: 1)"
+      },
+      "top_10_melhores_corridas": {
+        "status": "WORKING",
+        "note": "Shows Corrida de Natal 2025 as #1"
+      },
+      "melhores_por_estado": {
+        "status": "WORKING",
+        "note": "Shows RN with Corrida de Natal 2025 (4.3 rating)"
+      },
+      "sistema_de_selos": {
+        "status": "WORKING",
+        "selos": [
+          {"type": "Selo 5 Estrelas", "requirement": "Média ≥ 4.5 e mínimo 50 avaliações", "count": "0 corridas"},
+          {"type": "Top 10 Brasil", "requirement": "10 melhores no ranking nacional", "count": "1 corrida"},
+          {"type": "Top 10 Estado", "requirement": "10 melhores por estado", "count": "1 estado"}
+        ]
+      },
+      "gerenciar_corridas_table": {
+        "status": "WORKING",
+        "columns": ["Corrida", "Organizador", "Local", "Avaliações", "Média", "Status", "Ações"],
+        "actions": ["Edit button", "Delete button"]
+      },
+      "cadastrar_corrida_button": {
+        "status": "WORKING",
+        "note": "Opens modal with form fields"
+      },
+      "cadastrar_corrida_modal": {
+        "status": "WORKING",
+        "fields": ["Nome da Corrida", "Organizador/Empresa", "Estado", "Cidade", "Data da Corrida", "Link da Página", "Status"]
+      }
+    },
+    "frontend_public_page": {
+      "ranking_corridas_page": {
+        "status": "WORKING",
+        "elements": [
+          "Title: Ranking das Corridas",
+          "Legenda (Péssima to Excelente)",
+          "4 Stats cards",
+          "6 Period tabs (Nacional, Estadual, Cidade, Mensal, Anual, Histórico)",
+          "Ranking table"
+        ]
+      },
+      "selos_displayed": {
+        "status": "WORKING",
+        "note": "🏆 Top 10 badge displayed on Corrida de Natal 2025"
+      }
+    },
+    "selo_logic": {
+      "selo_5_estrelas": {
+        "requirement": "total_avaliacoes >= 50 AND media_geral >= 4.5",
+        "status": "IMPLEMENTED - No race qualifies yet (max 12 evaluations)"
+      },
+      "selo_top10_brasil": {
+        "requirement": "Top 10 in national ranking (needs 10+ evaluations to be in ranking)",
+        "status": "WORKING - Corrida de Natal 2025 has badge"
+      },
+      "selo_top10_estado": {
+        "requirement": "Top 10 in state ranking (needs 5+ evaluations)",
+        "status": "WORKING - Shows in melhores_por_estado section"
+      }
+    }
+  },
+  "backend_test_results": {
+    "TestAdminAuth": {
+      "test_admin_login": "PASS"
+    },
+    "TestAdminRankingCorridasDashboard": {
+      "test_dashboard_endpoint_exists": "PASS",
+      "test_dashboard_returns_stats": "PASS",
+      "test_dashboard_returns_distribuicao_notas": "PASS",
+      "test_dashboard_returns_melhores_por_estado": "PASS",
+      "test_dashboard_returns_ranking_top20": "PASS",
+      "test_dashboard_requires_admin": "PASS"
+    },
+    "TestCorridasEventosCRUD": {
+      "test_post_corridas_eventos": "PASS",
+      "test_get_corridas_eventos_list": "PASS",
+      "test_get_corrida_by_id": "PASS",
+      "test_get_corrida_not_found": "PASS",
+      "test_put_corridas_eventos": "PASS",
+      "test_delete_corridas_eventos": "PASS",
+      "test_post_requires_auth": "PASS"
+    },
+    "TestSelosAutomaticos": {
+      "test_ranking_includes_selo_fields": "PASS",
+      "test_ranking_corrida_natal_has_top10": "PASS",
+      "test_5estrelas_badge_requirements": "PASS"
+    },
+    "TestRankingCorridasPublicEndpoints": {
+      "test_ranking_corridas_endpoint": "PASS",
+      "test_ranking_corridas_stats_endpoint": "PASS",
+      "test_ranking_corridas_estados_endpoint": "PASS"
+    },
+    "TestCleanup": {
+      "test_cleanup_test_corridas": "PASS"
+    }
+  },
+  "frontend_ui_checks": {
+    "admin_dashboard_ranking_corridas_tab": "PASS",
+    "stats_cards_4_displayed": "PASS",
+    "distribuicao_notas_chart": "PASS",
+    "top_10_melhores_section": "PASS",
+    "melhores_por_estado_section": "PASS",
+    "sistema_de_selos_3_types": "PASS",
+    "gerenciar_corridas_table": "PASS",
+    "cadastrar_corrida_button_and_modal": "PASS",
+    "edit_delete_buttons_in_table": "PASS",
+    "public_page_top10_badge_displayed": "PASS"
+  }
+}

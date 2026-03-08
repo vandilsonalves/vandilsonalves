@@ -39,7 +39,7 @@ const ESTADOS_BR = [
 ];
 
 // Menu items para sidebar
-import { Instagram, Radar } from 'lucide-react';
+import { Instagram, Radar, Star } from 'lucide-react';
 
 const menuItems = [
   { id: 'dashboard', label: 'Dashboard', icon: Home },
@@ -47,6 +47,7 @@ const menuItems = [
   { id: 'atletas', label: 'Atletas', icon: Users },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
   { id: 'ranking', label: 'Ranking', icon: Trophy },
+  { id: 'ranking-corridas', label: 'Ranking Corridas', icon: Star },
   { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
   { id: 'instagram', label: 'Ranking Run Inside', icon: Activity },
 ];
@@ -172,6 +173,22 @@ const AdminDashboard = () => {
   const [atletaPromover, setAtletaPromover] = useState(null);
   const [promoverLoading, setPromoverLoading] = useState(false);
 
+  // Dashboard Ranking das Corridas (Fase 4)
+  const [rankingCorridasDashboard, setRankingCorridasDashboard] = useState(null);
+  const [loadingRankingCorridas, setLoadingRankingCorridas] = useState(false);
+  const [corridasEventos, setCorridasEventos] = useState([]);
+  const [showCorridaModal, setShowCorridaModal] = useState(false);
+  const [corridaEditando, setCorridaEditando] = useState(null);
+  const [corridaFormData, setCorridaFormData] = useState({
+    nome_corrida: '',
+    organizador: '',
+    cidade: '',
+    estado: '',
+    data_corrida: '',
+    pagina_link: '',
+    status: 'ativa'
+  });
+
   const MESES = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
@@ -198,6 +215,10 @@ const AdminDashboard = () => {
       fetchLigaRanking();
       fetchLigaStats();
       fetchEstadosComAssessorias();
+    }
+    if (activeMenu === 'ranking-corridas') {
+      fetchRankingCorridasDashboard();
+      fetchCorridasEventos();
     }
   }, [activeMenu, filtroCategoria, mesCalendario, anoCalendario, ligaTipo, ligaEstado, ligaCidade]);
 
@@ -493,6 +514,93 @@ const AdminDashboard = () => {
       console.error('Erro ao buscar detalhes:', error);
       toast.error('Erro ao carregar detalhes da assessoria');
     }
+  };
+
+  // ======= Ranking das Corridas - Dashboard Admin (Fase 4) =======
+  const fetchRankingCorridasDashboard = async () => {
+    setLoadingRankingCorridas(true);
+    try {
+      const response = await axios.get(`${API}/admin/ranking-corridas/dashboard`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setRankingCorridasDashboard(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar dashboard:', error);
+    } finally {
+      setLoadingRankingCorridas(false);
+    }
+  };
+
+  const fetchCorridasEventos = async () => {
+    try {
+      const response = await axios.get(`${API}/ranking-corridas`);
+      setCorridasEventos(response.data.ranking || []);
+    } catch (error) {
+      console.error('Erro ao buscar corridas:', error);
+    }
+  };
+
+  const handleSalvarCorrida = async () => {
+    if (!corridaFormData.nome_corrida || !corridaFormData.organizador || !corridaFormData.cidade || 
+        !corridaFormData.estado || !corridaFormData.data_corrida) {
+      toast.error('Preencha todos os campos obrigatórios');
+      return;
+    }
+
+    try {
+      const form = new FormData();
+      Object.keys(corridaFormData).forEach(key => {
+        form.append(key, corridaFormData[key]);
+      });
+
+      if (corridaEditando) {
+        await axios.put(`${API}/corridas-eventos/${corridaEditando.id}`, corridaFormData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        toast.success('Corrida atualizada!');
+      } else {
+        await axios.post(`${API}/corridas-eventos`, form, {
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
+        });
+        toast.success('Corrida cadastrada!');
+      }
+
+      setShowCorridaModal(false);
+      setCorridaEditando(null);
+      setCorridaFormData({
+        nome_corrida: '', organizador: '', cidade: '', estado: '',
+        data_corrida: '', pagina_link: '', status: 'ativa'
+      });
+      fetchCorridasEventos();
+      fetchRankingCorridasDashboard();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao salvar corrida');
+    }
+  };
+
+  const handleExcluirCorrida = async (corridaId) => {
+    if (!confirm('Excluir esta corrida? Todas as avaliações serão perdidas.')) return;
+    
+    try {
+      await axios.delete(`${API}/corridas-eventos/${corridaId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Corrida excluída!');
+      fetchCorridasEventos();
+      fetchRankingCorridasDashboard();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao excluir');
+    }
+  };
+
+  const renderStarsAdmin = (rating) => {
+    const stars = [];
+    for (let i = 0; i < 5; i++) {
+      stars.push(
+        <Star key={i} className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
+      );
+    }
+    return <div className="flex">{stars}</div>;
   };
 
   const getSeloIcon = (selo) => {
@@ -2289,6 +2397,335 @@ const AdminDashboard = () => {
           </div>
         )}
 
+        {/* DASHBOARD RANKING DAS CORRIDAS - FASE 4 */}
+        {activeMenu === 'ranking-corridas' && (
+          <div className="space-y-6">
+            {/* Header */}
+            <div className="flex flex-wrap items-center justify-between gap-4">
+              <div>
+                <h2 className="text-2xl font-bold flex items-center gap-2">
+                  <Star className="w-6 h-6 text-yellow-500" />
+                  Dashboard - Ranking das Corridas
+                </h2>
+                <p className="text-slate-500">Gerenciamento e estatísticas das avaliações de corridas</p>
+              </div>
+              <Button 
+                onClick={() => { setCorridaEditando(null); setShowCorridaModal(true); }}
+                className="bg-emerald-500 hover:bg-emerald-600"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Cadastrar Corrida
+              </Button>
+            </div>
+
+            {loadingRankingCorridas ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
+              </div>
+            ) : rankingCorridasDashboard && (
+              <>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-blue-100 text-xs">Total Corridas</p>
+                          <p className="text-3xl font-bold">{rankingCorridasDashboard.stats?.total_corridas || 0}</p>
+                        </div>
+                        <Trophy className="w-10 h-10 text-blue-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-emerald-100 text-xs">Total Avaliações</p>
+                          <p className="text-3xl font-bold">{rankingCorridasDashboard.stats?.total_avaliacoes || 0}</p>
+                        </div>
+                        <Star className="w-10 h-10 text-emerald-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-yellow-500 to-amber-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-yellow-100 text-xs">Média Geral</p>
+                          <p className="text-3xl font-bold">{rankingCorridasDashboard.stats?.media_geral || '0.0'}</p>
+                        </div>
+                        <BarChart3 className="w-10 h-10 text-yellow-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                  
+                  <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-purple-100 text-xs">Melhor Avaliada</p>
+                          <p className="text-sm font-bold truncate max-w-[120px]">
+                            {rankingCorridasDashboard.melhor_avaliada_nacional?.nome_corrida || '-'}
+                          </p>
+                          <p className="text-xs text-purple-200">
+                            {rankingCorridasDashboard.melhor_avaliada_nacional?.media || '-'} ⭐
+                          </p>
+                        </div>
+                        <Award className="w-10 h-10 text-purple-200" />
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Gráficos */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Distribuição de Notas */}
+                  {rankingCorridasDashboard.distribuicao_notas && rankingCorridasDashboard.distribuicao_notas.length > 0 && (
+                    <Card>
+                      <CardHeader>
+                        <CardTitle className="flex items-center gap-2">
+                          <BarChart3 className="w-5 h-5 text-yellow-500" />
+                          Distribuição de Notas
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <ResponsiveContainer width="100%" height={250}>
+                          <BarChart data={rankingCorridasDashboard.distribuicao_notas}>
+                            <CartesianGrid strokeDasharray="3 3" />
+                            <XAxis dataKey="nota" label={{ value: 'Nota', position: 'bottom', offset: -5 }} />
+                            <YAxis label={{ value: 'Qtd', angle: -90, position: 'insideLeft' }} />
+                            <Tooltip />
+                            <Bar dataKey="total" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Avaliações" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Top 10 Ranking */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        Top 10 - Melhores Corridas
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2 max-h-[250px] overflow-y-auto">
+                        {rankingCorridasDashboard.ranking_top20?.filter(c => c.no_ranking).slice(0, 10).map((corrida, idx) => (
+                          <div key={corrida.id} className={`flex items-center justify-between p-2 rounded-lg ${idx < 3 ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-slate-50 dark:bg-slate-800'}`}>
+                            <div className="flex items-center gap-3">
+                              <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${
+                                idx === 0 ? 'bg-yellow-400 text-yellow-900' :
+                                idx === 1 ? 'bg-slate-300 text-slate-700' :
+                                idx === 2 ? 'bg-amber-600 text-white' :
+                                'bg-slate-200 text-slate-600'
+                              }`}>
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <p className="font-medium text-sm">{corrida.nome_corrida}</p>
+                                <p className="text-xs text-slate-500">{corrida.cidade}/{corrida.estado}</p>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <div className="flex items-center gap-1">
+                                {renderStarsAdmin(corrida.media_geral)}
+                              </div>
+                              <p className="text-xs text-slate-500">{corrida.total_avaliacoes} aval.</p>
+                            </div>
+                          </div>
+                        ))}
+                        {(!rankingCorridasDashboard.ranking_top20 || rankingCorridasDashboard.ranking_top20.filter(c => c.no_ranking).length === 0) && (
+                          <p className="text-center text-slate-500 py-4">Nenhuma corrida com avaliações suficientes ainda</p>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {/* Melhores por Estado */}
+                {rankingCorridasDashboard.melhores_por_estado && rankingCorridasDashboard.melhores_por_estado.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <MapPin className="w-5 h-5 text-emerald-500" />
+                        Melhores Corridas por Estado
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
+                        {rankingCorridasDashboard.melhores_por_estado.map((item) => (
+                          <div key={item.estado} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                            <div className="flex items-center justify-between mb-1">
+                              <Badge variant="secondary" className="font-bold">{item.estado}</Badge>
+                              <div className="flex items-center">
+                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
+                                <span className="text-sm font-medium">{item.media?.toFixed(1)}</span>
+                              </div>
+                            </div>
+                            <p className="text-sm font-medium truncate">{item.nome_corrida}</p>
+                            <p className="text-xs text-slate-500">{item.cidade} • {item.avaliacoes} aval.</p>
+                          </div>
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Sistema de Selos - Fase 3 */}
+                <Card className="border-2 border-yellow-200 bg-yellow-50/50 dark:bg-yellow-900/10">
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-yellow-600" />
+                      Sistema de Selos - Certificações
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-yellow-300">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">⭐</span>
+                          <span className="font-bold text-yellow-700">Selo 5 Estrelas</span>
+                        </div>
+                        <p className="text-sm text-slate-600">Média ≥ 4.5 e mínimo 50 avaliações</p>
+                        <div className="mt-2">
+                          <Badge className="bg-yellow-500">
+                            {corridasEventos.filter(c => c.total_avaliacoes >= 50 && c.media_geral >= 4.5).length} corridas
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-blue-300">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">🏆</span>
+                          <span className="font-bold text-blue-700">Top 10 Brasil</span>
+                        </div>
+                        <p className="text-sm text-slate-600">10 melhores no ranking nacional</p>
+                        <div className="mt-2">
+                          <Badge className="bg-blue-500">
+                            {corridasEventos.filter(c => c.no_ranking).slice(0, 10).length} corridas
+                          </Badge>
+                        </div>
+                      </div>
+                      
+                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-emerald-300">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-2xl">📍</span>
+                          <span className="font-bold text-emerald-700">Top 10 Estado</span>
+                        </div>
+                        <p className="text-sm text-slate-600">10 melhores por estado</p>
+                        <div className="mt-2">
+                          <Badge className="bg-emerald-500">
+                            {rankingCorridasDashboard.melhores_por_estado?.length || 0} estados
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* Lista de Todas as Corridas */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center justify-between">
+                      <span className="flex items-center gap-2">
+                        <Trophy className="w-5 h-5 text-yellow-500" />
+                        Gerenciar Corridas Cadastradas
+                      </span>
+                      <Badge variant="outline">{corridasEventos.length} corridas</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="overflow-x-auto">
+                      <table className="w-full">
+                        <thead>
+                          <tr className="border-b bg-slate-50 dark:bg-slate-800">
+                            <th className="text-left py-3 px-2 font-semibold text-sm">Corrida</th>
+                            <th className="text-left py-3 px-2 font-semibold text-sm hidden md:table-cell">Organizador</th>
+                            <th className="text-left py-3 px-2 font-semibold text-sm">Local</th>
+                            <th className="text-center py-3 px-2 font-semibold text-sm">Avaliações</th>
+                            <th className="text-center py-3 px-2 font-semibold text-sm">Média</th>
+                            <th className="text-center py-3 px-2 font-semibold text-sm">Status</th>
+                            <th className="text-center py-3 px-2 font-semibold text-sm">Ações</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {corridasEventos.map((corrida) => (
+                            <tr key={corrida.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
+                              <td className="py-3 px-2">
+                                <div>
+                                  <p className="font-medium">{corrida.nome_corrida}</p>
+                                  <p className="text-xs text-slate-500">{corrida.data_corrida}</p>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2 text-sm hidden md:table-cell">{corrida.organizador}</td>
+                              <td className="py-3 px-2 text-sm">{corrida.cidade}/{corrida.estado}</td>
+                              <td className="py-3 px-2 text-center">
+                                <Badge variant={corrida.no_ranking ? 'default' : 'secondary'}>
+                                  {corrida.total_avaliacoes}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  {renderStarsAdmin(corrida.media_geral)}
+                                  <span className="text-sm ml-1">{corrida.media_geral}</span>
+                                </div>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <Badge className={
+                                  corrida.status === 'ativa' ? 'bg-emerald-500' :
+                                  corrida.status === 'encerrada' ? 'bg-slate-500' : 'bg-red-500'
+                                }>
+                                  {corrida.status}
+                                </Badge>
+                              </td>
+                              <td className="py-3 px-2 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    onClick={() => {
+                                      setCorridaEditando(corrida);
+                                      setCorridaFormData({
+                                        nome_corrida: corrida.nome_corrida,
+                                        organizador: corrida.organizador,
+                                        cidade: corrida.cidade,
+                                        estado: corrida.estado,
+                                        data_corrida: corrida.data_corrida,
+                                        pagina_link: corrida.pagina_link || '',
+                                        status: corrida.status
+                                      });
+                                      setShowCorridaModal(true);
+                                    }}
+                                  >
+                                    <Edit className="w-4 h-4" />
+                                  </Button>
+                                  <Button
+                                    size="sm"
+                                    variant="ghost"
+                                    className="text-red-500 hover:text-red-700"
+                                    onClick={() => handleExcluirCorrida(corrida.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </CardContent>
+                </Card>
+              </>
+            )}
+          </div>
+        )}
+
         {/* RANKING RUN INSIDE - INSTAGRAM ANALYTICS */}
         {activeMenu === 'instagram' && (
           <div className="space-y-6">
@@ -3853,6 +4290,96 @@ const AdminDashboard = () => {
                     Confirmar Transferência
                   </>
                 )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Cadastrar/Editar Corrida */}
+        <Dialog open={showCorridaModal} onOpenChange={setShowCorridaModal}>
+          <DialogContent className="max-w-lg">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                {corridaEditando ? <Edit className="w-5 h-5 text-blue-500" /> : <Plus className="w-5 h-5 text-emerald-500" />}
+                {corridaEditando ? 'Editar Corrida' : 'Cadastrar Nova Corrida'}
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label>Nome da Corrida *</Label>
+                <Input
+                  value={corridaFormData.nome_corrida}
+                  onChange={(e) => setCorridaFormData({...corridaFormData, nome_corrida: e.target.value})}
+                  placeholder="Ex: Maratona de São Paulo"
+                />
+              </div>
+              <div>
+                <Label>Organizador / Empresa *</Label>
+                <Input
+                  value={corridaFormData.organizador}
+                  onChange={(e) => setCorridaFormData({...corridaFormData, organizador: e.target.value})}
+                  placeholder="Ex: Yescom"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <Label>Estado *</Label>
+                  <Select value={corridaFormData.estado} onValueChange={(v) => setCorridaFormData({...corridaFormData, estado: v})}>
+                    <SelectTrigger>
+                      <SelectValue placeholder="UF" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTADOS_BR.map(uf => (
+                        <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div>
+                  <Label>Cidade *</Label>
+                  <Input
+                    value={corridaFormData.cidade}
+                    onChange={(e) => setCorridaFormData({...corridaFormData, cidade: e.target.value})}
+                    placeholder="Cidade"
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>Data da Corrida *</Label>
+                <Input
+                  type="date"
+                  value={corridaFormData.data_corrida}
+                  onChange={(e) => setCorridaFormData({...corridaFormData, data_corrida: e.target.value})}
+                />
+              </div>
+              <div>
+                <Label>Link da Página (Instagram ou Site)</Label>
+                <Input
+                  value={corridaFormData.pagina_link}
+                  onChange={(e) => setCorridaFormData({...corridaFormData, pagina_link: e.target.value})}
+                  placeholder="https://..."
+                />
+              </div>
+              <div>
+                <Label>Status</Label>
+                <Select value={corridaFormData.status} onValueChange={(v) => setCorridaFormData({...corridaFormData, status: v})}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="ativa">Ativa</SelectItem>
+                    <SelectItem value="encerrada">Encerrada</SelectItem>
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => { setShowCorridaModal(false); setCorridaEditando(null); }}>
+                Cancelar
+              </Button>
+              <Button onClick={handleSalvarCorrida} className="bg-emerald-500 hover:bg-emerald-600">
+                {corridaEditando ? 'Salvar Alterações' : 'Cadastrar Corrida'}
               </Button>
             </DialogFooter>
           </DialogContent>
