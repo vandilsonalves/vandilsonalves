@@ -2467,6 +2467,35 @@ async def get_equipes_disponiveis():
     # Retorna array direto para facilitar uso no frontend
     return [e["_id"] for e in result if e["_id"] and e["_id"].lower() != 'sem equipe']
 
+@api_router.get("/assessorias/lista")
+async def get_assessorias_lista():
+    """Lista assessorias cadastradas com nome, cidade e estado para dropdown do cadastro"""
+    # Buscar assessorias da coleção de assessorias
+    assessorias = await db.assessorias.find(
+        {"status": {"$ne": "inativa"}},
+        {"_id": 0, "nome": 1, "cidade": 1, "estado": 1}
+    ).to_list(None)
+    
+    # Também buscar equipes únicas dos atletas se não houver na coleção assessorias
+    if len(assessorias) == 0:
+        pipeline = [
+            {"$match": {"role": "atleta", "equipe": {"$ne": "", "$exists": True}}},
+            {"$group": {
+                "_id": "$equipe",
+                "cidade": {"$first": "$cidade"},
+                "estado": {"$first": "$estado"}
+            }},
+            {"$sort": {"_id": 1}}
+        ]
+        result = await db.usuarios.aggregate(pipeline).to_list(None)
+        assessorias = [
+            {"nome": e["_id"], "cidade": e.get("cidade", ""), "estado": e.get("estado", "")}
+            for e in result 
+            if e["_id"] and e["_id"].lower() not in ['sem equipe', 'individual']
+        ]
+    
+    return assessorias
+
 @api_router.get("/")
 async def root():
     return {"message": "Ranking Run Pro API"}

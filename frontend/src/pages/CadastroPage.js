@@ -85,10 +85,18 @@ const CadastroPage = () => {
   useEffect(() => {
     const fetchEquipes = async () => {
       try {
-        const response = await axios.get(`${API}/ranking/equipes`);
+        const response = await axios.get(`${API}/assessorias/lista`);
+        // Formato: [{nome, cidade, estado}]
         setEquipesCadastradas(response.data || []);
       } catch (err) {
         console.error('Erro ao buscar equipes:', err);
+        // Fallback para endpoint antigo
+        try {
+          const fallback = await axios.get(`${API}/ranking/equipes`);
+          setEquipesCadastradas((fallback.data || []).map(nome => ({ nome, cidade: '', estado: '' })));
+        } catch (e) {
+          console.error('Fallback também falhou:', e);
+        }
       }
     };
     fetchEquipes();
@@ -131,9 +139,11 @@ const CadastroPage = () => {
   // Verificar se pode usar modalidade Povão (PCD e Cadeirante não podem)
   const podeSelecionarPovao = formData.categoria === 'normal' || formData.categoria === '';
 
-  // Filtrar equipes pela busca
+  // Filtrar equipes pela busca (agora são objetos com nome, cidade, estado)
   const equipesFiltradas = equipesCadastradas.filter(equipe => 
-    equipe.toLowerCase().includes(equipeSearchTerm.toLowerCase())
+    equipe.nome?.toLowerCase().includes(equipeSearchTerm.toLowerCase()) ||
+    equipe.cidade?.toLowerCase().includes(equipeSearchTerm.toLowerCase()) ||
+    equipe.estado?.toLowerCase().includes(equipeSearchTerm.toLowerCase())
   );
 
   const handleSubmit = async (e) => {
@@ -246,48 +256,80 @@ const CadastroPage = () => {
                   />
                 </div>
 
-                {/* Campo Equipe/Assessoria com autocomplete */}
+                {/* Campo Equipe/Assessoria com dropdown - APENAS equipes cadastradas */}
                 <div className="relative">
-                  <Label>Equipe / Assessoria</Label>
+                  <Label>Equipe / Assessoria *</Label>
                   <div className="relative">
                     <Input
                       value={equipeSearchTerm}
                       onChange={(e) => {
                         setEquipeSearchTerm(e.target.value);
                         setShowEquipeDropdown(true);
-                        handleChange('equipe', e.target.value);
+                        // NÃO permite escrever livremente - só selecionar do dropdown
                       }}
                       onFocus={() => setShowEquipeDropdown(true)}
-                      placeholder="Digite ou selecione..."
+                      placeholder="Selecione sua equipe..."
+                      readOnly={formData.equipe === 'Individual'}
                       data-testid="input-equipe"
                     />
                     <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   </div>
                   
-                  {/* Dropdown de equipes */}
+                  {/* Dropdown de equipes - APENAS cadastradas + INDIVIDUAL */}
                   {showEquipeDropdown && (
-                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                    <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
+                      {/* Opção INDIVIDUAL - sempre primeiro */}
                       <div
-                        className="px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer border-b border-slate-100 dark:border-slate-700"
-                        onClick={() => handleEquipeSelect('Sem equipe')}
+                        className="px-3 py-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 cursor-pointer border-b-2 border-amber-200 bg-amber-50/50"
+                        onClick={() => handleEquipeSelect('Individual')}
+                        data-testid="option-individual"
                       >
-                        <span className="text-slate-500">Sem equipe</span>
+                        <div className="flex items-center gap-2">
+                          <span className="font-semibold text-amber-700">INDIVIDUAL</span>
+                          <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded">Sem equipe</span>
+                        </div>
                       </div>
+                      
+                      {/* Lista de equipes cadastradas */}
                       {equipesFiltradas.length > 0 ? (
-                        equipesFiltradas.slice(0, 10).map((equipe, idx) => (
+                        equipesFiltradas.slice(0, 15).map((equipe, idx) => (
                           <div
                             key={idx}
-                            className="px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer"
-                            onClick={() => handleEquipeSelect(equipe)}
+                            className="px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer border-b border-slate-100 dark:border-slate-700"
+                            onClick={() => handleEquipeSelect(equipe.nome)}
                           >
-                            {equipe}
+                            <div className="font-medium">{equipe.nome}</div>
+                            {(equipe.cidade || equipe.estado) && (
+                              <div className="text-xs text-slate-500">
+                                {equipe.cidade}{equipe.cidade && equipe.estado && '/'}{equipe.estado}
+                              </div>
+                            )}
                           </div>
                         ))
                       ) : equipeSearchTerm.length > 0 ? (
-                        <div className="px-3 py-2 text-slate-500 text-sm">
-                          Equipe não encontrada. Será cadastrada como nova.
+                        <div className="px-3 py-3 text-slate-500 text-sm bg-slate-50">
+                          <p className="font-medium text-slate-600">Equipe não encontrada</p>
+                          <p className="text-xs mt-1">Selecione "INDIVIDUAL" e peça ao dono da assessoria para cadastrá-la.</p>
                         </div>
                       ) : null}
+                    </div>
+                  )}
+
+                  {/* Alerta quando selecionar INDIVIDUAL */}
+                  {formData.equipe === 'Individual' && (
+                    <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <span className="text-amber-600 text-lg">⚠️</span>
+                        <div>
+                          <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
+                            Não encontrou sua equipe? É normal!
+                          </p>
+                          <p className="text-xs text-amber-700 dark:text-amber-300 mt-1">
+                            Fale com o <strong>Dono(a) da sua Assessoria/Equipe</strong> para fazer o cadastro. 
+                            Assim que ele(a) fizer, você já poderá alterar no seu <strong>Perfil</strong>.
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   )}
                 </div>

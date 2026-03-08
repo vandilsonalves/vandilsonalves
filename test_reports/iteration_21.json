@@ -1,0 +1,102 @@
+{
+  "summary": "Iteration 21: Tested Equipe/Assessoria dropdown feature on /cadastro page. All 7 features verified working: (1) GET /api/assessorias/lista returns list with nome/cidade/estado, (2) Dropdown displays on cadastro page, (3) INDIVIDUAL option at top with data-testid, (4) Assessorias show Nome and Cidade/UF format, (5) Yellow alert appears when selecting INDIVIDUAL, (6) Alert contains correct message about contacting assessoria owner, (7) User cannot write freely - must select from dropdown.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter21_assessorias_lista.py",
+    "/app/test_reports/pytest/pytest_iter21_assessorias.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter21_assessorias_lista.py (new test file)"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7 tests passed)",
+    "frontend": "100% (all dropdown features verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "None - used existing assessorias data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Equipe/Assessoria dropdown feature on cadastro page is fully functional. Endpoint GET /api/assessorias/lista returns [{nome, cidade, estado}]. Frontend correctly displays dropdown with INDIVIDUAL at top, shows assessorias with Cidade/UF, and displays yellow alert when INDIVIDUAL is selected.",
+  "verified_features": {
+    "feature_1_api_endpoint": {
+      "endpoint": "GET /api/assessorias/lista",
+      "status": "WORKING",
+      "response_format": "[{nome: string, cidade: string, estado: string}]",
+      "notes": "Returns list from assessorias collection, falls back to unique equipes from usuarios if empty"
+    },
+    "feature_2_dropdown_display": {
+      "location": "/cadastro - Equipe/Assessoria field",
+      "status": "WORKING",
+      "selector": "[data-testid='input-equipe']"
+    },
+    "feature_3_individual_option": {
+      "location": "Top of dropdown",
+      "status": "WORKING",
+      "selector": "[data-testid='option-individual']",
+      "display": "INDIVIDUAL with 'Sem equipe' badge"
+    },
+    "feature_4_assessoria_format": {
+      "status": "WORKING",
+      "format": "Nome on first line, Cidade/UF on second line",
+      "example": "Assessoria CAFAV | Brasília/DF"
+    },
+    "feature_5_yellow_alert": {
+      "status": "WORKING",
+      "trigger": "When INDIVIDUAL is selected",
+      "styling": "bg-amber-50 with amber-300 border and ⚠️ icon"
+    },
+    "feature_6_alert_message": {
+      "status": "WORKING",
+      "message_parts": [
+        "Não encontrou sua equipe? É normal!",
+        "Fale com o Dono(a) da sua Assessoria/Equipe para fazer o cadastro",
+        "Assim que ele(a) fizer, você já poderá alterar no seu Perfil"
+      ]
+    },
+    "feature_7_no_free_writing": {
+      "status": "WORKING",
+      "behavior": "Input is readonly when INDIVIDUAL selected, shows 'Equipe não encontrada' message when typing unknown equipe",
+      "notes": "User must select from dropdown - cannot submit arbitrary team names"
+    }
+  },
+  "backend_test_results": {
+    "TestAssessoriasLista": {
+      "test_assessorias_lista_returns_200": "PASS",
+      "test_assessorias_lista_returns_list": "PASS - 15 assessorias returned",
+      "test_assessorias_lista_format": "PASS - {nome, cidade, estado}",
+      "test_assessorias_lista_excludes_individual": "PASS",
+      "test_assessorias_lista_nome_not_empty": "PASS"
+    },
+    "TestAssessoriasListaIntegration": {
+      "test_registration_with_assessoria_from_list": "PASS",
+      "test_registration_with_individual": "PASS"
+    }
+  },
+  "frontend_ui_checks": {
+    "cadastro_page_loads": "PASS",
+    "equipe_input_has_data_testid": "PASS",
+    "dropdown_opens_on_click": "PASS",
+    "individual_option_at_top": "PASS",
+    "individual_has_data_testid": "PASS",
+    "assessorias_show_cidade_uf": "PASS",
+    "yellow_alert_on_individual": "PASS",
+    "alert_contains_correct_message": "PASS",
+    "input_readonly_when_individual_selected": "PASS"
+  },
+  "screenshots": [
+    ".screenshots/cadastro_dropdown_list.png - Shows dropdown with INDIVIDUAL and assessorias",
+    ".screenshots/cadastro_individual_selected.png - Shows yellow alert after selecting INDIVIDUAL"
+  ]
+}
