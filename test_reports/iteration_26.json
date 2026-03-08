@@ -1,0 +1,138 @@
+{
+  "summary": "Iteration 26: Tested the reorganized Admin Dashboard (Geral, Atletas, Assessorias, Corridas, Resultados/Aprovações) and the monthly evolution chart on Ranking de Equipes page. All 21 backend tests PASSED. All frontend sections working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [
+      {
+        "component": "Recharts in Admin Dashboard",
+        "issue": "Console warnings about chart width/height being -1. These appear during component mounting but charts render correctly after.",
+        "selector": "ResponsiveContainer",
+        "priority": "LOW"
+      }
+    ],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter26_admin_dashboard.py",
+    "/app/test_reports/pytest/pytest_iter26_admin_dashboard.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "The Dashboard Geral initially shows 'Carregando estatísticas...' spinner but loads correctly after API calls complete. NOT an infinite loading issue - the main agent's concern was unfounded.",
+    "All dashboard sections (Atletas, Assessorias, Corridas, Aprovações) load correctly with proper data."
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter26_admin_dashboard.py"
+  ],
+  "success_rate": {
+    "backend": "100% (21/21 tests passed)",
+    "frontend": "100% (all 5 dashboard sections verified)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@runpro.com",
+      "password": "admin123"
+    },
+    "api_url": "https://team-ranking-ui.preview.emergentagent.com"
+  },
+  "seed_data_creation": "None - used existing test data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Admin Dashboard reorganizado está funcionando corretamente. O Dashboard Geral NÃO tem problema de loading infinito - ele carrega corretamente após as chamadas de API completarem. Todas as 5 seções do dashboard (Geral, Atletas, Assessorias, Corridas, Aprovações) estão funcionando. O gráfico de Evolução Mensal no Ranking de Equipes está funcionando com dados reais.",
+  "verified_features": {
+    "dashboard_geral": {
+      "status": "WORKING",
+      "stats_cards": ["Total de Atletas: 169", "Total de Corridas: 1273", "Pendentes: 0", "Selo P Ativos: 0"],
+      "charts": ["Distribuição por Modalidade (pie)", "Distribuição por Categoria (bar)", "Corridas por Mês (area)", "Top Estados (bar)", "Ranking do Povão Estatísticas"]
+    },
+    "dashboard_atletas": {
+      "status": "WORKING",
+      "total_athletes": 169,
+      "features": ["Search by name/equipe/cidade", "Filter by categoria", "Filter by modalidade", "View/Edit/Transfer/Delete actions", "Export to Excel"]
+    },
+    "dashboard_assessorias": {
+      "status": "WORKING",
+      "total_assessorias": 16,
+      "features": ["Stats cards", "Top 10 Assessorias chart", "Distribuição de Selos chart", "Full ranking table with actions"],
+      "filters": ["Nacional", "Estadual", "Cidade", "Histórico"]
+    },
+    "dashboard_corridas": {
+      "status": "WORKING",
+      "features": ["Stats cards (Total Corridas, Total Avaliações, Média Geral, Melhor Avaliada)", "Sistema de Selos info", "Distribuição de Notas chart", "Top 10 Melhores Corridas list", "Gerenciar Corridas/Eventos table"]
+    },
+    "dashboard_resultados": {
+      "status": "WORKING",
+      "pendentes": 0,
+      "features": ["Pending results list", "Approve/Reject actions", "Photo viewing"]
+    },
+    "evolucao_mensal_chart": {
+      "status": "WORKING",
+      "endpoint": "GET /api/liga-assessorias/evolucao-mensal?top=5",
+      "data_structure": {
+        "evolucao": "Array of month data with points per team",
+        "equipes": "Array of top teams with name, key, color",
+        "ano": "Current year (2026)"
+      },
+      "display": "LineChart with monthly evolution for Top 5 teams"
+    },
+    "ranking_equipes_filters": {
+      "status": "WORKING",
+      "tabs": ["Nacional", "Estadual", "Cidade", "Histórico"],
+      "month_filter": "Dropdown showing Janeiro, Fevereiro, Março (only past/current months)"
+    }
+  },
+  "backend_test_results": {
+    "TestAdminStatsDashboardGeral": {
+      "test_admin_stats_returns_data": "PASS",
+      "test_admin_stats_estados": "PASS",
+      "test_admin_stats_categorias": "PASS",
+      "test_admin_stats_faixa_etaria": "PASS",
+      "test_admin_stats_corridas_por_mes": "PASS"
+    },
+    "TestAdminAtletasDashboard": {
+      "test_get_all_atletas": "PASS",
+      "test_atletas_filter_by_categoria": "PASS",
+      "test_admin_atletas_export": "PASS"
+    },
+    "TestAdminAssessoriasDashboard": {
+      "test_liga_ranking_nacional": "PASS",
+      "test_liga_stats": "PASS",
+      "test_liga_estados": "PASS"
+    },
+    "TestEvolucaoMensalChart": {
+      "test_evolucao_mensal_returns_data": "PASS",
+      "test_evolucao_mensal_different_top_values": "PASS"
+    },
+    "TestRankingEquipesFilters": {
+      "test_filter_nacional": "PASS",
+      "test_filter_estadual": "PASS",
+      "test_filter_historico": "PASS",
+      "test_filter_by_mes": "PASS"
+    },
+    "TestCorridasDashboard": {
+      "test_ranking_corridas_endpoint": "PASS",
+      "test_ranking_corridas_dashboard": "PASS"
+    },
+    "TestAprovacoesDashboard": {
+      "test_get_pendentes": "PASS"
+    },
+    "TestRankingPovaoStats": {
+      "test_ranking_povao_stats": "PASS"
+    }
+  },
+  "admin_sidebar_menu_items": [
+    "Dashboard Geral",
+    "Atletas",
+    "Assessorias",
+    "Corridas",
+    "Aprovações",
+    "+ Submeter Resultado",
+    "Exportar Ranking",
+    "Aniversariantes",
+    "Ranking Run Inside"
+  ]
+}

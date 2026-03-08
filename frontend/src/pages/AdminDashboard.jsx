@@ -41,13 +41,23 @@ const ESTADOS_BR = [
 // Menu items para sidebar
 import { Instagram, Radar, Star } from 'lucide-react';
 
+// Import dos novos dashboards modulares
+import { 
+  DashboardGeral, 
+  DashboardAtletas, 
+  DashboardAssessorias, 
+  DashboardCorridas, 
+  DashboardResultados 
+} from './admin';
+
 const menuItems = [
-  { id: 'dashboard', label: 'Dashboard', icon: Home },
-  { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
+  { id: 'dashboard', label: 'Dashboard Geral', icon: Home },
   { id: 'atletas', label: 'Atletas', icon: Users },
+  { id: 'assessorias', label: 'Assessorias', icon: Trophy },
+  { id: 'ranking-corridas', label: 'Corridas', icon: Star },
+  { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
-  { id: 'ranking', label: 'Ranking', icon: Trophy },
-  { id: 'ranking-corridas', label: 'Ranking Corridas', icon: Star },
+  { id: 'ranking', label: 'Exportar Ranking', icon: FileText },
   { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
   { id: 'instagram', label: 'Ranking Run Inside', icon: Activity },
 ];
@@ -193,12 +203,13 @@ const AdminDashboard = () => {
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   useEffect(() => {
+    if (!token) return; // Aguardar token carregar
     if (!isAdmin) {
       navigate('/');
       return;
     }
     fetchAllData();
-  }, [isAdmin]);
+  }, [isAdmin, token]);
 
   useEffect(() => {
     if (activeMenu === 'atletas') {
@@ -241,16 +252,16 @@ const AdminDashboard = () => {
   };
 
   const fetchAllData = async () => {
-    await Promise.all([
-      fetchStats(),
-      fetchPendentes()
-    ]);
+    // Executar de forma independente para não bloquear um ao outro
+    fetchStats();
+    fetchPendentes();
   };
 
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes, etniaRes, equipesPorEstadoRes] = await Promise.all([
+      // Usar Promise.allSettled para não bloquear se uma requisição falhar
+      const results = await Promise.allSettled([
         axios.get(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/estados`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -261,44 +272,51 @@ const AdminDashboard = () => {
         axios.get(`${API}/admin/stats/equipes-por-estado`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
-      setStats(statsRes.data);
-      setStatsEstados(estadosRes.data);
-      setStatsCategorias(categoriasRes.data);
-      setStatsFaixa(faixaRes.data);
-      setCorridasPorMes(corridasRes.data);
-      setStatsPovao(povaoRes.data);
-      setStatsEtnia(etniaRes.data);
-      setStatsEquipesPorEstado(equipesPorEstadoRes.data);
+      // Extrair dados apenas de requisições bem-sucedidas
+      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes, etniaRes, equipesPorEstadoRes] = results;
+      
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+      if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
+      if (categoriasRes.status === 'fulfilled') setStatsCategorias(categoriasRes.value.data);
+      if (faixaRes.status === 'fulfilled') setStatsFaixa(faixaRes.value.data);
+      if (corridasRes.status === 'fulfilled') setCorridasPorMes(corridasRes.value.data);
+      if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
+      if (etniaRes.status === 'fulfilled') setStatsEtnia(etniaRes.value.data);
+      if (equipesPorEstadoRes.status === 'fulfilled') setStatsEquipesPorEstado(equipesPorEstadoRes.value.data);
       
       // Calcular estatísticas de equipes a partir dos atletas
-      const atletasRes = await axios.get(`${API}/admin/atletas`, { headers: { Authorization: `Bearer ${token}` } });
-      const atletas = atletasRes.data;
-      
-      // Contar por equipe
-      const equipesCount = {};
-      let profissionalCount = 0;
-      let povaoCount = 0;
-      
-      atletas.forEach(a => {
-        const equipe = a.equipe || 'Sem equipe';
-        equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
+      try {
+        const atletasRes = await axios.get(`${API}/admin/atletas`, { headers: { Authorization: `Bearer ${token}` } });
+        const atletas = atletasRes.data;
         
-        // Contar modalidades
-        if (a.modalidade_usuario === 'povao_pace_livre') {
-          povaoCount++;
-        } else {
-          profissionalCount++;
-        }
-      });
-      
-      // Converter para array e ordenar por quantidade
-      const equipesArray = Object.entries(equipesCount)
-        .map(([equipe, total]) => ({ equipe, total }))
-        .sort((a, b) => b.total - a.total)
-        .slice(0, 10); // Top 10 equipes
-      
-      setStatsEquipes(equipesArray);
-      setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
+        // Contar por equipe
+        const equipesCount = {};
+        let profissionalCount = 0;
+        let povaoCount = 0;
+        
+        atletas.forEach(a => {
+          const equipe = a.equipe || 'Sem equipe';
+          equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
+          
+          // Contar modalidades
+          if (a.modalidade_usuario === 'povao_pace_livre') {
+            povaoCount++;
+          } else {
+            profissionalCount++;
+          }
+        });
+        
+        // Converter para array e ordenar por quantidade
+        const equipesArray = Object.entries(equipesCount)
+          .map(([equipe, total]) => ({ equipe, total }))
+          .sort((a, b) => b.total - a.total)
+          .slice(0, 10); // Top 10 equipes
+        
+        setStatsEquipes(equipesArray);
+        setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
+      } catch (err) {
+        console.error('Erro ao processar atletas:', err);
+      }
       
     } catch (error) {
       console.error('Erro ao buscar estatísticas:', error);
@@ -1144,792 +1162,111 @@ const AdminDashboard = () => {
           <p className="text-slate-500">Bem-vindo, {user?.nome}</p>
         </div>
 
-        {/* Dashboard View */}
+        {/* Dashboard Geral View - Usando componente modular */}
         {activeMenu === 'dashboard' && (
-          <div className="space-y-6">
-            {loadingStats ? (
-              <div className="text-center py-12">Carregando...</div>
-            ) : (
-              <>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-emerald-400 to-emerald-600" />
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.total_atletas || 0}</p>
-                          <p className="text-sm text-slate-500 mt-1">Atletas Ativos</p>
-                        </div>
-                        <div className="h-14 w-14 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                          <Users className="h-7 w-7 text-emerald-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-amber-400 to-amber-600" />
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.resultados_pendentes || 0}</p>
-                          <p className="text-sm text-slate-500 mt-1">Aguardando Aprovação</p>
-                        </div>
-                        <div className="h-14 w-14 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                          <AlertCircle className="h-7 w-7 text-amber-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-blue-400 to-blue-600" />
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.total_corridas || 0}</p>
-                          <p className="text-sm text-slate-500 mt-1">Corridas Registradas</p>
-                        </div>
-                        <div className="h-14 w-14 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                          <Trophy className="h-7 w-7 text-blue-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 overflow-hidden">
-                    <div className="h-1 bg-gradient-to-r from-purple-400 to-purple-600" />
-                    <CardContent className="pt-6">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-4xl font-bold text-slate-800 dark:text-white">{stats?.atletas_pendentes_corridas || 0}</p>
-                          <p className="text-sm text-slate-500 mt-1">Atletas com Selo "P"</p>
-                        </div>
-                        <div className="h-14 w-14 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                          <Activity className="h-7 w-7 text-purple-600" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <BarChart3 className="w-5 h-5 text-emerald-500" />
-                        Corridas por Mês
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <AreaChart data={corridasPorMes}>
-                            <defs>
-                              <linearGradient id="colorCorridas" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#10B981" stopOpacity={0.3}/>
-                                <stop offset="95%" stopColor="#10B981" stopOpacity={0}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                            <XAxis dataKey="mes" stroke="#9CA3AF" fontSize={12} tickFormatter={(v) => v.split('-')[1]} />
-                            <YAxis stroke="#9CA3AF" fontSize={12} />
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                            <Area type="monotone" dataKey="total" stroke="#10B981" strokeWidth={2} fill="url(#colorCorridas)" />
-                          </AreaChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <PieChart className="w-5 h-5 text-emerald-500" />
-                        Distribuição por Gênero
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[280px] flex items-center justify-center">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsPie>
-                            <Pie
-                              data={prepareGeneroData()}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={100}
-                              paddingAngle={5}
-                              dataKey="value"
-                            >
-                              {prepareGeneroData().map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                            <Legend />
-                          </RechartsPie>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <Database className="w-5 h-5 text-emerald-500" />
-                      Atletas por Estado (Top 10)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[300px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={statsEstados.slice(0, 10)} layout="vertical">
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis type="number" stroke="#9CA3AF" />
-                          <YAxis dataKey="estado" type="category" stroke="#9CA3AF" width={40} />
-                          <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                          <Bar dataKey="total" radius={[0, 4, 4, 0]}>
-                            {statsEstados.slice(0, 10).map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Novos Gráficos - Linha 2 */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Distribuição por Modalidade */}
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Users className="w-5 h-5 text-purple-500" />
-                        Distribuição por Modalidade
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsPie>
-                            <Pie
-                              data={[
-                                { name: 'Profissional/Amador', value: statsModalidade.profissional, color: '#10B981' },
-                                { name: 'Ranking do Povão', value: statsModalidade.povao, color: '#8B5CF6' }
-                              ]}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={60}
-                              outerRadius={100}
-                              paddingAngle={5}
-                              dataKey="value"
-                              label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                            >
-                              <Cell fill="#10B981" />
-                              <Cell fill="#8B5CF6" />
-                            </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                            <Legend />
-                          </RechartsPie>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Ranking do Povão - Estatísticas */}
-                  <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2 text-purple-700 dark:text-purple-300">
-                        <Trophy className="w-5 h-5" />
-                        Ranking do Povão - Estatísticas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      {statsPovao ? (
-                        <div className="space-y-4">
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
-                              <div className="text-3xl font-bold text-purple-600">{statsPovao.total_atletas || 0}</div>
-                              <div className="text-sm text-purple-600/80">Total de Atletas</div>
-                            </div>
-                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
-                              <div className="text-3xl font-bold text-purple-600">{statsPovao.total_provas || 0}</div>
-                              <div className="text-sm text-purple-600/80">Provas Registradas</div>
-                            </div>
-                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
-                              <div className="text-3xl font-bold text-blue-600">{statsPovao.total_atletas_masculino || 0}</div>
-                              <div className="text-sm text-blue-600/80">Masculino</div>
-                            </div>
-                            <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
-                              <div className="text-3xl font-bold text-pink-600">{statsPovao.total_atletas_feminino || 0}</div>
-                              <div className="text-sm text-pink-600/80">Feminino</div>
-                            </div>
-                          </div>
-                          <div className="p-4 bg-white/70 dark:bg-slate-800/70 rounded-xl text-center">
-                            <div className="text-4xl font-bold text-amber-600">{statsPovao.total_pontos || 0}</div>
-                            <div className="text-sm text-amber-600/80">Total de Pontos Distribuídos</div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="text-center text-purple-600/60 py-8">
-                          Carregando estatísticas...
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Top 10 Equipes/Assessorias */}
-                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <Users className="w-5 h-5 text-blue-500" />
-                      Top 10 Equipes / Assessorias
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={statsEquipes} layout="vertical">
-                          <defs>
-                            <linearGradient id="colorEquipes" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#3B82F6" stopOpacity={1}/>
-                              <stop offset="100%" stopColor="#06B6D4" stopOpacity={1}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis type="number" stroke="#9CA3AF" />
-                          <YAxis 
-                            dataKey="equipe" 
-                            type="category" 
-                            stroke="#9CA3AF" 
-                            width={150}
-                            tick={{ fontSize: 11 }}
-                            tickFormatter={(v) => v.length > 20 ? `${v.slice(0, 20)}...` : v}
-                          />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} 
-                            formatter={(value) => [`${value} atletas`, 'Quantidade']}
-                          />
-                          <Bar dataKey="total" fill="url(#colorEquipes)" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Cards de Resumo por Categoria */}
-                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <Activity className="w-5 h-5 text-emerald-500" />
-                      Distribuição por Categoria
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {statsCategorias && (
-                      <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart 
-                            data={[
-                              { categoria: 'Normal M', total: statsCategorias.normal_m || 0, fill: '#10B981' },
-                              { categoria: 'Normal F', total: statsCategorias.normal_f || 0, fill: '#EC4899' },
-                              { categoria: 'PCD M', total: statsCategorias.pcd_m || 0, fill: '#3B82F6' },
-                              { categoria: 'PCD F', total: statsCategorias.pcd_f || 0, fill: '#F59E0B' },
-                              { categoria: 'Cadeirante M', total: statsCategorias.cadeirante_m || 0, fill: '#8B5CF6' },
-                              { categoria: 'Cadeirante F', total: statsCategorias.cadeirante_f || 0, fill: '#EF4444' }
-                            ]}
-                          >
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                            <XAxis dataKey="categoria" stroke="#9CA3AF" fontSize={11} angle={-15} textAnchor="end" />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                            <Bar dataKey="total" radius={[4, 4, 0, 0]}>
-                              {[
-                                { fill: '#10B981' },
-                                { fill: '#EC4899' },
-                                { fill: '#3B82F6' },
-                                { fill: '#F59E0B' },
-                                { fill: '#8B5CF6' },
-                                { fill: '#EF4444' }
-                              ].map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.fill} />
-                              ))}
-                            </Bar>
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-
-                {/* Novos Gráficos - Linha 3: Faixa Etária e Etnia */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Distribuição por Faixa Etária */}
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Users className="w-5 h-5 text-cyan-500" />
-                        Distribuição por Faixa Etária
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={statsFaixa}>
-                            <defs>
-                              <linearGradient id="colorFaixa" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="0%" stopColor="#06B6D4" stopOpacity={1}/>
-                                <stop offset="100%" stopColor="#0891B2" stopOpacity={1}/>
-                              </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                            <XAxis 
-                              dataKey="faixa" 
-                              stroke="#9CA3AF" 
-                              fontSize={10} 
-                              angle={-20} 
-                              textAnchor="end"
-                              height={60}
-                            />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                            <Bar dataKey="total" fill="url(#colorFaixa)" radius={[4, 4, 0, 0]} />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  {/* Distribuição por Etnia */}
-                  <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                    <CardHeader>
-                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                        <Users className="w-5 h-5 text-amber-500" />
-                        Distribuição por Etnia
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="h-[280px]">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <RechartsPie>
-                            <Pie
-                              data={statsEtnia.map(e => ({ name: e.etnia, value: e.total, color: e.cor }))}
-                              cx="50%"
-                              cy="50%"
-                              innerRadius={50}
-                              outerRadius={90}
-                              paddingAngle={3}
-                              dataKey="value"
-                              label={({ name, percent }) => `${name} (${(percent * 100).toFixed(0)}%)`}
-                            >
-                              {statsEtnia.map((entry, index) => (
-                                <Cell key={`cell-etnia-${index}`} fill={entry.cor} />
-                              ))}
-                            </Pie>
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
-                            <Legend />
-                          </RechartsPie>
-                        </ResponsiveContainer>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Equipes/Assessorias por Estado */}
-                <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
-                  <CardHeader>
-                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
-                      <Database className="w-5 h-5 text-indigo-500" />
-                      Quantidade de Equipes/Assessorias por Estado
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-[350px]">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={statsEquipesPorEstado} layout="vertical">
-                          <defs>
-                            <linearGradient id="colorEquipesEstado" x1="0" y1="0" x2="1" y2="0">
-                              <stop offset="0%" stopColor="#6366F1" stopOpacity={1}/>
-                              <stop offset="100%" stopColor="#8B5CF6" stopOpacity={1}/>
-                            </linearGradient>
-                          </defs>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-                          <XAxis type="number" stroke="#9CA3AF" />
-                          <YAxis 
-                            dataKey="estado" 
-                            type="category" 
-                            stroke="#9CA3AF" 
-                            width={50}
-                            tick={{ fontSize: 12 }}
-                          />
-                          <Tooltip 
-                            contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} 
-                            formatter={(value) => [`${value} equipes`, 'Total']}
-                          />
-                          <Bar dataKey="total" fill="url(#colorEquipesEstado)" radius={[0, 4, 4, 0]} />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </div>
+          <DashboardGeral
+            stats={stats}
+            statsEstados={statsEstados}
+            statsCategorias={statsCategorias}
+            statsFaixa={statsFaixa}
+            corridasPorMes={corridasPorMes}
+            statsModalidade={statsModalidade}
+            statsPovao={statsPovao}
+            statsEquipes={statsEquipes}
+            loadingStats={loadingStats}
+          />
         )}
 
-        {/* Pendentes View */}
+        {/* Pendentes View - Usando componente modular */}
         {activeMenu === 'pendentes' && (
-          <div>
-            {loadingPendentes ? (
-              <div className="text-center py-12">Carregando...</div>
-            ) : pendentes.length === 0 ? (
-              <Alert className="bg-emerald-50 border-emerald-200">
-                <CheckCircle className="h-4 w-4 text-emerald-600" />
-                <AlertDescription className="text-emerald-700 ml-2">
-                  Não há resultados pendentes de aprovação.
-                </AlertDescription>
-              </Alert>
-            ) : (
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {pendentes.map((resultado) => (
-                  <Card key={resultado.id} className="bg-white dark:bg-slate-800 shadow-lg border-0" data-testid={`resultado-${resultado.id}`}>
-                    <CardHeader className="bg-slate-50 dark:bg-slate-800/80 rounded-t-lg border-b">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <CardTitle className="text-lg">{resultado.nome_competicao}</CardTitle>
-                          <p className="text-sm text-slate-500 mt-1">
-                            <strong>Atleta:</strong> {resultado.atleta_nome}
-                          </p>
-                          <Badge variant="outline" className="mt-2">
-                            {resultado.atleta_categoria?.toUpperCase()}
-                          </Badge>
-                        </div>
-                        <Badge className="bg-amber-100 text-amber-700 border-0">Pendente</Badge>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="pt-4 space-y-3">
-                      <div className="grid grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
-                          <Trophy className="w-4 h-4 text-amber-500" />
-                          <span><strong>Colocação:</strong> {resultado.colocacao}º</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4 text-blue-500" />
-                          <span><strong>Tempo:</strong> {resultado.tempo}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <MapPin className="w-4 h-4 text-emerald-500" />
-                          <span>{resultado.cidade_competicao}/{resultado.estado_competicao}</span>
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-slate-400" />
-                          <span>{new Date(resultado.data_competicao).toLocaleDateString('pt-BR')}</span>
-                        </div>
-                      </div>
-
-                      <div className="pt-3 border-t">
-                        <p className="text-sm"><strong>Distância:</strong> {resultado.distancia}</p>
-                        <p className="text-sm mt-1">
-                          <strong>Link:</strong>{' '}
-                          <a
-                            href={resultado.link_resultado}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-emerald-600 hover:underline inline-flex items-center gap-1"
-                          >
-                            Ver resultado <ExternalLink className="w-3 h-3" />
-                          </a>
-                        </p>
-                      </div>
-
-                      {/* Foto do Pódio */}
-                      {resultado.foto_podio_url && (
-                        <div className="pt-3 border-t">
-                          <p className="text-sm font-medium mb-2 flex items-center gap-2">
-                            <Image className="w-4 h-4 text-blue-500" />
-                            Foto do Pódio
-                            <span className="text-xs text-blue-500 font-normal">(clique para ampliar)</span>
-                          </p>
-                          <div className="relative inline-block group">
-                            <img 
-                              src={resultado.foto_podio_url.startsWith('http') ? resultado.foto_podio_url : `${BACKEND_URL}${resultado.foto_podio_url}`}
-                              alt="Foto do Pódio"
-                              className="max-h-48 rounded-lg border border-slate-200 object-cover cursor-pointer transition-all hover:ring-4 hover:ring-blue-300"
-                              onClick={() => handleViewFoto(resultado.foto_podio_url)}
-                              data-testid={`foto-podio-${resultado.id}`}
-                            />
-                            <div 
-                              className="absolute inset-0 bg-black/30 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center cursor-pointer"
-                              onClick={() => handleViewFoto(resultado.foto_podio_url)}
-                            >
-                              <Eye className="w-8 h-8 text-white" />
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              className="absolute top-2 right-2 z-10"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeleteFotoPodio(resultado.id);
-                              }}
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </Button>
-                          </div>
-                          <p className="text-xs text-slate-500 mt-1">
-                            A foto será auto-excluída em 24h após aprovação/reprovação
-                          </p>
-                        </div>
-                      )}
-
-                      <div className="flex gap-2 pt-4">
-                        <Button
-                          onClick={() => handleAprovar(resultado.id)}
-                          disabled={actionLoading}
-                          className="flex-1 bg-emerald-600 hover:bg-emerald-700"
-                          data-testid={`btn-aprovar-${resultado.id}`}
-                        >
-                          <CheckCircle className="w-4 h-4 mr-2" />
-                          Aprovar
-                        </Button>
-                        <Button
-                          onClick={() => {
-                            setSelectedResultado(resultado);
-                            setShowReprovarModal(true);
-                          }}
-                          disabled={actionLoading}
-                          variant="destructive"
-                          className="flex-1"
-                          data-testid={`btn-reprovar-${resultado.id}`}
-                        >
-                          <XCircle className="w-4 h-4 mr-2" />
-                          Reprovar
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
+          <DashboardResultados
+            pendentes={pendentes}
+            loadingPendentes={loadingPendentes}
+            onAprovar={handleAprovar}
+            onReprovar={handleReprovar}
+            onDeleteFoto={handleDeleteFotoPodio}
+            onViewFoto={handleViewFoto}
+            actionLoading={actionLoading}
+            showFotoModal={showFotoModal}
+            setShowFotoModal={setShowFotoModal}
+            fotoModalUrl={fotoModalUrl}
+          />
         )}
 
-        {/* Atletas View */}
+        {/* Atletas View - Usando componente modular */}
         {activeMenu === 'atletas' && (
-          <div className="space-y-6">
-            {/* Toolbar */}
-            <div className="flex flex-wrap gap-4 items-center justify-between">
-              <div className="flex gap-2 flex-wrap">
-                <Button
-                  variant={filtroCategoria === 'all' ? 'default' : 'outline'}
-                  onClick={() => setFiltroCategoria('all')}
-                  size="sm"
-                >
-                  Todos
-                </Button>
-                <Button
-                  variant={filtroCategoria === 'normal-m' ? 'default' : 'outline'}
-                  onClick={() => setFiltroCategoria('normal-m')}
-                  size="sm"
-                >
-                  Atletas M
-                </Button>
-                <Button
-                  variant={filtroCategoria === 'normal-f' ? 'default' : 'outline'}
-                  onClick={() => setFiltroCategoria('normal-f')}
-                  size="sm"
-                >
-                  Atletas F
-                </Button>
-                <Button
-                  variant={filtroCategoria === 'pcd' ? 'default' : 'outline'}
-                  onClick={() => setFiltroCategoria('pcd')}
-                  size="sm"
-                >
-                  PCD M/F
-                </Button>
-                <Button
-                  variant={filtroCategoria === 'cadeirante' ? 'default' : 'outline'}
-                  onClick={() => setFiltroCategoria('cadeirante')}
-                  size="sm"
-                >
-                  Cadeirante M/F
-                </Button>
-              </div>
-              
-              <div className="flex gap-2">
-                <Button onClick={() => setShowAddAtletaModal(true)} className="bg-emerald-600">
-                  <UserPlus className="w-4 h-4 mr-2" />
-                  + Adicionar
-                </Button>
-                <Button onClick={handleExportAtletas} variant="outline">
-                  <Download className="w-4 h-4 mr-2" />
-                  Exportar Dados
-                </Button>
-              </div>
-            </div>
-
-            {/* Filtro por Modalidade */}
-            <div className="flex items-center gap-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-              <span className="text-sm font-medium text-slate-600 dark:text-slate-400">Modalidade:</span>
-              <div className="flex gap-2">
-                <Button
-                  variant={filtroModalidade === 'all' ? 'default' : 'outline'}
-                  onClick={() => setFiltroModalidade('all')}
-                  size="sm"
-                  className={filtroModalidade === 'all' ? 'bg-slate-700' : ''}
-                >
-                  Todas
-                </Button>
-                <Button
-                  variant={filtroModalidade === 'profissional_amador' ? 'default' : 'outline'}
-                  onClick={() => setFiltroModalidade('profissional_amador')}
-                  size="sm"
-                  className={filtroModalidade === 'profissional_amador' ? 'bg-emerald-600' : ''}
-                >
-                  Profissional/Amador
-                </Button>
-                <Button
-                  variant={filtroModalidade === 'povao_pace_livre' ? 'default' : 'outline'}
-                  onClick={() => setFiltroModalidade('povao_pace_livre')}
-                  size="sm"
-                  className={filtroModalidade === 'povao_pace_livre' ? 'bg-purple-600' : ''}
-                >
-                  Ranking do Povão
-                </Button>
-              </div>
-            </div>
-
-            {/* Barra de Pesquisa */}
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-slate-400 w-5 h-5" />
-              <Input
-                placeholder="Pesquisar atleta por nome, equipe ou cidade..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-10 bg-white dark:bg-slate-800"
-                data-testid="search-atletas"
-              />
-            </div>
-
-            {/* Lista de Atletas */}
-            {loadingAtletas ? (
-              <div className="text-center py-12">Carregando...</div>
-            ) : (
-              <>
-                <p className="text-sm text-slate-500">
-                  {filteredAtletas.length} atleta(s) encontrado(s) • Ordenado de A a Z
-                </p>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredAtletas.map((atleta) => (
-                    <Card key={atleta.id} className="bg-white dark:bg-slate-800 shadow border-0">
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-4">
-                          <Avatar className="h-12 w-12">
-                            <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
-                            <AvatarFallback className="bg-emerald-600 text-white">
-                              {atleta.nome?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 min-w-0">
-                            <h3 className="font-semibold truncate">{atleta.nome}</h3>
-                            <p className="text-sm text-slate-500">{atleta.equipe}</p>
-                            <div className="flex flex-wrap gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {atleta.categoria?.toUpperCase()}
-                              </Badge>
-                              <Badge variant="outline" className="text-xs">
-                                {atleta.genero === 'M' ? 'Masc' : 'Fem'}
-                              </Badge>
-                              {/* Badge de Modalidade */}
-                              <Badge 
-                                className={`text-xs ${
-                                  atleta.modalidade_usuario === 'povao_pace_livre' 
-                                    ? 'bg-purple-100 text-purple-700 border-purple-300' 
-                                    : 'bg-emerald-100 text-emerald-700 border-emerald-300'
-                                }`}
-                              >
-                                {atleta.modalidade_usuario === 'povao_pace_livre' ? 'Povão' : 'Pro/Amador'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                        
-                        <div className="flex gap-2 mt-4 pt-4 border-t">
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => navigate(`/atleta/${atleta.id}`)}
-                            title="Ver Perfil"
-                          >
-                            <Eye className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => {
-                              setAtletaEditando(atleta);
-                              setShowAtletaModal(true);
-                            }}
-                            title="Editar"
-                          >
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          {/* Botão de Transferir Modalidade */}
-                          {atleta.categoria === 'normal' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className={`${
-                                atleta.modalidade_usuario === 'povao_pace_livre'
-                                  ? 'border-emerald-500 text-emerald-600 hover:bg-emerald-50'
-                                  : 'border-purple-500 text-purple-600 hover:bg-purple-50'
-                              }`}
-                              onClick={() => {
-                                setAtletaTransferindo(atleta);
-                                setShowTransferModal(true);
-                              }}
-                              title={`Transferir para ${atleta.modalidade_usuario === 'povao_pace_livre' ? 'Profissional/Amador' : 'Ranking do Povão'}`}
-                            >
-                              <ArrowRightLeft className="w-4 h-4" />
-                            </Button>
-                          )}
-                          {/* Botão Promover a Dono de Assessoria */}
-                          {atleta.equipe && atleta.equipe !== 'Sem equipe' && atleta.role !== 'dono_assessoria' && (
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-amber-500 text-amber-600 hover:bg-amber-50"
-                              onClick={() => {
-                                setAtletaPromover(atleta);
-                                setShowPromoverModal(true);
-                              }}
-                              title="Promover a Dono de Assessoria"
-                            >
-                              <Award className="w-4 h-4" />
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            onClick={() => handleDeleteAtleta(atleta.id)}
-                            title="Excluir"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
+          <DashboardAtletas
+            atletas={atletas}
+            loadingAtletas={loadingAtletas}
+            filtroCategoria={filtroCategoria}
+            setFiltroCategoria={setFiltroCategoria}
+            filtroModalidade={filtroModalidade}
+            setFiltroModalidade={setFiltroModalidade}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            token={token}
+            onRefresh={fetchAtletas}
+            onEditAtleta={(atleta) => {
+              if (atleta) {
+                setAtletaEditando(atleta);
+                setShowAtletaModal(true);
+              } else {
+                setShowAddAtletaModal(true);
+              }
+            }}
+            onDeleteAtleta={handleDeleteAtleta}
+            onTransferirModalidade={(atleta) => {
+              setAtletaTransferindo(atleta);
+              setShowTransferModal(true);
+            }}
+            onPromoverDono={(atleta) => {
+              setAtletaPromover(atleta);
+              setShowPromoverModal(true);
+            }}
+            onExportAtletas={handleExportAtletas}
+            onViewAtleta={(atleta) => navigate(`/atleta/${atleta.id}`)}
+          />
         )}
+
+        {/* Assessorias View - Usando componente modular */}
+        {activeMenu === 'assessorias' && (
+          <DashboardAssessorias
+            ligaRanking={ligaRanking}
+            ligaStats={ligaStats}
+            ligaTipo={ligaTipo}
+            setLigaTipo={setLigaTipo}
+            ligaEstado={ligaEstado}
+            setLigaEstado={setLigaEstado}
+            ligaCidade={ligaCidade}
+            setLigaCidade={setLigaCidade}
+            estadosComAssessorias={estadosComAssessorias}
+            cidadesComAssessorias={cidadesComAssessorias}
+            loadingLiga={loadingLiga}
+            onRefresh={fetchLigaRanking}
+            onViewAssessoria={fetchAssessoriaDetalhe}
+            fetchCidades={fetchCidadesComAssessorias}
+          />
+        )}
+
+        {/* Ranking Corridas View - Usando componente modular */}
+        {activeMenu === 'ranking-corridas' && (
+          <DashboardCorridas
+            rankingCorridasDashboard={rankingCorridasDashboard}
+            corridasEventos={corridasEventos}
+            loadingRankingCorridas={loadingRankingCorridas}
+            corridaFormData={corridaFormData}
+            setCorridaFormData={setCorridaFormData}
+            showCorridaModal={showCorridaModal}
+            setShowCorridaModal={setShowCorridaModal}
+            corridaEditando={corridaEditando}
+            setCorridaEditando={setCorridaEditando}
+            onSaveCorrida={handleSalvarCorrida}
+            onDeleteCorrida={handleExcluirCorrida}
+            onRefresh={fetchRankingCorridasDashboard}
+          />
+        )}
+
+
 
         {/* Submeter Resultado View */}
         {activeMenu === 'submeter' && (
@@ -2397,334 +1734,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* DASHBOARD RANKING DAS CORRIDAS - FASE 4 */}
-        {activeMenu === 'ranking-corridas' && (
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h2 className="text-2xl font-bold flex items-center gap-2">
-                  <Star className="w-6 h-6 text-yellow-500" />
-                  Dashboard - Ranking das Corridas
-                </h2>
-                <p className="text-slate-500">Gerenciamento e estatísticas das avaliações de corridas</p>
-              </div>
-              <Button 
-                onClick={() => { setCorridaEditando(null); setShowCorridaModal(true); }}
-                className="bg-emerald-500 hover:bg-emerald-600"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Cadastrar Corrida
-              </Button>
-            </div>
 
-            {loadingRankingCorridas ? (
-              <div className="flex items-center justify-center py-12">
-                <Loader2 className="w-8 h-8 animate-spin text-yellow-500" />
-              </div>
-            ) : rankingCorridasDashboard && (
-              <>
-                {/* Stats Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-blue-100 text-xs">Total Corridas</p>
-                          <p className="text-3xl font-bold">{rankingCorridasDashboard.stats?.total_corridas || 0}</p>
-                        </div>
-                        <Trophy className="w-10 h-10 text-blue-200" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-emerald-100 text-xs">Total Avaliações</p>
-                          <p className="text-3xl font-bold">{rankingCorridasDashboard.stats?.total_avaliacoes || 0}</p>
-                        </div>
-                        <Star className="w-10 h-10 text-emerald-200" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-br from-yellow-500 to-amber-600 text-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-yellow-100 text-xs">Média Geral</p>
-                          <p className="text-3xl font-bold">{rankingCorridasDashboard.stats?.media_geral || '0.0'}</p>
-                        </div>
-                        <BarChart3 className="w-10 h-10 text-yellow-200" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                  
-                  <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
-                    <CardContent className="p-4">
-                      <div className="flex items-center justify-between">
-                        <div>
-                          <p className="text-purple-100 text-xs">Melhor Avaliada</p>
-                          <p className="text-sm font-bold truncate max-w-[120px]">
-                            {rankingCorridasDashboard.melhor_avaliada_nacional?.nome_corrida || '-'}
-                          </p>
-                          <p className="text-xs text-purple-200">
-                            {rankingCorridasDashboard.melhor_avaliada_nacional?.media || '-'} ⭐
-                          </p>
-                        </div>
-                        <Award className="w-10 h-10 text-purple-200" />
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Gráficos */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                  {/* Distribuição de Notas */}
-                  {rankingCorridasDashboard.distribuicao_notas && rankingCorridasDashboard.distribuicao_notas.length > 0 && (
-                    <Card>
-                      <CardHeader>
-                        <CardTitle className="flex items-center gap-2">
-                          <BarChart3 className="w-5 h-5 text-yellow-500" />
-                          Distribuição de Notas
-                        </CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <ResponsiveContainer width="100%" height={250}>
-                          <BarChart data={rankingCorridasDashboard.distribuicao_notas}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="nota" label={{ value: 'Nota', position: 'bottom', offset: -5 }} />
-                            <YAxis label={{ value: 'Qtd', angle: -90, position: 'insideLeft' }} />
-                            <Tooltip />
-                            <Bar dataKey="total" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Avaliações" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </CardContent>
-                    </Card>
-                  )}
-
-                  {/* Top 10 Ranking */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        Top 10 - Melhores Corridas
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="space-y-2 max-h-[250px] overflow-y-auto">
-                        {rankingCorridasDashboard.ranking_top20?.filter(c => c.no_ranking).slice(0, 10).map((corrida, idx) => (
-                          <div key={corrida.id} className={`flex items-center justify-between p-2 rounded-lg ${idx < 3 ? 'bg-yellow-50 dark:bg-yellow-900/20' : 'bg-slate-50 dark:bg-slate-800'}`}>
-                            <div className="flex items-center gap-3">
-                              <span className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-sm ${
-                                idx === 0 ? 'bg-yellow-400 text-yellow-900' :
-                                idx === 1 ? 'bg-slate-300 text-slate-700' :
-                                idx === 2 ? 'bg-amber-600 text-white' :
-                                'bg-slate-200 text-slate-600'
-                              }`}>
-                                {idx + 1}
-                              </span>
-                              <div>
-                                <p className="font-medium text-sm">{corrida.nome_corrida}</p>
-                                <p className="text-xs text-slate-500">{corrida.cidade}/{corrida.estado}</p>
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="flex items-center gap-1">
-                                {renderStarsAdmin(corrida.media_geral)}
-                              </div>
-                              <p className="text-xs text-slate-500">{corrida.total_avaliacoes} aval.</p>
-                            </div>
-                          </div>
-                        ))}
-                        {(!rankingCorridasDashboard.ranking_top20 || rankingCorridasDashboard.ranking_top20.filter(c => c.no_ranking).length === 0) && (
-                          <p className="text-center text-slate-500 py-4">Nenhuma corrida com avaliações suficientes ainda</p>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Melhores por Estado */}
-                {rankingCorridasDashboard.melhores_por_estado && rankingCorridasDashboard.melhores_por_estado.length > 0 && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="flex items-center gap-2">
-                        <MapPin className="w-5 h-5 text-emerald-500" />
-                        Melhores Corridas por Estado
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                        {rankingCorridasDashboard.melhores_por_estado.map((item) => (
-                          <div key={item.estado} className="p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                            <div className="flex items-center justify-between mb-1">
-                              <Badge variant="secondary" className="font-bold">{item.estado}</Badge>
-                              <div className="flex items-center">
-                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400 mr-1" />
-                                <span className="text-sm font-medium">{item.media?.toFixed(1)}</span>
-                              </div>
-                            </div>
-                            <p className="text-sm font-medium truncate">{item.nome_corrida}</p>
-                            <p className="text-xs text-slate-500">{item.cidade} • {item.avaliacoes} aval.</p>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Sistema de Selos - Fase 3 */}
-                <Card className="border-2 border-yellow-200 bg-yellow-50/50 dark:bg-yellow-900/10">
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Award className="w-5 h-5 text-yellow-600" />
-                      Sistema de Selos - Certificações
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-yellow-300">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">⭐</span>
-                          <span className="font-bold text-yellow-700">Selo 5 Estrelas</span>
-                        </div>
-                        <p className="text-sm text-slate-600">Média ≥ 4.5 e mínimo 50 avaliações</p>
-                        <div className="mt-2">
-                          <Badge className="bg-yellow-500">
-                            {corridasEventos.filter(c => c.total_avaliacoes >= 50 && c.media_geral >= 4.5).length} corridas
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-blue-300">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">🏆</span>
-                          <span className="font-bold text-blue-700">Top 10 Brasil</span>
-                        </div>
-                        <p className="text-sm text-slate-600">10 melhores no ranking nacional</p>
-                        <div className="mt-2">
-                          <Badge className="bg-blue-500">
-                            {corridasEventos.filter(c => c.no_ranking).slice(0, 10).length} corridas
-                          </Badge>
-                        </div>
-                      </div>
-                      
-                      <div className="p-4 bg-white dark:bg-slate-800 rounded-lg border-2 border-emerald-300">
-                        <div className="flex items-center gap-2 mb-2">
-                          <span className="text-2xl">📍</span>
-                          <span className="font-bold text-emerald-700">Top 10 Estado</span>
-                        </div>
-                        <p className="text-sm text-slate-600">10 melhores por estado</p>
-                        <div className="mt-2">
-                          <Badge className="bg-emerald-500">
-                            {rankingCorridasDashboard.melhores_por_estado?.length || 0} estados
-                          </Badge>
-                        </div>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Lista de Todas as Corridas */}
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center justify-between">
-                      <span className="flex items-center gap-2">
-                        <Trophy className="w-5 h-5 text-yellow-500" />
-                        Gerenciar Corridas Cadastradas
-                      </span>
-                      <Badge variant="outline">{corridasEventos.length} corridas</Badge>
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="overflow-x-auto">
-                      <table className="w-full">
-                        <thead>
-                          <tr className="border-b bg-slate-50 dark:bg-slate-800">
-                            <th className="text-left py-3 px-2 font-semibold text-sm">Corrida</th>
-                            <th className="text-left py-3 px-2 font-semibold text-sm hidden md:table-cell">Organizador</th>
-                            <th className="text-left py-3 px-2 font-semibold text-sm">Local</th>
-                            <th className="text-center py-3 px-2 font-semibold text-sm">Avaliações</th>
-                            <th className="text-center py-3 px-2 font-semibold text-sm">Média</th>
-                            <th className="text-center py-3 px-2 font-semibold text-sm">Status</th>
-                            <th className="text-center py-3 px-2 font-semibold text-sm">Ações</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {corridasEventos.map((corrida) => (
-                            <tr key={corrida.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
-                              <td className="py-3 px-2">
-                                <div>
-                                  <p className="font-medium">{corrida.nome_corrida}</p>
-                                  <p className="text-xs text-slate-500">{corrida.data_corrida}</p>
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 text-sm hidden md:table-cell">{corrida.organizador}</td>
-                              <td className="py-3 px-2 text-sm">{corrida.cidade}/{corrida.estado}</td>
-                              <td className="py-3 px-2 text-center">
-                                <Badge variant={corrida.no_ranking ? 'default' : 'secondary'}>
-                                  {corrida.total_avaliacoes}
-                                </Badge>
-                              </td>
-                              <td className="py-3 px-2 text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                  {renderStarsAdmin(corrida.media_geral)}
-                                  <span className="text-sm ml-1">{corrida.media_geral}</span>
-                                </div>
-                              </td>
-                              <td className="py-3 px-2 text-center">
-                                <Badge className={
-                                  corrida.status === 'ativa' ? 'bg-emerald-500' :
-                                  corrida.status === 'encerrada' ? 'bg-slate-500' : 'bg-red-500'
-                                }>
-                                  {corrida.status}
-                                </Badge>
-                              </td>
-                              <td className="py-3 px-2 text-center">
-                                <div className="flex items-center justify-center gap-1">
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    onClick={() => {
-                                      setCorridaEditando(corrida);
-                                      setCorridaFormData({
-                                        nome_corrida: corrida.nome_corrida,
-                                        organizador: corrida.organizador,
-                                        cidade: corrida.cidade,
-                                        estado: corrida.estado,
-                                        data_corrida: corrida.data_corrida,
-                                        pagina_link: corrida.pagina_link || '',
-                                        status: corrida.status
-                                      });
-                                      setShowCorridaModal(true);
-                                    }}
-                                  >
-                                    <Edit className="w-4 h-4" />
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    variant="ghost"
-                                    className="text-red-500 hover:text-red-700"
-                                    onClick={() => handleExcluirCorrida(corrida.id)}
-                                  >
-                                    <Trash2 className="w-4 h-4" />
-                                  </Button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </CardContent>
-                </Card>
-              </>
-            )}
-          </div>
-        )}
 
         {/* RANKING RUN INSIDE - INSTAGRAM ANALYTICS */}
         {activeMenu === 'instagram' && (
@@ -3301,573 +2311,7 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* LIGA NACIONAL DE ASSESSORIAS - ROE-RR */}
-        {activeMenu === 'assessorias' && (
-          <div className="space-y-6">
-            {/* Header */}
-            <div className="text-center mb-8">
-              <div className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-yellow-500 text-white rounded-full text-sm font-medium mb-4">
-                <Trophy className="w-4 h-4" />
-                Classificação Oficial ROE-RR
-              </div>
-              <h2 className="text-3xl font-bold bg-gradient-to-r from-amber-600 to-yellow-600 bg-clip-text text-transparent">
-                Liga Nacional de Assessorias Ranking Run
-              </h2>
-              <p className="text-slate-500 mt-2">
-                Sistema técnico de pontuação que avalia assessorias esportivas de corrida de rua
-              </p>
-            </div>
 
-            {/* Stats Cards */}
-            {ligaStats && (
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-                <Card className="bg-gradient-to-br from-amber-500 to-yellow-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-amber-100 text-sm">Total Assessorias</p>
-                        <p className="text-3xl font-bold">{ligaStats.total_assessorias}</p>
-                      </div>
-                      <Award className="w-10 h-10 text-amber-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-emerald-500 to-green-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-emerald-100 text-sm">Atletas Vinculados</p>
-                        <p className="text-3xl font-bold">{ligaStats.total_atletas_vinculados}</p>
-                      </div>
-                      <Users className="w-10 h-10 text-emerald-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-blue-500 to-indigo-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-blue-100 text-sm">Resultados Aprovados</p>
-                        <p className="text-3xl font-bold">{ligaStats.total_resultados_aprovados}</p>
-                      </div>
-                      <CheckCircle className="w-10 h-10 text-blue-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-                <Card className="bg-gradient-to-br from-purple-500 to-pink-600 text-white">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-purple-100 text-sm">Estados Ativos</p>
-                        <p className="text-3xl font-bold">{ligaStats.distribuicao_estados?.length || 0}</p>
-                      </div>
-                      <MapPin className="w-10 h-10 text-purple-200" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </div>
-            )}
-
-            {/* Sistema de Pontuação Info */}
-            <Card className="bg-slate-50 dark:bg-slate-800/50 border-dashed">
-              <CardContent className="p-4">
-                <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">Sistema de Pontuação:</span>
-                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
-                    <Users className="w-3 h-3 mr-1" /> Atleta cadastrado = +0,5
-                  </Badge>
-                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
-                    <CheckCircle className="w-3 h-3 mr-1" /> Resultado aprovado = +1,0
-                  </Badge>
-                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
-                    🥈 2º-5º lugar = +0,5
-                  </Badge>
-                  <Badge variant="outline" className="bg-white dark:bg-slate-700">
-                    🥇 1º lugar = +1,0
-                  </Badge>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Filtros */}
-            <Card>
-              <CardContent className="p-4">
-                <div className="flex flex-wrap items-center gap-4">
-                  <div className="flex items-center gap-2">
-                    <Label className="text-sm font-medium">Tipo de Ranking:</Label>
-                    <Select value={ligaTipo} onValueChange={(v) => {
-                      setLigaTipo(v);
-                      setLigaEstado('');
-                      setLigaCidade('');
-                    }}>
-                      <SelectTrigger className="w-40">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="nacional">🌍 Nacional</SelectItem>
-                        <SelectItem value="estadual">🗺️ Estadual</SelectItem>
-                        <SelectItem value="cidade">🏙️ Por Cidade</SelectItem>
-                        <SelectItem value="mensal">📅 Mensal</SelectItem>
-                        <SelectItem value="anual">📆 Anual</SelectItem>
-                        <SelectItem value="historico">📊 Histórico</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-
-                  {ligaTipo === 'estadual' && (
-                    <div className="flex items-center gap-2">
-                      <Label className="text-sm">Estado:</Label>
-                      <Select value={ligaEstado} onValueChange={(v) => {
-                        setLigaEstado(v);
-                        fetchCidadesComAssessorias(v);
-                      }}>
-                        <SelectTrigger className="w-32">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {estadosComAssessorias.map(uf => (
-                            <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
-
-                  {ligaTipo === 'cidade' && (
-                    <>
-                      <div className="flex items-center gap-2">
-                        <Label className="text-sm">Estado:</Label>
-                        <Select value={ligaEstado} onValueChange={(v) => {
-                          setLigaEstado(v);
-                          setLigaCidade('');
-                          fetchCidadesComAssessorias(v);
-                        }}>
-                          <SelectTrigger className="w-32">
-                            <SelectValue placeholder="UF" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {estadosComAssessorias.map(uf => (
-                              <SelectItem key={uf} value={uf}>{uf}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      {ligaEstado && (
-                        <div className="flex items-center gap-2">
-                          <Label className="text-sm">Cidade:</Label>
-                          <Select value={ligaCidade} onValueChange={setLigaCidade}>
-                            <SelectTrigger className="w-40">
-                              <SelectValue placeholder="Selecione" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {cidadesComAssessorias.map(c => (
-                                <SelectItem key={c} value={c}>{c}</SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
-                        </div>
-                      )}
-                    </>
-                  )}
-
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={fetchLigaRanking}
-                    disabled={loadingLiga}
-                  >
-                    <RefreshCw className={`w-4 h-4 mr-2 ${loadingLiga ? 'animate-spin' : ''}`} />
-                    Atualizar
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            {/* Tabela de Ranking */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Trophy className="w-5 h-5 text-amber-500" />
-                  Ranking das Assessorias
-                  <Badge variant="secondary" className="ml-2">
-                    {ligaRanking.length} assessorias
-                  </Badge>
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {loadingLiga ? (
-                  <div className="flex items-center justify-center py-12">
-                    <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
-                  </div>
-                ) : ligaRanking.length === 0 ? (
-                  <div className="text-center py-12 text-slate-500">
-                    <Award className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                    <p>Nenhuma assessoria encontrada</p>
-                  </div>
-                ) : (
-                  <div className="overflow-x-auto">
-                    <table className="w-full">
-                      <thead>
-                        <tr className="border-b border-slate-200 dark:border-slate-700">
-                          <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Pos</th>
-                          <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Selo</th>
-                          <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Assessoria</th>
-                          <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">UF</th>
-                          <th className="text-left py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Cidade</th>
-                          <th className="text-center py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Atletas</th>
-                          <th className="text-center py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">🥇</th>
-                          <th className="text-center py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Resultados</th>
-                          <th className="text-right py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Pontos</th>
-                          <th className="text-center py-3 px-4 font-semibold text-slate-600 dark:text-slate-300">Ações</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {ligaRanking.map((equipe, idx) => (
-                          <tr 
-                            key={equipe.nome} 
-                            className={`border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors ${
-                              idx < 3 ? 'bg-amber-50/50 dark:bg-amber-900/10' : ''
-                            }`}
-                          >
-                            <td className="py-3 px-4">
-                              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full font-bold ${
-                                idx === 0 ? 'bg-yellow-400 text-yellow-900' :
-                                idx === 1 ? 'bg-slate-300 text-slate-700' :
-                                idx === 2 ? 'bg-amber-600 text-white' :
-                                'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
-                              }`}>
-                                {equipe.posicao}
-                              </span>
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge className={getSeloColor(equipe.selo)}>
-                                {getSeloIcon(equipe.selo)} {equipe.selo?.toUpperCase()}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4">
-                              <button 
-                                onClick={() => fetchAssessoriaDetalhe(equipe.nome)}
-                                className="font-medium text-amber-600 hover:text-amber-700 hover:underline text-left"
-                              >
-                                {equipe.nome}
-                              </button>
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge variant="outline">{equipe.estado}</Badge>
-                            </td>
-                            <td className="py-3 px-4 text-slate-600 dark:text-slate-400">
-                              {equipe.cidade}
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="font-semibold text-emerald-600">{equipe.total_atletas}</span>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="font-semibold text-yellow-600">{equipe.total_primeiros}</span>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <span className="text-blue-600">{equipe.total_resultados}</span>
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <span className="text-xl font-bold text-amber-600">{equipe.pontos_total}</span>
-                            </td>
-                            <td className="py-3 px-4 text-center">
-                              <Button 
-                                size="sm" 
-                                variant="ghost"
-                                onClick={() => fetchAssessoriaDetalhe(equipe.nome)}
-                              >
-                                <Eye className="w-4 h-4" />
-                              </Button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Distribuição por Estado */}
-            {ligaStats?.distribuicao_estados && ligaStats.distribuicao_estados.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-blue-500" />
-                    Distribuição de Assessorias por Estado
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={ligaStats.distribuicao_estados}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                      <XAxis dataKey="estado" stroke="#9CA3AF" />
-                      <YAxis stroke="#9CA3AF" />
-                      <Tooltip 
-                        contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                        labelStyle={{ color: '#F3F4F6' }}
-                      />
-                      <Bar dataKey="equipes" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Equipes" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-        )}
-
-        {/* Modal Detalhes da Assessoria */}
-        <Dialog open={showAssessoriaModal} onOpenChange={setShowAssessoriaModal}>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-3">
-                <Award className="w-6 h-6 text-amber-500" />
-                {assessoriaDetalhe?.nome}
-                {assessoriaDetalhe?.selo && (
-                  <Badge className={getSeloColor(assessoriaDetalhe.selo)}>
-                    {getSeloIcon(assessoriaDetalhe.selo)} SELO {assessoriaDetalhe.selo.toUpperCase()}
-                  </Badge>
-                )}
-              </DialogTitle>
-            </DialogHeader>
-
-            {assessoriaDetalhe && (
-              <div className="space-y-6">
-                {/* Info Principal */}
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <Card className="bg-amber-50 dark:bg-amber-900/20">
-                    <CardContent className="p-4 text-center">
-                      <Trophy className="w-6 h-6 mx-auto text-amber-500 mb-2" />
-                      <p className="text-2xl font-bold text-amber-600">{assessoriaDetalhe.posicao_nacional || '-'}º</p>
-                      <p className="text-xs text-slate-500">Posição Nacional</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-emerald-50 dark:bg-emerald-900/20">
-                    <CardContent className="p-4 text-center">
-                      <Users className="w-6 h-6 mx-auto text-emerald-500 mb-2" />
-                      <p className="text-2xl font-bold text-emerald-600">{assessoriaDetalhe.total_atletas}</p>
-                      <p className="text-xs text-slate-500">Atletas Ativos</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-blue-50 dark:bg-blue-900/20">
-                    <CardContent className="p-4 text-center">
-                      <CheckCircle className="w-6 h-6 mx-auto text-blue-500 mb-2" />
-                      <p className="text-2xl font-bold text-blue-600">{assessoriaDetalhe.total_resultados}</p>
-                      <p className="text-xs text-slate-500">Resultados</p>
-                    </CardContent>
-                  </Card>
-                  <Card className="bg-purple-50 dark:bg-purple-900/20">
-                    <CardContent className="p-4 text-center">
-                      <Award className="w-6 h-6 mx-auto text-purple-500 mb-2" />
-                      <p className="text-2xl font-bold text-purple-600">{assessoriaDetalhe.pontos_total}</p>
-                      <p className="text-xs text-slate-500">Pontos Total</p>
-                    </CardContent>
-                  </Card>
-                </div>
-
-                {/* Localização e Pódios */}
-                <div className="flex flex-wrap gap-4">
-                  <div className="flex items-center gap-2 text-slate-600 dark:text-slate-400">
-                    <MapPin className="w-4 h-4" />
-                    {assessoriaDetalhe.cidade}/{assessoriaDetalhe.estado}
-                  </div>
-                  <Badge variant="outline" className="bg-yellow-50">
-                    🥇 {assessoriaDetalhe.total_primeiros} primeiros lugares
-                  </Badge>
-                  <Badge variant="outline" className="bg-slate-50">
-                    🏅 {assessoriaDetalhe.total_podios} pódios (2º-5º)
-                  </Badge>
-                </div>
-
-                {/* Detalhamento de Pontos */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm">Detalhamento de Pontos</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 bg-emerald-500 rounded-full"></span>
-                        <span>Cadastros: <strong>{assessoriaDetalhe.pontos_cadastro} pts</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
-                        <span>Resultados: <strong>{assessoriaDetalhe.pontos_resultados} pts</strong></span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Atletas */}
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm flex items-center gap-2">
-                      <Users className="w-4 h-4" />
-                      Atletas da Equipe ({assessoriaDetalhe.atletas?.length || 0})
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-wrap gap-2">
-                      {assessoriaDetalhe.atletas?.slice(0, 20).map((atleta) => (
-                        <div 
-                          key={atleta.id}
-                          className="flex items-center gap-2 p-2 bg-slate-50 dark:bg-slate-800 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 cursor-pointer transition-colors"
-                          title={`${atleta.nome} - ${atleta.pontos || 0} pontos`}
-                        >
-                          <Avatar className="w-8 h-8">
-                            {atleta.foto_url ? (
-                              <AvatarImage src={atleta.foto_url.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
-                            ) : null}
-                            <AvatarFallback className="text-xs bg-emerald-100 text-emerald-700">
-                              {atleta.nome?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="text-xs">
-                            <p className="font-medium truncate max-w-[100px]">{atleta.nome?.split(' ')[0]}</p>
-                            <p className="text-slate-500">{atleta.pontos || 0} pts</p>
-                          </div>
-                        </div>
-                      ))}
-                      {assessoriaDetalhe.atletas?.length > 20 && (
-                        <div className="flex items-center justify-center w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-lg text-xs text-slate-500">
-                          +{assessoriaDetalhe.atletas.length - 20} mais
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
-
-                {/* Evolução Mensal */}
-                {assessoriaDetalhe.evolucao_mensal && assessoriaDetalhe.evolucao_mensal.length > 0 && (
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm flex items-center gap-2">
-                        <TrendingUp className="w-4 h-4" />
-                        Evolução Mensal
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ResponsiveContainer width="100%" height={200}>
-                        <AreaChart data={assessoriaDetalhe.evolucao_mensal}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.3} />
-                          <XAxis dataKey="mes" stroke="#9CA3AF" tick={{ fontSize: 10 }} />
-                          <YAxis stroke="#9CA3AF" />
-                          <Tooltip />
-                          <Area type="monotone" dataKey="resultados" fill="#F59E0B" stroke="#D97706" fillOpacity={0.3} name="Resultados" />
-                        </AreaChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Selo Digital Oficial */}
-                <Card className={`${getSeloColor(assessoriaDetalhe.selo)} border-0`}>
-                  <CardContent className="p-6 text-center">
-                    <div className="text-4xl mb-2">{getSeloIcon(assessoriaDetalhe.selo)}</div>
-                    <h3 className="text-lg font-bold">SELO {assessoriaDetalhe.selo?.toUpperCase()}</h3>
-                    <p className="text-sm opacity-90">Liga Nacional de Assessorias Ranking Run</p>
-                    <p className="text-xs opacity-75 mt-1">Classificação Oficial ROE-RR – 2026</p>
-                  </CardContent>
-                </Card>
-
-                {/* Botão de Contato */}
-                <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700">
-                  <Send className="w-4 h-4 mr-2" />
-                  Quero treinar com essa assessoria
-                </Button>
-              </div>
-            )}
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal Promover Dono de Assessoria */}
-        <Dialog open={showPromoverModal} onOpenChange={setShowPromoverModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2">
-                <Award className="w-5 h-5 text-amber-500" />
-                Promover a Dono de Assessoria
-              </DialogTitle>
-            </DialogHeader>
-            {atletaPromover && (
-              <div className="space-y-4">
-                <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <Avatar className="w-12 h-12">
-                      {atletaPromover.foto_url && (
-                        <AvatarImage src={atletaPromover.foto_url.startsWith('http') ? atletaPromover.foto_url : `${BACKEND_URL}${atletaPromover.foto_url}`} />
-                      )}
-                      <AvatarFallback className="bg-amber-500 text-white text-lg">
-                        {atletaPromover.nome?.charAt(0)}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div>
-                      <p className="font-semibold text-lg">{atletaPromover.nome}</p>
-                      <p className="text-sm text-slate-600">Equipe: <strong>{atletaPromover.equipe}</strong></p>
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="text-sm text-slate-600 space-y-2">
-                  <p><strong>Ao promover, este atleta terá acesso a:</strong></p>
-                  <ul className="list-disc list-inside space-y-1 text-slate-500">
-                    <li>Dashboard exclusivo da assessoria</li>
-                    <li>Cadastro e gerenciamento de atletas da equipe</li>
-                    <li>Visualização de métricas e rankings</li>
-                    <li>Envio de mensagens para atletas</li>
-                    <li>Download de selos oficiais</li>
-                  </ul>
-                </div>
-              </div>
-            )}
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowPromoverModal(false)}>
-                Cancelar
-              </Button>
-              <Button 
-                className="bg-amber-500 hover:bg-amber-600" 
-                onClick={handlePromoverDonoAssessoria}
-                disabled={promoverLoading}
-              >
-                {promoverLoading ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Promovendo...
-                  </>
-                ) : (
-                  <>
-                    <Award className="w-4 h-4 mr-2" />
-                    Confirmar Promoção
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Modal de Reprovação */}
-        <Dialog open={showReprovarModal} onOpenChange={setShowReprovarModal}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Reprovar Resultado</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <p className="text-sm text-slate-600">
-                O atleta receberá uma notificação com o motivo da reprovação.
-              </p>
-              <Textarea
-                value={motivoReprovacao}
-                onChange={(e) => setMotivoReprovacao(e.target.value)}
-                placeholder="Ex: Resultado não encontrado no link fornecido..."
-                rows={4}
-              />
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setShowReprovarModal(false)}>Cancelar</Button>
-              <Button variant="destructive" onClick={handleReprovar} disabled={actionLoading}>Reprovar</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* Modal Editar Atleta */}
         <Dialog open={showAtletaModal} onOpenChange={setShowAtletaModal}>

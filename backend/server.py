@@ -4628,6 +4628,108 @@ async def get_ranking_assessorias(
     }
 
 
+@api_router.get("/liga-assessorias/evolucao-mensal")
+async def get_evolucao_mensal_equipes(top: int = 5):
+    """
+    Retorna a evolução mensal de pontos das top equipes
+    Usado para gráfico de linha na página de ranking
+    """
+    from datetime import datetime
+    
+    ano_atual = datetime.now().year
+    mes_atual = datetime.now().month
+    
+    # Buscar todas as equipes distintas com atletas
+    pipeline_equipes = [
+        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe", "INDIVIDUAL"], "$exists": True}}},
+        {"$group": {
+            "_id": "$equipe",
+            "atletas": {"$push": "$id"},
+            "total_atletas": {"$sum": 1}
+        }},
+        {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "", None, "INDIVIDUAL"]}}}
+    ]
+    
+    equipes_raw = await db.usuarios.aggregate(pipeline_equipes).to_list(None)
+    
+    # Calcular pontos históricos totais para ordenar as equipes
+    equipes_pontos_total = []
+    for equipe in equipes_raw:
+        atletas_ids = equipe["atletas"]
+        corridas = await db.corridas.find(
+            {"usuario_id": {"$in": atletas_ids}},
+            {"_id": 0, "colocacao": 1, "modalidade": 1}
+        ).to_list(None)
+        
+        pontos_total = equipe["total_atletas"] * 0.5  # Pontos por cadastro
+        for corrida in corridas:
+            pontos_total += 1.0  # Por resultado
+            colocacao = corrida.get("colocacao", 0)
+            modalidade = corrida.get("modalidade", "profissional_amador")
+            if modalidade == "profissional_amador" and colocacao > 0:
+                if colocacao == 1:
+                    pontos_total += 1.0
+                elif 2 <= colocacao <= 5:
+                    pontos_total += 0.5
+        
+        equipes_pontos_total.append({
+            "nome": equipe["_id"],
+            "atletas_ids": atletas_ids,
+            "total_atletas": equipe["total_atletas"],
+            "pontos_total": pontos_total
+        })
+    
+    # Ordenar e pegar top N
+    equipes_pontos_total.sort(key=lambda x: -x["pontos_total"])
+    top_equipes = equipes_pontos_total[:top]
+    
+    # Calcular evolução mês a mês para cada equipe
+    evolucao_data = []
+    meses_labels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    
+    for mes in range(1, mes_atual + 1):
+        mes_data = {"mes": meses_labels[mes - 1], "mes_num": mes}
+        
+        for equipe in top_equipes:
+            # Filtrar corridas até este mês
+            inicio_mes = f"{ano_atual}-01-01"
+            fim_mes = f"{ano_atual}-{mes:02d}-01" if mes < 12 else f"{ano_atual + 1}-01-01"
+            
+            # Calcular data final do mês
+            if mes == 12:
+                fim_mes = f"{ano_atual + 1}-01-01"
+            else:
+                fim_mes = f"{ano_atual}-{mes + 1:02d}-01"
+            
+            corridas_ate_mes = await db.corridas.find({
+                "usuario_id": {"$in": equipe["atletas_ids"]},
+                "data": {"$gte": inicio_mes, "$lt": fim_mes}
+            }, {"_id": 0, "colocacao": 1, "modalidade": 1}).to_list(None)
+            
+            pontos_mes = equipe["total_atletas"] * 0.5
+            for corrida in corridas_ate_mes:
+                pontos_mes += 1.0
+                colocacao = corrida.get("colocacao", 0)
+                modalidade = corrida.get("modalidade", "profissional_amador")
+                if modalidade == "profissional_amador" and colocacao > 0:
+                    if colocacao == 1:
+                        pontos_mes += 1.0
+                    elif 2 <= colocacao <= 5:
+                        pontos_mes += 0.5
+            
+            # Usar nome seguro para chave
+            nome_key = equipe["nome"].replace(" ", "_").replace("/", "_")[:15]
+            mes_data[nome_key] = round(pontos_mes, 1)
+        
+        evolucao_data.append(mes_data)
+    
+    return {
+        "evolucao": evolucao_data,
+        "equipes": [{"nome": e["nome"], "key": e["nome"].replace(" ", "_").replace("/", "_")[:15], "cor": COLORS[i % len(COLORS)] if 'COLORS' in dir() else ["#10B981", "#3B82F6", "#F59E0B", "#EF4444", "#8B5CF6"][i % 5]} for i, e in enumerate(top_equipes)],
+        "ano": ano_atual
+    }
+
+
 @api_router.get("/liga-assessorias/stats")
 async def get_stats_liga_assessorias():
     """Retorna estatísticas gerais da Liga de Assessorias"""

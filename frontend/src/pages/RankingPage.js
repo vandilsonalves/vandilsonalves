@@ -15,7 +15,7 @@ import NotificacoesBell from '@/components/NotificacoesBell';
 import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, LineChart, Line, Legend } from 'recharts';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -47,6 +47,8 @@ const RankingPage = () => {
   const [cidadesComAssessorias, setCidadesComAssessorias] = useState([]);
   const [assessoriaDetalhe, setAssessoriaDetalhe] = useState(null);
   const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
+  const [evolucaoMensal, setEvolucaoMensal] = useState(null); // Dados do gráfico de evolução
+  const [showEvolucaoChart, setShowEvolucaoChart] = useState(true); // Toggle para mostrar/ocultar gráfico
   
   // Meses disponíveis para filtro (apenas meses passados ou atual)
   const getMesesDisponiveis = () => {
@@ -210,6 +212,7 @@ const RankingPage = () => {
       fetchLigaRanking();
       fetchLigaStats();
       fetchEstadosComAssessorias();
+      fetchEvolucaoMensal();
     }
   }, [tipoRanking, ligaTipo, ligaEstado, ligaCidade, ligaMes]);
 
@@ -246,6 +249,16 @@ const RankingPage = () => {
       setLigaStats(response.data);
     } catch (error) {
       console.error('Erro ao buscar stats liga:', error);
+    }
+  };
+
+  const fetchEvolucaoMensal = async () => {
+    try {
+      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const response = await axios.get(`${API}/liga-assessorias/evolucao-mensal?top=5`, { headers });
+      setEvolucaoMensal(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar evolução mensal:', error);
     }
   };
 
@@ -1238,9 +1251,99 @@ const RankingPage = () => {
                     <RefreshCw className={`w-4 h-4 mr-2 ${loadingLiga ? 'animate-spin' : ''}`} />
                     Atualizar
                   </Button>
+
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={() => setShowEvolucaoChart(!showEvolucaoChart)}
+                    className="ml-auto"
+                  >
+                    <TrendingUp className="w-4 h-4 mr-2" />
+                    {showEvolucaoChart ? 'Ocultar' : 'Ver'} Evolução
+                  </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {/* Gráfico de Evolução Mensal das Equipes */}
+            {showEvolucaoChart && evolucaoMensal && evolucaoMensal.evolucao && evolucaoMensal.evolucao.length > 0 && (
+              <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-slate-800 dark:to-slate-900">
+                <CardHeader className="pb-2">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <TrendingUp className="w-5 h-5 text-amber-600" />
+                    📈 Evolução Mensal - Top 5 Equipes ({evolucaoMensal.ano})
+                  </CardTitle>
+                  <p className="text-sm text-slate-600 dark:text-slate-400">
+                    Acompanhe o crescimento das melhores assessorias ao longo do ano
+                  </p>
+                </CardHeader>
+                <CardContent>
+                  <div className="h-80">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={evolucaoMensal.evolucao} margin={{ top: 10, right: 30, left: 0, bottom: 10 }}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                        <XAxis 
+                          dataKey="mes" 
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                        />
+                        <YAxis 
+                          tick={{ fontSize: 12, fill: '#6b7280' }}
+                          tickLine={{ stroke: '#d1d5db' }}
+                          label={{ value: 'Pontos', angle: -90, position: 'insideLeft', style: { fontSize: 12, fill: '#6b7280' } }}
+                        />
+                        <Tooltip 
+                          contentStyle={{ 
+                            backgroundColor: 'rgba(255, 255, 255, 0.95)', 
+                            borderRadius: '8px',
+                            border: '1px solid #e5e7eb',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                          }}
+                          formatter={(value, name) => {
+                            const equipe = evolucaoMensal.equipes.find(e => e.key === name);
+                            return [value + ' pts', equipe?.nome || name];
+                          }}
+                        />
+                        <Legend 
+                          wrapperStyle={{ paddingTop: '20px' }}
+                          formatter={(value) => {
+                            const equipe = evolucaoMensal.equipes.find(e => e.key === value);
+                            return equipe?.nome || value;
+                          }}
+                        />
+                        {evolucaoMensal.equipes.map((equipe, index) => (
+                          <Line 
+                            key={equipe.key}
+                            type="monotone" 
+                            dataKey={equipe.key} 
+                            stroke={['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5]}
+                            strokeWidth={2}
+                            dot={{ r: 4, strokeWidth: 2, fill: 'white' }}
+                            activeDot={{ r: 6, strokeWidth: 2 }}
+                          />
+                        ))}
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                  <div className="mt-4 flex flex-wrap gap-2 justify-center">
+                    {evolucaoMensal.equipes.map((equipe, index) => (
+                      <Badge 
+                        key={equipe.key} 
+                        variant="outline" 
+                        className="flex items-center gap-1"
+                        style={{ borderColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5] }}
+                      >
+                        <span 
+                          className="w-3 h-3 rounded-full" 
+                          style={{ backgroundColor: ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6'][index % 5] }}
+                        />
+                        {equipe.nome}
+                      </Badge>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Tabela de Ranking */}
             <Card>
