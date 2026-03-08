@@ -496,3 +496,41 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
       - Profissional: 1º=10pts até 10º=1pt
     - Novo endpoint: POST /api/admin/recalcular-rankings
     - Corrigido KeyError 'faixa_etaria' em múltiplos endpoints
+
+
+49. ✅ **Novos Filtros no Ranking de Equipes (6ª Tarefa)** (08/03/2026):
+    - **Novas abas**: Nacional, Estadual, Cidade, Histórico
+    - **Abas removidas**: Mensal, Anual (substituídas pelo dropdown de mês)
+    - **Dropdown de Mês**: Filtro por mês específico (Janeiro a mês atual)
+    - **Aba Nacional**: Ranking nacional com filtro de mês
+    - **Aba Estadual**: Dropdown de Estado + filtro de mês
+    - **Aba Cidade**: Dropdowns de Estado e Cidade + filtro de mês
+    - **Aba Histórico**: Sem filtro de mês (mostra todos os dados históricos)
+    - **Backend**: Endpoint GET /api/liga-assessorias/ranking aceita parâmetro mes=1-12
+    - **Frontend**: Componente getMesesDisponiveis() filtra meses até o atual
+
+---
+
+## Próximas Tarefas (P0-P2)
+
+### P0 - Reestruturação do Dashboard Admin
+- Dividir AdminDashboard.jsx em dashboards especializados:
+  - DashboardGeral, DashboardAtletas, DashboardAssessorias, DashboardCorridas, DashboardResultados
+
+### P1 - Tarefas 7-10
+- **7ª Tarefa**: Permitir atleta mudar de equipe a cada 15 dias
+- **8ª Tarefa**: Melhorias na página de detalhes da assessoria
+- **9ª Tarefa**: Dashboard "Minha Assessoria" para donos
+- **10ª Tarefa**: Botão "REGULAMENTO" nas páginas de ranking
+
+### P2 - Tarefas 11-13
+- **11ª Tarefa**: Sistema de selos/medalhas de conquista
+- **12ª Tarefa**: Aprimorar sistema de avaliação de corridas
+- **13ª Tarefa**: Sistema de reputação para avaliadores
+
+### Backlog
+- Seção "Autorizações" no Admin (gerenciar acesso pós-teste 30 dias)
+
+---
+
+Última atualização: 08/03/2026
