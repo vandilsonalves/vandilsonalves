@@ -484,3 +484,15 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Busca dados da coleção `assessorias` e do usuário `dono_assessoria`
     - Endpoint admin: POST /api/admin/setup-assessoria-dono/{equipe_nome}
       - Configura atleta existente como dono e cria dados da assessoria
+
+48. ✅ **Sincronização de Atletas entre Modalidades** (08/03/2026):
+    - Corrigido bug: atletas agora aparecem corretamente nas 3 modalidades
+    - **Ranking Povão**: 40 atletas (20M + 20F), 482 provas registradas
+    - **Ranking Profissional/Amador**: 33 atletas
+    - **Ranking Equipes**: 16 assessorias (Victory Run PE em 1º com 189.5 pts)
+    - Sistema de pontuação verificado:
+      - Equipes: Atleta=+0.5, Resultado=+1.0, 2º-5º=+0.5, 1º=+1.0
+      - Povão: 5km-9km=5pts, 10km-20km=7pts, 21km+=9pts
+      - Profissional: 1º=10pts até 10º=1pt
+    - Novo endpoint: POST /api/admin/recalcular-rankings
+    - Corrigido KeyError 'faixa_etaria' em múltiplos endpoints
