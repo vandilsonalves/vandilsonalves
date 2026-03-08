@@ -458,3 +458,19 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - Atleta NÃO pode escrever livremente - deve selecionar do dropdown
     - Alerta amarelo aparece ao selecionar "INDIVIDUAL" com mensagem:
       "Não encontrou sua equipe? É normal! Fale com o Dono(a) da sua Assessoria/Equipe para fazer o cadastro. Assim que ele(a) fizer, você já poderá alterar no seu Perfil."
+
+46. ✅ **Fluxo Dono de Assessoria no Cadastro** (08/03/2026):
+    - Seção em **laranja claro** "Você é Dono de Uma Assessoria/Equipe?" aparece quando INDIVIDUAL selecionado
+    - Botões SIM/NÃO com tooltip explicativo
+    - Se SIM, aparecem campos:
+      - Nome da Assessoria/Equipe *
+      - Estado (UF) * (dropdown)
+      - Cidade * (dropdown carregado via IBGE)
+      - Foto da Equipe/Assessoria (opcional, upload)
+      - Mensagem da BIO * (textarea, max 200 caracteres)
+    - Se NÃO, campos ficam ocultos
+    - Backend: POST /api/auth/register com is_dono_assessoria=true
+      - Cria assessoria na coleção `assessorias`
+      - Define role como "dono_assessoria"
+      - Define equipe como nome da assessoria
+    - Validação: não permite nome de assessoria duplicado
