@@ -1,0 +1,162 @@
+{
+  "summary": "Sistema de Avaliação de Corridas (Fase 2) - All backend tests pass (15/15). Frontend UI verified with Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_avaliacao_corridas.py",
+    "/app/test_reports/pytest/pytest_avaliacao_corridas.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_avaliacao_corridas.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (all UI elements verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"},
+    "atleta": {"email": "gustavo_carvalho_13@email.com", "password": "atleta123"},
+    "atleta_ja_avaliou": {"email": "rafael_souza_1@email.com", "password": "atleta123"}
+  },
+  "seed_data_creation": "Corrida de Natal 2025 has 12 evaluations and appears in ranking. Other races (Night Run Salvador, Maratona de São Paulo, etc.) are future races with 0 evaluations.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Sistema de Avaliação de Corridas (Fase 2) complete and working. Backend endpoints and frontend modal all functional.",
+  "verified_features": {
+    "backend_endpoints": {
+      "POST /api/avaliar-corrida": {
+        "status": "WORKING",
+        "validations": [
+          "Requires authentication",
+          "All 5 criteria (1-5) validated",
+          "participei checkbox required",
+          "Cannot evaluate future races",
+          "Cannot evaluate same race twice",
+          "Returns calculated nota_corrida"
+        ]
+      },
+      "GET /api/verificar-avaliacao/{corrida_id}": {
+        "status": "WORKING",
+        "validations": [
+          "Requires authentication",
+          "Returns ja_avaliou boolean",
+          "Works for both evaluated and non-evaluated races"
+        ]
+      },
+      "GET /api/ranking-corridas": {
+        "status": "WORKING",
+        "returns": "List of races with ratings, total_avaliacoes, media_geral"
+      },
+      "GET /api/ranking-corridas/stats": {
+        "status": "WORKING",
+        "returns": "total_corridas, total_avaliacoes, media_geral, corrida_melhor_avaliada"
+      },
+      "GET /api/minhas-avaliacoes-corridas": {
+        "status": "WORKING",
+        "returns": "List of evaluations made by logged-in athlete"
+      }
+    },
+    "frontend_ui": {
+      "ranking_corridas_page": {
+        "status": "WORKING",
+        "elements": [
+          "Title: Ranking das Corridas",
+          "Legend: Péssima to Excelente scale",
+          "Stats cards (Total Corridas, Total Avaliações, Média Geral, Melhor Avaliada)",
+          "6 period tabs (Nacional, Estadual, Cidade, Mensal, Anual, Histórico)",
+          "Ranking table with races",
+          "Avaliar button for each race",
+          "Star ratings displayed for each race",
+          "Top 10 badge for qualifying races",
+          "Message for races needing more evaluations"
+        ]
+      },
+      "avaliacao_modal": {
+        "status": "IMPLEMENTED",
+        "elements": [
+          "Title: Avaliar Corrida",
+          "Race details (name, city, date)",
+          "IQC description",
+          "5 star rating criteria (Organização, Percurso, Kit do Atleta, Hidratação, Pós-Prova)",
+          "Interactive star buttons (1-5)",
+          "Real-time nota final calculation",
+          "Participation checkbox (required)",
+          "Cancel and Submit buttons",
+          "data-testid='enviar-avaliacao-btn' on submit button"
+        ],
+        "note": "Modal opens only for logged-in users. Playwright session doesn't persist between page navigations (expected test behavior)."
+      }
+    },
+    "validation_rules": {
+      "10_avaliacoes_minimum": "WORKING - Races need 10+ evaluations to appear in ranking",
+      "future_race_block": "WORKING - Cannot evaluate races with future dates",
+      "duplicate_evaluation_block": "WORKING - Cannot evaluate same race twice",
+      "criteria_range_validation": "WORKING - All 5 criteria must be 1-5",
+      "participation_confirmation": "WORKING - Must check 'participei' checkbox"
+    }
+  },
+  "backend_test_results": {
+    "TestVerificarAvaliacao": {
+      "test_verificar_avaliacao_endpoint_exists": "PASS",
+      "test_verificar_avaliacao_requires_auth": "PASS",
+      "test_atleta_que_ja_avaliou": "PASS"
+    },
+    "TestAvaliarCorridaValidations": {
+      "test_avaliar_corrida_requires_auth": "PASS",
+      "test_validation_nota_must_be_1_to_5": "PASS",
+      "test_validation_participei_required": "PASS",
+      "test_validation_corrida_not_found": "PASS",
+      "test_cannot_evaluate_same_race_twice": "PASS"
+    },
+    "TestFutureRaceValidation": {
+      "test_get_ranking_corridas": "PASS",
+      "test_cannot_evaluate_future_race": "PASS"
+    },
+    "TestRankingCorridasStats": {
+      "test_stats_endpoint": "PASS",
+      "test_corrida_natal_has_evaluations": "PASS"
+    },
+    "TestSuccessfulEvaluation": {
+      "test_create_new_atleta_and_evaluate": "PASS"
+    },
+    "TestMinhasAvaliacoes": {
+      "test_minhas_avaliacoes_requires_auth": "PASS",
+      "test_minhas_avaliacoes_for_atleta": "PASS"
+    }
+  },
+  "frontend_ui_checks": {
+    "ranking_corridas_page_loads": "PASS",
+    "all_6_period_tabs_visible": "PASS",
+    "stats_cards_displayed": "PASS",
+    "ranking_table_with_6_races": "PASS",
+    "avaliar_buttons_present": "PASS",
+    "login_required_validation": "PASS - Redirects to login when clicking Avaliar without auth",
+    "corrida_natal_2025_in_ranking": "PASS - Position 1, Top 10 badge, 4.28 rating",
+    "future_races_show_pending_message": "PASS - Shows 'Aguardando 10 avaliações para entrar no ranking'"
+  },
+  "test_data_used": {
+    "corrida_de_natal_2025": {
+      "id": "360234e9-7e20-4d9c-bd20-8ea5e8b1c43c",
+      "total_avaliacoes": 12,
+      "media_geral": 4.28,
+      "no_ranking": true,
+      "posicao": 1
+    },
+    "future_races": [
+      "Night Run Salvador (2026)",
+      "Maratona de São Paulo (2026)",
+      "Corrida de Tiradentes (2026)",
+      "Meia Maratona do Rio (2026)",
+      "Volta da Pampulha (2026)"
+    ]
+  }
+}

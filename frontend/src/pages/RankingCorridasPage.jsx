@@ -7,11 +7,12 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Trophy, Star, MapPin, Calendar, ExternalLink, Users, Award, 
   RefreshCw, Loader2, Plus, ArrowLeft, Home, LogOut, Filter,
-  BarChart3, TrendingUp, Medal
+  BarChart3, TrendingUp, Medal, ClipboardCheck, CheckCircle2
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -43,6 +44,19 @@ const RankingCorridasPage = () => {
     data_corrida: '',
     pagina_link: '',
     status: 'ativa'
+  });
+
+  // Modal de avaliação
+  const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false);
+  const [corridaSelecionada, setCorridaSelecionada] = useState(null);
+  const [avaliacaoLoading, setAvaliacaoLoading] = useState(false);
+  const [avaliacaoData, setAvaliacaoData] = useState({
+    organizacao: 0,
+    percurso: 0,
+    kit_atleta: 0,
+    hidratacao: 0,
+    pos_prova: 0,
+    participei: false
   });
 
   useEffect(() => {
@@ -136,6 +150,134 @@ const RankingCorridasPage = () => {
     } finally {
       setCadastroLoading(false);
     }
+  };
+
+  // Abrir modal de avaliação
+  const handleAbrirAvaliacao = async (corrida) => {
+    if (!user) {
+      toast.error('Faça login para avaliar corridas');
+      navigate('/login');
+      return;
+    }
+    
+    // Verificar se corrida já ocorreu
+    const hoje = new Date();
+    const dataCorrida = new Date(corrida.data_corrida);
+    if (dataCorrida > hoje) {
+      toast.error('Avaliações disponíveis apenas após a realização da corrida');
+      return;
+    }
+    
+    // Verificar se já avaliou
+    try {
+      const response = await axios.get(`${API}/verificar-avaliacao/${corrida.id}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      if (response.data.ja_avaliou) {
+        toast.error('Você já avaliou esta corrida');
+        return;
+      }
+    } catch (error) {
+      console.error('Erro ao verificar avaliação:', error);
+    }
+    
+    setCorridaSelecionada(corrida);
+    setAvaliacaoData({
+      organizacao: 0,
+      percurso: 0,
+      kit_atleta: 0,
+      hidratacao: 0,
+      pos_prova: 0,
+      participei: false
+    });
+    setShowAvaliacaoModal(true);
+  };
+
+  // Enviar avaliação
+  const handleEnviarAvaliacao = async () => {
+    // Validar se todos os critérios foram avaliados
+    if (avaliacaoData.organizacao === 0 || avaliacaoData.percurso === 0 || 
+        avaliacaoData.kit_atleta === 0 || avaliacaoData.hidratacao === 0 || 
+        avaliacaoData.pos_prova === 0) {
+      toast.error('Avalie todos os 5 critérios antes de enviar');
+      return;
+    }
+    
+    if (!avaliacaoData.participei) {
+      toast.error('Você precisa confirmar que participou desta corrida');
+      return;
+    }
+
+    setAvaliacaoLoading(true);
+    try {
+      const form = new FormData();
+      form.append('corrida_id', corridaSelecionada.id);
+      form.append('organizacao', avaliacaoData.organizacao);
+      form.append('percurso', avaliacaoData.percurso);
+      form.append('kit_atleta', avaliacaoData.kit_atleta);
+      form.append('hidratacao', avaliacaoData.hidratacao);
+      form.append('pos_prova', avaliacaoData.pos_prova);
+      form.append('participei', avaliacaoData.participei);
+
+      const response = await axios.post(
+        `${API}/avaliar-corrida`,
+        form,
+        {
+          headers: { 
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      toast.success(`Avaliação registrada! Nota final: ${response.data.nota_corrida}`);
+      setShowAvaliacaoModal(false);
+      setCorridaSelecionada(null);
+      fetchRanking();
+      fetchStats();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao enviar avaliação');
+    } finally {
+      setAvaliacaoLoading(false);
+    }
+  };
+
+  // Componente de avaliação por estrelas interativo
+  const StarRating = ({ value, onChange, label, description }) => {
+    const [hoverValue, setHoverValue] = useState(0);
+    
+    return (
+      <div className="space-y-1">
+        <div className="flex items-center justify-between">
+          <Label className="text-sm font-medium">{label}</Label>
+          <span className="text-xs text-slate-500">{description}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          {[1, 2, 3, 4, 5].map((star) => (
+            <button
+              key={star}
+              type="button"
+              className="p-1 transition-transform hover:scale-110"
+              onMouseEnter={() => setHoverValue(star)}
+              onMouseLeave={() => setHoverValue(0)}
+              onClick={() => onChange(star)}
+            >
+              <Star
+                className={`w-7 h-7 transition-colors ${
+                  star <= (hoverValue || value)
+                    ? 'fill-yellow-400 text-yellow-400'
+                    : 'text-slate-300 hover:text-yellow-200'
+                }`}
+              />
+            </button>
+          ))}
+          <span className="ml-2 text-sm font-medium text-slate-600">
+            {value > 0 ? getRatingLabel(value) : '-'}
+          </span>
+        </div>
+      </div>
+    );
   };
 
   const renderStars = (rating) => {
@@ -380,6 +522,7 @@ const RankingCorridasPage = () => {
                       <th className="text-left py-3 px-2 font-semibold text-yellow-800 dark:text-yellow-200 hidden md:table-cell">Organização</th>
                       <th className="text-left py-3 px-2 font-semibold text-yellow-800 dark:text-yellow-200">Cidade/UF</th>
                       <th className="text-center py-3 px-2 font-semibold text-yellow-800 dark:text-yellow-200 hidden md:table-cell">Página</th>
+                      <th className="text-center py-3 px-2 font-semibold text-yellow-800 dark:text-yellow-200">Ação</th>
                       <th className="text-right py-3 px-2 font-semibold text-yellow-800 dark:text-yellow-200">Pontos</th>
                     </tr>
                   </thead>
@@ -453,6 +596,18 @@ const RankingCorridasPage = () => {
                           ) : (
                             <span className="text-slate-300">-</span>
                           )}
+                        </td>
+                        <td className="py-3 px-2 text-center">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => handleAbrirAvaliacao(corrida)}
+                            className="text-xs bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100"
+                            data-testid={`avaliar-corrida-${corrida.id}`}
+                          >
+                            <ClipboardCheck className="w-3 h-3 mr-1" />
+                            Avaliar
+                          </Button>
                         </td>
                         <td className="py-3 px-2 text-right">
                           <span className="text-xl font-bold text-yellow-600">
@@ -566,6 +721,150 @@ const RankingCorridasPage = () => {
                 <>
                   <Plus className="w-4 h-4 mr-2" />
                   Cadastrar
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Avaliação de Corrida */}
+      <Dialog open={showAvaliacaoModal} onOpenChange={setShowAvaliacaoModal}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-yellow-500" />
+              Avaliar Corrida
+            </DialogTitle>
+            <DialogDescription>
+              {corridaSelecionada && (
+                <div className="mt-2 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <p className="font-semibold text-slate-800 dark:text-white">
+                    {corridaSelecionada.nome_corrida}
+                  </p>
+                  <p className="text-sm text-slate-500 flex items-center gap-1 mt-1">
+                    <MapPin className="w-3 h-3" />
+                    {corridaSelecionada.cidade}/{corridaSelecionada.estado}
+                    <span className="mx-2">•</span>
+                    <Calendar className="w-3 h-3" />
+                    {corridaSelecionada.data_corrida}
+                  </p>
+                </div>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-5 py-4">
+            {/* Legenda IQC */}
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-3 rounded-lg border border-yellow-200">
+              <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-200 mb-1">
+                Índice de Qualidade da Corrida (IQC)
+              </p>
+              <p className="text-xs text-yellow-700 dark:text-yellow-300">
+                Avalie de 1 a 5 estrelas cada critério baseado na sua experiência
+              </p>
+            </div>
+            
+            {/* 5 Critérios de Avaliação */}
+            <div className="space-y-4">
+              <StarRating
+                value={avaliacaoData.organizacao}
+                onChange={(v) => setAvaliacaoData({...avaliacaoData, organizacao: v})}
+                label="1. Organização"
+                description="Estrutura, sinalização, apoio"
+              />
+              
+              <StarRating
+                value={avaliacaoData.percurso}
+                onChange={(v) => setAvaliacaoData({...avaliacaoData, percurso: v})}
+                label="2. Percurso"
+                description="Trajeto, segurança, paisagem"
+              />
+              
+              <StarRating
+                value={avaliacaoData.kit_atleta}
+                onChange={(v) => setAvaliacaoData({...avaliacaoData, kit_atleta: v})}
+                label="3. Kit do Atleta"
+                description="Camiseta, medalha, brindes"
+              />
+              
+              <StarRating
+                value={avaliacaoData.hidratacao}
+                onChange={(v) => setAvaliacaoData({...avaliacaoData, hidratacao: v})}
+                label="4. Hidratação"
+                description="Postos, água, isotônico"
+              />
+              
+              <StarRating
+                value={avaliacaoData.pos_prova}
+                onChange={(v) => setAvaliacaoData({...avaliacaoData, pos_prova: v})}
+                label="5. Pós-Prova"
+                description="Frutas, massagem, estrutura"
+              />
+            </div>
+            
+            {/* Média calculada */}
+            {avaliacaoData.organizacao > 0 && avaliacaoData.percurso > 0 && 
+             avaliacaoData.kit_atleta > 0 && avaliacaoData.hidratacao > 0 && 
+             avaliacaoData.pos_prova > 0 && (
+              <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200">
+                <div className="flex items-center justify-between">
+                  <span className="font-medium text-emerald-800 dark:text-emerald-200">
+                    Sua nota final:
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <span className="text-2xl font-bold text-emerald-600">
+                      {((avaliacaoData.organizacao + avaliacaoData.percurso + 
+                         avaliacaoData.kit_atleta + avaliacaoData.hidratacao + 
+                         avaliacaoData.pos_prova) / 5).toFixed(1)}
+                    </span>
+                    <span className="text-sm text-emerald-600">/ 5.0</span>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Checkbox de participação */}
+            <div className="flex items-start space-x-3 p-3 bg-slate-50 dark:bg-slate-800 rounded-lg border">
+              <Checkbox
+                id="participei"
+                checked={avaliacaoData.participei}
+                onCheckedChange={(checked) => setAvaliacaoData({...avaliacaoData, participei: checked})}
+                className="mt-0.5"
+              />
+              <div className="grid gap-1.5 leading-none">
+                <label
+                  htmlFor="participei"
+                  className="text-sm font-medium cursor-pointer leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Confirmo que participei desta corrida
+                </label>
+                <p className="text-xs text-slate-500">
+                  Apenas atletas que participaram podem avaliar
+                </p>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAvaliacaoModal(false)}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleEnviarAvaliacao} 
+              disabled={avaliacaoLoading || !avaliacaoData.participei}
+              className="bg-yellow-500 hover:bg-yellow-600 text-white"
+              data-testid="enviar-avaliacao-btn"
+            >
+              {avaliacaoLoading ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Enviar Avaliação
                 </>
               )}
             </Button>

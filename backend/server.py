@@ -2370,7 +2370,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://athlete-onboarding-1.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://corrida-avaliacoes.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
@@ -4999,6 +4999,400 @@ async def get_cidades_com_corridas(estado: str = None):
     ]
     result = await db.corridas_eventos.aggregate(pipeline).to_list(None)
     return [c["_id"] for c in result]
+
+
+# ============================================================
+# AVALIAÇÃO DE CORRIDAS - Sistema IQC (5 critérios)
+# ============================================================
+
+@api_router.post("/avaliar-corrida")
+async def avaliar_corrida(
+    corrida_id: str = Form(...),
+    organizacao: int = Form(...),  # 1-5
+    percurso: int = Form(...),     # 1-5
+    kit_atleta: int = Form(...),   # 1-5
+    hidratacao: int = Form(...),   # 1-5
+    pos_prova: int = Form(...),    # 1-5
+    participei: bool = Form(...),  # Checkbox obrigatório
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Registra avaliação de uma corrida por um atleta
+    5 critérios IQC (Índice de Qualidade da Corrida)
+    """
+    from datetime import datetime
+    
+    # Verificar se é atleta
+    if current_user.get("role") not in ["atleta", "dono_assessoria"]:
+        raise HTTPException(status_code=403, detail="Apenas atletas podem avaliar corridas")
+    
+    # Verificar se confirmou participação
+    if not participei:
+        raise HTTPException(status_code=400, detail="Você precisa confirmar que participou desta corrida")
+    
+    # Validar notas (1-5)
+    for nota, nome in [(organizacao, "Organização"), (percurso, "Percurso"), 
+                       (kit_atleta, "Kit Atleta"), (hidratacao, "Hidratação"), 
+                       (pos_prova, "Pós Prova")]:
+        if not 1 <= nota <= 5:
+            raise HTTPException(status_code=400, detail=f"{nome} deve ser entre 1 e 5")
+    
+    # Verificar se corrida existe
+    corrida = await db.corridas_eventos.find_one({"id": corrida_id}, {"_id": 0})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida não encontrada")
+    
+    # Verificar se corrida já ocorreu
+    data_corrida = corrida.get("data_corrida", "")
+    if data_corrida:
+        try:
+            data_evento = datetime.strptime(data_corrida, "%Y-%m-%d")
+            if data_evento > datetime.now():
+                raise HTTPException(
+                    status_code=400, 
+                    detail="Avaliações disponíveis apenas após a realização da corrida"
+                )
+        except ValueError:
+            pass  # Se não conseguir parsear a data, permite avaliação
+    
+    # Verificar se já avaliou esta corrida
+    avaliacao_existente = await db.avaliacoes_corridas.find_one({
+        "corrida_id": corrida_id,
+        "atleta_id": current_user.get("id")
+    })
+    
+    if avaliacao_existente:
+        raise HTTPException(status_code=400, detail="Você já avaliou esta corrida")
+    
+    # Calcular nota da corrida (média dos 5 critérios)
+    nota_corrida = (organizacao + percurso + kit_atleta + hidratacao + pos_prova) / 5
+    
+    # Criar avaliação
+    avaliacao = {
+        "id": str(uuid.uuid4()),
+        "corrida_id": corrida_id,
+        "atleta_id": current_user.get("id"),
+        "atleta_nome": current_user.get("nome"),
+        "organizacao": organizacao,
+        "percurso": percurso,
+        "kit_atleta": kit_atleta,
+        "hidratacao": hidratacao,
+        "pos_prova": pos_prova,
+        "nota_corrida": round(nota_corrida, 2),
+        "participei": participei,
+        "data_avaliacao": datetime.now().isoformat()
+    }
+    
+    await db.avaliacoes_corridas.insert_one(avaliacao)
+    
+    # Atualizar estatísticas da corrida
+    await atualizar_stats_corrida(corrida_id)
+    
+    return {
+        "message": "Avaliação registrada com sucesso!",
+        "nota_corrida": round(nota_corrida, 2)
+    }
+
+
+async def atualizar_stats_corrida(corrida_id: str):
+    """Atualiza as estatísticas de uma corrida após nova avaliação"""
+    
+    avaliacoes = await db.avaliacoes_corridas.find(
+        {"corrida_id": corrida_id}, {"_id": 0}
+    ).to_list(None)
+    
+    if not avaliacoes:
+        return
+    
+    total = len(avaliacoes)
+    media_geral = sum(a["nota_corrida"] for a in avaliacoes) / total
+    media_org = sum(a["organizacao"] for a in avaliacoes) / total
+    media_perc = sum(a["percurso"] for a in avaliacoes) / total
+    media_kit = sum(a["kit_atleta"] for a in avaliacoes) / total
+    media_hidr = sum(a["hidratacao"] for a in avaliacoes) / total
+    media_pos = sum(a["pos_prova"] for a in avaliacoes) / total
+    
+    await db.corridas_eventos.update_one(
+        {"id": corrida_id},
+        {"$set": {
+            "total_avaliacoes": total,
+            "media_geral": round(media_geral, 2),
+            "media_organizacao": round(media_org, 2),
+            "media_percurso": round(media_perc, 2),
+            "media_kit": round(media_kit, 2),
+            "media_hidratacao": round(media_hidr, 2),
+            "media_pos_prova": round(media_pos, 2)
+        }}
+    )
+
+
+@api_router.get("/minhas-avaliacoes-corridas")
+async def get_minhas_avaliacoes_corridas(current_user: dict = Depends(get_current_user)):
+    """Retorna avaliações feitas pelo atleta logado"""
+    
+    avaliacoes = await db.avaliacoes_corridas.find(
+        {"atleta_id": current_user.get("id")},
+        {"_id": 0}
+    ).to_list(None)
+    
+    # Enriquecer com dados da corrida
+    for aval in avaliacoes:
+        corrida = await db.corridas_eventos.find_one(
+            {"id": aval["corrida_id"]},
+            {"_id": 0, "nome_corrida": 1, "cidade": 1, "estado": 1}
+        )
+        if corrida:
+            aval["corrida"] = corrida
+    
+    return avaliacoes
+
+
+@api_router.get("/corrida-avaliacoes/{corrida_id}")
+async def get_avaliacoes_corrida(corrida_id: str):
+    """Retorna todas as avaliações de uma corrida específica"""
+    
+    avaliacoes = await db.avaliacoes_corridas.find(
+        {"corrida_id": corrida_id},
+        {"_id": 0}
+    ).sort("data_avaliacao", -1).to_list(None)
+    
+    return avaliacoes
+
+
+@api_router.get("/verificar-avaliacao/{corrida_id}")
+async def verificar_avaliacao(corrida_id: str, current_user: dict = Depends(get_current_user)):
+    """Verifica se o atleta já avaliou uma corrida"""
+    
+    avaliacao = await db.avaliacoes_corridas.find_one({
+        "corrida_id": corrida_id,
+        "atleta_id": current_user.get("id")
+    })
+    
+    return {"ja_avaliou": avaliacao is not None}
+
+
+# ============================================================
+# RANKING DAS CORRIDAS - ADMIN DASHBOARD
+# ============================================================
+
+@api_router.get("/admin/ranking-corridas/dashboard")
+async def get_dashboard_ranking_corridas(admin: dict = Depends(get_admin_user)):
+    """Dashboard administrativo do Ranking das Corridas"""
+    
+    # Stats gerais
+    total_corridas = await db.corridas_eventos.count_documents({"status": {"$ne": "cancelada"}})
+    total_avaliacoes = await db.avaliacoes_corridas.count_documents({})
+    
+    # Média geral da plataforma
+    pipeline_media = [
+        {"$group": {"_id": None, "media": {"$avg": "$nota_corrida"}}}
+    ]
+    result = await db.avaliacoes_corridas.aggregate(pipeline_media).to_list(1)
+    media_geral = result[0]["media"] if result and result[0]["media"] else 0
+    
+    # Corrida melhor avaliada (nacional, mínimo 10 avaliações)
+    pipeline_melhor = [
+        {"$group": {
+            "_id": "$corrida_id",
+            "media": {"$avg": "$nota_corrida"},
+            "total": {"$sum": 1}
+        }},
+        {"$match": {"total": {"$gte": 10}}},
+        {"$sort": {"media": -1}},
+        {"$limit": 1}
+    ]
+    result_melhor = await db.avaliacoes_corridas.aggregate(pipeline_melhor).to_list(1)
+    
+    melhor_nacional = None
+    if result_melhor:
+        corrida = await db.corridas_eventos.find_one(
+            {"id": result_melhor[0]["_id"]}, 
+            {"_id": 0, "nome_corrida": 1, "cidade": 1, "estado": 1}
+        )
+        if corrida:
+            melhor_nacional = {
+                **corrida,
+                "media": round(result_melhor[0]["media"], 2),
+                "avaliacoes": result_melhor[0]["total"]
+            }
+    
+    # Corrida com mais avaliações (nacional)
+    pipeline_mais = [
+        {"$group": {"_id": "$corrida_id", "total": {"$sum": 1}}},
+        {"$sort": {"total": -1}},
+        {"$limit": 1}
+    ]
+    result_mais = await db.avaliacoes_corridas.aggregate(pipeline_mais).to_list(1)
+    
+    mais_avaliada_nacional = None
+    if result_mais:
+        corrida = await db.corridas_eventos.find_one(
+            {"id": result_mais[0]["_id"]},
+            {"_id": 0, "nome_corrida": 1, "cidade": 1, "estado": 1}
+        )
+        if corrida:
+            mais_avaliada_nacional = {
+                **corrida,
+                "avaliacoes": result_mais[0]["total"]
+            }
+    
+    # Melhor avaliada por estado
+    pipeline_estados = [
+        {"$lookup": {
+            "from": "corridas_eventos",
+            "localField": "corrida_id",
+            "foreignField": "id",
+            "as": "corrida"
+        }},
+        {"$unwind": "$corrida"},
+        {"$group": {
+            "_id": {"estado": "$corrida.estado", "corrida_id": "$corrida_id"},
+            "nome_corrida": {"$first": "$corrida.nome_corrida"},
+            "cidade": {"$first": "$corrida.cidade"},
+            "media": {"$avg": "$nota_corrida"},
+            "total": {"$sum": 1}
+        }},
+        {"$match": {"total": {"$gte": 5}}},
+        {"$sort": {"_id.estado": 1, "media": -1}},
+        {"$group": {
+            "_id": "$_id.estado",
+            "melhor": {"$first": {
+                "nome_corrida": "$nome_corrida",
+                "cidade": "$cidade",
+                "media": "$media",
+                "avaliacoes": "$total"
+            }}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    melhores_por_estado = await db.avaliacoes_corridas.aggregate(pipeline_estados).to_list(None)
+    
+    # Mais avaliada por estado
+    pipeline_mais_estado = [
+        {"$lookup": {
+            "from": "corridas_eventos",
+            "localField": "corrida_id",
+            "foreignField": "id",
+            "as": "corrida"
+        }},
+        {"$unwind": "$corrida"},
+        {"$group": {
+            "_id": {"estado": "$corrida.estado", "corrida_id": "$corrida_id"},
+            "nome_corrida": {"$first": "$corrida.nome_corrida"},
+            "cidade": {"$first": "$corrida.cidade"},
+            "total": {"$sum": 1}
+        }},
+        {"$sort": {"_id.estado": 1, "total": -1}},
+        {"$group": {
+            "_id": "$_id.estado",
+            "mais_avaliada": {"$first": {
+                "nome_corrida": "$nome_corrida",
+                "cidade": "$cidade",
+                "avaliacoes": "$total"
+            }}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    mais_avaliadas_por_estado = await db.avaliacoes_corridas.aggregate(pipeline_mais_estado).to_list(None)
+    
+    # Distribuição de notas
+    pipeline_dist = [
+        {"$group": {
+            "_id": {"$floor": "$nota_corrida"},
+            "total": {"$sum": 1}
+        }},
+        {"$sort": {"_id": 1}}
+    ]
+    dist_notas = await db.avaliacoes_corridas.aggregate(pipeline_dist).to_list(None)
+    
+    # Ranking geral (top 20)
+    ranking = await get_ranking_corridas_interno(limite=20)
+    
+    return {
+        "stats": {
+            "total_corridas": total_corridas,
+            "total_avaliacoes": total_avaliacoes,
+            "media_geral": round(media_geral, 2) if media_geral else 0
+        },
+        "melhor_avaliada_nacional": melhor_nacional,
+        "mais_avaliada_nacional": mais_avaliada_nacional,
+        "melhores_por_estado": [
+            {"estado": e["_id"], **e["melhor"]} 
+            for e in melhores_por_estado if e["_id"]
+        ],
+        "mais_avaliadas_por_estado": [
+            {"estado": e["_id"], **e["mais_avaliada"]} 
+            for e in mais_avaliadas_por_estado if e["_id"]
+        ],
+        "distribuicao_notas": [
+            {"nota": int(d["_id"]), "total": d["total"]} 
+            for d in dist_notas if d["_id"] is not None
+        ],
+        "ranking_top20": ranking
+    }
+
+
+async def get_ranking_corridas_interno(limite: int = 100):
+    """Função interna para gerar ranking com Média Bayesiana"""
+    
+    # Buscar todas as corridas ativas
+    corridas = await db.corridas_eventos.find(
+        {"status": {"$ne": "cancelada"}},
+        {"_id": 0}
+    ).to_list(None)
+    
+    if not corridas:
+        return []
+    
+    # Calcular média geral (C)
+    pipeline = [
+        {"$group": {"_id": None, "media": {"$avg": "$nota_corrida"}}}
+    ]
+    result = await db.avaliacoes_corridas.aggregate(pipeline).to_list(1)
+    C = result[0]["media"] if result and result[0]["media"] else 3.5
+    
+    m = 30  # Parâmetro m
+    
+    ranking = []
+    for corrida in corridas:
+        v = corrida.get("total_avaliacoes", 0)
+        R = corrida.get("media_geral", 0)
+        
+        # Média Bayesiana
+        if v > 0:
+            pontuacao = (v / (v + m)) * R + (m / (v + m)) * C
+        else:
+            pontuacao = 0
+        
+        # Determinar selos
+        selo_5estrelas = v >= 50 and R >= 4.5
+        
+        ranking.append({
+            "id": corrida["id"],
+            "nome_corrida": corrida.get("nome_corrida"),
+            "organizador": corrida.get("organizador"),
+            "cidade": corrida.get("cidade"),
+            "estado": corrida.get("estado"),
+            "total_avaliacoes": v,
+            "media_geral": R,
+            "pontuacao_ranking": round(pontuacao, 2),
+            "selo_5estrelas": selo_5estrelas,
+            "no_ranking": v >= 10
+        })
+    
+    # Ordenar
+    ranking.sort(key=lambda x: (-x["pontuacao_ranking"], -x["total_avaliacoes"]))
+    
+    # Adicionar posição e selo Top 10
+    for i, c in enumerate(ranking[:limite]):
+        if c["no_ranking"]:
+            c["posicao"] = i + 1
+            if i < 10:
+                c["selo_top10"] = True
+        else:
+            c["posicao"] = None
+    
+    return ranking[:limite]
 
 
 # ==================== INCLUDE ROUTER ====================
