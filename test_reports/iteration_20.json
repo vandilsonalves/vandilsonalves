@@ -1,0 +1,96 @@
+{
+  "summary": "Bug fixes verified: 1) POST /api/auth/register works correctly, 2) GET /api/atletas/{id} fixed (KeyError faixa_etaria resolved), 3) GET /api/atletas/{id}/corridas fixed (validation errors resolved). Termo de aceite modal with scroll requirement and EU CONCORDO button working correctly on cadastro page.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter20_bugfixes.py",
+    "/app/test_reports/pytest/pytest_iter20_bugfixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/server.py (line 2310-2346: fixed get_atleta_corridas to handle legacy seed data)",
+    "/app/backend/tests/test_iter20_bugfixes.py (new test file)"
+  ],
+  "success_rate": {
+    "backend": "100% (8/8 tests passed)",
+    "frontend": "100% (cadastro page and atleta details page verified)"
+  },
+  "test_credentials": {
+    "admin": {"email": "admin@runpro.com", "password": "admin123"}
+  },
+  "seed_data_creation": "No new seed data created - used existing data and tested with new registrations",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 bugs from iteration 20 are fixed. Registration flow works end-to-end. Athlete details page now loads correctly. Termo de aceite modal works with scroll-to-enable feature.",
+  "verified_features": {
+    "bug_1_registration": {
+      "endpoint": "POST /api/auth/register",
+      "status": "FIXED",
+      "test_result": "Registration creates user successfully and returns token"
+    },
+    "bug_2_athlete_details": {
+      "endpoint": "GET /api/atletas/{id}",
+      "status": "FIXED",
+      "fix_applied": "Changed faixa_etaria from direct access to .get() with default value",
+      "test_result": "Returns full athlete details including faixa_etaria field"
+    },
+    "bug_3_athlete_corridas": {
+      "endpoint": "GET /api/atletas/{id}/corridas",
+      "status": "FIXED - ADDITIONAL BUG FOUND AND RESOLVED",
+      "fix_applied": "Added data normalization to handle legacy seed data (prova→nome, int→string for distancia, missing local field)",
+      "test_result": "Returns list of corridas without validation errors"
+    },
+    "feature_termo_aceite": {
+      "location": "/cadastro page",
+      "status": "WORKING",
+      "features_verified": [
+        "Checkbox opens modal on click",
+        "Modal displays complete regulamento with scroll",
+        "EU CONCORDO button disabled until user scrolls to bottom",
+        "EU CONCORDO button enables after scrolling",
+        "Modal closes and shows 'Termo aceito' indicator",
+        "Cadastrar button disabled until termo accepted"
+      ]
+    }
+  },
+  "backend_test_results": {
+    "TestAuthRegister": {
+      "test_register_success": "PASS",
+      "test_register_duplicate_email": "PASS",
+      "test_register_pcd_cannot_use_povao": "PASS"
+    },
+    "TestAtletaDetalhes": {
+      "test_atleta_detalhes_success": "PASS",
+      "test_atleta_detalhes_not_found": "PASS",
+      "test_atleta_detalhes_includes_all_fields": "PASS"
+    },
+    "TestAtletaCorridas": {
+      "test_atleta_corridas": "PASS"
+    },
+    "TestNewAtletaRegistration": {
+      "test_register_and_view_details": "PASS"
+    }
+  },
+  "frontend_ui_checks": {
+    "cadastro_page_loads": "PASS",
+    "termo_checkbox_visible": "PASS",
+    "termo_modal_opens": "PASS",
+    "regulamento_has_scroll": "PASS",
+    "eu_concordo_disabled_before_scroll": "PASS",
+    "eu_concordo_enabled_after_scroll": "PASS",
+    "modal_closes_on_accept": "PASS",
+    "termo_aceito_indicator": "PASS",
+    "cadastrar_disabled_without_termo": "PASS",
+    "cadastrar_enabled_with_termo": "PASS",
+    "atleta_details_page_loads": "PASS",
+    "atleta_details_shows_data": "PASS"
+  }
+}

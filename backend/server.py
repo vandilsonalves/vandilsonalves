@@ -2283,18 +2283,18 @@ async def get_atleta_detalhes(atleta_id: str):
         total_corridas = ranking["total_corridas"] if ranking else 0
         pontos_carreira = ranking["pontos_total"] if ranking else 0
     
-    min_corridas = get_min_corridas_categoria(usuario["categoria"])
+    min_corridas = get_min_corridas_categoria(usuario.get("categoria", "normal"))
     
     return AtletaDetalhes(
         id=usuario["id"],
         nome=usuario["nome"],
-        cidade=usuario["cidade"],
-        estado=usuario["estado"],
-        genero=usuario["genero"],
-        categoria=usuario["categoria"],
-        faixa_etaria=usuario["faixa_etaria"],
-        foto_url=usuario["foto_url"],
-        equipe=usuario["equipe"],
+        cidade=usuario.get("cidade", ""),
+        estado=usuario.get("estado", ""),
+        genero=usuario.get("genero", ""),
+        categoria=usuario.get("categoria", "normal"),
+        faixa_etaria=usuario.get("faixa_etaria", "Não informado"),
+        foto_url=usuario.get("foto_url", ""),
+        equipe=usuario.get("equipe", ""),
         pontos_carreira=pontos_carreira,
         total_corridas=total_corridas,
         melhor_colocacao=melhor_colocacao,
@@ -2314,7 +2314,39 @@ async def get_atleta_corridas(atleta_id: str):
         {"_id": 0}
     ).sort("data", -1).to_list(None)
     
-    return [CorridaResponse(**corrida) for corrida in corridas]
+    # Handle legacy/seed data format - normalize fields
+    result = []
+    for corrida in corridas:
+        try:
+            # Map prova to nome if nome is missing
+            nome = corrida.get("nome") or corrida.get("prova", "Corrida")
+            # Ensure distancia is string
+            distancia = corrida.get("distancia", "")
+            if isinstance(distancia, (int, float)):
+                distancia = f"{distancia}KM"
+            # Ensure local exists
+            local = corrida.get("local", "")
+            if not local:
+                cidade = corrida.get("cidade", "")
+                estado = corrida.get("estado", "")
+                local = f"{cidade}/{estado}" if cidade else "Local não informado"
+            
+            result.append(CorridaResponse(
+                id=corrida.get("id", ""),
+                nome=nome,
+                colocacao=corrida.get("colocacao", 0),
+                tempo=corrida.get("tempo", "00:00:00"),
+                pontos=corrida.get("pontos", 0),
+                local=local,
+                distancia=distancia,
+                data=corrida.get("data", "")
+            ))
+        except Exception as e:
+            # Skip invalid corrida records
+            logging.warning(f"Skipping invalid corrida record: {e}")
+            continue
+    
+    return result
 
 @api_router.get("/atletas/{atleta_id}/evolucao", response_model=List[EvolucaoMensal])
 async def get_evolucao_atleta(atleta_id: str):
