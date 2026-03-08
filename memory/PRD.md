@@ -533,4 +533,31 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 ---
 
-Última atualização: 08/03/2026
+## Changelog - 08/03/2026
+
+### ✅ Reestruturação do Dashboard Admin (P0)
+Dividido o AdminDashboard monolítico em componentes modulares:
+- `/app/frontend/src/pages/admin/DashboardGeral.jsx` - Estatísticas gerais da plataforma
+- `/app/frontend/src/pages/admin/DashboardAtletas.jsx` - Gestão de atletas
+- `/app/frontend/src/pages/admin/DashboardAssessorias.jsx` - Ranking das assessorias
+- `/app/frontend/src/pages/admin/DashboardCorridas.jsx` - Gestão de corridas/eventos
+- `/app/frontend/src/pages/admin/DashboardResultados.jsx` - Aprovações pendentes
+
+**Menu reorganizado:**
+1. Dashboard Geral - KPIs, gráficos de modalidade/categoria/estados
+2. Atletas - Lista completa com filtros e ações
+3. Assessorias - Ranking ROE-RR com gráficos
+4. Corridas - Gestão de eventos e avaliações
+5. Aprovações - Resultados pendentes
+6. + Submeter Resultado - Formulário de submissão
+7. Exportar Ranking - Relatórios PDF
+8. Aniversariantes - Calendário e notificações
+9. Ranking Run Inside - Analytics Instagram
+
+### ✅ Gráfico de Evolução Mensal das Equipes
+- Endpoint: `GET /api/liga-assessorias/evolucao-mensal?top=5`
+- Exibido na página de Ranking de Equipes
+- LineChart com cores distintas para cada equipe
+- Mostra evolução de pontos de Janeiro até o mês atual
+
+Última atualização: 08/03/2026 (Sessão 2)
