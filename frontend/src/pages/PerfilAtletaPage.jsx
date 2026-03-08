@@ -91,6 +91,13 @@ const PerfilAtletaPage = () => {
   const [showSenhaAtual, setShowSenhaAtual] = useState(false);
   const [showNovaSenha, setShowNovaSenha] = useState(false);
 
+  // Estados para troca de equipe
+  const [showTrocarEquipe, setShowTrocarEquipe] = useState(false);
+  const [statusTrocaEquipe, setStatusTrocaEquipe] = useState(null);
+  const [novaEquipe, setNovaEquipe] = useState('');
+  const [equipesDisponiveis, setEquipesDisponiveis] = useState([]);
+  const [savingEquipe, setSavingEquipe] = useState(false);
+
   const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo', 'Mulato'];
 
   useEffect(() => {
@@ -100,6 +107,8 @@ const PerfilAtletaPage = () => {
     }
     fetchAtletaData();
     fetchConquistas();
+    fetchStatusTrocaEquipe();
+    fetchEquipesDisponiveis();
   }, [user, token]);
 
   const fetchAtletaData = async () => {
@@ -154,6 +163,59 @@ const PerfilAtletaPage = () => {
       setConquistas(response.data.conquistas || []);
     } catch (error) {
       console.error('Erro ao buscar conquistas:', error);
+    }
+  };
+
+  const fetchStatusTrocaEquipe = async () => {
+    try {
+      const response = await axios.get(`${API}/atletas/status-troca-equipe`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStatusTrocaEquipe(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar status troca equipe:', error);
+    }
+  };
+
+  const fetchEquipesDisponiveis = async () => {
+    try {
+      const response = await axios.get(`${API}/assessorias-list`);
+      setEquipesDisponiveis(response.data || []);
+    } catch (error) {
+      console.error('Erro ao buscar equipes:', error);
+    }
+  };
+
+  const handleTrocarEquipe = async () => {
+    if (!novaEquipe) {
+      toast.error('Selecione uma equipe');
+      return;
+    }
+    
+    setSavingEquipe(true);
+    try {
+      const response = await axios.post(`${API}/atletas/trocar-equipe`, 
+        { nova_equipe: novaEquipe },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success(response.data.message);
+      setShowTrocarEquipe(false);
+      setNovaEquipe('');
+      
+      // Atualizar dados
+      fetchAtletaData();
+      fetchStatusTrocaEquipe();
+      
+    } catch (error) {
+      const detail = error.response?.data?.detail;
+      if (typeof detail === 'object') {
+        toast.error(detail.message);
+      } else {
+        toast.error(detail || 'Erro ao trocar de equipe');
+      }
+    } finally {
+      setSavingEquipe(false);
     }
   };
 
@@ -660,15 +722,129 @@ const PerfilAtletaPage = () => {
                   <Users className="w-4 h-4" />
                   Equipe / Assessoria
                 </Label>
-                <Input
-                  id="equipe"
-                  value={equipe}
-                  onChange={(e) => setEquipe(e.target.value)}
-                  placeholder="Ex: Runners BR, Team Run, etc."
-                  className="bg-slate-900 border-slate-600 text-white"
-                  data-testid="input-equipe"
-                />
+                <div className="flex gap-2">
+                  <Input
+                    id="equipe"
+                    value={equipe || 'INDIVIDUAL'}
+                    disabled
+                    className="bg-slate-900 border-slate-600 text-white flex-1"
+                    data-testid="input-equipe"
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowTrocarEquipe(true)}
+                    disabled={user?.role === 'dono_assessoria'}
+                    className="border-amber-500 text-amber-400 hover:bg-amber-500/10"
+                    data-testid="btn-trocar-equipe"
+                  >
+                    Trocar Equipe
+                  </Button>
+                </div>
+                {user?.role === 'dono_assessoria' && (
+                  <p className="text-xs text-amber-400">
+                    Donos de assessoria não podem trocar de equipe.
+                  </p>
+                )}
+                {statusTrocaEquipe && !statusTrocaEquipe.pode_trocar && statusTrocaEquipe.motivo === 'periodo_espera' && (
+                  <p className="text-xs text-slate-400">
+                    Próxima troca disponível em: <span className="text-amber-400">{statusTrocaEquipe.proxima_troca}</span>
+                    ({statusTrocaEquipe.dias_restantes} dias restantes)
+                  </p>
+                )}
               </div>
+
+              {/* Modal Trocar Equipe */}
+              {showTrocarEquipe && (
+                <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50">
+                  <div className="bg-slate-800 rounded-xl p-6 w-full max-w-md mx-4 border border-slate-700">
+                    <h3 className="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                      <Users className="w-5 h-5 text-amber-500" />
+                      Trocar de Equipe
+                    </h3>
+                    
+                    {statusTrocaEquipe && !statusTrocaEquipe.pode_trocar ? (
+                      <div className="space-y-4">
+                        <Alert className="border-amber-500/50 bg-amber-500/10">
+                          <AlertDescription className="text-amber-200">
+                            {statusTrocaEquipe.mensagem}
+                            {statusTrocaEquipe.proxima_troca && (
+                              <span className="block mt-2">
+                                Próxima troca: <strong>{statusTrocaEquipe.proxima_troca}</strong>
+                              </span>
+                            )}
+                          </AlertDescription>
+                        </Alert>
+                        <Button 
+                          onClick={() => setShowTrocarEquipe(false)}
+                          className="w-full"
+                        >
+                          Fechar
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="space-y-4">
+                        <div>
+                          <Label className="text-slate-300 mb-2 block">Equipe Atual</Label>
+                          <Badge variant="outline" className="text-lg px-4 py-2">
+                            {equipe || 'INDIVIDUAL'}
+                          </Badge>
+                        </div>
+                        
+                        <div>
+                          <Label className="text-slate-300 mb-2 block">Nova Equipe</Label>
+                          <Select value={novaEquipe} onValueChange={setNovaEquipe}>
+                            <SelectTrigger className="bg-slate-900 border-slate-600 text-white">
+                              <SelectValue placeholder="Selecione uma equipe..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="INDIVIDUAL">INDIVIDUAL (Sem equipe)</SelectItem>
+                              {equipesDisponiveis.map((eq) => (
+                                <SelectItem key={eq.id} value={eq.nome}>
+                                  {eq.nome}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <Alert className="border-slate-600 bg-slate-700/50">
+                          <AlertDescription className="text-slate-300 text-sm">
+                            Você só pode trocar de equipe a cada <strong>15 dias</strong>.
+                          </AlertDescription>
+                        </Alert>
+
+                        <div className="flex gap-2">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              setShowTrocarEquipe(false);
+                              setNovaEquipe('');
+                            }}
+                            className="flex-1"
+                          >
+                            Cancelar
+                          </Button>
+                          <Button 
+                            onClick={handleTrocarEquipe}
+                            disabled={savingEquipe || !novaEquipe}
+                            className="flex-1 bg-amber-500 hover:bg-amber-600"
+                          >
+                            {savingEquipe ? (
+                              <>
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                Salvando...
+                              </>
+                            ) : (
+                              'Confirmar Troca'
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
 
               {/* Redes Sociais */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

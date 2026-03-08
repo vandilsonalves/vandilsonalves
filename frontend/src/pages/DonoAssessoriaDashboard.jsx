@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, Home, Bell, 
   Download, Send, Settings, LogOut, Plus, Eye, BarChart3, Loader2, 
-  MessageSquare, Calendar, Target, Medal
+  MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +33,7 @@ const DonoAssessoriaDashboard = () => {
   const [rankingEstadual, setRankingEstadual] = useState(null);
   const [rankingMensal, setRankingMensal] = useState(null);
   const [rankingAnual, setRankingAnual] = useState(null);
+  const [comparacaoMensal, setComparacaoMensal] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
   const [showMensagemModal, setShowMensagemModal] = useState(false);
   const [mensagem, setMensagem] = useState('');
@@ -60,16 +61,19 @@ const DonoAssessoriaDashboard = () => {
         return;
       }
 
-      const [assessoriaRes, nacionalRes, estadualRes, mensalRes, anualRes] = await Promise.all([
+      const [assessoriaRes, nacionalRes, estadualRes, mensalRes, anualRes, comparacaoRes] = await Promise.allSettled([
         axios.get(`${API}/liga-assessorias/assessoria/${encodeURIComponent(equipe)}`),
         axios.get(`${API}/liga-assessorias/ranking?tipo=nacional`),
         axios.get(`${API}/liga-assessorias/ranking?tipo=estadual&estado=${user.estado}`),
-        axios.get(`${API}/liga-assessorias/ranking?tipo=mensal`),
-        axios.get(`${API}/liga-assessorias/ranking?tipo=anual`)
+        axios.get(`${API}/liga-assessorias/ranking?tipo=nacional&mes=${new Date().getMonth() + 1}`),
+        axios.get(`${API}/liga-assessorias/ranking?tipo=historico`),
+        axios.get(`${API}/liga-assessorias/comparacao-mensal/${encodeURIComponent(equipe)}`)
       ]);
 
-      setAssessoria(assessoriaRes.data);
-      setAtletas(assessoriaRes.data.atletas || []);
+      if (assessoriaRes.status === 'fulfilled') {
+        setAssessoria(assessoriaRes.value.data);
+        setAtletas(assessoriaRes.value.data.atletas || []);
+      }
       
       // Encontrar posição nos rankings
       const findPosicao = (ranking, nome) => {
@@ -77,10 +81,21 @@ const DonoAssessoriaDashboard = () => {
         return item ? item.posicao : null;
       };
 
-      setRankingNacional(findPosicao(nacionalRes.data.ranking, equipe));
-      setRankingEstadual(findPosicao(estadualRes.data.ranking, equipe));
-      setRankingMensal(findPosicao(mensalRes.data.ranking, equipe));
-      setRankingAnual(findPosicao(anualRes.data.ranking, equipe));
+      if (nacionalRes.status === 'fulfilled') {
+        setRankingNacional(findPosicao(nacionalRes.value.data.ranking, equipe));
+      }
+      if (estadualRes.status === 'fulfilled') {
+        setRankingEstadual(findPosicao(estadualRes.value.data.ranking, equipe));
+      }
+      if (mensalRes.status === 'fulfilled') {
+        setRankingMensal(findPosicao(mensalRes.value.data.ranking, equipe));
+      }
+      if (anualRes.status === 'fulfilled') {
+        setRankingAnual(findPosicao(anualRes.value.data.ranking, equipe));
+      }
+      if (comparacaoRes.status === 'fulfilled') {
+        setComparacaoMensal(comparacaoRes.value.data);
+      }
     } catch (error) {
       console.error('Erro ao buscar dados:', error);
       toast.error('Erro ao carregar dados da assessoria');
@@ -371,6 +386,117 @@ const DonoAssessoriaDashboard = () => {
                 </CardContent>
               </Card>
             </div>
+
+            {/* Comparação Mensal */}
+            {comparacaoMensal && (
+              <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-amber-500/30">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <BarChart3 className="w-5 h-5 text-amber-500" />
+                    Comparação de Desempenho: {comparacaoMensal.mes_atual.nome} vs {comparacaoMensal.mes_anterior.nome}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    {/* Resultados */}
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-slate-400 text-sm">Resultados</span>
+                        <span className={`flex items-center text-xs font-medium ${
+                          comparacaoMensal.variacoes.resultados > 0 ? 'text-green-400' :
+                          comparacaoMensal.variacoes.resultados < 0 ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          {comparacaoMensal.variacoes.resultados > 0 ? <ArrowUpRight className="w-3 h-3" /> :
+                           comparacaoMensal.variacoes.resultados < 0 ? <ArrowDownRight className="w-3 h-3" /> :
+                           <Minus className="w-3 h-3" />}
+                          {Math.abs(comparacaoMensal.variacoes.resultados)}%
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-white">{comparacaoMensal.mes_atual.resultados}</span>
+                        <span className="text-sm text-slate-500">vs {comparacaoMensal.mes_anterior.resultados}</span>
+                      </div>
+                    </div>
+
+                    {/* Pontos */}
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-slate-400 text-sm">Pontos Conquistados</span>
+                        <span className={`flex items-center text-xs font-medium ${
+                          comparacaoMensal.variacoes.pontos > 0 ? 'text-green-400' :
+                          comparacaoMensal.variacoes.pontos < 0 ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          {comparacaoMensal.variacoes.pontos > 0 ? <ArrowUpRight className="w-3 h-3" /> :
+                           comparacaoMensal.variacoes.pontos < 0 ? <ArrowDownRight className="w-3 h-3" /> :
+                           <Minus className="w-3 h-3" />}
+                          {Math.abs(comparacaoMensal.variacoes.pontos)}%
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-amber-500">{comparacaoMensal.mes_atual.pontos}</span>
+                        <span className="text-sm text-slate-500">vs {comparacaoMensal.mes_anterior.pontos}</span>
+                      </div>
+                    </div>
+
+                    {/* Novos Atletas */}
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-slate-400 text-sm">Novos Atletas</span>
+                        <span className={`flex items-center text-xs font-medium ${
+                          comparacaoMensal.variacoes.novos_atletas > 0 ? 'text-green-400' :
+                          comparacaoMensal.variacoes.novos_atletas < 0 ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          {comparacaoMensal.variacoes.novos_atletas > 0 ? <ArrowUpRight className="w-3 h-3" /> :
+                           comparacaoMensal.variacoes.novos_atletas < 0 ? <ArrowDownRight className="w-3 h-3" /> :
+                           <Minus className="w-3 h-3" />}
+                          {Math.abs(comparacaoMensal.variacoes.novos_atletas)}%
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-blue-400">{comparacaoMensal.mes_atual.novos_atletas}</span>
+                        <span className="text-sm text-slate-500">vs {comparacaoMensal.mes_anterior.novos_atletas}</span>
+                      </div>
+                    </div>
+
+                    {/* Posição no Ranking */}
+                    <div className="bg-slate-800 rounded-lg p-4">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-slate-400 text-sm">Posição Ranking</span>
+                        <span className={`flex items-center text-xs font-medium ${
+                          comparacaoMensal.variacoes.posicao > 0 ? 'text-green-400' :
+                          comparacaoMensal.variacoes.posicao < 0 ? 'text-red-400' : 'text-slate-400'
+                        }`}>
+                          {comparacaoMensal.variacoes.posicao > 0 ? <ArrowUpRight className="w-3 h-3" /> :
+                           comparacaoMensal.variacoes.posicao < 0 ? <ArrowDownRight className="w-3 h-3" /> :
+                           <Minus className="w-3 h-3" />}
+                          {Math.abs(comparacaoMensal.variacoes.posicao)} pos
+                        </span>
+                      </div>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-2xl font-bold text-purple-400">
+                          {comparacaoMensal.mes_atual.posicao_ranking || '-'}º
+                        </span>
+                        <span className="text-sm text-slate-500">
+                          vs {comparacaoMensal.mes_anterior.posicao_ranking || '-'}º
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Mensagem de Performance */}
+                  <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
+                    <p className="text-amber-200 text-sm">
+                      {comparacaoMensal.variacoes.pontos > 0 
+                        ? `Parabéns! Sua assessoria cresceu ${comparacaoMensal.variacoes.pontos}% em pontos este mês.`
+                        : comparacaoMensal.variacoes.pontos < 0
+                        ? `Atenção: Queda de ${Math.abs(comparacaoMensal.variacoes.pontos)}% nos pontos. Incentive seus atletas a participar de mais corridas!`
+                        : `Desempenho estável. Continue motivando seus atletas!`
+                      }
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Evolução */}
             {assessoria.evolucao_mensal && assessoria.evolucao_mensal.length > 0 && (
