@@ -560,4 +560,28 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 - LineChart com cores distintas para cada equipe
 - Mostra evolução de pontos de Janeiro até o mês atual
 
-Última atualização: 08/03/2026 (Sessão 2)
+### ✅ Dashboard de Comparação Mensal para Donos de Assessoria
+- Página `/minha-assessoria` (DonoAssessoriaDashboard.jsx)
+- Endpoint: `GET /api/liga-assessorias/comparacao-mensal/{nome_equipe}`
+- Comparação Março vs Fevereiro 2026:
+  - Resultados (quantidade e variação %)
+  - Pontos conquistados (quantidade e variação %)
+  - Novos atletas (quantidade e variação %)
+  - Posição no ranking (posição e variação)
+- Mensagem automática de performance (parabéns ou alerta)
+
+### ✅ 7ª Tarefa - Troca de Equipe a Cada 15 Dias
+- Endpoint: `GET /api/atletas/status-troca-equipe`
+- Endpoint: `POST /api/atletas/trocar-equipe`
+- Regras implementadas:
+  - Atletas podem trocar de equipe a cada 15 dias
+  - Donos de assessoria NÃO podem trocar (bloqueado)
+  - Administradores não têm equipe
+  - Período de cooldown com contagem de dias restantes
+  - Validação de equipe existente ou INDIVIDUAL
+- UI no perfil do atleta:
+  - Botão "Trocar Equipe"
+  - Modal de seleção de nova equipe
+  - Mensagem de bloqueio com data da próxima troca
+
+Última atualização: 08/03/2026 (Sessão 3)

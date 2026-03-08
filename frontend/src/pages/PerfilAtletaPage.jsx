@@ -179,7 +179,7 @@ const PerfilAtletaPage = () => {
 
   const fetchEquipesDisponiveis = async () => {
     try {
-      const response = await axios.get(`${API}/assessorias-list`);
+      const response = await axios.get(`${API}/assessorias/lista`);
       setEquipesDisponiveis(response.data || []);
     } catch (error) {
       console.error('Erro ao buscar equipes:', error);
