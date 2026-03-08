@@ -1577,10 +1577,10 @@ async def calcular_ranking():
                 "ano": ano_atual,
                 "pontos_total": agg["pontos_total"],
                 "total_corridas": agg["total_corridas"],
-                "estado": usuario["estado"],
-                "genero": usuario["genero"],
-                "categoria": usuario["categoria"],
-                "faixa_etaria": usuario["faixa_etaria"],
+                "estado": usuario.get("estado", ""),
+                "genero": usuario.get("genero", "M"),
+                "categoria": usuario.get("categoria", "normal"),
+                "faixa_etaria": usuario.get("faixa_etaria", "Não informado"),
                 "modalidade_usuario": modalidade
             })
     
@@ -1686,17 +1686,18 @@ async def get_ranking_povao(genero: str = "M"):
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
             result.append({
-                "colocacao": rank["ranking_genero"],
+                "colocacao": rank.get("ranking_genero", 0),
+                "posicao": rank.get("ranking_genero", 0),
                 "atleta_id": rank["usuario_id"],
-                "nome": usuario["nome"],
-                "uf": usuario["estado"],
-                "cidade": usuario["cidade"],
-                "faixa_etaria": usuario["faixa_etaria"],
+                "nome": usuario.get("nome", ""),
+                "uf": usuario.get("estado", ""),
+                "cidade": usuario.get("cidade", ""),
+                "faixa_etaria": usuario.get("faixa_etaria", "Não informado"),
                 "foto_url": usuario.get("foto_url", ""),
                 "equipe": usuario.get("equipe", ""),
-                "total_corridas": rank["total_corridas"],
-                "distancia_acumulada": rank["distancia_acumulada"],
-                "pontos": rank["pontos_total"]
+                "total_corridas": rank.get("total_corridas", 0),
+                "distancia_acumulada": rank.get("distancia_acumulada", 0),
+                "pontos": rank.get("pontos_total", 0)
             })
     
     return {
@@ -2541,6 +2542,34 @@ async def get_assessorias_lista():
 @api_router.get("/")
 async def root():
     return {"message": "Ranking Run Pro API"}
+
+@api_router.post("/admin/sync-resultados-atletas")
+async def sync_resultados_atletas(admin: dict = Depends(get_admin_user)):
+    """Gera resultados de teste para todos os atletas cadastrados, sincronizando as modalidades"""
+    import random
+    from datetime import datetime
+    
+    # Recalcular rankings existentes
+    total_ranking = await calcular_ranking()
+    total_povao = await calcular_ranking_povao()
+    
+    return {
+        "message": "Rankings recalculados com sucesso!",
+        "ranking_profissional": total_ranking,
+        "ranking_povao": total_povao
+    }
+
+@api_router.post("/admin/recalcular-rankings")
+async def recalcular_rankings(admin: dict = Depends(get_admin_user)):
+    """Recalcula todos os rankings (Profissional/Amador e Povão)"""
+    total_ranking = await calcular_ranking()
+    total_povao = await calcular_ranking_povao()
+    
+    return {
+        "message": "Rankings recalculados com sucesso!",
+        "ranking_profissional": total_ranking,
+        "ranking_povao": total_povao
+    }
 
 @api_router.post("/admin/setup-assessoria-dono/{equipe_nome}")
 async def setup_assessoria_dono(

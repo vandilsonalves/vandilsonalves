@@ -1,0 +1,156 @@
+{
+  "summary": "Iteration 24: Tested synchronization between the 3 ranking modalities (Povão, Profissional/Amador, Equipes). All endpoints working correctly. Pedro Araújo (Champions SC) appears in Povão ranking (1st place, 117 pts) and in Equipes ranking (Champions SC at position 7). The data shows 33 athletes in Profissional ranking and 40 in Povão ranking. The recalculate endpoint works correctly. All 4 frontend tabs are visible and functional.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter24_ranking_sync.py",
+    "/app/test_reports/pytest/pytest_iter24_ranking_sync.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter24_ranking_sync.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% (all 4 tabs working)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@runpro.com",
+      "password": "admin123"
+    }
+  },
+  "seed_data_creation": "None - used existing test data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All 3 ranking modalities are working correctly: (1) Povão ranking has 40 athletes (20M + 20F) with Pedro Araújo in 1st place at 117 pts. (2) Profissional ranking has 33 athletes. (3) Equipes ranking has 16 assessorias with Champions SC at position 7. Note: Athletes in Povão modality (modalidade_usuario='povao_pace_livre') do NOT appear in Profissional ranking - this is correct behavior as an athlete can only be in ONE modality. The Equipes ranking aggregates athletes from BOTH modalities correctly.",
+  "verified_features": {
+    "feature_1_ranking_povao": {
+      "endpoint": "GET /api/ranking/povao?genero=M",
+      "status": "WORKING",
+      "total_athletes": 20,
+      "first_place": "Pedro Araújo (Champions SC) - 117 pts"
+    },
+    "feature_2_ranking_profissional": {
+      "endpoint": "GET /api/ranking/categoria/masculino/M",
+      "status": "WORKING",
+      "total_athletes": 33,
+      "first_place": "Test Atleta Lista (Assessoria CAFAV) - 89 pts"
+    },
+    "feature_3_ranking_equipes": {
+      "endpoint": "GET /api/liga-assessorias/ranking",
+      "status": "WORKING",
+      "total_assessorias": 16,
+      "first_place": "Victory Run PE - 189.5 pts"
+    },
+    "feature_4_recalcular_rankings": {
+      "endpoint": "POST /api/admin/recalcular-rankings",
+      "status": "WORKING",
+      "requires_auth": true,
+      "response": {
+        "ranking_profissional": 33,
+        "ranking_povao": 40
+      }
+    },
+    "feature_5_povao_stats": {
+      "endpoint": "GET /api/ranking/povao/stats",
+      "status": "WORKING",
+      "total_atletas": 40,
+      "masculino": 20,
+      "feminino": 20,
+      "total_provas": 482
+    },
+    "feature_6_frontend_tabs": {
+      "status": "WORKING",
+      "tabs": [
+        "Ranking Profissional/Amador (data-testid: tipo-ranking-profissional)",
+        "Ranking do Povão (data-testid: tipo-ranking-povao)",
+        "Ranking de Equipes (data-testid: tipo-ranking-equipes)",
+        "Ranking das Corridas (data-testid: tipo-ranking-corridas)"
+      ]
+    }
+  },
+  "scoring_system_verified": {
+    "equipes": {
+      "atleta_cadastrado": "+0.5 pts",
+      "resultado_aprovado": "+1.0 pts",
+      "2o_a_5o_lugar": "+0.5 pts adicional",
+      "1o_lugar": "+1.0 pts adicional",
+      "status": "CONFIRMED - pontos_cadastro = total_atletas * 0.5"
+    },
+    "povao": {
+      "5km_a_9km": "5 pts",
+      "10km_a_20km": "7 pts",
+      "21km_ou_mais": "9 pts",
+      "status": "CONFIRMED - displayed in frontend info card"
+    },
+    "profissional": {
+      "1o_lugar": "10 pts",
+      "2o_lugar": "9 pts",
+      "ate_10o_lugar": "1 pt",
+      "status": "CONFIRMED - standard scoring"
+    }
+  },
+  "champions_sc_verification": {
+    "in_povao": {
+      "athlete": "Pedro Araújo",
+      "position": 1,
+      "points": 117,
+      "team": "Champions SC"
+    },
+    "in_equipes": {
+      "position": 7,
+      "total_atletas": 11,
+      "points": 101.0,
+      "includes_pedro": true
+    },
+    "in_profissional": {
+      "appears": false,
+      "reason": "Pedro has modalidade_usuario='povao_pace_livre' - correct behavior"
+    }
+  },
+  "backend_test_results": {
+    "TestRankingPovao": {
+      "test_ranking_povao_masculino_returns_data": "PASS",
+      "test_ranking_povao_feminino_returns_data": "PASS",
+      "test_ranking_povao_has_correct_fields": "PASS",
+      "test_ranking_povao_stats_correct": "PASS"
+    },
+    "TestRankingProfissional": {
+      "test_ranking_profissional_masculino_returns_data": "PASS",
+      "test_ranking_profissional_feminino_returns_data": "PASS",
+      "test_ranking_profissional_has_correct_fields": "PASS"
+    },
+    "TestRankingEquipes": {
+      "test_ranking_equipes_returns_data": "PASS",
+      "test_ranking_equipes_has_correct_fields": "PASS",
+      "test_ranking_equipes_pontuacao_correta": "PASS"
+    },
+    "TestAtletasWithEquipesInAllRankings": {
+      "test_champions_sc_in_equipes_ranking": "PASS",
+      "test_pedro_araujo_in_povao_ranking": "PASS",
+      "test_champions_sc_atletas_appear_in_equipes": "PASS"
+    },
+    "TestRecalcularRankings": {
+      "test_recalcular_rankings_requires_auth": "PASS",
+      "test_recalcular_rankings_success": "PASS"
+    },
+    "TestFrontendTabs": {
+      "test_all_ranking_types_available": "PASS"
+    }
+  },
+  "frontend_ui_verification": {
+    "ranking_povao_tab": "WORKING - Shows 40 athletes, stats cards (40 total, 20M, 20F, 482 provas)",
+    "ranking_profissional_tab": "WORKING - Shows categories tabs (MASCULINO, FEMININO, PCD, CADEIRANTE)",
+    "ranking_equipes_tab": "WORKING - Shows 16 assessorias with pontuação system",
+    "ranking_corridas_tab": "WORKING - Navigates to /ranking-corridas page"
+  }
+}
