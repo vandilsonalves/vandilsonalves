@@ -1,0 +1,122 @@
+{
+  "summary": "Iteration 25: Tested the new filter system for Ranking de Equipes page. All features working correctly - replaced 'Mensal', 'Anual', 'Histórico' tabs with 'Nacional', 'Estadual', 'Cidade', 'Histórico'. Month dropdown filter shows only months from January to current month (March 2026). Backend accepts mes=1-12 parameter correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter25_ranking_filters.py",
+    "/app/test_reports/pytest/pytest_iter25_ranking_filters.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter25_ranking_filters.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (all features verified)"
+  },
+  "test_credentials": {
+    "api_url": "https://team-ranking-ui.preview.emergentagent.com"
+  },
+  "seed_data_creation": "None - used existing test data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The Ranking de Equipes page now has 4 tabs: Nacional (filters nationally), Estadual (shows Estado dropdown), Cidade (shows Estado and Cidade dropdowns), Histórico (no month filter, shows all-time data). The month dropdown (📅 Mês:) appears on all tabs EXCEPT Histórico. It shows only months from January to the current month (March 2026 in this case). The backend endpoint /api/liga-assessorias/ranking accepts tipo=nacional|estadual|cidade|historico and mes=1-12 parameters.",
+  "verified_features": {
+    "feature_1_new_tabs": {
+      "status": "WORKING",
+      "tabs_implemented": ["Nacional", "Estadual", "Cidade", "Histórico"],
+      "old_tabs_removed": ["Mensal", "Anual"]
+    },
+    "feature_2_nacional_tab": {
+      "endpoint": "GET /api/liga-assessorias/ranking?tipo=nacional",
+      "status": "WORKING",
+      "description": "Shows national ranking, month filter visible"
+    },
+    "feature_3_estadual_tab": {
+      "endpoint": "GET /api/liga-assessorias/ranking?tipo=estadual&estado=XX",
+      "status": "WORKING",
+      "description": "Shows Estado dropdown to filter by state, month filter visible"
+    },
+    "feature_4_cidade_tab": {
+      "endpoint": "GET /api/liga-assessorias/ranking?tipo=cidade&cidade=XXX",
+      "status": "WORKING",
+      "description": "Shows Estado and Cidade dropdowns, month filter visible"
+    },
+    "feature_5_historico_tab": {
+      "endpoint": "GET /api/liga-assessorias/ranking?tipo=historico",
+      "status": "WORKING",
+      "description": "Shows all-time data, NO month filter (correctly hidden)"
+    },
+    "feature_6_month_dropdown": {
+      "status": "WORKING",
+      "available_months": ["Janeiro", "Fevereiro", "Março"],
+      "hidden_months": ["Abril", "Maio", "Junho", "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"],
+      "description": "Shows only months from January to current month (March 2026)"
+    },
+    "feature_7_month_filter_backend": {
+      "endpoint": "GET /api/liga-assessorias/ranking?tipo=nacional&mes=1",
+      "status": "WORKING",
+      "description": "Backend accepts mes=1-12 and filters corridas by month"
+    }
+  },
+  "backend_test_results": {
+    "TestRankingEquipesTabs": {
+      "test_ranking_nacional_returns_data": "PASS",
+      "test_ranking_estadual_without_estado": "PASS",
+      "test_ranking_estadual_with_estado": "PASS",
+      "test_ranking_cidade_with_filters": "PASS",
+      "test_ranking_historico_returns_all_time_data": "PASS"
+    },
+    "TestMonthFilter": {
+      "test_month_filter_january": "PASS",
+      "test_month_filter_february": "PASS",
+      "test_month_filter_march": "PASS",
+      "test_month_filter_invalid_month": "PASS",
+      "test_month_filter_combined_with_estadual": "PASS",
+      "test_historico_ignores_month_filter": "PASS"
+    },
+    "TestMonthFilterComparison": {
+      "test_compare_month_vs_all": "PASS"
+    },
+    "TestRankingDataStructure": {
+      "test_ranking_response_structure": "PASS"
+    },
+    "TestEstadosEndpoint": {
+      "test_get_estados_com_assessorias": "PASS"
+    },
+    "TestCidadesEndpoint": {
+      "test_get_cidades_por_estado": "PASS"
+    }
+  },
+  "frontend_ui_verification": {
+    "nacional_tab": "WORKING - Shows ranking with month filter dropdown",
+    "estadual_tab": "WORKING - Shows Estado dropdown + month filter",
+    "cidade_tab": "WORKING - Shows Estado + Cidade dropdowns + month filter",
+    "historico_tab": "WORKING - Month filter correctly HIDDEN, shows all-time data"
+  },
+  "code_review": {
+    "getMesesDisponiveis_function": {
+      "file": "/app/frontend/src/pages/RankingPage.js",
+      "lines": "52-69",
+      "status": "CORRECT - Filters months from 1 to current month (new Date().getMonth() + 1)"
+    },
+    "fetchLigaRanking_function": {
+      "file": "/app/frontend/src/pages/RankingPage.js",
+      "lines": "216-240",
+      "status": "CORRECT - Sends mes parameter when ligaMes is set"
+    },
+    "backend_get_ranking_assessorias": {
+      "file": "/app/backend/server.py",
+      "line": "4448",
+      "status": "CORRECT - Accepts mes parameter and filters corridas by month when tipo != 'historico'"
+    }
+  }
+}

@@ -2445,7 +2445,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://corrida-avaliacoes.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://team-ranking-ui.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
@@ -4447,9 +4447,10 @@ async def enviar_mensagens_aniversario_automatico():
 
 @api_router.get("/liga-assessorias/ranking")
 async def get_ranking_assessorias(
-    tipo: str = "nacional",  # nacional, estadual, cidade, mensal, anual, historico
+    tipo: str = "nacional",  # nacional, estadual, cidade, historico
     estado: str = None,
-    cidade: str = None
+    cidade: str = None,
+    mes: int = None  # Filtro por mês (1-12)
 ):
     """
     Retorna ranking das assessorias baseado no sistema ROE-RR
@@ -4459,22 +4460,37 @@ async def get_ranking_assessorias(
     - +1,0 por resultado aprovado
     - +0,5 adicional para 2º-5º lugar
     - +1,0 adicional para 1º lugar
+    
+    Filtros:
+    - tipo: nacional, estadual, cidade, historico
+    - estado: UF para filtro estadual
+    - cidade: Nome da cidade para filtro por cidade
+    - mes: Número do mês (1-12) para filtrar resultados
     """
     from datetime import datetime
     
     agora = datetime.now()
     ano_atual = agora.year
-    mes_atual = agora.month
     
-    # Filtro de período baseado no tipo
+    # Filtro de período baseado nos parâmetros
     filtro_corridas = {}
-    if tipo == "mensal":
-        # Primeiro dia do mês atual
-        inicio_mes = f"{ano_atual}-{mes_atual:02d}-01"
-        filtro_corridas["data"] = {"$gte": inicio_mes}
-    elif tipo == "anual":
-        inicio_ano = f"{ano_atual}-01-01"
-        filtro_corridas["data"] = {"$gte": inicio_ano}
+    
+    # Se histórico, não filtra por data (mostra tudo)
+    if tipo != "historico":
+        # Se um mês específico foi selecionado
+        if mes and 1 <= mes <= 12:
+            # Filtrar pelo mês específico do ano atual
+            inicio_mes = f"{ano_atual}-{mes:02d}-01"
+            # Calcular último dia do mês
+            if mes == 12:
+                fim_mes = f"{ano_atual + 1}-01-01"
+            else:
+                fim_mes = f"{ano_atual}-{mes + 1:02d}-01"
+            filtro_corridas["data"] = {"$gte": inicio_mes, "$lt": fim_mes}
+        else:
+            # Se nenhum mês específico, filtra pelo ano atual (exceto histórico)
+            inicio_ano = f"{ano_atual}-01-01"
+            filtro_corridas["data"] = {"$gte": inicio_ano}
     # historico e nacional não têm filtro de data
     
     # Buscar todas as equipes distintas com atletas

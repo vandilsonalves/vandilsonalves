@@ -41,11 +41,32 @@ const RankingPage = () => {
   const [ligaTipo, setLigaTipo] = useState('nacional');
   const [ligaEstado, setLigaEstado] = useState('');
   const [ligaCidade, setLigaCidade] = useState('');
+  const [ligaMes, setLigaMes] = useState(''); // Novo: filtro por mês
   const [loadingLiga, setLoadingLiga] = useState(false);
   const [estadosComAssessorias, setEstadosComAssessorias] = useState([]);
   const [cidadesComAssessorias, setCidadesComAssessorias] = useState([]);
   const [assessoriaDetalhe, setAssessoriaDetalhe] = useState(null);
   const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
+  
+  // Meses disponíveis para filtro (apenas meses passados ou atual)
+  const getMesesDisponiveis = () => {
+    const mesAtual = new Date().getMonth() + 1; // 1-12
+    const meses = [
+      { value: '1', label: 'Janeiro' },
+      { value: '2', label: 'Fevereiro' },
+      { value: '3', label: 'Março' },
+      { value: '4', label: 'Abril' },
+      { value: '5', label: 'Maio' },
+      { value: '6', label: 'Junho' },
+      { value: '7', label: 'Julho' },
+      { value: '8', label: 'Agosto' },
+      { value: '9', label: 'Setembro' },
+      { value: '10', label: 'Outubro' },
+      { value: '11', label: 'Novembro' },
+      { value: '12', label: 'Dezembro' }
+    ];
+    return meses.filter(m => parseInt(m.value) <= mesAtual);
+  };
   
   // Filtros
   const [filtroNome, setFiltroNome] = useState('');
@@ -190,7 +211,7 @@ const RankingPage = () => {
       fetchLigaStats();
       fetchEstadosComAssessorias();
     }
-  }, [tipoRanking, ligaTipo, ligaEstado, ligaCidade]);
+  }, [tipoRanking, ligaTipo, ligaEstado, ligaCidade, ligaMes]);
 
   const fetchLigaRanking = async () => {
     setLoadingLiga(true);
@@ -201,6 +222,10 @@ const RankingPage = () => {
       }
       if (ligaTipo === 'cidade' && ligaCidade) {
         url += `&cidade=${encodeURIComponent(ligaCidade)}`;
+      }
+      // Adicionar filtro de mês se selecionado
+      if (ligaMes) {
+        url += `&mes=${ligaMes}`;
       }
       
       const headers = token ? { Authorization: `Bearer ${token}` } : {};
@@ -1050,31 +1075,42 @@ const RankingPage = () => {
               </CardContent>
             </Card>
 
-            {/* Tabs de Período - Mensal / Anual / Histórico */}
+            {/* Tabs de Período - Nacional / Estadual / Cidade / Histórico */}
             <Card className="overflow-hidden">
               <CardContent className="p-0">
-                <div className="grid grid-cols-3">
+                <div className="grid grid-cols-4">
                   <button 
                     className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
-                      ligaTipo === 'mensal' 
+                      ligaTipo === 'nacional' 
                         ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
                         : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
                     }`}
-                    onClick={() => { setLigaTipo('mensal'); setLigaEstado(''); setLigaCidade(''); }}
+                    onClick={() => { setLigaTipo('nacional'); setLigaEstado(''); setLigaCidade(''); setLigaMes(''); }}
                   >
-                    <span className="text-lg">📅</span>
-                    <span className="font-semibold text-sm">Mensal</span>
+                    <span className="text-lg">🌍</span>
+                    <span className="font-semibold text-sm">Nacional</span>
                   </button>
                   <button 
                     className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
-                      ligaTipo === 'anual' 
+                      ligaTipo === 'estadual' 
                         ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
                         : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
                     }`}
-                    onClick={() => { setLigaTipo('anual'); setLigaEstado(''); setLigaCidade(''); }}
+                    onClick={() => { setLigaTipo('estadual'); setLigaCidade(''); setLigaMes(''); }}
                   >
-                    <span className="text-lg">📆</span>
-                    <span className="font-semibold text-sm">Anual</span>
+                    <span className="text-lg">🗺️</span>
+                    <span className="font-semibold text-sm">Estadual</span>
+                  </button>
+                  <button 
+                    className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
+                      ligaTipo === 'cidade' 
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
+                        : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
+                    }`}
+                    onClick={() => { setLigaTipo('cidade'); setLigaMes(''); }}
+                  >
+                    <span className="text-lg">🏙️</span>
+                    <span className="font-semibold text-sm">Cidade</span>
                   </button>
                   <button 
                     className={`py-3 px-4 flex items-center justify-center gap-2 transition-all border-b-2 ${
@@ -1082,7 +1118,7 @@ const RankingPage = () => {
                         ? 'bg-amber-50 dark:bg-amber-900/20 border-amber-500 text-amber-700 dark:text-amber-300' 
                         : 'bg-white dark:bg-slate-800 border-transparent text-slate-600 hover:bg-slate-50'
                     }`}
-                    onClick={() => { setLigaTipo('historico'); setLigaEstado(''); setLigaCidade(''); }}
+                    onClick={() => { setLigaTipo('historico'); setLigaEstado(''); setLigaCidade(''); setLigaMes(''); }}
                   >
                     <span className="text-lg">📊</span>
                     <span className="font-semibold text-sm">Histórico</span>
@@ -1101,6 +1137,9 @@ const RankingPage = () => {
                       setLigaTipo(v);
                       setLigaEstado('');
                       setLigaCidade('');
+                      if (v !== 'nacional' && v !== 'estadual' && v !== 'cidade' && v !== 'historico') {
+                        setLigaMes('');
+                      }
                     }}>
                       <SelectTrigger className="w-36 md:w-40">
                         <SelectValue />
@@ -1109,12 +1148,30 @@ const RankingPage = () => {
                         <SelectItem value="nacional">🌍 Nacional</SelectItem>
                         <SelectItem value="estadual">🗺️ Estadual</SelectItem>
                         <SelectItem value="cidade">🏙️ Por Cidade</SelectItem>
-                        <SelectItem value="mensal">📅 Mensal</SelectItem>
-                        <SelectItem value="anual">📆 Anual</SelectItem>
                         <SelectItem value="historico">📊 Histórico</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
+
+                  {/* Filtro de Mês - Mostra apenas meses passados ou atual (não exibe no histórico) */}
+                  {ligaTipo !== 'historico' && (
+                    <div className="flex items-center gap-2">
+                      <Label className="text-sm">📅 Mês:</Label>
+                      <Select value={ligaMes || "todos"} onValueChange={(v) => setLigaMes(v === "todos" ? "" : v)}>
+                        <SelectTrigger className="w-32 md:w-36">
+                          <SelectValue placeholder="Todos" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="todos">Todos os meses</SelectItem>
+                          {getMesesDisponiveis().map(mes => (
+                            <SelectItem key={mes.value} value={mes.value}>
+                              {mes.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
 
                   {ligaTipo === 'estadual' && (
                     <div className="flex items-center gap-2">

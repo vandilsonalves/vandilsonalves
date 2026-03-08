@@ -1,83 +1,71 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou uma nova funcionalidade principal chamada **Ranking das Corridas**. O objetivo é criar um sistema dentro da plataforma onde os atletas possam cadastrar e avaliar corridas de rua com base em 5 critérios específicos (Organização, Percurso, Kit Atleta, Hidratação, Pós Prova). O sistema deve gerar rankings (Nacional, Estadual, Cidade, Mensal, Anual, Histórico) usando um algoritmo de Média Bayesiana para garantir justiça estatística. Corridas com boas avaliações devem receber selos digitais. A funcionalidade também inclui um painel de administração para gerenciar corridas e visualizar estatísticas.
+O usuário solicitou uma reestruturação completa do Painel de Administração e uma lista de 13 tarefas para corrigir bugs e adicionar novas funcionalidades.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Cadastro de Corridas:** Permitir que administradores e donos de assessoria cadastrem corridas com campos como nome, organizador, local, data e link.
-2.  **Sistema de Avaliação:**
-    *   Atletas logados podem avaliar uma corrida apenas uma vez e somente após a data do evento.
-    *   A avaliação é baseada em 5 critérios (IQC), cada um com nota de 1 a 5 estrelas.
-    *   A nota final da corrida é a média simples dos 5 critérios.
-3.  **Algoritmo de Ranking:**
-    *   Utilizar **Média Bayesiana** para calcular a pontuação do ranking, evitando que corridas com poucas avaliações fiquem no topo.
-    *   Uma corrida precisa de um número mínimo de avaliações (ex: 10) para aparecer no ranking.
-4.  **Visualização e Filtros:**
-    *   Criar uma nova página pública Ranking das Corridas.
-    *   Exibir o ranking em uma tabela com filtros (Nacional, Estadual, Cidade, etc.).
-    *   Mostrar a pontuação, o número de avaliações e a média de cada critério para cada corrida.
-5.  **Selos e Reconhecimento:**
-    *   Atribuir selos automáticos (Corrida 5 Estrelas, Top 10 Brasil, etc.) para corridas que atingirem certos critérios.
-6.  **Painel de Administração:**
-    *   Criar uma visão no dashboard do administrador para gerenciar corridas e visualizar estatísticas (ex: corridas mais bem avaliadas, total de avaliações).
+1.  **Reestruturação do Dashboard do Admin:**
+    *   Dividir o painel monolítico em dashboards separados e especializados: Geral, Atletas, Assessorias, Corridas e Resultados.
+    *   Cada dashboard deve apresentar dados agregados da plataforma em múltiplos formatos de gráficos (barra, pizza, radar, etc.).
+2.  **Novas Seções no Admin:**
+    *   **Autorizações:** Criar um sistema para o admin gerenciar o acesso de atletas após um período de teste gratuito (30 dias), permitindo a liberação por 6 meses, 1 ano, ou até o final do ano corrente, e emitindo uma carteirinha de membro.
+3.  **Tarefas Adicionais (13 no total):**
+    *   **TAREFA 1 (CONCLUÍDA):** Corrigir bugs no cadastro de atletas e na visualização de perfis. Adicionar um termo de aceite obrigatório no cadastro.
+    *   **TAREFA 2 (CONCLUÍDA):** No cadastro, substituir o campo de texto Equipe/Assessoria por um dropdown com as equipes cadastradas e a opção INDIVIDUAL.
+    *   **TAREFA 3 (CONCLUÍDA):** No cadastro, se o usuário selecionar INDIVIDUAL, exibir uma seção para que ele possa se registrar como Dono de Assessoria e cadastrar sua equipe na hora.
+    *   **TAREFA 4 (CONCLUÍDA):** Na página de detalhes da equipe, exibir o nome do responsável (Dono da Assessoria) e a mensagem da BIO.
+    *   **TAREFA 5 (CONCLUÍDA):** Corrigir a sincronização de atletas, garantindo que eles apareçam em todas as modalidades de ranking (Equipes, Povão, Profissional/Amador).
+    *   **TAREFA 6 (EM ANDAMENTO):** Alterar os filtros na página Ranking de Equipes.
+    *   **TAREFA 7-13 (PENDENTES):** Implementar funcionalidades como alteração de equipe pelo atleta, melhorias na página de assessoria, um novo dashboard Minha Assessoria para donos, selos de conquista, e um sistema de reputação para avaliadores de corridas.
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-Uma plataforma de ranking de corrida com backend FastAPI e frontend React. A aplicação inclui rankings para atletas (Profissional/Amador e Povão) e a recém-implementada Liga Nacional de Assessorias (um ranking de equipes). O sistema de cadastro de usuários e o perfil do atleta foram aprimorados e testados. A **Fase 1** da nova funcionalidade **Ranking das Corridas** foi concluída: o backend para cadastrar/listar corridas foi criado, e uma nova página pública () exibe a estrutura do ranking, incluindo filtros e uma tabela vazia (aguardando avaliações), além de cards de estatísticas.
+A aplicação é uma plataforma de ranking de corrida funcional com backend em FastAPI e frontend em React. Os rankings de Atletas, Equipes (Liga de Assessorias) e Corridas estão implementados. As tarefas 1 a 5 da nova grande solicitação do usuário foram concluídas, o que inclui correções de bugs, um fluxo de cadastro de usuário e de dono de assessoria aprimorado e a sincronização de dados entre os rankings. O agente iniciou a implementação da 6ª tarefa.
 
 **Last working item**:
-*   **Last item agent was working:** O agente estava no início da **Fase 2** do desenvolvimento do Ranking das Corridas. Ele acabou de adicionar o endpoint do backend () e os modelos Pydantic necessários para permitir que um atleta envie uma avaliação para uma corrida com base nos 5 critérios (IQC).
+*   **Last item agent was working:** O agente estava trabalhando na **6ª Tarefa**, que consiste em alterar os filtros da página Ranking de Equipes. Ele modificou a interface do  para substituir as abas Mensal, Anual e Histórico por Nacional, Estadual, Cidade e Histórico, e adicionou um novo dropdown para filtro por mês.
 *   **Status:** **IN PROGRESS**
-*   **Agent Testing Done:** N (O endpoint de avaliação recém-criado não foi testado).
+*   **Agent Testing Done:** N
 *   **Which testing method agent to use?** both
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1:** Concluir a implementação e o teste da funcionalidade Ranking das Corridas (PRIORIDADE: P0).
-    *   **Attempted fixes:** O agente implementou a Fase 1 (estrutura do backend e frontend) e iniciou a Fase 2 adicionando o endpoint de avaliação no .
+*   **Issue 1:** Concluir a implementação e o teste da **6ª Tarefa** (PRIORIDADE: P0).
+    *   **Attempted fixes:** O agente atualizou o arquivo  com as novas abas e o dropdown de filtro mensal. Uma verificação visual via screenshot foi realizada.
     *   **Next debug checklist:**
-        1.  Implementar a interface de frontend (modal ou página) para o atleta avaliar uma corrida (5 critérios de estrelas, checkbox Participei desta corrida).
-        2.  Conectar a interface ao endpoint recém-criado ().
-        3.  Testar o fluxo completo: fazer login, navegar para a página, selecionar uma corrida, avaliar e verificar se a avaliação é salva no banco de dados.
-        4.  Garantir que as regras (avaliar apenas uma vez, avaliar somente após a data do evento) estão funcionando no backend.
-        5.  Verificar se o cálculo do ranking (Média Bayesiana) é acionado e atualiza a pontuação da corrida.
-    *   **Why fix this issue?** Para completar o core da nova funcionalidade solicitada pelo usuário.
+        1.  Verificar a lógica que popula o dropdown de mês para garantir que apenas o mês atual e os meses anteriores do ano corrente sejam exibidos, conforme solicitado.
+        2.  Conectar os novos filtros (, , , ) aos endpoints do backend para que a filtragem de dados funcione. Pode ser necessário modificar ou criar novos endpoints no .
+        3.  Após a implementação da lógica, executar o  para realizar um teste completo de frontend e backend, garantindo que os novos filtros funcionem e não tenham introduzido regressões.
+    *   **Why fix this issue?** Para completar a tarefa solicitada pelo usuário e melhorar a usabilidade do ranking de equipes.
     *   **Status:** IN PROGRESS
     *   **Is recurring issue?** N
     *   **Should Test frontend/backend/both after fix?** both
     *   **Blocked on other issue:** Não.
 
 **In progress Task List**:
-*   **Task 1:** Implementar a Fase 2 (Frontend do Sistema de Avaliação) (PRIORITY: P0)
-    *   **Where to resume:** O backend está pronto para receber avaliações. O próximo passo é criar a interface no frontend. O agente deve localizar a página  e o botão AVALIAR CORRIDA (que ainda precisa ser implementado) para acionar um modal ou nova página com o formulário de avaliação.
-    *   **What will be achieved with this?** Os atletas poderão avaliar as corridas, gerando os dados necessários para o funcionamento do ranking.
-    *   **Status:** NOT STARTED
-    *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on something:** Nenhum.
+*   Nenhum.
 
 **Upcoming and Future Tasks**
 *   **Upcoming Tasks:**
-    *   **P0 - Fase 2 (continuação):** Concluir o sistema de avaliação (frontend + testes).
-    *   **P1 - Fase 3:** Implementar a lógica de selos automáticos (Corrida 5 Estrelas, Top 10) e exibi-los na interface.
-    *   **P2 - Fase 4:** Criar o dashboard do administrador para o Ranking das Corridas, com estatísticas e ferramentas de gerenciamento.
+    *   **P0 - Reestruturação do Dashboard do Admin:** Esta é a principal nova diretiva do usuário. A tarefa envolve refatorar completamente a página , criando um novo layout de navegação e componentes separados para cada novo painel: , , , , .
+    *   **P1 - 7ª Tarefa:** Implementar a lógica que permite a um atleta mudar de equipe a cada 15 dias, com o devido alerta. Impedir que Donos de Assessoria mudem de equipe.
+    *   **P1 - 8ª Tarefa:** Na página de detalhes da assessoria (), alterar textos e imagens e fazer o botão Baixar Selo apontar para o perfil do dono da assessoria.
+    *   **P1 - 9ª Tarefa:** Criar a página e o dashboard Minha Assessoria para donos de equipe, com estatísticas e um formulário para cadastrar corridas locais.
+    *   **P2 - 10ª Tarefa:** Adicionar um botão REGULAMENTO em todas as páginas de ranking.
 *   **Future Tasks:**
-    *   **Painel de Colaborador:** Um painel completo para que donos de assessorias possam gerenciar seus atletas, visualizar métricas detalhadas e se comunicar com a equipe (tarefa originada de solicitações anteriores).
+    *   **11ª Tarefa:** Implementar um sistema de selos/medalhas de conquista para atletas com base no número de resultados lançados (12, 20, 30).
+    *   **12ª Tarefa:** Aprimorar o sistema de avaliação de corridas, adicionando um termo de responsabilidade com checkbox obrigatório e registrando o IP do avaliador.
+    *   **13ª Tarefa:** Criar um sistema de reputação para avaliadores de corridas (Bronze, Prata, Ouro).
+    *   **Seção Autorizações:** Implementar a interface e a lógica no painel do admin para gerenciar o acesso de atletas após o período de 30 dias de teste.
 
 **Completed work in this session**
-- **Conclusão da Liga Nacional de Assessorias:**
-    - A funcionalidade foi movida do painel de admin para a página pública principal, tornando-a acessível a todos os usuários.
-    - Implementada uma página de detalhes dedicada para cada assessoria, com estatísticas, lista de atletas e um selo digital para download.
-    - Criada a estrutura para o Painel do Dono de Assessoria.
-    - Adicionado botão para administradores promoverem usuários a Dono de Assessoria.
-- **Criação de Dados de Teste:**
-    - Implementado um endpoint administrativo para apagar e recriar 160 atletas de teste distribuídos em 12 equipes, garantindo um ambiente de teste robusto para a Liga de Assessorias.
-- **Início do Ranking das Corridas (Fase 1):**
-    - Criados os modelos e endpoints no backend para cadastrar e listar corridas.
-    - Criada uma nova página pública () com a estrutura visual do ranking, incluindo filtros, cards de estatísticas e a tabela de classificação.
-- **Testes e Correções:**
-    - Realizados testes completos com o  que identificaram e corrigiram bugs na implementação inicial da Liga Nacional de Assessorias, garantindo a estabilidade da funcionalidade.
+- **1ª Tarefa - Correções e Termo de Aceite:** Corrigidos bugs no cadastro e na visualização de perfil de atleta. Implementado um modal com o regulamento da plataforma e um checkbox de aceite obrigatório no .
+- **2ª Tarefa - Dropdown de Equipes:** O campo de texto para equipe no cadastro foi substituído por um dropdown populado com as equipes existentes e a opção INDIVIDUAL, com um alerta informativo.
+- **3ª Tarefa - Cadastro de Dono de Assessoria:** Criado um fluxo condicional no  que permite a um usuário que se cadastra como INDIVIDUAL também registrar sua própria assessoria, tornando-se Dono de Assessoria automaticamente.
+- **4ª Tarefa - Exibição de Responsável/BIO:** A página de detalhes da assessoria () foi atualizada para exibir o nome do dono e a mensagem da BIO da equipe.
+- **5ª Tarefa - Sincronização de Rankings:** Resolvido o bug que fazia com que os atletas não aparecessem em todas as modalidades de ranking. Um endpoint de recálculo () foi criado para auxiliar na manutenção.
 
 **Earlier issues found/mentioned but not fixed**
-*   Nenhum.
+*   Todas as tarefas de 7 a 13 e a reestruturação do dashboard, mencionadas pelo usuário na mensagem 161, estão pendentes.
 
 **Known issue recurrence from previous fork**
 *   Nenhum.
@@ -86,79 +74,74 @@ Uma plataforma de ranking de corrida com backend FastAPI e frontend React. A apl
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, MongoDB (com ), JWT para autenticação. Uso intensivo de **MongoDB Aggregation Pipelines** para calcular os rankings complexos tanto da Liga de Assessorias quanto do novo Ranking das Corridas (com Média Bayesiana).
+*   **Backend:** FastAPI, MongoDB (com ), JWT.
 *   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, .
-*   **Arquitetura:** Monorepo com API backend e SPA frontend.
+*   **Arquitetura:** Monorepo. O frontend () agora possui uma lógica condicional complexa. O backend () continua a ser um grande monolito.
 
 **key DB schema**
-*   **:** Adicionado um novo : .
-*   ** (Nova coleção):** 
-*   ** (Nova coleção):** 
+*   **:** O fluxo de cadastro agora pode definir o  como  e associar o usuário a uma nova assessoria.
+*   **:** Contém novos campos como  (referência ao  do usuário dono) e .
 
 **changes in tech stack**
 *   Nenhuma.
 
 **All files of reference**
-*   : Principal arquivo modificado. Contém os novos endpoints para  e , incluindo a lógica de cálculo do ranking com Média Bayesiana.
-*   : Arquivo principal da nova funcionalidade no frontend.
-*   : Modificado para adicionar a aba e o link para o Ranking das Corridas.
-*   : Modificado para incluir a rota .
-*   : Modificado para adicionar a funcionalidade de Promover a Dono de Assessoria.
+*    (arquivo da tarefa em andamento)
+*   
+*   
+*    (arquivo principal para a próxima grande tarefa)
+*   
+*   
 
 **Areas that need refactoring**:
-*   **:** O arquivo tornou-se extremamente grande e complexo. É altamente recomendável refatorá-lo, dividindo a lógica em múltiplos arquivos usando s (ex: , , ).
-*   **:** Este componente agora gerencia 4 rankings diferentes, tornando-o pesado e difícil de manter. A lógica de cada ranking poderia ser extraída para seus próprios componentes filhos.
+*   ** (CRÍTICO):** O arquivo é excessivamente grande. A reestruturação do dashboard é a oportunidade ideal para dividi-lo em múltiplos s (ex: , , ).
+*   ** (CRÍTICO):** Esta é a principal tarefa pendente solicitada pelo usuário. O componente deve ser transformado em um layout que renderiza diferentes subcomponentes de dashboard.
+*   ** (Recomendado):** A lógica do formulário tornou-se muito complexa. Dividir em componentes menores (ex: , , ) melhoraria a manutenibilidade.
 
 **key api endpoints**
-*   : Lista todas as corridas e seus rankings calculados.
-*   : (Protegido) Cadastra uma nova corrida.
-*   : (Protegido) **Novo.** Permite que um atleta logado envie sua avaliação para uma corrida.
-*   : (Protegido) Promove um usuário.
-*   : Endpoint público para o ranking de equipes.
-*   : Endpoint administrativo temporário para popular dados de teste.
+*   : Endpoint de registro de usuário, agora com lógica complexa para cadastrar também a assessoria.
+*   : Novo endpoint que retorna a lista de assessorias para o dropdown no cadastro.
+*   : Modificado para incluir dados do dono e bio.
+*   : Novo endpoint administrativo para sincronizar todos os rankings.
+*   : Endpoint de perfil do atleta, corrigido.
 
 **Critical Info for New Agent**
-*   **Foco Imediato:** Sua tarefa é continuar a implementação do Ranking das Corridas. O próximo passo é construir o **frontend para o sistema de avaliação**. O usuário forneceu requisitos muito detalhados (PRD) que devem ser seguidos de perto, especialmente em relação aos 5 critérios de avaliação (IQC) e ao cálculo de ranking com Média Bayesiana, que já está parcialmente implementado no backend.
-*   **Endpoint de População:** Existe um endpoint  que apaga e recria 160 atletas. Esteja ciente de sua existência. Pode ser útil para testes, mas deve ser considerado temporário.
+*   **Foco Imediato:** Sua primeira ação deve ser concluir a **6ª Tarefa**. A UI foi criada, mas a lógica de filtro do backend e os testes completos estão pendentes.
+*   **Próxima Grande Tarefa:** Após concluir a 6ª Tarefa, você DEVE apresentar um plano para a **reestruturação completa do Dashboard do Admin**, que foi a principal solicitação do usuário (descrita no início da mensagem 161). Este é um trabalho de arquitetura significativo.
+*   **Lista de Tarefas:** Mantenha a lista de tarefas do usuário (7 a 13) em mente para o planejamento futuro após a reestruturação do dashboard.
 
 **documents and test reports created in this job**
-*    (Atualizado com as especificações do Ranking das Corridas)
-*    (Para a Liga de Assessorias)
-*    (Para a Liga de Assessorias)
-*    (Para a Liga de Assessorias)
-*    (Para a Liga de Assessorias)
-*    (Para a Fase 1 do Ranking de Corridas)
+*    (Atualizado múltiplas vezes)
+*   Múltiplos relatórios em , sendo o mais recente a validação da 5ª Tarefa.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user (msg 359):** Solicitou a execução das Fases 2, 3 e 4 do Ranking das Corridas. **(EM ANDAMENTO)**
-2.  **user (msg 322):** Aprovou o início da implementação da Fase 1 do Ranking das Corridas. **(CONCLUÍDO)**
-3.  **user (msg 319):** Forneceu o PRD completo e detalhado para a nova funcionalidade Ranking das Corridas. **(EM ANDAMENTO)**
-4.  **user (msg 246):** Aprovou o início do Bloco B (Fases 2, 3, 4 da Liga de Assessorias). **(CONCLUÍDO)**
-5.  **user (msg 153):** Aprovou o início do Bloco A (mover a Liga para página pública e adicionar promoção). **(CONCLUÍDO)**
-6.  **user (msg 150):** Solicitou mover a Liga de Assessorias para a página pública, adicionar filtros e um botão para promover donos de assessoria. Também pediu a exclusão e recriação de atletas para teste. **(CONCLUÍDO)**
-7.  **user (msg 33):** Aprovou o plano de implementação da Liga Nacional de Assessorias. **(CONCLUÍDO)**
-8.  **user (msg 30):** Forneceu o PRD completo para a funcionalidade Liga Nacional de Assessorias. **(CONCLUÍDO)**
-9.  **user (msg 5):** Aprovou o plano de testes para as melhorias do formulário de cadastro. **(CONCLUÍDO)**
+1.  **user (msg 509):**  (INICIADA)
+2.  **user (msg 404):**  (CONCLUÍDA)
+3.  **user (msg 335):**  (CONCLUÍDA)
+4.  **user (msg 278):**  (CONCLUÍDA)
+5.  **user (msg 241):**  (CONCLUÍDA)
+6.  **user (msg 164):**  (CONCLUÍDA)
+7.  **user (msg 161):**  (EM ANDAMENTO - Esta é a grande solicitação que contém todas as outras tarefas).
+8.  **user (msg 82):**  (CONCLUÍDA)
 
 **Project Health Check:**
-*   **Working:** Quase toda a aplicação está funcional, incluindo os rankings de atletas e o ranking de assessorias (Liga). A Fase 1 do Ranking das Corridas (visualização) também está funcionando.
-*   **Broken:** Nada está quebrado.
-*   **Mocked:** A aplicação opera com dados de teste. O endpoint de popular dados foi criado para facilitar a geração.
-*   **In Progress:** O sistema de avaliação do Ranking das Corridas. O backend para receber avaliações foi criado, mas o frontend e o fluxo completo ainda não foram implementados.
+*   **Working:** A aplicação está funcional. Correções de bugs e novas funcionalidades no fluxo de cadastro foram implementadas e testadas com sucesso.
+*   **Broken:** Nada criticamente quebrado.
+*   **In Progress:** A **6ª Tarefa** (filtros na página de Ranking de Equipes) está com a UI implementada, mas a lógica e os testes estão pendentes.
 
 **3rd Party Integrations**
 *   
 *   
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES (usado múltiplas vezes com sucesso para a funcionalidade Liga de Assessorias).
+*   **Testing agent used after significant changes:** YES (usado com sucesso para as tarefas 1, 2, 3, 4 e 5).
 *   **Troubleshoot agent used after agent stuck in loop:** NO
 *   **Test files created:** N/A
 *   **Known regressions:** Nenhum.
 
 **Credentials to test flow:**
 *   **Admin:**  / 
-*   **Atleta de Teste:**  /  (ou qualquer um dos 160 atletas recém-criados).
+*   **Atleta de Teste:** Use qualquer um dos atletas existentes, como os criados nos testes anteriores.
 
 **What agent forgot to execute**
-O agente não esqueceu nada. Ele está no meio de uma implementação de grande porte (Ranking das Corridas) e parou após concluir a primeira parte do backend da Fase 2, conforme o plano.</analysis>
+O agente seguiu a ordem das tarefas do usuário e parou no meio da 6ª Tarefa. Nada foi esquecido. A prioridade para o próximo agente é concluir a tarefa atual e depois planejar a grande reestruturação do admin dashboard.</analysis>
