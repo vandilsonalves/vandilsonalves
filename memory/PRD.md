@@ -308,13 +308,23 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
       - GET `/api/ranking-corridas/estados`
       - GET `/api/ranking-corridas/cidades`
 
-## Próximos Passos - Ranking das Corridas (Fases 2-4)
-**Fase 2 - Sistema de Avaliação**:
-- Botão "Avaliar Corrida" no perfil do atleta
-- 5 Critérios IQC: Organização, Percurso, Kit Atleta, Hidratação, Pós Prova
-- Checkbox "Participei desta corrida"
-- Regra: 1 avaliação por atleta/corrida, só após data da corrida
+40. ✅ **Ranking das Corridas - Fase 2 (Sistema de Avaliação)** (08/03/2026):
+    - **Modal de Avaliação**: Interface completa para avaliar corridas
+    - **5 Critérios IQC**: Organização, Percurso, Kit Atleta, Hidratação, Pós-Prova
+    - **Estrelas Interativas**: Clique para selecionar nota 1-5 com hover effect
+    - **Cálculo em Tempo Real**: Nota final calculada automaticamente
+    - **Checkbox Obrigatório**: "Confirmo que participei desta corrida"
+    - **Validações Backend**:
+      - Apenas 1 avaliação por atleta/corrida
+      - Avaliação somente após data da corrida
+      - Todas as notas devem ser entre 1 e 5
+    - **Botão "Avaliar"**: Em cada linha da tabela de ranking
+    - **Endpoints**:
+      - POST `/api/avaliar-corrida` - Enviar avaliação (5 critérios + participei)
+      - GET `/api/verificar-avaliacao/{corrida_id}` - Verificar se já avaliou
+      - GET `/api/minhas-avaliacoes-corridas` - Minhas avaliações
 
+## Próximos Passos - Ranking das Corridas (Fases 3-4)
 **Fase 3 - Selos e Certificações**:
 - Selo "5 Estrelas" (média ≥4.5, min 50 avaliações)
 - Top 10 Brasil / Top 10 Estado
@@ -337,7 +347,7 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
 
 ---
 
-Última atualização: 04/03/2026
+Última atualização: 08/03/2026
 1. ✅ Botão "Exportar Dados" na aba Atletas - funcional com download de Excel
 2. ✅ Mensagem "Ação Concluída" em todas as alterações (toast.success)
 3. ✅ Upload de foto de perfil do atleta - corrigido com timestamp para forçar reload
