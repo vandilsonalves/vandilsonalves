@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2 } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area } from 'recharts';
@@ -341,7 +341,7 @@ const RankingPage = () => {
         {/* Seletor de Tipo de Ranking */}
         <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
           <CardContent className="p-0">
-            <div className="grid grid-cols-3">
+            <div className="grid grid-cols-2 md:grid-cols-4">
               {/* Opção Profissional/Amador */}
               <button 
                 className={`py-4 px-4 flex items-center justify-center gap-2 transition-all ${
@@ -395,6 +395,21 @@ const RankingPage = () => {
                   <p className="font-semibold text-sm">Ranking de Equipes</p>
                   <p className={`text-xs ${tipoRanking === 'equipes' ? 'text-amber-100' : 'text-slate-400'}`}>
                     Liga Nacional de Assessorias
+                  </p>
+                </div>
+              </button>
+
+              {/* Opção Ranking das Corridas */}
+              <button 
+                className="py-4 px-4 flex items-center justify-center gap-2 transition-all bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-yellow-50 hover:text-yellow-700 border-l border-slate-200"
+                onClick={() => navigate('/ranking-corridas')}
+                data-testid="tipo-ranking-corridas"
+              >
+                <Star className="w-5 h-5" />
+                <div className="text-left">
+                  <p className="font-semibold text-sm">Ranking das Corridas</p>
+                  <p className="text-xs text-slate-400">
+                    Avalie eventos de corrida
                   </p>
                 </div>
               </button>

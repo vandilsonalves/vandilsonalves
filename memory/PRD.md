@@ -291,7 +291,40 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
     - 515 corridas de teste geradas
     - Todos os atletas com dados completos (bio, Facebook, Instagram)
 
-## Próximos Passos (Backlog)
+39. ✅ **Ranking das Corridas - Fase 1 (Base)**:
+    - **Nova página** `/ranking-corridas` com sistema de avaliação de eventos
+    - **4ª aba** no seletor principal da página inicial
+    - **Estrutura de banco**: Coleções `corridas_eventos` e `avaliacoes_corridas`
+    - **CRUD de Corridas**: Admin e Dono de Assessoria podem cadastrar
+    - **Campos**: Nome, Organizador, Cidade, Estado, Data, Link, Status
+    - **Filtros**: Nacional, Estadual, Cidade, Mensal, Anual, Histórico
+    - **Stats Cards**: Total corridas, avaliações, média geral, melhor avaliada
+    - **Legenda de estrelas**: 1-5 (Péssima a Excelente)
+    - **Algoritmo Média Bayesiana** preparado (m=30, min 10 aval. para ranking)
+    - **Endpoints**:
+      - POST/GET/PUT/DELETE `/api/corridas-eventos`
+      - GET `/api/ranking-corridas`
+      - GET `/api/ranking-corridas/stats`
+      - GET `/api/ranking-corridas/estados`
+      - GET `/api/ranking-corridas/cidades`
+
+## Próximos Passos - Ranking das Corridas (Fases 2-4)
+**Fase 2 - Sistema de Avaliação**:
+- Botão "Avaliar Corrida" no perfil do atleta
+- 5 Critérios IQC: Organização, Percurso, Kit Atleta, Hidratação, Pós Prova
+- Checkbox "Participei desta corrida"
+- Regra: 1 avaliação por atleta/corrida, só após data da corrida
+
+**Fase 3 - Selos e Certificações**:
+- Selo "5 Estrelas" (média ≥4.5, min 50 avaliações)
+- Top 10 Brasil / Top 10 Estado
+
+**Fase 4 - Dashboard Admin**:
+- Estatísticas completas
+- Corrida mais bem avaliada por estado
+- Proteções anti-fraude
+
+## Backlog Geral
 1. **P1**: Implementação de notificações por e-mail (Resend/SendGrid)
 2. **P2**: Ranking histórico por ano (filtro por temporada)
 3. **P2**: Ranking Run Inside - Exportação PDF com visual do dashboard

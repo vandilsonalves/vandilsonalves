@@ -4610,6 +4610,397 @@ async def get_cidades_com_assessorias(estado: str = None):
     return [c["_id"] for c in result]
 
 
+# ============================================================
+# RANKING DAS CORRIDAS - Sistema de Avaliação de Eventos
+# ============================================================
+
+# Coleções MongoDB para o módulo
+# db.corridas_eventos = corridas de rua cadastradas
+# db.avaliacoes_corridas = avaliações dos atletas
+
+@api_router.post("/corridas-eventos")
+async def criar_corrida_evento(
+    nome_corrida: str = Form(...),
+    organizador: str = Form(...),
+    cidade: str = Form(...),
+    estado: str = Form(...),
+    data_corrida: str = Form(...),
+    pagina_link: str = Form(None),
+    status: str = Form("ativa"),
+    current_user: dict = Depends(get_current_user)
+):
+    """Cadastra uma nova corrida de rua (Admin ou Dono de Assessoria)"""
+    
+    # Verificar permissão
+    if current_user.get("role") not in ["admin", "dono_assessoria"]:
+        raise HTTPException(status_code=403, detail="Apenas Admin ou Dono de Assessoria podem cadastrar corridas")
+    
+    corrida = {
+        "id": str(uuid.uuid4()),
+        "nome_corrida": nome_corrida,
+        "organizador": organizador,
+        "cidade": cidade,
+        "estado": estado,
+        "data_corrida": data_corrida,
+        "pagina_link": pagina_link or "",
+        "status": status,  # ativa, encerrada, cancelada
+        "criado_por": current_user.get("id"),
+        "criado_em": datetime.now().isoformat(),
+        # Campos de estatísticas (atualizados automaticamente)
+        "total_avaliacoes": 0,
+        "media_geral": 0,
+        "media_organizacao": 0,
+        "media_percurso": 0,
+        "media_kit": 0,
+        "media_hidratacao": 0,
+        "media_pos_prova": 0,
+        "pontuacao_ranking": 0  # Calculada com Média Bayesiana
+    }
+    
+    await db.corridas_eventos.insert_one(corrida)
+    
+    return {"message": "Corrida cadastrada com sucesso!", "id": corrida["id"]}
+
+
+@api_router.get("/corridas-eventos")
+async def listar_corridas_eventos(
+    estado: str = None,
+    cidade: str = None,
+    status: str = None
+):
+    """Lista corridas de rua com filtros opcionais"""
+    
+    filtro = {}
+    if estado:
+        filtro["estado"] = estado
+    if cidade:
+        filtro["cidade"] = cidade
+    if status:
+        filtro["status"] = status
+    
+    corridas = await db.corridas_eventos.find(filtro, {"_id": 0}).sort("data_corrida", -1).to_list(None)
+    return corridas
+
+
+@api_router.get("/corridas-eventos/{corrida_id}")
+async def get_corrida_evento(corrida_id: str):
+    """Retorna detalhes de uma corrida específica"""
+    
+    corrida = await db.corridas_eventos.find_one({"id": corrida_id}, {"_id": 0})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida não encontrada")
+    
+    return corrida
+
+
+@api_router.put("/corridas-eventos/{corrida_id}")
+async def atualizar_corrida_evento(
+    corrida_id: str,
+    nome_corrida: str = Form(None),
+    organizador: str = Form(None),
+    cidade: str = Form(None),
+    estado: str = Form(None),
+    data_corrida: str = Form(None),
+    pagina_link: str = Form(None),
+    status: str = Form(None),
+    current_user: dict = Depends(get_current_user)
+):
+    """Atualiza uma corrida existente"""
+    
+    if current_user.get("role") not in ["admin", "dono_assessoria"]:
+        raise HTTPException(status_code=403, detail="Sem permissão")
+    
+    update_data = {}
+    if nome_corrida:
+        update_data["nome_corrida"] = nome_corrida
+    if organizador:
+        update_data["organizador"] = organizador
+    if cidade:
+        update_data["cidade"] = cidade
+    if estado:
+        update_data["estado"] = estado
+    if data_corrida:
+        update_data["data_corrida"] = data_corrida
+    if pagina_link is not None:
+        update_data["pagina_link"] = pagina_link
+    if status:
+        update_data["status"] = status
+    
+    if update_data:
+        await db.corridas_eventos.update_one({"id": corrida_id}, {"$set": update_data})
+    
+    return {"message": "Corrida atualizada com sucesso!"}
+
+
+@api_router.delete("/corridas-eventos/{corrida_id}")
+async def deletar_corrida_evento(corrida_id: str, admin: dict = Depends(get_admin_user)):
+    """Deleta uma corrida (apenas Admin)"""
+    
+    await db.corridas_eventos.delete_one({"id": corrida_id})
+    await db.avaliacoes_corridas.delete_many({"corrida_id": corrida_id})
+    
+    return {"message": "Corrida excluída com sucesso!"}
+
+
+@api_router.get("/ranking-corridas")
+async def get_ranking_corridas(
+    tipo: str = "nacional",  # nacional, estadual, cidade, mensal, anual, historico
+    estado: str = None,
+    cidade: str = None
+):
+    """
+    Retorna ranking das corridas baseado em avaliações
+    Usa Média Bayesiana para cálculo justo
+    """
+    from datetime import datetime
+    
+    agora = datetime.now()
+    ano_atual = agora.year
+    mes_atual = agora.month
+    
+    # Buscar todas as corridas
+    filtro_corridas = {"status": {"$ne": "cancelada"}}
+    
+    if tipo == "estadual" and estado:
+        filtro_corridas["estado"] = estado
+    elif tipo == "cidade" and cidade:
+        filtro_corridas["cidade"] = cidade
+    
+    corridas = await db.corridas_eventos.find(filtro_corridas, {"_id": 0}).to_list(None)
+    
+    if not corridas:
+        return {"tipo": tipo, "total_corridas": 0, "ranking": []}
+    
+    # Filtro de período para avaliações
+    filtro_avaliacoes = {}
+    if tipo == "mensal":
+        inicio_mes = f"{ano_atual}-{mes_atual:02d}-01"
+        filtro_avaliacoes["data_avaliacao"] = {"$gte": inicio_mes}
+    elif tipo == "anual":
+        inicio_ano = f"{ano_atual}-01-01"
+        filtro_avaliacoes["data_avaliacao"] = {"$gte": inicio_ano}
+    
+    # Calcular média geral da plataforma (C na fórmula Bayesiana)
+    pipeline_media_geral = [
+        {"$match": filtro_avaliacoes} if filtro_avaliacoes else {"$match": {}},
+        {"$group": {"_id": None, "media": {"$avg": "$nota_corrida"}, "total": {"$sum": 1}}}
+    ]
+    result_media = await db.avaliacoes_corridas.aggregate(pipeline_media_geral).to_list(1)
+    media_geral_plataforma = result_media[0]["media"] if result_media and result_media[0]["media"] else 3.5
+    
+    # Parâmetro m (mínimo de avaliações para peso completo)
+    m = 30
+    min_avaliacoes_ranking = 10
+    
+    ranking = []
+    
+    for corrida in corridas:
+        corrida_id = corrida["id"]
+        
+        # Buscar avaliações desta corrida
+        filtro_aval = {"corrida_id": corrida_id, **filtro_avaliacoes}
+        avaliacoes = await db.avaliacoes_corridas.find(filtro_aval, {"_id": 0}).to_list(None)
+        
+        v = len(avaliacoes)  # número de avaliações
+        
+        if v == 0:
+            media_corrida = 0
+            pontuacao_bayesiana = 0
+        else:
+            # Calcular média da corrida (R)
+            soma_notas = sum(a.get("nota_corrida", 0) for a in avaliacoes)
+            media_corrida = soma_notas / v
+            
+            # Média Bayesiana: (v/(v+m))*R + (m/(v+m))*C
+            pontuacao_bayesiana = (v / (v + m)) * media_corrida + (m / (v + m)) * media_geral_plataforma
+        
+        # Calcular médias por critério
+        if v > 0:
+            media_org = sum(a.get("organizacao", 0) for a in avaliacoes) / v
+            media_perc = sum(a.get("percurso", 0) for a in avaliacoes) / v
+            media_kit = sum(a.get("kit_atleta", 0) for a in avaliacoes) / v
+            media_hidr = sum(a.get("hidratacao", 0) for a in avaliacoes) / v
+            media_pos = sum(a.get("pos_prova", 0) for a in avaliacoes) / v
+        else:
+            media_org = media_perc = media_kit = media_hidr = media_pos = 0
+        
+        # Determinar selo
+        selo = None
+        if v >= 50 and media_corrida >= 4.5:
+            selo = "5_estrelas"
+        
+        ranking.append({
+            "id": corrida_id,
+            "nome_corrida": corrida.get("nome_corrida"),
+            "organizador": corrida.get("organizador"),
+            "cidade": corrida.get("cidade"),
+            "estado": corrida.get("estado"),
+            "data_corrida": corrida.get("data_corrida"),
+            "pagina_link": corrida.get("pagina_link"),
+            "status": corrida.get("status"),
+            "total_avaliacoes": v,
+            "media_geral": round(media_corrida, 2),
+            "pontuacao_ranking": round(pontuacao_bayesiana, 2),
+            "media_organizacao": round(media_org, 2),
+            "media_percurso": round(media_perc, 2),
+            "media_kit": round(media_kit, 2),
+            "media_hidratacao": round(media_hidr, 2),
+            "media_pos_prova": round(media_pos, 2),
+            "selo": selo,
+            "no_ranking": v >= min_avaliacoes_ranking
+        })
+    
+    # Ordenar por pontuação bayesiana, desempate por número de avaliações, depois data mais recente
+    ranking.sort(key=lambda x: (
+        -x["pontuacao_ranking"],
+        -x["total_avaliacoes"],
+        x["data_corrida"] if x["data_corrida"] else ""
+    ), reverse=False)
+    
+    # Re-sort para manter ordem correta
+    ranking.sort(key=lambda x: (-x["pontuacao_ranking"], -x["total_avaliacoes"]))
+    
+    # Adicionar posição
+    posicao = 1
+    for item in ranking:
+        if item["no_ranking"]:
+            item["posicao"] = posicao
+            posicao += 1
+        else:
+            item["posicao"] = None
+    
+    # Determinar Top 10 e adicionar selos
+    corridas_no_ranking = [c for c in ranking if c["no_ranking"]]
+    for i, c in enumerate(corridas_no_ranking[:10]):
+        if tipo == "nacional":
+            c["selo_top10"] = "top10_brasil"
+        elif tipo == "estadual":
+            c["selo_top10"] = "top10_estado"
+    
+    return {
+        "tipo": tipo,
+        "periodo": {
+            "mensal": f"{agora.strftime('%B')} {ano_atual}",
+            "anual": str(ano_atual),
+            "historico": "Todo período",
+            "nacional": "Todo período",
+            "estadual": f"Estado: {estado}" if estado else "Todos",
+            "cidade": f"Cidade: {cidade}" if cidade else "Todas"
+        }.get(tipo, ""),
+        "total_corridas": len(ranking),
+        "corridas_no_ranking": len([c for c in ranking if c["no_ranking"]]),
+        "media_geral_plataforma": round(media_geral_plataforma, 2),
+        "ranking": ranking
+    }
+
+
+@api_router.get("/ranking-corridas/stats")
+async def get_stats_ranking_corridas():
+    """Retorna estatísticas gerais do Ranking das Corridas"""
+    
+    total_corridas = await db.corridas_eventos.count_documents({"status": {"$ne": "cancelada"}})
+    total_avaliacoes = await db.avaliacoes_corridas.count_documents({})
+    
+    # Média geral
+    pipeline_media = [
+        {"$group": {"_id": None, "media": {"$avg": "$nota_corrida"}}}
+    ]
+    result = await db.avaliacoes_corridas.aggregate(pipeline_media).to_list(1)
+    media_geral = result[0]["media"] if result and result[0]["media"] else 0
+    
+    # Corrida mais bem avaliada (mínimo 10 avaliações)
+    pipeline_melhor = [
+        {"$group": {
+            "_id": "$corrida_id",
+            "media": {"$avg": "$nota_corrida"},
+            "total": {"$sum": 1}
+        }},
+        {"$match": {"total": {"$gte": 10}}},
+        {"$sort": {"media": -1}},
+        {"$limit": 1}
+    ]
+    result_melhor = await db.avaliacoes_corridas.aggregate(pipeline_melhor).to_list(1)
+    
+    corrida_melhor_avaliada = None
+    if result_melhor:
+        corrida_id = result_melhor[0]["_id"]
+        corrida = await db.corridas_eventos.find_one({"id": corrida_id}, {"_id": 0, "nome_corrida": 1, "cidade": 1, "estado": 1})
+        if corrida:
+            corrida_melhor_avaliada = {
+                **corrida,
+                "media": round(result_melhor[0]["media"], 2),
+                "avaliacoes": result_melhor[0]["total"]
+            }
+    
+    # Corrida com mais avaliações
+    pipeline_mais_aval = [
+        {"$group": {
+            "_id": "$corrida_id",
+            "total": {"$sum": 1}
+        }},
+        {"$sort": {"total": -1}},
+        {"$limit": 1}
+    ]
+    result_mais = await db.avaliacoes_corridas.aggregate(pipeline_mais_aval).to_list(1)
+    
+    corrida_mais_avaliada = None
+    if result_mais:
+        corrida_id = result_mais[0]["_id"]
+        corrida = await db.corridas_eventos.find_one({"id": corrida_id}, {"_id": 0, "nome_corrida": 1, "cidade": 1, "estado": 1})
+        if corrida:
+            corrida_mais_avaliada = {
+                **corrida,
+                "avaliacoes": result_mais[0]["total"]
+            }
+    
+    # Distribuição por estado
+    pipeline_estados = [
+        {"$group": {"_id": "$estado", "total": {"$sum": 1}}},
+        {"$sort": {"total": -1}},
+        {"$limit": 10}
+    ]
+    dist_estados = await db.corridas_eventos.aggregate(pipeline_estados).to_list(None)
+    
+    return {
+        "total_corridas": total_corridas,
+        "total_avaliacoes": total_avaliacoes,
+        "media_geral": round(media_geral, 2) if media_geral else 0,
+        "corrida_melhor_avaliada": corrida_melhor_avaliada,
+        "corrida_mais_avaliada": corrida_mais_avaliada,
+        "distribuicao_estados": [{"estado": e["_id"], "corridas": e["total"]} for e in dist_estados if e["_id"]]
+    }
+
+
+@api_router.get("/ranking-corridas/estados")
+async def get_estados_com_corridas():
+    """Lista estados que têm corridas cadastradas"""
+    pipeline = [
+        {"$match": {"status": {"$ne": "cancelada"}}},
+        {"$group": {"_id": "$estado"}},
+        {"$match": {"_id": {"$nin": [None, ""]}}},
+        {"$sort": {"_id": 1}}
+    ]
+    result = await db.corridas_eventos.aggregate(pipeline).to_list(None)
+    return [e["_id"] for e in result]
+
+
+@api_router.get("/ranking-corridas/cidades")
+async def get_cidades_com_corridas(estado: str = None):
+    """Lista cidades que têm corridas cadastradas"""
+    match_filter = {"status": {"$ne": "cancelada"}}
+    if estado:
+        match_filter["estado"] = estado
+    
+    pipeline = [
+        {"$match": match_filter},
+        {"$group": {"_id": "$cidade"}},
+        {"$match": {"_id": {"$nin": [None, ""]}}},
+        {"$sort": {"_id": 1}}
+    ]
+    result = await db.corridas_eventos.aggregate(pipeline).to_list(None)
+    return [c["_id"] for c in result]
+
+
 # ==================== INCLUDE ROUTER ====================
 app.include_router(api_router)
 
