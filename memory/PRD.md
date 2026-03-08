@@ -474,3 +474,13 @@ Plataforma completa de ranking de corrida com sistema de ranking duplo (Nacional
       - Define role como "dono_assessoria"
       - Define equipe como nome da assessoria
     - Validação: não permite nome de assessoria duplicado
+
+47. ✅ **Responsável e BIO na Página de Equipes** (08/03/2026):
+    - Página /assessoria/{nome} agora exibe no header:
+      - ⚡️ **Responsável / Nome do Dono** (texto verde/emerald com ícone Zap)
+      - 📊 *"Mensagem da BIO"* (texto azul itálico com ícone BarChart3)
+    - Backend: GET /api/liga-assessorias/assessoria/{nome} retorna:
+      - responsavel_nome, responsavel_id, mensagem_bio, foto_assessoria
+    - Busca dados da coleção `assessorias` e do usuário `dono_assessoria`
+    - Endpoint admin: POST /api/admin/setup-assessoria-dono/{equipe_nome}
+      - Configura atleta existente como dono e cria dados da assessoria
