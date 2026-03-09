@@ -219,8 +219,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "nome": current_user["nome"],
         "email": current_user["email"],
         "role": current_user["role"],
-        "categoria": current_user["categoria"],
-        "foto_url": current_user["foto_url"],
+        "categoria": current_user.get("categoria", "normal"),
+        "foto_url": current_user.get("foto_url", ""),
         "modalidade_usuario": current_user.get("modalidade_usuario", "profissional_amador")
     }
 
@@ -2597,7 +2597,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://team-ranking-ui.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://login-bug-fix-4.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 

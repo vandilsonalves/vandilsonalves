@@ -613,6 +613,33 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## 🐛 Bug Fix - Login de Usuários Não-Admin (09/03/2026 - Sessão 6)
+
+### Problema Identificado
+- Usuários (atletas e donos de assessoria) não conseguiam fazer login
+- O login funcionava via API, mas a UI não mostrava o usuário logado
+- Erro: `KeyError: 'foto_url'` no endpoint `/api/auth/me`
+
+### Causa Raiz
+1. **Senhas não hasheadas**: Os usuários de teste não tinham senhas salvas no banco
+2. **Campo foto_url ausente**: O endpoint `/api/auth/me` usava `current_user["foto_url"]` diretamente, mas alguns usuários não tinham esse campo
+
+### Correções Aplicadas
+1. Senhas hasheadas (`senha123`) adicionadas aos usuários de teste no banco
+2. Endpoint `/api/auth/me` corrigido para usar `.get()` com valores padrão:
+   ```python
+   "categoria": current_user.get("categoria", "normal"),
+   "foto_url": current_user.get("foto_url", ""),
+   ```
+
+### Status
+- ✅ Login funcionando para Admin, Atleta e Dono de Assessoria
+- ✅ Token salvo no localStorage
+- ✅ Nome do usuário exibido no header
+- ✅ Botões específicos por role (ex: "Minha Assessoria" apenas para dono_assessoria)
+
+---
+
 ## Credenciais de Teste
 
 | Tipo | Email | Senha |
@@ -621,4 +648,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 5)
+Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login)
