@@ -17,7 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { 
   Users, Shield, Activity, AlertTriangle, Plus, Edit, Trash2, 
   Lock, Unlock, Eye, Clock, Globe, Monitor, RefreshCw, Loader2,
-  UserCog, Key, FileText, CheckCircle, XCircle, Crown, AlertCircle
+  UserCog, Key, FileText, CheckCircle, XCircle, Crown, AlertCircle, MapPin
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -523,6 +523,12 @@ const DashboardRBAC = () => {
                           <div className="flex items-center gap-1 mt-1">
                             <Globe className="w-3 h-3" />
                             {log.ip_address}
+                          </div>
+                          <div className="flex items-center gap-1 mt-1">
+                            <MapPin className="w-3 h-3 text-blue-500" />
+                            <span className="text-blue-600 font-medium">
+                              {log.localizacao_aproximada || log.geo_cidade || 'Desconhecido'}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1 mt-1">
                             <Monitor className="w-3 h-3" />

@@ -1052,8 +1052,34 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 1. ~~**P1** - Integração de envio de email para 2FA e alertas de segurança~~ ✅ CONCLUÍDO
 2. ~~**P2** - Refatoração do server.py em módulos~~ 🔄 EM PROGRESSO (6 módulos criados)
 3. ~~**P2** - Painel diferenciado para Colaboradores (menu reduzido)~~ ✅ CONCLUÍDO
-4. **P3** - Geolocalização real baseada em IP
+4. ~~**P3** - Geolocalização real baseada em IP~~ ✅ CONCLUÍDO
 5. **P3** - Verificar domínio no Resend para emails de produção
+
+### 18. Geolocalização Real Baseada em IP ✅ CONCLUÍDO (09/03/2026)
+
+**Descrição**: Sistema de geolocalização que identifica a localização aproximada do administrador baseada no IP usando a API ip-api.com.
+
+**Funcionalidades:**
+- **Localização em tempo real** nos logs de auditoria (cidade, região, país)
+- **Cache em memória** (1 hora) para evitar requisições repetidas
+- **Suporte a IPs privados** (detecta "Rede Local" para localhost, 192.168.x.x, etc.)
+- **ISP e organização** registrados nos logs
+- **Frontend atualizado** com ícone de localização (📍) nos logs
+
+**Informações capturadas:**
+- Cidade, Região, País
+- Código do país
+- ISP (Provedor de Internet)
+- Organização
+- Localização formatada para exibição
+
+**Arquivos criados:**
+- `/app/backend/services/geolocation_service.py` - Serviço de geolocalização
+
+**Arquivos modificados:**
+- `/app/backend/services/rbac_service.py` - Integração com geolocalização
+- `/app/backend/routes/rbac.py` - Logs e histórico com geolocalização
+- `/app/frontend/src/pages/admin/DashboardRBAC.jsx` - Exibição de localização
 
 ### 17. Painel Diferenciado para Colaboradores ✅ CONCLUÍDO (09/03/2026)
 

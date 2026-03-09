@@ -40,13 +40,9 @@ def extrair_info_dispositivo(user_agent: str) -> dict:
 
 
 async def get_localizacao_aproximada(ip: str) -> str:
-    """Obtém localização aproximada baseada no IP"""
-    # Implementação simplificada - em produção usar serviço de geolocalização
-    if ip.startswith("127.") or ip.startswith("192.168.") or ip.startswith("10.") or ip == "localhost":
-        return "Rede Local"
-    
-    # Para produção: usar api como ip-api.com ou similar
-    return "Brasil"
+    """Obtém localização aproximada baseada no IP usando API de geolocalização"""
+    from services.geolocation_service import get_location_string
+    return await get_location_string(ip)
 
 
 def formatar_data_hora_br(iso_string: str) -> str:

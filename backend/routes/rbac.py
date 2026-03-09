@@ -107,8 +107,14 @@ async def registrar_log(
     entidade_nome: str = None,
     dados_extras: dict = None
 ):
-    """Registra log de ação administrativa"""
+    """Registra log de ação administrativa com geolocalização"""
+    from services.geolocation_service import get_location_details
+    
     admin_data = admin.get("admin_data", {})
+    ip = get_client_ip(request)
+    
+    # Obter geolocalização
+    geo = await get_location_details(ip)
     
     log = criar_log_acao(
         admin_id=admin.get("id"),
@@ -116,13 +122,21 @@ async def registrar_log(
         admin_role=admin_data.get("role_nome", "Admin Legado"),
         tipo_acao=tipo_acao,
         descricao=descricao,
-        ip_address=get_client_ip(request),
+        ip_address=ip,
         user_agent=request.headers.get("User-Agent", ""),
         entidade_tipo=entidade_tipo,
         entidade_id=entidade_id,
         entidade_nome=entidade_nome,
         dados_extras=dados_extras
     )
+    
+    # Adicionar dados de geolocalização ao log
+    log["localizacao_aproximada"] = geo.get("formatado", "Desconhecido")
+    log["geo_cidade"] = geo.get("cidade", "")
+    log["geo_regiao"] = geo.get("regiao", "")
+    log["geo_pais"] = geo.get("pais", "")
+    log["geo_codigo_pais"] = geo.get("codigo_pais", "")
+    log["geo_isp"] = geo.get("isp", "")
     
     await db.admin_logs.insert_one(log)
     return log
@@ -866,8 +880,14 @@ async def registrar_tentativa_login(
     admin_id: str = None,
     admin_nome: str = None
 ):
-    """Registra tentativa de login"""
+    """Registra tentativa de login com geolocalização"""
+    from services.geolocation_service import get_location_details
+    
     info_dispositivo = extrair_info_dispositivo(request.headers.get("User-Agent", ""))
+    ip = get_client_ip(request)
+    
+    # Obter geolocalização
+    geo = await get_location_details(ip)
     
     registro = {
         "id": str(uuid.uuid4()),
@@ -875,11 +895,15 @@ async def registrar_tentativa_login(
         "admin_nome": admin_nome,
         "email": email,
         "sucesso": sucesso,
-        "ip_address": get_client_ip(request),
+        "ip_address": ip,
         "user_agent": request.headers.get("User-Agent", ""),
         "dispositivo": info_dispositivo["dispositivo"],
         "navegador": info_dispositivo["navegador"],
-        "cidade_aproximada": "Brasil",
+        "cidade_aproximada": geo.get("formatado", "Desconhecido"),
+        "geo_cidade": geo.get("cidade", ""),
+        "geo_regiao": geo.get("regiao", ""),
+        "geo_pais": geo.get("pais", ""),
+        "geo_isp": geo.get("isp", ""),
         "data_hora": datetime.now(timezone.utc).isoformat(),
         "motivo_falha": motivo_falha
     }
