@@ -1050,9 +1050,37 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ### Backlog (Priorizado):
 1. ~~**P1** - Integração de envio de email para 2FA e alertas de segurança~~ ✅ CONCLUÍDO
-2. **P2** - Refatoração do server.py em módulos (iniciado com RBAC)
+2. **P2** - Refatoração do server.py em módulos - **EM PROGRESSO** (6 módulos criados)
 3. **P2** - Painel diferenciado para Colaboradores (menu reduzido)
 4. **P3** - Geolocalização real baseada em IP
+
+### 16. Refatoração do Backend em Módulos 🔄 EM PROGRESSO (09/03/2026)
+
+**Descrição**: Divisão do arquivo monolítico `server.py` (~7000 linhas) em módulos menores usando `APIRouter`.
+
+**Progresso:**
+
+| Módulo | Status | Descrição |
+|--------|--------|-----------|
+| `config.py` | ✅ Criado | Configurações compartilhadas (DB, Security) |
+| `routes/rbac.py` | ✅ **ATIVO** | Sistema RBAC (administradores, permissões, logs) |
+| `routes/auth_routes.py` | 🟡 Pronto | Autenticação (login, registro, me) |
+| `routes/notificacoes_routes.py` | 🟡 Pronto | Sistema de notificações |
+| `routes/conquistas_routes.py` | 🟡 Pronto | Selos e conquistas |
+| `routes/atletas_routes.py` | 🟡 Pronto | Perfil, troca de equipe, aniversário |
+| `routes/resultados_routes.py` | 🟡 Pronto | Submissão de resultados |
+| `services/email_service.py` | ✅ **ATIVO** | Serviço de email (Resend) |
+
+**Legenda:**
+- ✅ **ATIVO**: Router incluído no server.py
+- 🟡 **Pronto**: Módulo criado e testado, aguardando ativação
+
+**Próximos passos:**
+1. Criar módulos para Admin, Ranking, Assessorias, Corridas
+2. Ativar gradualmente os módulos prontos
+3. Remover código duplicado do server.py
+
+**Guia completo:** `/app/backend/docs/REFACTORING_GUIDE.md`
 
 ### 15. Integração de Email com Resend ✅ NOVO (09/03/2026)
 

@@ -7038,8 +7038,13 @@ async def get_ranking_corridas_interno(limite: int = 100):
 
 
 # ==================== INCLUDE ROUTER ====================
-# Include RBAC router
+# Import dos routers modulares
+# NOTA: Routers de auth, notificações e conquistas estão prontos em /routes/
+# mas ainda não foram ativados para evitar duplicação.
+# Ativar após remover os endpoints correspondentes do server.py
 from routes.rbac import router as rbac_router
+
+# Incluir routers modulares
 api_router.include_router(rbac_router)
 
 app.include_router(api_router)
