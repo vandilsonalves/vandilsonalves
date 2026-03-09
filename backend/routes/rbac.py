@@ -649,8 +649,46 @@ async def verificar_status_email(super_admin: dict = Depends(get_super_admin)):
             "passo_2": "Vá em Dashboard → API Keys → Create API Key",
             "passo_3": "Adicione RESEND_API_KEY=re_sua_chave no arquivo /app/backend/.env",
             "passo_4": "Reinicie o backend: sudo supervisorctl restart backend"
-        }
+        },
+        "nota": "Em modo de teste, o Resend só envia para o email da conta. Verifique um domínio em resend.com/domains para enviar para outros emails."
     }
+
+
+@router.post("/rbac/email-test")
+async def testar_envio_email(
+    dados: dict,
+    request: Request,
+    super_admin: dict = Depends(get_super_admin)
+):
+    """Envia email de teste para verificar configuração"""
+    from services.email_service import enviar_email
+    
+    email_destino = dados.get("email", "")
+    if not email_destino:
+        raise HTTPException(status_code=400, detail="Email de destino é obrigatório")
+    
+    result = await enviar_email(
+        destinatario=email_destino,
+        assunto="🧪 Teste de Email - Ranking Run",
+        html_content="""
+        <html>
+        <body style="font-family: Arial, sans-serif; padding: 20px;">
+            <h1 style="color: #10B981;">✅ Email de Teste</h1>
+            <p>Se você está vendo esta mensagem, o serviço de email está funcionando corretamente!</p>
+            <p style="color: #666;">Ranking Run - Sistema de Ranking de Corridas</p>
+        </body>
+        </html>
+        """,
+        texto_alternativo="Teste de email - Ranking Run. Se você está vendo esta mensagem, o email está funcionando!"
+    )
+    
+    await registrar_log(
+        request, super_admin, "teste_email",
+        f"Testou envio de email para {email_destino}",
+        dados_extras={"resultado": result.get("status")}
+    )
+    
+    return result
 
 
 # ==================== 2FA E LOGIN ADMIN ====================
