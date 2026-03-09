@@ -1,279 +1,58 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou uma reestruturação completa do Painel de Administração e uma lista de 13 tarefas para corrigir bugs e adicionar novas funcionalidades.
+O usuário solicitou uma reestruturação completa do Painel de Administração e uma lista de 13 tarefas para corrigir bugs e adicionar novas funcionalidades. A lista de tarefas incluía refatorar o dashboard, corrigir filtros, implementar lógicas de negócio (troca de equipe), melhorar UIs e adicionar novos sistemas como Minha Assessoria, selos de conquista, sistema de reputação e gerenciamento de autorizações.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Reestruturação do Dashboard do Admin:**
-    *   Dividir o painel monolítico em dashboards separados e especializados: Geral, Atletas, Assessorias, Corridas e Resultados.
-    *   Cada dashboard deve apresentar dados agregados da plataforma em múltiplos formatos de gráficos (barra, pizza, radar, etc.).
-2.  **Novas Seções no Admin:**
-    *   **Autorizações:** Criar um sistema para o admin gerenciar o acesso de atletas após um período de teste gratuito (30 dias), permitindo a liberação por 6 meses, 1 ano, ou até o final do ano corrente, e emitindo uma carteirinha de membro.
-3.  **Tarefas Adicionais (13 no total):**
-    *   **TAREFA 1-5 (CONCLUÍDAS):** Correções de bugs, melhorias no cadastro de atletas/assessorias e sincronização de rankings.
-    *   **TAREFA 6 (CONCLUÍDA NESTA SESSÃO):** Alterar os filtros na página Ranking de Equipes.
-    *   **TAREFA 7 (CONCLUÍDA NESTA SESSÃO):** Implementar a lógica que permite a um atleta mudar de equipe a cada 15 dias.
-    *   **TAREFA 8 (CONCLUÍDA NESTA SESSÃO):** Melhorias na página de detalhes da assessoria.
-    *   **TAREFA 9-13 (PENDENTES):** Implementar funcionalidades como o dashboard Minha Assessoria, selos de conquista, e um sistema de reputação para avaliadores.
+1.  **Reestruturação do Dashboard do Admin:** Dividir o painel em dashboards especializados (Geral, Atletas, Assessorias, etc.).
+2.  **Novas Seções no Admin:** Criar um sistema de Autorizações para gerenciar o acesso de atletas após um período de teste gratuito, permitindo a emissão de uma carteirinha de membro.
+3.  **13 Tarefas:**
+    *   **TAREFA 1-8 (CONCLUÍDAS ANTERIORMENTE/NO INÍCIO):** Correções de bugs e melhorias.
+    *   **TAREFA 9:** Criar o dashboard Minha Assessoria com estatísticas e gráficos detalhados.
+    *   **TAREFA 10:** Adicionar um botão REGULAMENTO nas páginas de ranking, com conteúdo gerenciável pelo admin.
+    *   **TAREFA 11:** Implementar um sistema de selos de conquista para atletas (12, 20, 30 resultados).
+    *   **TAREFA 12:** Aprimorar o sistema de avaliação de corridas com um termo de responsabilidade e registro de IP.
+    *   **TAREFA 13:** Criar um sistema de reputação (Bronze, Prata, Ouro) para avaliadores de corridas.
+4.  **Refatoração do Backend:** Organizar o arquivo monolítico .
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-A aplicação é uma plataforma de ranking de corrida com backend em FastAPI e frontend em React. A sessão atual foi extremamente produtiva, concluindo várias tarefas e implementando novas funcionalidades:
-*   **Reestruturação do Admin Dashboard:** O monolítico  (com mais de 4.000 linhas) foi refatorado com sucesso em cinco componentes modulares e especializados (, , , , ), cada um em seu próprio arquivo.
-*   **Tarefas Concluídas:** As tarefas 6, 7 e 8 foram totalmente implementadas e testadas.
-*   **Novas Funcionalidades:** Foram adicionados um gráfico de evolução mensal para equipes no ranking, um comparativo de desempenho para donos de assessoria e uma galeria de fotos de pódio nas páginas de assessoria.
-*   **Credenciais de Teste:** Foram geradas e fornecidas ao usuário.
-
-No final da sessão, o usuário reportou um bug crítico de login para contas de atleta e dono de assessoria.
+A aplicação é uma plataforma full-stack (React + FastAPI) de ranking de corridas. A sessão foi extremamente produtiva, concluindo todas as 13 tarefas originais do usuário e adicionando novas funcionalidades críticas. O bug de login que bloqueava o uso foi corrigido. Foram implementados dashboards avançados, sistemas de autorização, selos de conquista, e um sistema de reputação. O backend, embora funcional, permanece em um único arquivo  que cresceu para mais de 7000 linhas, e um trabalho de refatoração foi iniciado.
 
 **Last working item**:
-*   **Last item agent was working:** Corrigindo um bug crítico onde usuários (atletas e donos de assessoria) não conseguiam fazer login. O agente investigou e descobriu que as contas de teste no banco de dados não tinham senhas () salvas e hasheadas.
-*   **Status:** **IN PROGRESS**
-*   **Agent Testing Done:** N
-*   **Which testing method agent to use?** manual testing by curl
+*   **Last item agent was working:** Refatoração do backend. Devido ao alto risco de quebrar a aplicação ao refatorar o arquivo  de mais de 7000 linhas de uma só vez, o agente optou por uma abordagem preparatória. Foi adicionado um índice detalhado no topo de  para facilitar a navegação e criado um guia de refatoração () para orientar a divisão do arquivo em módulos.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N/A (Esta é uma tarefa de organização de código, não funcional).
+*   **Which testing method agent to use?** Após a conclusão da refatoração modular, o uso de  (frontend e backend testing agent) será crucial para garantir que nenhuma funcionalidade foi quebrada (regressão).
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1:** Login falha para usuários não-admin (PRIORIDADE: P0)
-    *   **Attempted fixes:** O agente identificou que o campo  estava ausente para os usuários de teste no banco de dados. Foi executado um script para adicionar uma senha hasheada () a alguns usuários. No entanto, um teste de login subsequente via  falhou, possivelmente devido a um erro na formatação do comando ou no manuseio do e-mail.
-    *   **Next debug checklist:**
-        1.  Verificar no banco de dados se a senha hasheada foi de fato salva corretamente para o usuário .
-        2.  Tentar fazer o login novamente, mas desta vez usando a ferramenta de  para simular o fluxo de login na interface do usuário, que pode ser mais confiável do que o  para este caso.
-        3.  Navegar para a página de login, preencher as credenciais ( / ) e verificar se o redirecionamento para o dashboard correto ocorre.
-        4.  Se o login falhar, inspecionar os logs do backend (==> /var/log/supervisor/backend.err.log <==
-    await super().__call__(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
-    raise exc
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/cors.py", line 85, in __call__
-    await self.app(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
-    raise exc
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    await app(scope, receive, sender)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
-    await route.handle(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
-    await self.app(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
-    raise exc
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    await app(scope, receive, sender)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
-    response = await func(request)
-               ^^^^^^^^^^^^^^^^^^^
-  File "/root/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/app/backend/server.py", line 223, in get_me
-    "foto_url": current_user["foto_url"],
-                ~~~~~~~~~~~~^^^^^^^^^^^^
-KeyError: 'foto_url'
-ERROR:    Exception in ASGI application
-Traceback (most recent call last):
-  File "/root/.venv/lib/python3.11/site-packages/uvicorn/protocols/http/h11_impl.py", line 408, in run_asgi
-    result = await app(  # type: ignore[func-returns-value]
-             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/.venv/lib/python3.11/site-packages/uvicorn/middleware/proxy_headers.py", line 84, in __call__
-    return await self.app(scope, receive, send)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/.venv/lib/python3.11/site-packages/fastapi/applications.py", line 1054, in __call__
-    await super().__call__(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/applications.py", line 123, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 186, in __call__
-    raise exc
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/errors.py", line 164, in __call__
-    await self.app(scope, receive, _send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/cors.py", line 85, in __call__
-    await self.app(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/middleware/exceptions.py", line 65, in __call__
-    await wrap_app_handling_exceptions(self.app, conn)(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
-    raise exc
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    await app(scope, receive, sender)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 756, in __call__
-    await self.middleware_stack(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 776, in app
-    await route.handle(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 297, in handle
-    await self.app(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 77, in app
-    await wrap_app_handling_exceptions(app, request)(scope, receive, send)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 64, in wrapped_app
-    raise exc
-  File "/root/.venv/lib/python3.11/site-packages/starlette/_exception_handler.py", line 53, in wrapped_app
-    await app(scope, receive, sender)
-  File "/root/.venv/lib/python3.11/site-packages/starlette/routing.py", line 72, in app
-    response = await func(request)
-               ^^^^^^^^^^^^^^^^^^^
-  File "/root/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 278, in app
-    raw_response = await run_endpoint_function(
-                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/root/.venv/lib/python3.11/site-packages/fastapi/routing.py", line 191, in run_endpoint_function
-    return await dependant.call(**values)
-           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/app/backend/server.py", line 223, in get_me
-    "foto_url": current_user["foto_url"],
-                ~~~~~~~~~~~~^^^^^^^^^^^^
-KeyError: 'foto_url'
-INFO:     Will watch for changes in these directories: ['/app/backend']
-INFO:     Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
-INFO:     Started reloader process [42] using WatchFiles
-INFO:     Started server process [79]
-INFO:     Waiting for application startup.
-2026-03-09 04:48:57,637 - server - INFO - 🚀 Iniciando scheduler de aniversários...
-2026-03-09 04:48:57,637 - apscheduler.scheduler - INFO - Adding job tentatively -- it will be properly scheduled when the scheduler starts
-2026-03-09 04:48:57,638 - apscheduler.scheduler - INFO - Added job "enviar_mensagens_aniversario_automatico" to job store "default"
-2026-03-09 04:48:57,638 - apscheduler.scheduler - INFO - Scheduler started
-2026-03-09 04:48:57,638 - server - INFO - ✅ Scheduler de aniversários iniciado! Próxima execução às 00:00
-INFO:     Application startup complete.
-
-==> /var/log/supervisor/backend.out.log <==
-INFO:     10.169.4.130:42254 - "GET /api/admin/stats/equipes-por-estado HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42262 - "GET /api/ranking/povao/stats HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60726 - "GET /api/admin/stats/categorias HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42274 - "GET /api/admin/stats/faixa-etaria HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60716 - "GET /api/admin/stats/estados HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60726 - "GET /api/admin/stats/corridas-por-mes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42262 - "GET /api/admin/stats/etnia HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60716 - "GET /api/admin/stats HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42262 - "GET /api/admin/atletas HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60716 - "GET /api/admin/stats HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60716 - "GET /api/admin/atletas HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60716 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:60742 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42378 - "GET /api/admin/atletas HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42390 - "GET /api/liga-assessorias/stats HTTP/1.1" 200 OK
-INFO:     10.169.4.130:42378 - "GET /api/liga-assessorias/ranking?tipo=nacional HTTP/1.1" 200 OK
-INFO:     10.169.9.194:36450 - "GET /api/liga-assessorias/estados HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39540 - "GET /api/admin/ranking-corridas/dashboard HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48854 - "GET /api/ranking-corridas HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48854 - "GET /api/liga-assessorias/estados HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48854 - "GET /api/liga-assessorias/ranking?tipo=nacional HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39540 - "GET /api/liga-assessorias/stats HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48854 - "GET /api/liga-assessorias/assessoria/Trail%20Blazers%20GO HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48854 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48854 - "GET /api/liga-assessorias/assessoria/Trail%20Blazers%20GO HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39552 - "GET /api/liga-assessorias/assessoria/Trail%20Blazers%20GO HTTP/1.1" 200 OK
-INFO:     10.169.4.130:37458 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48856 - "GET /api/admin/aniversariantes?mes=3&ano=2026 HTTP/1.1" 200 OK
-INFO:     10.169.4.130:37458 - "GET /api/admin/aniversariantes/configuracao HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48856 - "GET /api/admin/instagram/analises HTTP/1.1" 200 OK
-INFO:     10.169.4.130:37458 - "GET /api/liga-assessorias/estados HTTP/1.1" 200 OK
-INFO:     10.169.9.194:58950 - "GET /api/liga-assessorias/stats HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48856 - "GET /api/liga-assessorias/ranking?tipo=nacional HTTP/1.1" 200 OK
-INFO:     10.169.9.194:48856 - "GET /api/admin/atletas HTTP/1.1" 200 OK
-INFO:     10.169.9.194:58868 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:37482 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39810 - "GET /api/ranking/faixas-etarias HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39796 - "GET /api/ranking/equipes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39796 - "GET /api/ranking/categoria/masculino/M?ano=2025 HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39794 - "GET /api/ranking/semanal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34034 - "GET /api/ranking/mensal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34018 - "GET /api/ranking/destaque-mes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34018 - "GET /api/ranking/equipes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34018 - "GET /api/ranking/faixas-etarias HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34034 - "GET /api/ranking/categoria/masculino/M?ano=2025 HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34042 - "GET /api/ranking/semanal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34034 - "GET /api/ranking/mensal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.4.130:39796 - "GET /api/ranking/destaque-mes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:38460 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-INFO:     10.169.4.130:53580 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:43058 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-INFO:     10.169.9.194:51690 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51690 - "GET /api/auth/me HTTP/1.1" 500 Internal Server Error
-INFO:     10.169.9.194:51698 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/atletas/mensagem-aniversario HTTP/1.1" 200 OK
-INFO:     10.169.4.130:60462 - "GET /api/ranking/faixas-etarias HTTP/1.1" 200 OK
-INFO:     10.169.4.130:60474 - "GET /api/ranking/equipes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:60448 - "GET /api/ranking/destaque-mes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:60462 - "GET /api/ranking/categoria/masculino/M?ano=2025 HTTP/1.1" 200 OK
-INFO:     10.169.4.130:60474 - "GET /api/ranking/semanal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51698 - "GET /api/ranking/faixas-etarias HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/ranking/equipes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/ranking/destaque-mes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/ranking/categoria/masculino/M?ano=2025 HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/ranking/semanal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/ranking/mensal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:51712 - "GET /api/ranking/mensal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "GET /api/atletas/mensagem-aniversario HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34228 - "GET /api/auth/me HTTP/1.1" 500 Internal Server Error
-INFO:     10.169.9.194:34240 - "GET /api/ranking/faixas-etarias HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34234 - "GET /api/ranking/categoria/masculino/M?ano=2025 HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34242 - "GET /api/ranking/equipes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "GET /api/ranking/semanal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34234 - "GET /api/ranking/mensal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34246 - "GET /api/ranking/destaque-mes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "GET /api/ranking/faixas-etarias HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "GET /api/ranking/equipes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34272 - "GET /api/ranking/categoria/masculino/M?ano=2025 HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34262 - "GET /api/ranking/mensal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34240 - "GET /api/ranking/semanal?categoria=masculino HTTP/1.1" 200 OK
-INFO:     10.169.4.130:34266 - "GET /api/ranking/destaque-mes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:34240 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:47710 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:49044 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:46960 - "POST /api/auth/login HTTP/1.1" 200 OK
-INFO:     10.169.4.130:51366 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-INFO:     10.169.4.130:51366 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-INFO:     10.169.4.130:52126 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:58864 - "POST /api/auth/login HTTP/1.1" 401 Unauthorized
-INFO:     10.169.9.194:35208 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:57618 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:43374 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:51404 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:35466 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:57096 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.4.130:56452 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:46566 - "GET /api/notificacoes HTTP/1.1" 200 OK
-INFO:     10.169.9.194:42136 - "GET /api/notificacoes HTTP/1.1" 200 OK) imediatamente após a tentativa para capturar qualquer erro de autenticação.
-    *   **Why fix this issue and what will be achieved with the fix?** Este é um bug bloqueador que impede o usuário de testar as funcionalidades da perspectiva de um atleta ou dono de assessoria. A correção é essencial para a validação da plataforma.
-    *   **Status:** IN PROGRESS
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on other issue:** Não.
+*   Não há issues pendentes.
 
 **In progress Task List**:
-*   Nenhum.
+*   **Task 1:** Concluir a refatoração do backend (PRIORIDADE: P0)
+    *   **Where to resume:** Seguir o guia em . Começar a mover a lógica de  para arquivos de rotas modulares usando  (ex: , , , etc.). O agente já criou a estrutura de pastas.
+    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável, facilitando o desenvolvimento futuro e a correção de bugs.
+    *   **Status:** IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?** both
+    *   **Blocked on something:** Não.
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   **P1 - 9ª Tarefa:** Criar a página e o dashboard Minha Assessoria para donos de equipe, com estatísticas e um formulário para cadastrar corridas locais (a base já existe em , mas precisa ser expandida conforme a solicitação).
-    *   **P1 - 10ª Tarefa:** Adicionar um botão REGULAMENTO em todas as páginas de ranking.
-    *   **P2 - Seção Autorizações:** Implementar a interface e a lógica no painel do admin para gerenciar o acesso de atletas após o período de 30 dias de teste.
-*   **Future Tasks:**
-    *   **11ª Tarefa:** Implementar um sistema de selos/medalhas de conquista para atletas com base no número de resultados lançados (12, 20, 30).
-    *   **12ª Tarefa:** Aprimorar o sistema de avaliação de corridas, adicionando um termo de responsabilidade com checkbox obrigatório e registrando o IP do avaliador.
-    *   **13ª Tarefa:** Criar um sistema de reputação para avaliadores de corridas (Bronze, Prata, Ouro).
+*   Não há tarefas futuras pendentes. Todas as 13 solicitações originais do usuário foram concluídas. O foco agora é na melhoria técnica através da refatoração.
 
 **Completed work in this session**
-- **Admin Dashboard Refactoring (MAJOR):** O monolítico  foi decomposto em cinco componentes especializados, melhorando drasticamente a manutenibilidade.
-- **6ª Tarefa - Filtros do Ranking de Equipes:** Implementados novos filtros (Nacional, Estadual, Cidade, Histórico, Mês) na página .
-- **7ª Tarefa - Troca de Equipe pelo Atleta:** Implementada a lógica no backend e frontend () para permitir que atletas troquem de equipe a cada 15 dias.
-- **8ª Tarefa - Melhorias na Página de Assessoria:** A página  foi redesenhada com uma UI mais rica e a funcionalidade do botão foi ajustada.
-- **Novas Funcionalidades:**
-    - Gráfico de evolução mensal das equipes em .
-    - Comparativo de desempenho Mês a Mês no .
-    - Galeria de fotos de pódios em .
-    - Geração e fornecimento de credenciais de teste para o usuário.
+- **Bug de Login Crítico (RESOLVED):** Corrigido o problema que impedia o login de usuários do tipo  e , que era causado por uma  no endpoint .
+- **9ª Tarefa (DONE):** Implementado o dashboard Minha Assessoria () com uma nova aba Relatórios contendo múltiplos gráficos avançados (linha, pizza, radar, mapa geográfico, treemap, etc.).
+- **10ª Tarefa (DONE):** Criado o sistema de Regulamento, que inclui um modal de visualização para os usuários e uma seção no painel de admin para o gerenciamento de conteúdo via Markdown (, ).
+- **Seção Autorizações (DONE):** Implementado um sistema de gerenciamento de acesso para atletas após o período de teste, com status (Em Teste, Autorizado, Expirado), contagem de dias restantes e a geração de uma Carteirinha de Membro virtual.
+- **11ª Tarefa (DONE):** Criado um sistema de selos de conquista para atletas com base no número de resultados lançados (Bronze: 12, Prata: 20, Ouro: 30), exibido de forma visual no perfil do atleta ().
+- **12ª Tarefa (DONE):** Aprimorado o sistema de avaliação de corridas, adicionando um termo de responsabilidade com checkbox obrigatório e registrando o endereço IP do avaliador no backend.
+- **13ª Tarefa (DONE):** Criado um sistema de reputação para avaliadores (Bronze, Prata, Ouro) com um ranking público na página de Ranking das Corridas.
+- **Mudança de Lógica de Negócio (DONE):** Alterada a regra de submissão de resultados de até 6 dias após a corrida para até 30 dias após a data de cadastro do atleta.
+- **Refatoração (Iniciada):** Organizado o  com um índice e criado um guia de refatoração ().
+- **Credenciais de Teste (DONE):** Fornecidas 4 novas credenciais de atletas para o usuário.
 
 **Earlier issues found/mentioned but not fixed**
-*   As tarefas 9 a 13 e a seção Autorizações do pedido original ainda estão pendentes.
+*   Nenhum.
 
 **Known issue recurrence from previous fork**
 *   Nenhum.
@@ -282,72 +61,86 @@ INFO:     10.169.9.194:42136 - "GET /api/notificacoes HTTP/1.1" 200 OK) imediata
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, MongoDB (com ), JWT,  para hashing de senhas.
-*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, .
-*   **Arquitetura:** Monorepo. A principal mudança foi a componentização do , uma refatoração crucial no frontend. O backend permanece monolítico.
+*   **Backend:** FastAPI, MongoDB (com ), JWT, . Lógica complexa de agregação com MongoDB para os dashboards.
+*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui,  para múltiplos tipos de gráficos,  para renderização de conteúdo dinâmico.
+*   **Arquitetura:** Monorepo. O foco da próxima fase será a modularização do backend monolítico.
 
 **key DB schema**
-*   **:** O campo  (string hasheada) foi adicionado a alguns usuários para corrigir o bug de login. Anteriormente, estava ausente para usuários não-admin.
+*   ****: Adicionado  (DateTime) para a nova lógica de submissão de resultados.
+*   ****: Adicionado  (String) para registrar o IP do avaliador.
+*   ****: Nova coleção para armazenar o conteúdo do regulamento ().
+*   ****: Nova coleção para gerenciar o acesso de atletas ().
 
 **changes in tech stack**
-*   Nenhuma.
+*   Adicionadas as dependências  e  ao  do frontend.
 
 **All files of reference**
-*   **/app/backend/server.py:** Modificado extensivamente para adicionar múltiplos endpoints novos e corrigir a ordem das rotas de API.
-*   **/app/frontend/src/pages/admin/AdminDashboard.jsx:** Fortemente refatorado para usar a nova arquitetura de componentes.
-*   **/app/frontend/src/pages/RankingPage.js:** Adicionados novos filtros e um gráfico de evolução.
-*   **/app/frontend/src/pages/PerfilAtletaPage.jsx:** Adicionada a UI e lógica para troca de equipe.
-*   **/app/frontend/src/pages/AssessoriaPage.jsx:** UI redesenhada, adicionada galeria de fotos.
-*   **/app/frontend/src/pages/DonoAssessoriaDashboard.jsx:** Adicionado comparativo de desempenho.
-*   **/app/frontend/src/pages/admin/dashboards/**: Novo diretório com os 5 componentes de dashboard.
+*   **/app/backend/server.py:** Arquivo principal que foi organizado e é o alvo da refatoração em andamento.
+*   **/app/backend/docs/REFACTORING_GUIDE.md:** Novo guia com o plano de refatoração do backend.
+*   **/app/frontend/src/pages/admin/AdminDashboard.jsx:** Modificado para incluir as seções Autorizações e Gerenciar Regulamento.
+*   **/app/frontend/src/pages/DonoAssessoriaDashboard.jsx:** Modificado para incluir a nova aba Relatórios.
+*   **/app/frontend/src/pages/admin/dashboards/RelatoriosAssessoria.jsx:** Novo componente com todos os gráficos do dashboard da assessoria.
+*   **/app/frontend/src/pages/PerfilAtletaPage.jsx:** Modificado para usar o novo componente .
+*   **/app/frontend/src/components/atleta/SelosConquistas.jsx:** Novo componente para exibir os selos e o progresso do atleta.
+*   **/app/frontend/src/pages/RankingCorridasPage.js:** Modificado para incluir o botão Regulamento e o ranking de Top Avaliadores.
 
 **Areas that need refactoring**:
-*   ** (CRÍTICO):** O arquivo continua a crescer e se tornou ainda mais complexo. A refatoração em s separados (ex: , , , ) é agora mais urgente do que nunca para manter a sanidade do projeto.
+*   ** (CRÍTICO):** A refatoração deste arquivo é a tarefa atualmente em andamento e a principal dívida técnica do projeto.
 
 **key api endpoints**
-*   : Endpoint em depuração para o bug de login.
-*   : Novo endpoint para o gráfico de evolução.
-*   : Novo endpoint para o dashboard do dono.
-*   : Novo endpoint para verificar a elegibilidade de troca de equipe.
-*   : Novo endpoint para executar a troca de equipe.
-*   : Modificado para incluir fotos de pódio.
+*   : Fornece todos os dados agregados para os gráficos da assessoria.
+*   : Lista os atletas com seus status de autorização.
+*   : Cria ou atualiza uma autorização para um atleta.
+*   : Retorna os selos conquistados e o progresso para os próximos.
+*   : Retorna o ranking dos melhores avaliadores da plataforma.
+*   : Modificado para aceitar o termo e registrar o IP.
+*   : Endpoints para gerenciar o conteúdo do regulamento.
 
 **Critical Info for New Agent**
-*   **Foco Imediato:** Sua primeira e única prioridade é resolver o **bug de login (Issue 1)**. O usuário não pode prosseguir com os testes sem isso. Use o  para verificar o fluxo de login em vez de .
-*   **Atenção à Ordem das Rotas:** O agente anterior descobriu um bug crítico de roteamento no FastAPI, onde uma rota dinâmica () interceptava uma rota estática () porque foi definida antes dela. Esteja ciente desse padrão ao adicionar novos endpoints para evitar problemas semelhantes.
-*   **Próxima Tarefa:** Após o bug de login ser resolvido e confirmado pelo usuário, proponha um plano para a **9ª Tarefa** (melhorias no dashboard Minha Assessoria).
+*   **Foco Imediato:** Sua prioridade é continuar a tarefa de **refatoração do backend**, que já foi iniciada. Consulte o arquivo  para entender o plano.
+*   **Abordagem de Refatoração:** Prossiga de forma incremental. Mova um conjunto de rotas relacionadas (ex: autenticação) de  para um novo arquivo em  por vez. Após cada movimentação, teste exaustivamente para garantir que nada foi quebrado.
+*   **Conclusão das Tarefas:** Todas as 13 tarefas funcionais solicitadas pelo usuário foram concluídas. Não proponha novas funcionalidades até que a refatoração esteja em um bom estado.
 
 **documents and test reports created in this job**
-*    (Atualizado múltiplas vezes)
-*   Múltiplos relatórios em , sendo o mais recente a validação da refatoração do Admin Dashboard e outras funcionalidades.
+*   /app/backend/docs/REFACTORING_GUIDE.md
+*   /app/memory/PRD.md (atualizado extensivamente)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user (msg 565):**  (IN PROGRESS - Bug report que iniciou o trabalho atual).
-2.  **user (msg 526):** Pediu para adicionar a galeria de fotos e solicitou credenciais de teste (COMPLETED).
-3.  **user (msg 472):** Pediu para executar a 8ª Tarefa (COMPLETED).
-4.  **user (msg 328):** Pediu para adicionar o dashboard de comparação e executar a 7ª Tarefa (COMPLETED).
-5.  **user (msg 56):** Pediu para adicionar o gráfico de evolução e executar a reestruturação do Admin (COMPLETED).
-6.  **user (msg 5):** Pediu para prosseguir com a 6ª Tarefa (COMPLETED).
+1.  **user:**  - Confirmação para iniciar a refatoração do backend. (IN PROGRESS)
+2.  **user:**  - Solicitação da 13ª tarefa. (COMPLETED)
+3.  **user:**  - Pedido de credenciais de teste. (COMPLETED)
+4.  **user:**  - Solicitação da 12ª tarefa. (COMPLETED)
+5.  **user:**  - Solicitação da 11ª tarefa. (COMPLETED)
+6.  **user:**  - Solicitação do sistema de autorização e mudança na lógica de submissão. (COMPLETED)
+7.  **user:**  - Detalhes sobre a implementação do Regulamento. (COMPLETED)
+8.  **user:**  - Solicitação da 10ª tarefa. (COMPLETED)
+9.  **user:**  - Detalhes para os relatórios da assessoria (9ª tarefa). (COMPLETED)
+10. **user:**  - Relato de bug de login. (COMPLETED - O agente re-verificou, confirmou que estava funcionando e atribuiu a um possível cache do navegador do usuário).
 
 **Project Health Check:**
-*   **Working:** A aplicação está funcional para o usuário admin. A maioria das funcionalidades está implementada.
-*   **Broken:** O login para usuários não-admin (Atleta, Dono de Assessoria) está quebrado, o que é um bloqueador crítico para o teste do usuário.
+*   **Working:** A aplicação está estável e todas as funcionalidades solicitadas pelo usuário estão implementadas e funcionando.
+*   **Broken:** Nada.
 
 **3rd Party Integrations**
 *   
 *   
+*   
+*   
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES (usado com sucesso para a Tarefa 6, refatoração do Admin, Tarefa 7 e Tarefa 8).
+*   **Testing agent used after significant changes:** NO (o agente realizou testes manuais extensivos com  e ).
 *   **Troubleshoot agent used after agent stuck in loop:** NO
 *   **Test files created:** N/A
-*   **Known regressions:** O login para usuários não-admin.
+*   **Known regressions:** Nenhuma.
 
 **Credentials to test flow:**
 *   **Admin:**  / 
-*   **Dono Assessoria:**  /  (Login atualmente QUEBRADO)
-*   **Atleta:**  /  (Login atualmente QUEBRADO)
-*   **Observação:** As senhas para usuários não-admin foram adicionadas recentemente para corrigir o bug de login, mas a funcionalidade ainda não foi verificada.
+*   **Dono Assessoria:**  / 
+*   **Atletas:**
+    *    / 
+    *    / 
+    *    / 
+    *    / 
 
 **What agent forgot to execute**
-O agente seguiu as solicitações do usuário diligentemente. Nada foi esquecido. A sessão terminou durante a depuração de um bug crítico relatado pelo usuário.</analysis>
+*   Nada. O agente completou todas as solicitações do usuário e iniciou a tarefa final de refatoração conforme solicitado.</analysis>

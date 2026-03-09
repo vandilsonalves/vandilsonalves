@@ -923,3 +923,136 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Atleta | rafael_souza_1@email.com | senha123 |
 
 Última atualização: 09/03/2026 (Sessão 6 - Todas as 13 Tarefas Completas!)
+
+---
+
+## Novas Funcionalidades (09/03/2026 - Sessão 7)
+
+### 14. Sistema RBAC (Role Based Access Control) ✅ NOVO
+
+**Descrição**: Sistema completo de gerenciamento de administradores com controle de permissões granular, logs de auditoria obrigatórios, e conta de emergência com 2FA.
+
+**Componentes Implementados:**
+
+**1. Três Níveis de Acesso:**
+- **Super Admin (Nível 1)**: Acesso total ao sistema (24 permissões)
+  - Criar/editar/excluir administradores
+  - Acesso total ao banco de dados
+  - Visualizar histórico de ações de todos os administradores
+  - Gerenciar configurações da plataforma
+  - Exportar dados completos
+  - Visualizar logs de segurança
+  
+- **Colaborador (Nível 2)**: Permissões operacionais limitadas (7 permissões)
+  - Aprovar/reprovar corridas
+  - Aprovar resultados de provas
+  - Moderar avaliações
+  - Visualizar atletas e assessorias
+  - Enviar mensagens limitadas
+  - **NÃO pode**: criar admins, alterar sistema, acessar dados financeiros, exportar banco
+
+- **Admin de Emergência (Nível 3)**: Conta especial para situações críticas
+  - Acesso total ao sistema (como Super Admin)
+  - Invisível no painel administrativo
+  - Não pode ser editada ou excluída
+  - **2FA obrigatório** por email
+  - Login gera **alerta automático** de segurança
+
+**2. Sistema de Logs de Auditoria Obrigatório:**
+- Registro automático de TODAS as ações administrativas
+- Informações registradas:
+  - ID e nome do administrador
+  - Tipo de ação realizada
+  - Descrição detalhada
+  - Registro/entidade afetada
+  - Data e hora (timestamp UTC)
+  - Endereço IP
+  - Dispositivo/Navegador (User-Agent parsing)
+  - Localização aproximada
+
+**3. Histórico de Login:**
+- Registro de todas tentativas de login (sucesso/falha)
+- Motivo de falha quando aplicável
+- IP, navegador, dispositivo
+- Data/hora da tentativa
+
+**4. Sistema de Alertas de Segurança:**
+- Alertas automáticos para:
+  - Uso do Admin de Emergência
+  - Tentativas de invasão
+  - Ações suspeitas
+- Botão "Resolver" para marcar alertas como tratados
+- Badge de contagem na aba de Alertas
+
+**5. 2FA (Two-Factor Authentication):**
+- Implementado via código de 6 dígitos por email
+- Códigos expiram em 10 minutos
+- Obrigatório para Admin de Emergência
+- Opcional para outros admins (pode ser habilitado)
+
+**6. Interface de Gerenciamento (Frontend):**
+- Nova seção "Administradores" no menu do Admin
+- 4 abas: Administradores, Funções, Logs de Auditoria, Alertas
+- Cards de estatísticas: Total, Ativos, Bloqueados, Ações Hoje, Alertas
+- CRUD completo de administradores
+- Visualização de permissões por role
+- ScrollArea com logs detalhados
+- Confirmação para ações críticas
+
+**Arquivos Criados/Modificados:**
+- `/app/backend/models/rbac.py` (NOVO) - Modelos RBAC
+- `/app/backend/services/rbac_service.py` (NOVO) - Serviços auxiliares
+- `/app/backend/routes/rbac.py` (NOVO) - Endpoints RBAC
+- `/app/frontend/src/pages/admin/DashboardRBAC.jsx` (NOVO) - Interface
+- `/app/frontend/src/pages/AdminDashboard.jsx` (MODIFICADO) - Menu atualizado
+
+**Endpoints RBAC:**
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/api/rbac/setup` | Configuração inicial do sistema |
+| GET | `/api/rbac/admins` | Listar administradores |
+| POST | `/api/rbac/admins` | Criar novo administrador |
+| PUT | `/api/rbac/admins/{id}` | Atualizar administrador |
+| DELETE | `/api/rbac/admins/{id}` | Excluir administrador |
+| POST | `/api/rbac/admins/{id}/bloquear` | Bloquear administrador |
+| GET | `/api/rbac/roles` | Listar roles/funções |
+| GET | `/api/rbac/permissoes` | Listar permissões |
+| GET | `/api/rbac/logs` | Logs de auditoria |
+| GET | `/api/rbac/login-history` | Histórico de login |
+| GET | `/api/rbac/alertas` | Alertas de segurança |
+| POST | `/api/rbac/alertas/{id}/resolver` | Resolver alerta |
+| GET | `/api/rbac/stats` | Estatísticas RBAC |
+| POST | `/api/rbac/login` | Login especial com 2FA |
+| GET | `/api/rbac/verificar-permissao/{perm}` | Verificar permissão |
+
+**Credenciais RBAC:**
+
+| Tipo | Email | Senha | 2FA |
+|------|-------|-------|-----|
+| Super Admin | admin@rankingrun.com | admin123 | Não |
+| Colaborador 1 | colaborador1@rankingrun.com | colab123 | Não |
+| Colaborador 2 | colaborador2@rankingrun.com | colab123 | Não |
+| Colaborador 3 | colaborador3@rankingrun.com | colab123 | Não |
+| Colaborador 4 | colaborador4@rankingrun.com | colab123 | Não |
+| Admin Emergência | suporte@rankingrun.com.br | EmergenciaRankingRun2026! | **Sim** |
+
+**Coleções MongoDB Criadas:**
+- `administradores` - Dados dos admins com role e permissões
+- `roles` - Definição das roles
+- `admin_logs` - Logs de ações administrativas
+- `login_history` - Histórico de tentativas de login
+- `alertas_seguranca` - Alertas de segurança
+- `codigos_verificacao` - Códigos 2FA temporários
+
+---
+
+## Próximas Tarefas
+
+### Backlog (Priorizado):
+1. **P1** - Integração de envio de email para 2FA e alertas de segurança
+2. **P2** - Refatoração do server.py em módulos (iniciado com RBAC)
+3. **P2** - Painel diferenciado para Colaboradores (menu reduzido)
+4. **P3** - Geolocalização real baseada em IP
+
+---
+

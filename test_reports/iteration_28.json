@@ -23,7 +23,7 @@
     "frontend": "100% (26/26 UI elements verified)"
   },
   "test_credentials": {
-    "api_url": "https://login-bug-fix-4.preview.emergentagent.com",
+    "api_url": "https://backend-modular-42.preview.emergentagent.com",
     "assessoria_teste": "Assessoria CAFAV"
   },
   "seed_data_creation": "",

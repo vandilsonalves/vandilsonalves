@@ -25,6 +25,40 @@ from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from apscheduler.triggers.cron import CronTrigger
 import asyncio
 
+"""
+================================================================================
+                        RANKING RUN PRÓ - API SERVER
+================================================================================
+
+ÍNDICE DE SEÇÕES (para navegação rápida, use Ctrl+F):
+
+    [AUTH]              - Autenticação (login, registro, token)          ~Linha 90
+    [NOTIFICACOES]      - Sistema de notificações                        ~Linha 230
+    [CONQUISTAS]        - Selos e conquistas de atletas                  ~Linha 278
+    [PERFIL]            - Perfil do atleta                               ~Linha 485
+    [TROCA_EQUIPE]      - Troca de equipe pelo atleta                    ~Linha 667
+    [ANIVERSARIO]       - Mensagens de aniversário                       ~Linha 819
+    [RESULTADOS]        - Submissão de resultados                        ~Linha 847
+    [ADMIN_APROVACOES]  - Aprovação/reprovação de resultados             ~Linha 964
+    [ADMIN_STATS]       - Estatísticas do admin                          ~Linha 1126
+    [ADMIN_ATLETAS]     - Gestão de atletas (admin)                      ~Linha 1274
+    [ADMIN_ASSESSORIAS] - Gestão de assessorias (admin)                  ~Linha 2000
+    [ADMIN_ANIVERSARIOS]- Aniversariantes (admin)                        ~Linha 2400
+    [ADMIN_INSTAGRAM]   - Análise Instagram (admin)                      ~Linha 2600
+    [RANKING_PUBLICO]   - Rankings públicos                              ~Linha 3000
+    [LIGA_ASSESSORIAS]  - Liga de Assessorias (ROE-RR)                   ~Linha 4600
+    [DONO_ASSESSORIA]   - Dashboard do dono de assessoria                ~Linha 5000
+    [RELATORIOS]        - Relatórios detalhados                          ~Linha 5300
+    [REGULAMENTO]       - Gestão do regulamento                          ~Linha 5500
+    [AUTORIZACOES]      - Sistema de autorizações (30 dias)              ~Linha 5600
+    [REPUTACAO]         - Reputação de avaliadores                       ~Linha 5750
+    [RANKING_CORRIDAS]  - Ranking e avaliação de corridas                ~Linha 6100
+    [SCHEDULER]         - Tarefas agendadas                              ~Linha 6900
+
+Para refatoração futura, veja: /app/backend/ARCHITECTURE.md
+================================================================================
+"""
+
 # Import models and services
 from models import (
     Usuario, UsuarioRegister, UsuarioLogin, PerfilUpdate,
@@ -42,6 +76,18 @@ from services import (
     calcular_nota_crescimento, calcular_nota_consistencia, calcular_nota_padroes,
     calcular_nota_reels, calcular_nota_formatos, calcular_score_final,
     classificar_influenciador, gerar_recomendacoes, MEDIAS_NICHO
+)
+
+# Import RBAC models and services
+from models.rbac import (
+    Role, Permissao, Administrador, AdminCreate, AdminUpdate, 
+    AdminLog, LoginHistory, CodigoVerificacao, AlertaSeguranca,
+    PERMISSOES_SISTEMA, ROLES_PREDEFINIDOS
+)
+from services.rbac_service import (
+    gerar_codigo_2fa, extrair_info_dispositivo, 
+    criar_log_acao, criar_alerta_seguranca,
+    gerar_email_alerta_emergencia, gerar_email_codigo_2fa
 )
 
 ROOT_DIR = Path(__file__).parent
@@ -65,7 +111,7 @@ uploads_path.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
 
-# ==================== AUTHENTICATION ====================
+# ==================== [AUTH] AUTHENTICATION ====================
 
 async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
     try:
@@ -2733,7 +2779,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://login-bug-fix-4.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://backend-modular-42.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
@@ -6992,6 +7038,10 @@ async def get_ranking_corridas_interno(limite: int = 100):
 
 
 # ==================== INCLUDE ROUTER ====================
+# Include RBAC router
+from routes.rbac import router as rbac_router
+api_router.include_router(rbac_router)
+
 app.include_router(api_router)
 
 

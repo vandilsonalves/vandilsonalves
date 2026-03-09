@@ -47,7 +47,8 @@ import {
   DashboardAtletas, 
   DashboardAssessorias, 
   DashboardCorridas, 
-  DashboardResultados 
+  DashboardResultados,
+  DashboardRBAC
 } from './admin';
 
 const menuItems = [
@@ -57,6 +58,7 @@ const menuItems = [
   { id: 'ranking-corridas', label: 'Corridas', icon: Star },
   { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
   { id: 'autorizacoes', label: 'Autorizações', icon: Shield },
+  { id: 'administradores', label: 'Administradores', icon: Settings },
   { id: 'regulamento', label: 'Regulamento', icon: FileText },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
   { id: 'ranking', label: 'Exportar Ranking', icon: FileText },
@@ -1926,6 +1928,11 @@ const AdminDashboard = () => {
               </DialogContent>
             </Dialog>
           </div>
+        )}
+
+        {/* Administradores View (RBAC) */}
+        {activeMenu === 'administradores' && (
+          <DashboardRBAC />
         )}
 
         {/* Regulamento View */}
