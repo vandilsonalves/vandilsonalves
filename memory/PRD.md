@@ -747,6 +747,55 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## ✅ Seção "Autorizações" - Sistema de Gerenciamento de Acesso (09/03/2026)
+
+### Funcionalidades Implementadas
+
+**1. Novo Sistema de Período de Teste**
+- Atletas têm 30 dias de acesso gratuito após o cadastro
+- Após esse período, precisam de autorização do admin para continuar
+- O lançamento de resultados verifica: período de teste OU autorização ativa
+
+**2. Seção "Autorizações" no Admin Dashboard**
+- **Cards de estatísticas:** Em Teste, Autorizados, Expirados, Total
+- **Tabela de atletas** com: Nome, Equipe, Status, Dias Restantes, Ações
+- **Status com cores:**
+  - Azul: Em Teste
+  - Verde: Autorizado
+  - Vermelho: Expirado
+- **Filtro por status**
+- **Botões de ação:**
+  - "Autorizar" para conceder acesso
+  - "Carteirinha" para gerar documento
+  - "Revogar" para cancelar autorização
+
+**3. Modal de Autorização**
+- Tipos: 6 Meses, 1 Ano, Até o Final do Ano
+- Campo de observação opcional
+- Confirmação com data de expiração
+
+**4. Carteirinha de Membro**
+- Design profissional com gradiente verde
+- Dados do atleta (nome, equipe, email)
+- Número único da carteirinha
+- Data de validade
+- Botão de impressão
+
+**5. Endpoints Backend**
+- `GET /api/admin/atletas-periodo-teste` - Lista atletas com status
+- `GET /api/admin/autorizacoes` - Lista todas as autorizações
+- `POST /api/admin/autorizacoes` - Cria nova autorização
+- `DELETE /api/admin/autorizacoes/{id}` - Revoga autorização
+- `GET /api/admin/carteirinha/{atleta_id}` - Gera dados da carteirinha
+- `GET /api/atleta/status-acesso` - Verifica status do atleta logado
+
+**6. Validação de Submissão de Resultados**
+- Alterado de "6 dias após a corrida" para "30 dias após o cadastro"
+- Se período expirado: verifica se tem autorização ativa
+- Mensagem clara quando acesso é negado
+
+---
+
 ## Credenciais de Teste
 
 | Tipo | Email | Senha |
@@ -755,4 +804,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login + 9ª e 10ª Tarefas)
+Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login + 9ª, 10ª Tarefas + Autorizações)

@@ -14,7 +14,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   CheckCircle, XCircle, ExternalLink, Calendar, MapPin, Trophy, Clock, 
-  Users, AlertCircle, TrendingUp, BarChart3, PieChart,
+  Users, AlertCircle, TrendingUp, BarChart3, PieChart, Shield,
   Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
   UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X,
   Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw, Loader2
@@ -56,6 +56,7 @@ const menuItems = [
   { id: 'assessorias', label: 'Assessorias', icon: Trophy },
   { id: 'ranking-corridas', label: 'Corridas', icon: Star },
   { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
+  { id: 'autorizacoes', label: 'Autorizações', icon: Shield },
   { id: 'regulamento', label: 'Regulamento', icon: FileText },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
   { id: 'ranking', label: 'Exportar Ranking', icon: FileText },
@@ -184,6 +185,18 @@ const AdminDashboard = () => {
   const [loadingRegulamento, setLoadingRegulamento] = useState(false);
   const [savingRegulamento, setSavingRegulamento] = useState(false);
 
+  // Autorizações
+  const [atletasPeriodoTeste, setAtletasPeriodoTeste] = useState([]);
+  const [loadingAutorizacoes, setLoadingAutorizacoes] = useState(false);
+  const [showAutorizacaoModal, setShowAutorizacaoModal] = useState(false);
+  const [atletaAutorizando, setAtletaAutorizando] = useState(null);
+  const [tipoAutorizacao, setTipoAutorizacao] = useState('6_meses');
+  const [observacaoAutorizacao, setObservacaoAutorizacao] = useState('');
+  const [savingAutorizacao, setSavingAutorizacao] = useState(false);
+  const [filtroStatusAutorizacao, setFiltroStatusAutorizacao] = useState('todos');
+  const [showCarteirinhaModal, setShowCarteirinhaModal] = useState(false);
+  const [carteirinhaData, setCarteirinhaData] = useState(null);
+
   // Promover Dono de Assessoria
   const [showPromoverModal, setShowPromoverModal] = useState(false);
   const [atletaPromover, setAtletaPromover] = useState(null);
@@ -239,6 +252,9 @@ const AdminDashboard = () => {
     }
     if (activeMenu === 'regulamento') {
       fetchRegulamento();
+    }
+    if (activeMenu === 'autorizacoes') {
+      fetchAtletasPeriodoTeste();
     }
   }, [activeMenu, filtroCategoria, mesCalendario, anoCalendario, ligaTipo, ligaEstado, ligaCidade]);
 
@@ -307,6 +323,101 @@ const AdminDashboard = () => {
       setSavingRegulamento(false);
     }
   };
+
+  // Funções de Autorizações
+  const fetchAtletasPeriodoTeste = async () => {
+    setLoadingAutorizacoes(true);
+    try {
+      const response = await axios.get(`${API}/admin/atletas-periodo-teste`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setAtletasPeriodoTeste(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar atletas:', error);
+      toast.error('Erro ao carregar lista de atletas');
+    } finally {
+      setLoadingAutorizacoes(false);
+    }
+  };
+
+  const handleCriarAutorizacao = async () => {
+    if (!atletaAutorizando) return;
+    
+    setSavingAutorizacao(true);
+    try {
+      const formData = new FormData();
+      formData.append('atleta_id', atletaAutorizando.id);
+      formData.append('tipo_autorizacao', tipoAutorizacao);
+      formData.append('observacao', observacaoAutorizacao);
+      
+      const response = await axios.post(`${API}/admin/autorizacoes`, formData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success(response.data.message);
+      setShowAutorizacaoModal(false);
+      setAtletaAutorizando(null);
+      setTipoAutorizacao('6_meses');
+      setObservacaoAutorizacao('');
+      fetchAtletasPeriodoTeste();
+    } catch (error) {
+      console.error('Erro ao criar autorização:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao criar autorização');
+    } finally {
+      setSavingAutorizacao(false);
+    }
+  };
+
+  const handleRevogarAutorizacao = async (autorizacaoId) => {
+    if (!confirm('Tem certeza que deseja revogar esta autorização?')) return;
+    
+    try {
+      await axios.delete(`${API}/admin/autorizacoes/${autorizacaoId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Autorização revogada com sucesso');
+      fetchAtletasPeriodoTeste();
+    } catch (error) {
+      console.error('Erro ao revogar autorização:', error);
+      toast.error('Erro ao revogar autorização');
+    }
+  };
+
+  const handleGerarCarteirinha = async (atletaId) => {
+    try {
+      const response = await axios.get(`${API}/admin/carteirinha/${atletaId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setCarteirinhaData(response.data);
+      setShowCarteirinhaModal(true);
+    } catch (error) {
+      console.error('Erro ao gerar carteirinha:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao gerar carteirinha');
+    }
+  };
+
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'em_teste': return 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300';
+      case 'autorizado': return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'expirado': return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+      default: return 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-300';
+    }
+  };
+
+  const getStatusLabel = (status) => {
+    switch (status) {
+      case 'em_teste': return 'Em Teste';
+      case 'autorizado': return 'Autorizado';
+      case 'expirado': return 'Expirado';
+      default: return 'Desconhecido';
+    }
+  };
+
+  const filteredAtletasAutorizacao = atletasPeriodoTeste.filter(atleta => {
+    if (filtroStatusAutorizacao === 'todos') return true;
+    return atleta.status_periodo === filtroStatusAutorizacao;
+  });
 
   const fetchStats = async () => {
     setLoadingStats(true);
@@ -1526,6 +1637,294 @@ const AdminDashboard = () => {
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Autorizações View */}
+        {activeMenu === 'autorizacoes' && (
+          <div className="space-y-6">
+            {/* Header e Stats */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <Card className="bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+                <CardContent className="p-4">
+                  <p className="text-sm opacity-80">Em Teste</p>
+                  <p className="text-3xl font-bold">
+                    {atletasPeriodoTeste.filter(a => a.status_periodo === 'em_teste').length}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-green-500 to-green-600 text-white">
+                <CardContent className="p-4">
+                  <p className="text-sm opacity-80">Autorizados</p>
+                  <p className="text-3xl font-bold">
+                    {atletasPeriodoTeste.filter(a => a.status_periodo === 'autorizado').length}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-red-500 to-red-600 text-white">
+                <CardContent className="p-4">
+                  <p className="text-sm opacity-80">Expirados</p>
+                  <p className="text-3xl font-bold">
+                    {atletasPeriodoTeste.filter(a => a.status_periodo === 'expirado').length}
+                  </p>
+                </CardContent>
+              </Card>
+              <Card className="bg-gradient-to-br from-purple-500 to-purple-600 text-white">
+                <CardContent className="p-4">
+                  <p className="text-sm opacity-80">Total Atletas</p>
+                  <p className="text-3xl font-bold">{atletasPeriodoTeste.length}</p>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Filtros e Lista */}
+            <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+              <CardHeader className="border-b dark:border-slate-700">
+                <div className="flex flex-wrap items-center justify-between gap-4">
+                  <CardTitle className="flex items-center gap-3">
+                    <Shield className="w-5 h-5 text-emerald-500" />
+                    Gerenciar Autorizações de Acesso
+                  </CardTitle>
+                  <div className="flex items-center gap-2">
+                    <Select value={filtroStatusAutorizacao} onValueChange={setFiltroStatusAutorizacao}>
+                      <SelectTrigger className="w-40">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="todos">Todos</SelectItem>
+                        <SelectItem value="em_teste">Em Teste</SelectItem>
+                        <SelectItem value="autorizado">Autorizados</SelectItem>
+                        <SelectItem value="expirado">Expirados</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button variant="outline" onClick={fetchAtletasPeriodoTeste} disabled={loadingAutorizacoes}>
+                      <RefreshCw className={`w-4 h-4 ${loadingAutorizacoes ? 'animate-spin' : ''}`} />
+                    </Button>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                {loadingAutorizacoes ? (
+                  <div className="flex items-center justify-center py-12">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-slate-50 dark:bg-slate-900/50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Atleta</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Equipe</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Status</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Dias Restantes</th>
+                          <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Ações</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                        {filteredAtletasAutorizacao.map((atleta) => (
+                          <tr key={atleta.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                            <td className="px-4 py-3">
+                              <div>
+                                <p className="font-medium text-slate-900 dark:text-white">{atleta.nome}</p>
+                                <p className="text-xs text-slate-500">{atleta.email}</p>
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-sm text-slate-600 dark:text-slate-400">
+                              {atleta.equipe || 'Individual'}
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <Badge className={getStatusColor(atleta.status_periodo)}>
+                                {getStatusLabel(atleta.status_periodo)}
+                              </Badge>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <span className={`font-semibold ${
+                                atleta.dias_restantes > 10 ? 'text-green-600' :
+                                atleta.dias_restantes > 0 ? 'text-yellow-600' : 'text-red-600'
+                              }`}>
+                                {atleta.dias_restantes !== null ? atleta.dias_restantes : '-'}
+                              </span>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <div className="flex items-center justify-center gap-2">
+                                {atleta.status_periodo !== 'autorizado' ? (
+                                  <Button
+                                    size="sm"
+                                    onClick={() => {
+                                      setAtletaAutorizando(atleta);
+                                      setShowAutorizacaoModal(true);
+                                    }}
+                                    className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                                  >
+                                    <CheckCircle className="w-4 h-4 mr-1" />
+                                    Autorizar
+                                  </Button>
+                                ) : (
+                                  <>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleGerarCarteirinha(atleta.id)}
+                                      className="text-blue-600 border-blue-300"
+                                    >
+                                      <Award className="w-4 h-4 mr-1" />
+                                      Carteirinha
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="outline"
+                                      onClick={() => handleRevogarAutorizacao(atleta.autorizacao?.id)}
+                                      className="text-red-600 border-red-300"
+                                    >
+                                      <XCircle className="w-4 h-4" />
+                                    </Button>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {filteredAtletasAutorizacao.length === 0 && (
+                      <div className="text-center py-12 text-slate-500">
+                        Nenhum atleta encontrado com o filtro selecionado
+                      </div>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Modal de Autorização */}
+            <Dialog open={showAutorizacaoModal} onOpenChange={setShowAutorizacaoModal}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Shield className="w-5 h-5 text-emerald-500" />
+                    Autorizar Acesso
+                  </DialogTitle>
+                </DialogHeader>
+                {atletaAutorizando && (
+                  <div className="space-y-4">
+                    <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-lg">
+                      <p className="font-medium text-lg">{atletaAutorizando.nome}</p>
+                      <p className="text-sm text-slate-500">{atletaAutorizando.email}</p>
+                      <p className="text-sm text-slate-500">Equipe: {atletaAutorizando.equipe || 'Individual'}</p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Tipo de Autorização</Label>
+                      <Select value={tipoAutorizacao} onValueChange={setTipoAutorizacao}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="6_meses">6 Meses</SelectItem>
+                          <SelectItem value="1_ano">1 Ano</SelectItem>
+                          <SelectItem value="ate_fim_ano">Até o Final do Ano</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label>Observação (opcional)</Label>
+                      <Textarea
+                        value={observacaoAutorizacao}
+                        onChange={(e) => setObservacaoAutorizacao(e.target.value)}
+                        placeholder="Ex: Pagamento via PIX em 09/03/2026"
+                        rows={2}
+                      />
+                    </div>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowAutorizacaoModal(false)}>
+                    Cancelar
+                  </Button>
+                  <Button 
+                    onClick={handleCriarAutorizacao}
+                    disabled={savingAutorizacao}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    {savingAutorizacao ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <CheckCircle className="w-4 h-4 mr-2" />}
+                    Confirmar Autorização
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal de Carteirinha */}
+            <Dialog open={showCarteirinhaModal} onOpenChange={setShowCarteirinhaModal}>
+              <DialogContent className="max-w-md">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Award className="w-5 h-5 text-amber-500" />
+                    Carteirinha de Membro
+                  </DialogTitle>
+                </DialogHeader>
+                {carteirinhaData && (
+                  <div className="space-y-4">
+                    <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-6 rounded-xl text-white relative overflow-hidden">
+                      {/* Background pattern */}
+                      <div className="absolute inset-0 opacity-10">
+                        <div className="absolute top-2 right-2 text-6xl font-bold">RRP</div>
+                      </div>
+                      
+                      <div className="relative z-10">
+                        <div className="flex items-center justify-between mb-4">
+                          <div>
+                            <p className="text-xs uppercase opacity-70">Ranking Run Pró</p>
+                            <p className="text-lg font-bold">Carteirinha de Membro</p>
+                          </div>
+                          <Trophy className="w-8 h-8" />
+                        </div>
+                        
+                        <div className="space-y-2">
+                          <p className="text-xl font-bold">{carteirinhaData.atleta.nome}</p>
+                          <p className="text-sm opacity-80">{carteirinhaData.atleta.equipe || 'Individual'}</p>
+                          <p className="text-xs opacity-70">{carteirinhaData.atleta.email}</p>
+                        </div>
+                        
+                        <div className="mt-4 pt-4 border-t border-white/20 flex justify-between items-end">
+                          <div>
+                            <p className="text-xs opacity-70">Nº Carteirinha</p>
+                            <p className="font-mono text-sm">{carteirinhaData.numero_carteirinha}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-xs opacity-70">Válido até</p>
+                            <p className="font-semibold">
+                              {new Date(carteirinhaData.valido_ate).toLocaleDateString('pt-BR')}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <Alert className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+                      <AlertDescription className="text-blue-700 dark:text-blue-300 text-sm">
+                        Esta carteirinha comprova que o atleta está autorizado a participar do Ranking Run Pró.
+                      </AlertDescription>
+                    </Alert>
+                  </div>
+                )}
+                <DialogFooter>
+                  <Button variant="outline" onClick={() => setShowCarteirinhaModal(false)}>
+                    Fechar
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      // Implementar download/impressão
+                      window.print();
+                    }}
+                    className="bg-emerald-600 hover:bg-emerald-700"
+                  >
+                    <Download className="w-4 h-4 mr-2" />
+                    Imprimir
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
           </div>
         )}
 

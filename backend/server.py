@@ -756,15 +756,44 @@ async def submeter_resultado(
 ):
     """Atleta submete resultado para aprovação"""
     
-    # Validar prazo (6 dias úteis)
-    data_comp = datetime.strptime(data_competicao, "%Y-%m-%d")
+    # Verificar se o atleta está no período de teste (30 dias após cadastro)
+    data_cadastro_str = current_user.get("data_criacao", "")
     hoje = datetime.now()
-    dias_diff = (hoje - data_comp).days
     
-    if dias_diff > 6:
+    # Verificar se tem autorização ativa
+    autorizacao = await db.autorizacoes.find_one({"atleta_id": current_user["id"], "status": "ativa"}, {"_id": 0})
+    
+    em_periodo_teste = False
+    autorizado = False
+    
+    if autorizacao:
+        # Verificar se a autorização ainda é válida
+        data_expiracao = datetime.fromisoformat(autorizacao["data_expiracao"].replace("Z", "+00:00").replace("+00:00", ""))
+        if hoje <= data_expiracao:
+            autorizado = True
+    
+    if data_cadastro_str:
+        try:
+            # Tentar diferentes formatos de data
+            if "T" in data_cadastro_str:
+                data_cadastro = datetime.fromisoformat(data_cadastro_str.replace("Z", "+00:00").replace("+00:00", ""))
+            else:
+                data_cadastro = datetime.strptime(data_cadastro_str[:10], "%Y-%m-%d")
+            
+            dias_desde_cadastro = (hoje - data_cadastro).days
+            em_periodo_teste = dias_desde_cadastro <= 30
+        except:
+            # Se não conseguir parsear a data, considera dentro do período
+            em_periodo_teste = True
+    else:
+        # Se não tem data de cadastro, considera dentro do período
+        em_periodo_teste = True
+    
+    # Se não está no período de teste E não tem autorização ativa
+    if not em_periodo_teste and not autorizado:
         raise HTTPException(
-            status_code=400,
-            detail="Prazo expirado! Você tem apenas 6 dias úteis para enviar o resultado após a competição."
+            status_code=403,
+            detail="Seu período de teste de 30 dias expirou. Entre em contato com a administração para liberar seu acesso."
         )
     
     # Verificar modalidade do usuário
@@ -5567,6 +5596,234 @@ Todos os resultados são verificados pela equipe administrativa antes de serem c
         }
     
     return regulamento
+
+
+# ============================================================
+# AUTORIZAÇÕES - Sistema de Gerenciamento de Acesso
+# ============================================================
+
+@api_router.get("/admin/autorizacoes")
+async def listar_autorizacoes(admin: dict = Depends(get_admin_user)):
+    """Lista todas as autorizações (admin)"""
+    autorizacoes = await db.autorizacoes.find({}, {"_id": 0}).to_list(None)
+    
+    # Enriquecer com dados do atleta
+    for auth in autorizacoes:
+        atleta = await db.usuarios.find_one({"id": auth["atleta_id"]}, {"_id": 0, "nome": 1, "email": 1, "equipe": 1})
+        if atleta:
+            auth["atleta_nome"] = atleta.get("nome", "N/A")
+            auth["atleta_email"] = atleta.get("email", "N/A")
+            auth["atleta_equipe"] = atleta.get("equipe", "Individual")
+    
+    return autorizacoes
+
+
+@api_router.get("/admin/atletas-periodo-teste")
+async def listar_atletas_periodo_teste(admin: dict = Depends(get_admin_user)):
+    """Lista atletas que estão no período de teste ou que o período expirou"""
+    hoje = datetime.now()
+    
+    atletas = await db.usuarios.find(
+        {"role": "atleta"},
+        {"_id": 0, "id": 1, "nome": 1, "email": 1, "equipe": 1, "data_criacao": 1, "categoria": 1, "estado": 1}
+    ).to_list(None)
+    
+    resultado = []
+    for atleta in atletas:
+        # Verificar se tem autorização ativa
+        autorizacao = await db.autorizacoes.find_one({"atleta_id": atleta["id"], "status": "ativa"}, {"_id": 0})
+        
+        data_cadastro_str = atleta.get("data_criacao", "")
+        dias_restantes = None
+        status_periodo = "desconhecido"
+        
+        if data_cadastro_str:
+            try:
+                if "T" in data_cadastro_str:
+                    data_cadastro = datetime.fromisoformat(data_cadastro_str.replace("Z", "+00:00").replace("+00:00", ""))
+                else:
+                    data_cadastro = datetime.strptime(data_cadastro_str[:10], "%Y-%m-%d")
+                
+                dias_desde_cadastro = (hoje - data_cadastro).days
+                dias_restantes = 30 - dias_desde_cadastro
+                
+                if dias_restantes > 0:
+                    status_periodo = "em_teste"
+                else:
+                    status_periodo = "expirado"
+            except:
+                status_periodo = "desconhecido"
+        
+        # Status final
+        if autorizacao:
+            data_exp = datetime.fromisoformat(autorizacao["data_expiracao"].replace("Z", "+00:00").replace("+00:00", ""))
+            if hoje <= data_exp:
+                status_periodo = "autorizado"
+                dias_restantes = (data_exp - hoje).days
+        
+        resultado.append({
+            **atleta,
+            "dias_restantes": dias_restantes,
+            "status_periodo": status_periodo,
+            "autorizacao": autorizacao
+        })
+    
+    return resultado
+
+
+@api_router.post("/admin/autorizacoes")
+async def criar_autorizacao(
+    atleta_id: str = Form(...),
+    tipo_autorizacao: str = Form(...),  # "6_meses", "1_ano", "ate_fim_ano"
+    observacao: str = Form(""),
+    admin: dict = Depends(get_admin_user)
+):
+    """Cria autorização de acesso para um atleta"""
+    
+    # Verificar se o atleta existe
+    atleta = await db.usuarios.find_one({"id": atleta_id, "role": "atleta"}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    hoje = datetime.now()
+    
+    # Calcular data de expiração baseado no tipo
+    if tipo_autorizacao == "6_meses":
+        data_expiracao = hoje + timedelta(days=180)
+        descricao = "Autorização por 6 meses"
+    elif tipo_autorizacao == "1_ano":
+        data_expiracao = hoje + timedelta(days=365)
+        descricao = "Autorização por 1 ano"
+    elif tipo_autorizacao == "ate_fim_ano":
+        data_expiracao = datetime(hoje.year, 12, 31, 23, 59, 59)
+        descricao = f"Autorização até fim de {hoje.year}"
+    else:
+        raise HTTPException(status_code=400, detail="Tipo de autorização inválido")
+    
+    # Desativar autorizações anteriores
+    await db.autorizacoes.update_many(
+        {"atleta_id": atleta_id},
+        {"$set": {"status": "substituida"}}
+    )
+    
+    # Criar nova autorização
+    autorizacao = {
+        "id": str(uuid.uuid4()),
+        "atleta_id": atleta_id,
+        "tipo": tipo_autorizacao,
+        "descricao": descricao,
+        "data_inicio": hoje.isoformat(),
+        "data_expiracao": data_expiracao.isoformat(),
+        "autorizado_por": admin["nome"],
+        "admin_id": admin["id"],
+        "observacao": observacao,
+        "status": "ativa",
+        "data_criacao": hoje.isoformat()
+    }
+    
+    await db.autorizacoes.insert_one(autorizacao)
+    
+    return {
+        "message": f"Autorização criada com sucesso! {atleta['nome']} tem acesso até {data_expiracao.strftime('%d/%m/%Y')}",
+        "autorizacao": {k: v for k, v in autorizacao.items() if k != "_id"}
+    }
+
+
+@api_router.delete("/admin/autorizacoes/{autorizacao_id}")
+async def revogar_autorizacao(autorizacao_id: str, admin: dict = Depends(get_admin_user)):
+    """Revoga uma autorização"""
+    result = await db.autorizacoes.update_one(
+        {"id": autorizacao_id},
+        {"$set": {"status": "revogada", "revogado_por": admin["nome"], "data_revogacao": datetime.now().isoformat()}}
+    )
+    
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Autorização não encontrada")
+    
+    return {"message": "Autorização revogada com sucesso"}
+
+
+@api_router.get("/atleta/status-acesso")
+async def verificar_status_acesso(current_user: dict = Depends(get_current_user)):
+    """Verifica o status de acesso do atleta logado"""
+    hoje = datetime.now()
+    
+    # Verificar autorização ativa
+    autorizacao = await db.autorizacoes.find_one({"atleta_id": current_user["id"], "status": "ativa"}, {"_id": 0})
+    
+    # Calcular dias desde cadastro
+    data_cadastro_str = current_user.get("data_criacao", "")
+    dias_desde_cadastro = None
+    dias_restantes_teste = None
+    
+    if data_cadastro_str:
+        try:
+            if "T" in data_cadastro_str:
+                data_cadastro = datetime.fromisoformat(data_cadastro_str.replace("Z", "+00:00").replace("+00:00", ""))
+            else:
+                data_cadastro = datetime.strptime(data_cadastro_str[:10], "%Y-%m-%d")
+            
+            dias_desde_cadastro = (hoje - data_cadastro).days
+            dias_restantes_teste = max(0, 30 - dias_desde_cadastro)
+        except:
+            pass
+    
+    status = "em_teste"
+    dias_restantes = dias_restantes_teste
+    mensagem = f"Você está no período de teste. Restam {dias_restantes_teste} dias."
+    
+    if autorizacao:
+        data_exp = datetime.fromisoformat(autorizacao["data_expiracao"].replace("Z", "+00:00").replace("+00:00", ""))
+        if hoje <= data_exp:
+            status = "autorizado"
+            dias_restantes = (data_exp - hoje).days
+            mensagem = f"Acesso autorizado até {data_exp.strftime('%d/%m/%Y')}. Restam {dias_restantes} dias."
+        else:
+            status = "expirado"
+            dias_restantes = 0
+            mensagem = "Sua autorização expirou. Entre em contato com a administração."
+    elif dias_restantes_teste is not None and dias_restantes_teste <= 0:
+        status = "expirado"
+        dias_restantes = 0
+        mensagem = "Seu período de teste expirou. Entre em contato com a administração para liberar seu acesso."
+    
+    return {
+        "status": status,
+        "dias_restantes": dias_restantes,
+        "mensagem": mensagem,
+        "autorizacao": autorizacao,
+        "dias_desde_cadastro": dias_desde_cadastro
+    }
+
+
+@api_router.get("/admin/carteirinha/{atleta_id}")
+async def gerar_carteirinha(atleta_id: str, admin: dict = Depends(get_admin_user)):
+    """Gera dados para carteirinha de membro"""
+    
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    autorizacao = await db.autorizacoes.find_one({"atleta_id": atleta_id, "status": "ativa"}, {"_id": 0})
+    
+    if not autorizacao:
+        raise HTTPException(status_code=400, detail="Atleta não possui autorização ativa")
+    
+    return {
+        "atleta": {
+            "id": atleta["id"],
+            "nome": atleta.get("nome", ""),
+            "email": atleta.get("email", ""),
+            "equipe": atleta.get("equipe", "Individual"),
+            "categoria": atleta.get("categoria", "normal"),
+            "estado": atleta.get("estado", ""),
+            "cidade": atleta.get("cidade", ""),
+            "foto_url": atleta.get("foto_url", "")
+        },
+        "autorizacao": autorizacao,
+        "valido_ate": autorizacao["data_expiracao"],
+        "numero_carteirinha": f"RRP-{atleta_id[:8].upper()}-{datetime.now().year}"
+    }
 
 
 # ============================================================
