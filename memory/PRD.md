@@ -827,6 +827,48 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## ✅ 12ª Tarefa - Sistema de Avaliação com Termo + IP (09/03/2026)
+
+### Funcionalidades Implementadas
+
+**1. Termo de Responsabilidade Obrigatório**
+- Texto editável pelo admin via painel
+- Checkbox obrigatório para aceitar o termo antes de avaliar
+- Validação no backend: avaliação rejeitada se termo não aceito
+- Visual destacado em vermelho no modal de avaliação
+
+**2. Registro de IP do Avaliador**
+- IP capturado automaticamente no endpoint de avaliação
+- Suporte a proxy (X-Forwarded-For)
+- User-Agent também registrado
+- Data/hora de aceite do termo
+
+**3. Painel Admin - Visualização de Avaliações**
+- Endpoint `GET /api/admin/avaliacoes` lista todas avaliações com IPs
+- Inclui nome da corrida, atleta, nota e dados de auditoria
+
+**4. Texto do Termo**
+- Endpoint `GET /api/admin/avaliacoes/termo` - Retorna texto atual
+- Endpoint `PUT /api/admin/avaliacoes/termo` - Admin pode editar
+- Texto padrão com 6 cláusulas sobre responsabilidade, LGPD e fraude
+
+**Campos Adicionados na Avaliação:**
+```json
+{
+  "aceito_termo": true,
+  "termo_aceito_em": "2026-03-09T12:00:00",
+  "ip_avaliador": "192.168.1.1",
+  "user_agent": "Mozilla/5.0...",
+  "atleta_email": "atleta@email.com"
+}
+```
+
+**Arquivos Modificados:**
+- `/app/backend/server.py` - Endpoint de avaliação atualizado
+- `/app/frontend/src/pages/RankingCorridasPage.jsx` - Modal com termo
+
+---
+
 ## Credenciais de Teste
 
 | Tipo | Email | Senha |
@@ -835,4 +877,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 6 - Bug Fix + Tarefas 9, 10, 11 + Autorizações)
+Última atualização: 09/03/2026 (Sessão 6 - Tarefas 9, 10, 11, 12 + Autorizações)

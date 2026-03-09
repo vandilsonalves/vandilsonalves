@@ -51,13 +51,15 @@ const RankingCorridasPage = () => {
   const [showAvaliacaoModal, setShowAvaliacaoModal] = useState(false);
   const [corridaSelecionada, setCorridaSelecionada] = useState(null);
   const [avaliacaoLoading, setAvaliacaoLoading] = useState(false);
+  const [termoTexto, setTermoTexto] = useState(null);
   const [avaliacaoData, setAvaliacaoData] = useState({
     organizacao: 0,
     percurso: 0,
     kit_atleta: 0,
     hidratacao: 0,
     pos_prova: 0,
-    participei: false
+    participei: false,
+    aceito_termo: false
   });
 
   useEffect(() => {
@@ -190,8 +192,18 @@ const RankingCorridasPage = () => {
       kit_atleta: 0,
       hidratacao: 0,
       pos_prova: 0,
-      participei: false
+      participei: false,
+      aceito_termo: false
     });
+    
+    // Buscar texto do termo
+    try {
+      const termoResponse = await axios.get(`${API}/admin/avaliacoes/termo`);
+      setTermoTexto(termoResponse.data);
+    } catch (error) {
+      console.error('Erro ao buscar termo:', error);
+    }
+    
     setShowAvaliacaoModal(true);
   };
 
@@ -209,6 +221,11 @@ const RankingCorridasPage = () => {
       toast.error('Você precisa confirmar que participou desta corrida');
       return;
     }
+    
+    if (!avaliacaoData.aceito_termo) {
+      toast.error('Você precisa aceitar o termo de responsabilidade');
+      return;
+    }
 
     setAvaliacaoLoading(true);
     try {
@@ -220,6 +237,7 @@ const RankingCorridasPage = () => {
       form.append('hidratacao', avaliacaoData.hidratacao);
       form.append('pos_prova', avaliacaoData.pos_prova);
       form.append('participei', avaliacaoData.participei);
+      form.append('aceito_termo', avaliacaoData.aceito_termo);
 
       const response = await axios.post(
         `${API}/avaliar-corrida`,
@@ -850,6 +868,45 @@ const RankingCorridasPage = () => {
                 </p>
               </div>
             </div>
+
+            {/* Termo de Responsabilidade */}
+            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg border border-red-200 dark:border-red-800">
+              <h4 className="font-semibold text-red-800 dark:text-red-200 mb-2 flex items-center gap-2">
+                <FileText className="w-4 h-4" />
+                {termoTexto?.titulo || "Termo de Responsabilidade"}
+              </h4>
+              <div className="max-h-32 overflow-y-auto text-xs text-red-700 dark:text-red-300 mb-3 space-y-1 pr-2">
+                {(termoTexto?.texto || "Carregando...").split('\n').map((line, i) => {
+                  if (line.startsWith('**') && line.endsWith('**')) {
+                    return <p key={i} className="font-semibold">{line.replace(/\*\*/g, '')}</p>;
+                  }
+                  if (line.match(/^\d+\./)) {
+                    return <p key={i} className="ml-2">{line}</p>;
+                  }
+                  return <p key={i}>{line}</p>;
+                })}
+              </div>
+              
+              <div className="flex items-start space-x-3 p-2 bg-white dark:bg-slate-900 rounded border border-red-300">
+                <Checkbox
+                  id="aceito_termo"
+                  checked={avaliacaoData.aceito_termo}
+                  onCheckedChange={(checked) => setAvaliacaoData({...avaliacaoData, aceito_termo: checked})}
+                  className="mt-0.5 border-red-500 data-[state=checked]:bg-red-600"
+                />
+                <div className="grid gap-1 leading-none">
+                  <label
+                    htmlFor="aceito_termo"
+                    className="text-sm font-medium cursor-pointer leading-none text-red-800 dark:text-red-200"
+                  >
+                    Li e aceito o termo de responsabilidade
+                  </label>
+                  <p className="text-xs text-red-600 dark:text-red-400">
+                    Seu IP será registrado para fins de auditoria
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
           
           <DialogFooter>
@@ -858,7 +915,7 @@ const RankingCorridasPage = () => {
             </Button>
             <Button 
               onClick={handleEnviarAvaliacao} 
-              disabled={avaliacaoLoading || !avaliacaoData.participei}
+              disabled={avaliacaoLoading || !avaliacaoData.participei || !avaliacaoData.aceito_termo}
               className="bg-yellow-500 hover:bg-yellow-600 text-white"
               data-testid="enviar-avaliacao-btn"
             >

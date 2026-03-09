@@ -1,4 +1,4 @@
-from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, UploadFile, File, Form, status
+from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, UploadFile, File, Form, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -6328,6 +6328,7 @@ async def get_cidades_com_corridas(estado: str = None):
 
 @api_router.post("/avaliar-corrida")
 async def avaliar_corrida(
+    request: Request,
     corrida_id: str = Form(...),
     organizacao: int = Form(...),  # 1-5
     percurso: int = Form(...),     # 1-5
@@ -6335,11 +6336,13 @@ async def avaliar_corrida(
     hidratacao: int = Form(...),   # 1-5
     pos_prova: int = Form(...),    # 1-5
     participei: bool = Form(...),  # Checkbox obrigatório
+    aceito_termo: bool = Form(...),  # Termo de responsabilidade obrigatório
     current_user: dict = Depends(get_current_user)
 ):
     """
     Registra avaliação de uma corrida por um atleta
     5 critérios IQC (Índice de Qualidade da Corrida)
+    Inclui termo de responsabilidade e registro de IP
     """
     from datetime import datetime
     
@@ -6350,6 +6353,20 @@ async def avaliar_corrida(
     # Verificar se confirmou participação
     if not participei:
         raise HTTPException(status_code=400, detail="Você precisa confirmar que participou desta corrida")
+    
+    # Verificar se aceitou o termo de responsabilidade
+    if not aceito_termo:
+        raise HTTPException(
+            status_code=400, 
+            detail="Você precisa aceitar o termo de responsabilidade para submeter a avaliação"
+        )
+    
+    # Capturar IP do avaliador
+    ip_avaliador = request.client.host if request.client else "unknown"
+    # Tentar capturar IP real se estiver atrás de proxy
+    forwarded_for = request.headers.get("X-Forwarded-For")
+    if forwarded_for:
+        ip_avaliador = forwarded_for.split(",")[0].strip()
     
     # Validar notas (1-5)
     for nota, nome in [(organizacao, "Organização"), (percurso, "Percurso"), 
@@ -6388,12 +6405,13 @@ async def avaliar_corrida(
     # Calcular nota da corrida (média dos 5 critérios)
     nota_corrida = (organizacao + percurso + kit_atleta + hidratacao + pos_prova) / 5
     
-    # Criar avaliação
+    # Criar avaliação com termo e IP
     avaliacao = {
         "id": str(uuid.uuid4()),
         "corrida_id": corrida_id,
         "atleta_id": current_user.get("id"),
         "atleta_nome": current_user.get("nome"),
+        "atleta_email": current_user.get("email"),
         "organizacao": organizacao,
         "percurso": percurso,
         "kit_atleta": kit_atleta,
@@ -6401,6 +6419,10 @@ async def avaliar_corrida(
         "pos_prova": pos_prova,
         "nota_corrida": round(nota_corrida, 2),
         "participei": participei,
+        "aceito_termo": aceito_termo,
+        "termo_aceito_em": datetime.now().isoformat(),
+        "ip_avaliador": ip_avaliador,
+        "user_agent": request.headers.get("User-Agent", "unknown"),
         "data_avaliacao": datetime.now().isoformat()
     }
     
@@ -6411,7 +6433,8 @@ async def avaliar_corrida(
     
     return {
         "message": "Avaliação registrada com sucesso!",
-        "nota_corrida": round(nota_corrida, 2)
+        "nota_corrida": round(nota_corrida, 2),
+        "ip_registrado": True
     }
 
 
@@ -6490,6 +6513,82 @@ async def verificar_avaliacao(corrida_id: str, current_user: dict = Depends(get_
     })
     
     return {"ja_avaliou": avaliacao is not None}
+
+
+@api_router.get("/admin/avaliacoes")
+async def listar_avaliacoes_admin(
+    corrida_id: str = None,
+    limite: int = 50,
+    admin: dict = Depends(get_admin_user)
+):
+    """Lista avaliações com informações de IP e termo (admin)"""
+    filtro = {}
+    if corrida_id:
+        filtro["corrida_id"] = corrida_id
+    
+    avaliacoes = await db.avaliacoes_corridas.find(
+        filtro,
+        {"_id": 0}
+    ).sort("data_avaliacao", -1).limit(limite).to_list(None)
+    
+    # Enriquecer com nome da corrida
+    for av in avaliacoes:
+        corrida = await db.corridas_eventos.find_one({"id": av["corrida_id"]}, {"_id": 0, "nome": 1})
+        av["corrida_nome"] = corrida.get("nome", "N/A") if corrida else "N/A"
+    
+    return avaliacoes
+
+
+@api_router.get("/admin/avaliacoes/termo")
+async def get_texto_termo():
+    """Retorna o texto do termo de responsabilidade"""
+    termo = await db.configuracoes.find_one({"tipo": "termo_avaliacao"}, {"_id": 0})
+    
+    if not termo:
+        return {
+            "titulo": "Termo de Responsabilidade para Avaliação de Corridas",
+            "texto": """Ao submeter esta avaliação, declaro que:
+
+1. **Participei efetivamente** desta corrida como atleta inscrito;
+
+2. **As informações prestadas são verdadeiras** e baseadas na minha experiência pessoal durante o evento;
+
+3. **Tenho ciência** de que avaliações falsas ou fraudulentas podem resultar em suspensão da minha conta;
+
+4. **Autorizo** o Ranking Run Pró a registrar meu IP e dados de acesso para fins de auditoria e prevenção de fraudes;
+
+5. **Comprometo-me** a avaliar de forma justa e imparcial, considerando apenas os critérios de qualidade do evento;
+
+6. **Estou ciente** de que esta avaliação será pública e poderá influenciar a reputação do evento avaliado.
+
+Este termo tem validade legal conforme a Lei Geral de Proteção de Dados (LGPD) e demais legislações aplicáveis."""
+        }
+    
+    return termo
+
+
+@api_router.put("/admin/avaliacoes/termo")
+async def atualizar_termo_avaliacao(
+    titulo: str = Form(...),
+    texto: str = Form(...),
+    admin: dict = Depends(get_admin_user)
+):
+    """Atualiza o texto do termo de responsabilidade"""
+    termo = {
+        "tipo": "termo_avaliacao",
+        "titulo": titulo,
+        "texto": texto,
+        "atualizado_por": admin["nome"],
+        "atualizado_em": datetime.now().isoformat()
+    }
+    
+    await db.configuracoes.update_one(
+        {"tipo": "termo_avaliacao"},
+        {"$set": termo},
+        upsert=True
+    )
+    
+    return {"message": "Termo atualizado com sucesso"}
 
 
 # ============================================================
