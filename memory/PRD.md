@@ -630,6 +630,8 @@ Dividido o AdminDashboard monolítico em componentes modulares:
    ```python
    "categoria": current_user.get("categoria", "normal"),
    "foto_url": current_user.get("foto_url", ""),
+   "equipe": current_user.get("equipe", ""),
+   "estado": current_user.get("estado", ""),
    ```
 
 ### Status
@@ -637,6 +639,70 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 - ✅ Token salvo no localStorage
 - ✅ Nome do usuário exibido no header
 - ✅ Botões específicos por role (ex: "Minha Assessoria" apenas para dono_assessoria)
+
+---
+
+## ✅ 9ª Tarefa - Relatórios Detalhados para Donos de Assessoria (09/03/2026)
+
+### Nova Aba "Relatórios" no Dashboard Minha Assessoria
+
+**Endpoint Backend:**
+- `GET /api/dono-assessoria/relatorios/{nome_equipe}` - Retorna todos os dados agregados
+
+**Visualizações Implementadas:**
+
+1. **Indicadores Principais** (5 cards coloridos):
+   - Atletas Ativos
+   - Total Resultados
+   - Pontos Totais
+   - 1º Lugares
+   - Pódios
+
+2. **Indicadores Percentuais** (4 cards com ícones):
+   - Média Pontos/Atleta
+   - Média Corridas/Atleta
+   - Taxa de Pódio (%)
+   - Taxa de Vitória (%)
+
+3. **Gráfico de Linha** - Evolução Mensal:
+   - Eixo duplo: Resultados (esquerda) e Pontos (direita)
+   - Últimos 6 meses
+
+4. **Gráfico de Barras Horizontal** - Distribuição por Faixa Etária
+
+5. **Gráfico de Pizza (Donut)** - Distribuição por Gênero:
+   - Masculino vs Feminino com percentuais
+
+6. **Gráfico de Pizza** - Distribuição por Categoria:
+   - Normal, PCD, Cadeirante
+
+7. **Gráfico Radar** - Performance Geral:
+   - 6 métricas normalizadas (0-100)
+
+8. **Mapa Geográfico do Brasil**:
+   - Estados coloridos por quantidade de atletas
+   - Legenda com escala de cores
+   - Badges com contagem por UF
+
+9. **Rankings Dinâmicos** - Top 10 Atletas:
+   - Posição com medalhas (ouro/prata/bronze)
+   - Pontos e corridas
+
+10. **Treemap** - Distribuição de Colocações:
+    - 1º, 2º, 3º, 4º-5º, 6º-10º, Outros
+
+11. **Gráfico de Área** - Evolução de Novos Atletas:
+    - Cadastros por mês
+
+**Tecnologias:**
+- recharts (LineChart, BarChart, PieChart, RadarChart, AreaChart, Treemap)
+- react-simple-maps (Mapa do Brasil)
+- d3-scale, d3-geo
+
+**Arquivos Criados/Modificados:**
+- `/app/frontend/src/components/RelatoriosAssessoria.jsx` (NOVO)
+- `/app/frontend/src/pages/DonoAssessoriaDashboard.jsx` (MODIFICADO)
+- `/app/backend/server.py` (NOVO endpoint)
 
 ---
 
@@ -648,4 +714,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login)
+Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login + 9ª Tarefa Relatórios)

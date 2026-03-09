@@ -13,12 +13,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, Home, Bell, 
   Download, Send, Settings, LogOut, Plus, Eye, BarChart3, Loader2, 
-  MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus
+  MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus, PieChart
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
+import RelatoriosAssessoria from '@/components/RelatoriosAssessoria';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -231,6 +232,7 @@ const DonoAssessoriaDashboard = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'atletas', label: 'Meus Atletas', icon: Users },
+    { id: 'relatorios', label: 'Relatórios', icon: PieChart },
     { id: 'rankings', label: 'Rankings', icon: Trophy },
     { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
     { id: 'selo', label: 'Selo Oficial', icon: Award },
@@ -585,6 +587,11 @@ const DonoAssessoriaDashboard = () => {
               ))}
             </div>
           </div>
+        )}
+
+        {/* Relatórios Tab */}
+        {activeTab === 'relatorios' && (
+          <RelatoriosAssessoria equipe={user?.equipe} token={token} />
         )}
 
         {/* Rankings Tab */}

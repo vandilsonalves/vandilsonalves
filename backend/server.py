@@ -221,6 +221,8 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "role": current_user["role"],
         "categoria": current_user.get("categoria", "normal"),
         "foto_url": current_user.get("foto_url", ""),
+        "equipe": current_user.get("equipe", ""),
+        "estado": current_user.get("estado", ""),
         "modalidade_usuario": current_user.get("modalidade_usuario", "profissional_amador")
     }
 
@@ -5242,6 +5244,202 @@ async def get_cidades_com_assessorias(estado: str = None):
     ]
     result = await db.usuarios.aggregate(pipeline).to_list(None)
     return [c["_id"] for c in result]
+
+
+# ============================================================
+# RELATÓRIOS DETALHADOS PARA DONO DE ASSESSORIA
+# ============================================================
+
+@api_router.get("/dono-assessoria/relatorios/{nome_equipe}")
+async def get_relatorios_assessoria(nome_equipe: str, current_user: dict = Depends(get_current_user)):
+    """Retorna dados completos para relatórios da assessoria"""
+    
+    # Verificar permissão
+    if current_user.get("role") not in ["admin", "dono_assessoria"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if current_user.get("role") == "dono_assessoria" and current_user.get("equipe") != nome_equipe:
+        raise HTTPException(status_code=403, detail="Você só pode ver relatórios da sua assessoria")
+    
+    # Buscar atletas da equipe
+    atletas = await db.usuarios.find(
+        {"equipe": nome_equipe, "role": "atleta"},
+        {"_id": 0, "id": 1, "nome": 1, "genero": 1, "categoria": 1, "estado": 1, "cidade": 1, 
+         "pontos_total": 1, "total_corridas": 1, "faixa_etaria": 1, "data_criacao": 1}
+    ).to_list(None)
+    
+    # Buscar resultados dos atletas
+    atleta_ids = [a["id"] for a in atletas]
+    resultados = await db.ranking_anual.find(
+        {"atleta_id": {"$in": atleta_ids}},
+        {"_id": 0}
+    ).to_list(None)
+    
+    # 1. Distribuição por gênero
+    dist_genero = {"M": 0, "F": 0}
+    for a in atletas:
+        g = a.get("genero", "M")
+        dist_genero[g] = dist_genero.get(g, 0) + 1
+    
+    grafico_genero = [
+        {"name": "Masculino", "value": dist_genero.get("M", 0), "fill": "#3B82F6"},
+        {"name": "Feminino", "value": dist_genero.get("F", 0), "fill": "#EC4899"}
+    ]
+    
+    # 2. Distribuição por categoria
+    dist_categoria = {}
+    for a in atletas:
+        cat = a.get("categoria", "normal") or "normal"
+        dist_categoria[cat] = dist_categoria.get(cat, 0) + 1
+    
+    grafico_categoria = [
+        {"name": cat.upper(), "value": count, "fill": ["#10B981", "#F59E0B", "#8B5CF6", "#EF4444"][i % 4]}
+        for i, (cat, count) in enumerate(dist_categoria.items())
+    ]
+    
+    # 3. Distribuição por faixa etária
+    dist_faixa = {}
+    for a in atletas:
+        faixa = a.get("faixa_etaria", "N/A") or "N/A"
+        dist_faixa[faixa] = dist_faixa.get(faixa, 0) + 1
+    
+    grafico_faixa = [
+        {"faixa": faixa, "atletas": count}
+        for faixa, count in sorted(dist_faixa.items())
+    ]
+    
+    # 4. Distribuição por estado (para mapa)
+    dist_estado = {}
+    for a in atletas:
+        estado = a.get("estado", "N/A") or "N/A"
+        dist_estado[estado] = dist_estado.get(estado, 0) + 1
+    
+    mapa_estados = [
+        {"estado": estado, "atletas": count}
+        for estado, count in dist_estado.items()
+    ]
+    
+    # 5. Evolução mensal de resultados (últimos 6 meses)
+    from datetime import datetime, timedelta
+    meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
+    mes_atual = datetime.now().month
+    evolucao_mensal = []
+    
+    for i in range(6):
+        mes_idx = (mes_atual - 5 + i - 1) % 12
+        mes_num = mes_idx + 1
+        mes_nome = meses[mes_idx]
+        
+        # Contar resultados do mês
+        count_resultados = 0
+        pontos_mes = 0
+        for r in resultados:
+            if r.get("mes") == mes_num:
+                count_resultados += 1
+                pontos_mes += r.get("pontos", 0)
+        
+        evolucao_mensal.append({
+            "mes": mes_nome,
+            "resultados": count_resultados,
+            "pontos": pontos_mes
+        })
+    
+    # 6. Radar de performance (métricas normalizadas 0-100)
+    total_atletas = len(atletas)
+    total_resultados = len(resultados)
+    total_pontos = sum(r.get("pontos", 0) for r in resultados)
+    total_primeiros = sum(1 for r in resultados if r.get("colocacao") == 1)
+    total_podios = sum(1 for r in resultados if r.get("colocacao", 99) <= 3)
+    
+    # Normalizar para 0-100 (baseado em médias esperadas)
+    radar_data = [
+        {"metrica": "Atletas", "valor": min(100, total_atletas * 5), "fullMark": 100},
+        {"metrica": "Resultados", "valor": min(100, total_resultados * 2), "fullMark": 100},
+        {"metrica": "Pontos", "valor": min(100, total_pontos / 10), "fullMark": 100},
+        {"metrica": "1º Lugares", "valor": min(100, total_primeiros * 10), "fullMark": 100},
+        {"metrica": "Pódios", "valor": min(100, total_podios * 5), "fullMark": 100},
+        {"metrica": "Engajamento", "valor": min(100, (total_resultados / max(1, total_atletas)) * 20), "fullMark": 100}
+    ]
+    
+    # 7. Top atletas (ranking interno)
+    top_atletas = sorted(atletas, key=lambda x: x.get("pontos_total", 0), reverse=True)[:10]
+    ranking_atletas = [
+        {"pos": i+1, "nome": a["nome"], "pontos": a.get("pontos_total", 0), "corridas": a.get("total_corridas", 0)}
+        for i, a in enumerate(top_atletas)
+    ]
+    
+    # 8. Indicadores percentuais
+    media_pontos = total_pontos / max(1, total_atletas)
+    media_corridas = total_resultados / max(1, total_atletas)
+    taxa_podio = (total_podios / max(1, total_resultados)) * 100
+    taxa_vitoria = (total_primeiros / max(1, total_resultados)) * 100
+    
+    indicadores = {
+        "media_pontos_atleta": round(media_pontos, 1),
+        "media_corridas_atleta": round(media_corridas, 1),
+        "taxa_podio": round(taxa_podio, 1),
+        "taxa_vitoria": round(taxa_vitoria, 1),
+        "total_atletas": total_atletas,
+        "total_resultados": total_resultados,
+        "total_pontos": total_pontos,
+        "total_primeiros": total_primeiros,
+        "total_podios": total_podios
+    }
+    
+    # 9. Distribuição de colocações (sunburst data)
+    dist_colocacao = {}
+    for r in resultados:
+        col = r.get("colocacao", 0)
+        if col == 1:
+            key = "1º Lugar"
+        elif col == 2:
+            key = "2º Lugar"
+        elif col == 3:
+            key = "3º Lugar"
+        elif col <= 5:
+            key = "4º-5º"
+        elif col <= 10:
+            key = "6º-10º"
+        else:
+            key = "Outros"
+        dist_colocacao[key] = dist_colocacao.get(key, 0) + 1
+    
+    sunburst_data = [
+        {"name": "Resultados", "children": [
+            {"name": key, "size": value}
+            for key, value in dist_colocacao.items()
+        ]}
+    ]
+    
+    # 10. Evolução de cadastros de atletas
+    cadastros_por_mes = {}
+    for a in atletas:
+        data_str = a.get("data_criacao", "")
+        if data_str:
+            try:
+                mes = data_str[:7]  # YYYY-MM
+                cadastros_por_mes[mes] = cadastros_por_mes.get(mes, 0) + 1
+            except:
+                pass
+    
+    evolucao_cadastros = [
+        {"mes": mes, "novos": count}
+        for mes, count in sorted(cadastros_por_mes.items())[-6:]
+    ]
+    
+    return {
+        "equipe": nome_equipe,
+        "grafico_genero": grafico_genero,
+        "grafico_categoria": grafico_categoria,
+        "grafico_faixa_etaria": grafico_faixa,
+        "mapa_estados": mapa_estados,
+        "evolucao_mensal": evolucao_mensal,
+        "radar_performance": radar_data,
+        "ranking_atletas": ranking_atletas,
+        "indicadores": indicadores,
+        "sunburst_colocacoes": sunburst_data,
+        "evolucao_cadastros": evolucao_cadastros
+    }
 
 
 # ============================================================
