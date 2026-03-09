@@ -7,12 +7,10 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 import uuid
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from motor.motor_asyncio import AsyncIOMotorClient
 from jose import JWTError, jwt
 import os
+import logging
 
 from models.rbac import (
     Administrador, AdminCreate, AdminUpdate, 
@@ -21,10 +19,16 @@ from models.rbac import (
 )
 from services.rbac_service import (
     gerar_codigo_2fa, extrair_info_dispositivo, 
-    criar_log_acao, criar_alerta_seguranca,
-    gerar_email_alerta_emergencia, gerar_email_codigo_2fa
+    criar_log_acao, criar_alerta_seguranca
+)
+from services.email_service import (
+    enviar_codigo_2fa, enviar_alerta_emergencia,
+    enviar_boas_vindas_admin, enviar_notificacao_bloqueio,
+    is_email_configured
 )
 from services import get_password_hash, verify_password, create_access_token, SECRET_KEY, ALGORITHM
+
+logger = logging.getLogger(__name__)
 
 # MongoDB connection (usando as mesmas variáveis do server.py)
 mongo_url = os.environ.get('MONGO_URL')
@@ -303,6 +307,15 @@ async def criar_administrador(
         entidade_nome=dados.nome
     )
     
+    # Enviar email de boas-vindas
+    email_result = await enviar_boas_vindas_admin(
+        admin_nome=dados.nome,
+        admin_email=dados.email,
+        role_nome=role["nome"],
+        senha=dados.password  # Envia a senha inicial
+    )
+    logger.info(f"Email de boas-vindas enviado para {dados.email}: {email_result.get('status')}")
+    
     return {
         "message": f"Administrador '{dados.nome}' criado com sucesso!",
         "admin": {
@@ -310,7 +323,8 @@ async def criar_administrador(
             "nome": admin["nome"],
             "email": admin["email"],
             "role": role["nome"]
-        }
+        },
+        "email_status": email_result.get("status")
     }
 
 
@@ -447,6 +461,14 @@ async def bloquear_administrador(
         entidade_id=admin_id,
         entidade_nome=admin.get("nome")
     )
+    
+    # Enviar notificação de bloqueio por email
+    email_result = await enviar_notificacao_bloqueio(
+        admin_nome=admin.get("nome"),
+        admin_email=admin.get("email"),
+        motivo="Bloqueado pelo Super Administrador"
+    )
+    logger.info(f"Email de bloqueio enviado para {admin.get('email')}: {email_result.get('status')}")
     
     return {"message": f"Administrador '{admin.get('nome')}' bloqueado!"}
 
@@ -610,7 +632,24 @@ async def estatisticas_rbac(super_admin: dict = Depends(get_super_admin)):
         "administradores_bloqueados": admins_bloqueados,
         "logs_hoje": total_logs_hoje,
         "alertas_pendentes": alertas_pendentes,
-        "distribuicao_roles": [{"role": r["_id"], "total": r["total"]} for r in dist_roles]
+        "distribuicao_roles": [{"role": r["_id"], "total": r["total"]} for r in dist_roles],
+        "email_configurado": is_email_configured()
+    }
+
+
+@router.get("/rbac/email-status")
+async def verificar_status_email(super_admin: dict = Depends(get_super_admin)):
+    """Verifica se o serviço de email está configurado"""
+    return {
+        "configurado": is_email_configured(),
+        "mensagem": "Serviço de email configurado e pronto" if is_email_configured() 
+                   else "RESEND_API_KEY não configurada. Emails não serão enviados.",
+        "instrucoes": None if is_email_configured() else {
+            "passo_1": "Acesse https://resend.com e crie uma conta",
+            "passo_2": "Vá em Dashboard → API Keys → Create API Key",
+            "passo_3": "Adicione RESEND_API_KEY=re_sua_chave no arquivo /app/backend/.env",
+            "passo_4": "Reinicie o backend: sudo supervisorctl restart backend"
+        }
     }
 
 
@@ -693,12 +732,14 @@ async def login_admin(
             }
             await db.codigos_verificacao.insert_one(codigo_doc)
             
-            # TODO: Enviar email com código (implementar integração de email)
-            # Por enquanto, retornar que precisa do código
+            # Enviar email com código 2FA
+            email_result = await enviar_codigo_2fa(email, codigo, admin.get("nome", "Admin"))
+            logger.info(f"2FA email enviado para {email}: {email_result.get('status')}")
             
             return {
                 "requer_2fa": True,
-                "message": "Código de verificação enviado para seu email"
+                "message": "Código de verificação enviado para seu email",
+                "email_status": email_result.get("status")
             }
         
         # Verificar código 2FA
@@ -735,8 +776,9 @@ async def login_admin(
     
     await registrar_tentativa_login(request, email, True, admin_id=admin["id"], admin_nome=admin.get("nome"))
     
-    # Se for Admin de Emergência, criar alerta
+    # Se for Admin de Emergência, criar alerta e enviar email
     if admin.get("is_emergencia"):
+        data_hora = datetime.now(timezone.utc).isoformat()
         alerta = criar_alerta_seguranca(
             tipo="admin_emergencia_usado",
             titulo="Admin de Emergência Utilizado",
@@ -748,7 +790,15 @@ async def login_admin(
         )
         await db.alertas_seguranca.insert_one(alerta)
         
-        # TODO: Enviar email de alerta para suporte@rankingrun.com.br
+        # Enviar email de alerta de segurança
+        email_result = await enviar_alerta_emergencia(
+            admin_nome=admin.get("nome", "Admin de Emergência"),
+            acao="Login no sistema",
+            ip=get_client_ip(request),
+            dispositivo=info_dispositivo["descricao_completa"],
+            data_hora=data_hora
+        )
+        logger.warning(f"⚠️ Admin de Emergência utilizado! Email de alerta: {email_result.get('status')}")
     
     # Buscar permissões da role
     role = await db.roles.find_one({"id": admin.get("role_id")}, {"_id": 0})

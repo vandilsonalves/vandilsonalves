@@ -1049,10 +1049,40 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 ## Próximas Tarefas
 
 ### Backlog (Priorizado):
-1. **P1** - Integração de envio de email para 2FA e alertas de segurança
+1. ~~**P1** - Integração de envio de email para 2FA e alertas de segurança~~ ✅ CONCLUÍDO
 2. **P2** - Refatoração do server.py em módulos (iniciado com RBAC)
 3. **P2** - Painel diferenciado para Colaboradores (menu reduzido)
 4. **P3** - Geolocalização real baseada em IP
+
+### 15. Integração de Email com Resend ✅ NOVO (09/03/2026)
+
+**Descrição**: Sistema completo de envio de emails transacionais usando Resend API para 2FA e alertas de segurança.
+
+**Funcionalidades Implementadas:**
+- **Envio de código 2FA** por email para Admin de Emergência
+- **Alertas de segurança** enviados automaticamente quando Admin de Emergência faz login
+- **Email de boas-vindas** para novos administradores (com credenciais)
+- **Notificação de bloqueio** para administradores bloqueados
+- **Templates HTML responsivos** para todos os tipos de email
+- **Verificação de status** do serviço de email no painel
+- **Graceful degradation**: Sistema funciona mesmo sem API key configurada
+
+**Configuração necessária:**
+1. Criar conta em https://resend.com
+2. Obter API Key (Dashboard → API Keys → Create API Key)
+3. Adicionar no `/app/backend/.env`:
+   ```
+   RESEND_API_KEY=re_sua_chave_aqui
+   SENDER_EMAIL=seu-email@dominio.com
+   ALERT_EMAIL=email-para-alertas@dominio.com
+   ```
+4. Reiniciar backend: `sudo supervisorctl restart backend`
+
+**Arquivos criados:**
+- `/app/backend/services/email_service.py` - Serviço completo de email
+
+**Endpoints:**
+- `GET /api/rbac/email-status` - Verifica se o email está configurado
 
 ---
 

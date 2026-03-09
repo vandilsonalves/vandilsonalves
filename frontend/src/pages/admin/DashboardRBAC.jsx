@@ -289,6 +289,16 @@ const DashboardRBAC = () => {
         </Alert>
       )}
       
+      {/* Aviso de Email não configurado */}
+      {stats && !stats.email_configurado && (
+        <Alert className="bg-amber-50 border-amber-200">
+          <AlertCircle className="w-5 h-5 text-amber-600" />
+          <AlertDescription className="text-amber-800">
+            <strong>Serviço de Email:</strong> RESEND_API_KEY não configurada. Os códigos 2FA e alertas de segurança não serão enviados por email até que a API key seja adicionada.
+          </AlertDescription>
+        </Alert>
+      )}
+      
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList className="bg-gray-100">
