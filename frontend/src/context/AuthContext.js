@@ -12,6 +12,11 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [notificacoes, setNotificacoes] = useState([]);
   const [naoLidas, setNaoLidas] = useState(0);
+  
+  // Permissões do admin
+  const [adminPermissoes, setAdminPermissoes] = useState([]);
+  const [tipoAdmin, setTipoAdmin] = useState(null); // 'Super Admin', 'Colaborador', etc.
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false);
 
   useEffect(() => {
     if (token) {
@@ -36,11 +41,42 @@ export function AuthProvider({ children }) {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUser(response.data);
+      
+      // Se for admin, buscar permissões
+      if (response.data.role === 'admin') {
+        await fetchAdminPermissoes();
+      }
     } catch (error) {
       console.error('Erro ao buscar usuário:', error);
       logout();
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAdminPermissoes = async () => {
+    try {
+      // Tentar fazer login via RBAC para obter permissões
+      const storedUser = JSON.parse(localStorage.getItem('adminData') || 'null');
+      if (storedUser && storedUser.permissoes) {
+        setAdminPermissoes(storedUser.permissoes);
+        setTipoAdmin(storedUser.tipo_admin);
+        setIsSuperAdmin(storedUser.is_super_admin || false);
+      } else {
+        // Fallback: admin legado tem todas as permissões
+        setAdminPermissoes([
+          'aprovar_corridas', 'reprovar_corridas', 'aprovar_resultados',
+          'moderar_avaliacoes', 'visualizar_atletas', 'editar_atletas',
+          'excluir_atletas', 'visualizar_assessorias', 'gerenciar_assessorias',
+          'enviar_mensagens', 'criar_admins', 'editar_admins', 'excluir_admins',
+          'visualizar_logs', 'configuracoes_sistema', 'exportar_dados',
+          'dados_financeiros', 'alterar_pontuacao', 'restaurar_dados'
+        ]);
+        setTipoAdmin('Super Admin');
+        setIsSuperAdmin(true);
+      }
+    } catch (error) {
+      console.error('Erro ao buscar permissões:', error);
     }
   };
 
@@ -86,6 +122,32 @@ export function AuthProvider({ children }) {
     setToken(newToken);
     setUser(userData);
     
+    // Se for admin, tentar login RBAC para obter permissões
+    if (userData.role === 'admin') {
+      try {
+        const rbacResponse = await axios.post(`${API}/rbac/login`, { email, password });
+        if (rbacResponse.data.user) {
+          const adminData = rbacResponse.data.user;
+          localStorage.setItem('adminData', JSON.stringify(adminData));
+          setAdminPermissoes(adminData.permissoes || []);
+          setTipoAdmin(adminData.tipo_admin);
+          setIsSuperAdmin(adminData.is_super_admin || false);
+        }
+      } catch (e) {
+        // Fallback para admin legado
+        setAdminPermissoes([
+          'aprovar_corridas', 'reprovar_corridas', 'aprovar_resultados',
+          'moderar_avaliacoes', 'visualizar_atletas', 'editar_atletas',
+          'excluir_atletas', 'visualizar_assessorias', 'gerenciar_assessorias',
+          'enviar_mensagens', 'criar_admins', 'editar_admins', 'excluir_admins',
+          'visualizar_logs', 'configuracoes_sistema', 'exportar_dados',
+          'dados_financeiros', 'alterar_pontuacao', 'restaurar_dados'
+        ]);
+        setTipoAdmin('Super Admin');
+        setIsSuperAdmin(true);
+      }
+    }
+    
     return userData;
   };
 
@@ -102,13 +164,23 @@ export function AuthProvider({ children }) {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('adminData');
     setToken(null);
     setUser(null);
     setNotificacoes([]);
     setNaoLidas(0);
+    setAdminPermissoes([]);
+    setTipoAdmin(null);
+    setIsSuperAdmin(false);
   };
 
   const isAdmin = user?.role === 'admin';
+  
+  // Função para verificar se tem uma permissão específica
+  const temPermissao = (permissao) => {
+    if (isSuperAdmin) return true;
+    return adminPermissoes.includes(permissao);
+  };
 
   return (
     <AuthContext.Provider value={{ 
@@ -123,7 +195,12 @@ export function AuthProvider({ children }) {
       naoLidas,
       fetchNotificacoes,
       marcarLida,
-      marcarTodasLidas
+      marcarTodasLidas,
+      // Novas propriedades RBAC
+      adminPermissoes,
+      tipoAdmin,
+      isSuperAdmin,
+      temPermissao
     }}>
       {children}
     </AuthContext.Provider>

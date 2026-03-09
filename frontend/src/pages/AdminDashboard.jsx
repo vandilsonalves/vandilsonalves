@@ -38,7 +38,7 @@ const ESTADOS_BR = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
-// Menu items para sidebar
+// Menu items para sidebar com permissões necessárias
 import { Instagram, Radar, Star } from 'lucide-react';
 
 // Import dos novos dashboards modulares
@@ -51,25 +51,41 @@ import {
   DashboardRBAC
 } from './admin';
 
-const menuItems = [
-  { id: 'dashboard', label: 'Dashboard Geral', icon: Home },
-  { id: 'atletas', label: 'Atletas', icon: Users },
-  { id: 'assessorias', label: 'Assessorias', icon: Trophy },
-  { id: 'ranking-corridas', label: 'Corridas', icon: Star },
-  { id: 'pendentes', label: 'Aprovações', icon: AlertCircle },
-  { id: 'autorizacoes', label: 'Autorizações', icon: Shield },
-  { id: 'administradores', label: 'Administradores', icon: Settings },
-  { id: 'regulamento', label: 'Regulamento', icon: FileText },
-  { id: 'submeter', label: '+ Submeter Resultado', icon: Plus },
-  { id: 'ranking', label: 'Exportar Ranking', icon: FileText },
-  { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake },
-  { id: 'instagram', label: 'Ranking Run Inside', icon: Activity },
+// Definição dos itens do menu com permissões necessárias
+const allMenuItems = [
+  { id: 'dashboard', label: 'Dashboard Geral', icon: Home, permissoes: [] }, // Todos podem ver
+  { id: 'atletas', label: 'Atletas', icon: Users, permissoes: ['visualizar_atletas'] },
+  { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
+  { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
+  { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
+  { id: 'autorizacoes', label: 'Autorizações', icon: Shield, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+  { id: 'administradores', label: 'Administradores', icon: Settings, permissoes: ['criar_admins'], superAdminOnly: true },
+  { id: 'regulamento', label: 'Regulamento', icon: FileText, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+  { id: 'submeter', label: '+ Submeter Resultado', icon: Plus, permissoes: ['aprovar_resultados'] },
+  { id: 'ranking', label: 'Exportar Ranking', icon: FileText, permissoes: ['exportar_dados'], superAdminOnly: true },
+  { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake, permissoes: [] }, // Todos podem ver
+  { id: 'instagram', label: 'Ranking Run Inside', icon: Activity, permissoes: [], superAdminOnly: true },
 ];
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, token, isAdmin } = useAuth();
+  const { user, token, isAdmin, tipoAdmin, isSuperAdmin, temPermissao, adminPermissoes } = useAuth();
   const [activeMenu, setActiveMenu] = useState('dashboard');
+  
+  // Filtrar itens do menu baseado nas permissões
+  const menuItems = allMenuItems.filter(item => {
+    // Se for Super Admin, mostrar tudo
+    if (isSuperAdmin) return true;
+    
+    // Se o item requer Super Admin e o usuário não é, esconder
+    if (item.superAdminOnly) return false;
+    
+    // Se não tem permissões definidas, mostrar para todos
+    if (!item.permissoes || item.permissoes.length === 0) return true;
+    
+    // Verificar se tem pelo menos uma das permissões necessárias
+    return item.permissoes.some(perm => adminPermissoes.includes(perm));
+  });
   
   // Stats
   const [stats, setStats] = useState(null);
@@ -1277,6 +1293,16 @@ const AdminDashboard = () => {
         <div className="p-6 border-b border-slate-700/50">
           <h1 className="text-xl font-bold text-emerald-400">Ranking Run Pró</h1>
           <p className="text-xs text-slate-400 mt-1">Painel Administrativo</p>
+          {/* Badge do tipo de admin */}
+          <div className="mt-3">
+            <Badge className={`text-xs ${
+              isSuperAdmin 
+                ? 'bg-purple-500/20 text-purple-300 border border-purple-500/30' 
+                : 'bg-blue-500/20 text-blue-300 border border-blue-500/30'
+            }`}>
+              {tipoAdmin || 'Admin'}
+            </Badge>
+          </div>
         </div>
 
         <nav className="p-4 space-y-2">

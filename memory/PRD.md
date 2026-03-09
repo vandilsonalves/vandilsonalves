@@ -1050,9 +1050,30 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ### Backlog (Priorizado):
 1. ~~**P1** - Integração de envio de email para 2FA e alertas de segurança~~ ✅ CONCLUÍDO
-2. **P2** - Refatoração do server.py em módulos - **EM PROGRESSO** (6 módulos criados)
-3. **P2** - Painel diferenciado para Colaboradores (menu reduzido)
+2. ~~**P2** - Refatoração do server.py em módulos~~ 🔄 EM PROGRESSO (6 módulos criados)
+3. ~~**P2** - Painel diferenciado para Colaboradores (menu reduzido)~~ ✅ CONCLUÍDO
 4. **P3** - Geolocalização real baseada em IP
+5. **P3** - Verificar domínio no Resend para emails de produção
+
+### 17. Painel Diferenciado para Colaboradores ✅ CONCLUÍDO (09/03/2026)
+
+**Descrição**: Sistema que exibe um menu reduzido para Colaboradores baseado em suas permissões.
+
+**Funcionalidades:**
+- **Badge de tipo de admin** na sidebar (Super Admin = roxo, Colaborador = azul)
+- **Menu filtrado** por permissões:
+  - Super Admin: Acesso a todos os 12 itens
+  - Colaborador: Acesso a apenas 7 itens (operacionais)
+- **Itens ocultos para Colaboradores:**
+  - Autorizações
+  - Administradores
+  - Regulamento
+  - Exportar Ranking
+  - Ranking Run Inside
+
+**Arquivos modificados:**
+- `/app/frontend/src/context/AuthContext.js` - Adicionado suporte a permissões RBAC
+- `/app/frontend/src/pages/AdminDashboard.jsx` - Menu filtrado por permissões
 
 ### 16. Refatoração do Backend em Módulos 🔄 EM PROGRESSO (09/03/2026)
 
