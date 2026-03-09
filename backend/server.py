@@ -6592,6 +6592,182 @@ async def atualizar_termo_avaliacao(
 
 
 # ============================================================
+# REPUTAÇÃO DE AVALIADORES - Sistema Bronze/Prata/Ouro
+# ============================================================
+
+# Níveis de reputação
+NIVEIS_REPUTACAO = {
+    "iniciante": {
+        "nome": "Iniciante",
+        "descricao": "Começando a avaliar corridas",
+        "min_avaliacoes": 0,
+        "icone": "⭐",
+        "cor": "#6B7280",
+        "nivel": 0
+    },
+    "bronze": {
+        "nome": "Avaliador Bronze",
+        "descricao": "Avaliador experiente com 5+ avaliações",
+        "min_avaliacoes": 5,
+        "icone": "🥉",
+        "cor": "#CD7F32",
+        "nivel": 1
+    },
+    "prata": {
+        "nome": "Avaliador Prata",
+        "descricao": "Avaliador dedicado com 15+ avaliações",
+        "min_avaliacoes": 15,
+        "icone": "🥈",
+        "cor": "#C0C0C0",
+        "nivel": 2
+    },
+    "ouro": {
+        "nome": "Avaliador Ouro",
+        "descricao": "Avaliador exemplar com 30+ avaliações",
+        "min_avaliacoes": 30,
+        "icone": "🥇",
+        "cor": "#FFD700",
+        "nivel": 3
+    }
+}
+
+
+def calcular_nivel_reputacao(total_avaliacoes: int) -> dict:
+    """Calcula o nível de reputação baseado no número de avaliações"""
+    nivel_atual = NIVEIS_REPUTACAO["iniciante"]
+    
+    for codigo, nivel in NIVEIS_REPUTACAO.items():
+        if total_avaliacoes >= nivel["min_avaliacoes"]:
+            nivel_atual = {**nivel, "codigo": codigo}
+    
+    return nivel_atual
+
+
+@api_router.get("/reputacao-avaliador/{atleta_id}")
+async def get_reputacao_avaliador(atleta_id: str):
+    """Retorna a reputação de um avaliador (público)"""
+    
+    # Buscar atleta
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0, "id": 1, "nome": 1})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    # Contar avaliações
+    total_avaliacoes = await db.avaliacoes_corridas.count_documents({"atleta_id": atleta_id})
+    
+    # Calcular nível atual
+    nivel_atual = calcular_nivel_reputacao(total_avaliacoes)
+    
+    # Calcular progresso para o próximo nível
+    proximo_nivel = None
+    progresso = 100
+    faltam = 0
+    
+    niveis_ordenados = sorted(NIVEIS_REPUTACAO.items(), key=lambda x: x[1]["min_avaliacoes"])
+    for i, (codigo, nivel) in enumerate(niveis_ordenados):
+        if nivel["min_avaliacoes"] > total_avaliacoes:
+            proximo_nivel = {**nivel, "codigo": codigo}
+            faltam = nivel["min_avaliacoes"] - total_avaliacoes
+            # Calcular progresso entre o nível atual e o próximo
+            nivel_anterior = niveis_ordenados[i-1][1]["min_avaliacoes"] if i > 0 else 0
+            range_nivel = nivel["min_avaliacoes"] - nivel_anterior
+            progresso_atual = total_avaliacoes - nivel_anterior
+            progresso = (progresso_atual / range_nivel) * 100 if range_nivel > 0 else 100
+            break
+    
+    # Buscar estatísticas das avaliações
+    avaliacoes = await db.avaliacoes_corridas.find(
+        {"atleta_id": atleta_id},
+        {"_id": 0, "nota_corrida": 1, "data_avaliacao": 1}
+    ).to_list(None)
+    
+    media_notas = sum(a.get("nota_corrida", 0) for a in avaliacoes) / max(1, len(avaliacoes))
+    
+    # Meses únicos com avaliações
+    meses_ativos = len(set(a.get("data_avaliacao", "")[:7] for a in avaliacoes if a.get("data_avaliacao")))
+    
+    return {
+        "atleta": {
+            "id": atleta["id"],
+            "nome": atleta.get("nome", "")
+        },
+        "total_avaliacoes": total_avaliacoes,
+        "nivel_atual": nivel_atual,
+        "proximo_nivel": proximo_nivel,
+        "progresso": round(progresso, 1),
+        "faltam_para_proximo": faltam,
+        "estatisticas": {
+            "media_notas_dadas": round(media_notas, 2),
+            "meses_ativos": meses_ativos
+        },
+        "todos_niveis": [
+            {
+                **nivel,
+                "codigo": codigo,
+                "conquistado": total_avaliacoes >= nivel["min_avaliacoes"],
+                "atual": total_avaliacoes,
+                "progresso": min(100, (total_avaliacoes / nivel["min_avaliacoes"]) * 100) if nivel["min_avaliacoes"] > 0 else 100
+            }
+            for codigo, nivel in sorted(NIVEIS_REPUTACAO.items(), key=lambda x: x[1]["min_avaliacoes"])
+            if nivel["min_avaliacoes"] > 0  # Excluir iniciante da lista visual
+        ]
+    }
+
+
+@api_router.get("/ranking-avaliadores")
+async def get_ranking_avaliadores(limite: int = 20):
+    """Retorna o ranking dos melhores avaliadores"""
+    
+    # Agregar avaliações por atleta
+    pipeline = [
+        {
+            "$group": {
+                "_id": "$atleta_id",
+                "total_avaliacoes": {"$sum": 1},
+                "nome": {"$first": "$atleta_nome"},
+                "media_notas": {"$avg": "$nota_corrida"},
+                "primeira_avaliacao": {"$min": "$data_avaliacao"},
+                "ultima_avaliacao": {"$max": "$data_avaliacao"}
+            }
+        },
+        {"$sort": {"total_avaliacoes": -1}},
+        {"$limit": limite}
+    ]
+    
+    resultado = await db.avaliacoes_corridas.aggregate(pipeline).to_list(None)
+    
+    ranking = []
+    for i, r in enumerate(resultado, 1):
+        nivel = calcular_nivel_reputacao(r["total_avaliacoes"])
+        ranking.append({
+            "posicao": i,
+            "atleta_id": r["_id"],
+            "nome": r.get("nome", "N/A"),
+            "total_avaliacoes": r["total_avaliacoes"],
+            "media_notas": round(r.get("media_notas", 0), 2),
+            "nivel": nivel,
+            "primeira_avaliacao": r.get("primeira_avaliacao"),
+            "ultima_avaliacao": r.get("ultima_avaliacao")
+        })
+    
+    return {
+        "ranking": ranking,
+        "total_avaliadores": len(resultado),
+        "niveis_disponiveis": [
+            {**v, "codigo": k}
+            for k, v in sorted(NIVEIS_REPUTACAO.items(), key=lambda x: x[1]["min_avaliacoes"])
+            if v["min_avaliacoes"] > 0
+        ]
+    }
+
+
+@api_router.get("/minha-reputacao")
+async def get_minha_reputacao(current_user: dict = Depends(get_current_user)):
+    """Retorna a reputação do atleta logado"""
+    return await get_reputacao_avaliador(current_user["id"])
+
+
+# ============================================================
 # RANKING DAS CORRIDAS - ADMIN DASHBOARD
 # ============================================================
 

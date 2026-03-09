@@ -18,6 +18,7 @@ import {
 import { toast } from 'sonner';
 import axios from 'axios';
 import SelosAtleta from '@/components/SelosAtleta';
+import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -597,6 +598,15 @@ const PerfilAtletaPage = () => {
               {/* Selos e Conquistas - Novo Componente */}
               <div className="pt-4 border-t border-slate-700">
                 <SelosAtleta atletaId={atleta?.id} compact={true} />
+              </div>
+
+              {/* Reputação de Avaliador */}
+              <div className="pt-4 border-t border-slate-700">
+                <p className="text-sm font-medium text-slate-300 mb-2 flex items-center gap-2">
+                  <Award className="w-4 h-4 text-amber-400" />
+                  Reputação de Avaliador
+                </p>
+                <ReputacaoAvaliador atletaId={atleta?.id} compact={true} />
               </div>
 
               {/* Compartilhar */}

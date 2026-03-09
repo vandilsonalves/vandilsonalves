@@ -869,6 +869,51 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## ✅ 13ª Tarefa - Sistema de Reputação para Avaliadores (09/03/2026)
+
+### Níveis de Reputação
+
+| Nível | Requisito | Ícone | Cor |
+|-------|-----------|-------|-----|
+| Iniciante | 0+ avaliações | ⭐ | Cinza |
+| **Avaliador Bronze** | 5+ avaliações | 🥉 | Bronze |
+| **Avaliador Prata** | 15+ avaliações | 🥈 | Prata |
+| **Avaliador Ouro** | 30+ avaliações | 🥇 | Ouro |
+
+### Funcionalidades Implementadas
+
+**1. Endpoints Backend**
+- `GET /api/reputacao-avaliador/{atleta_id}` - Reputação de um avaliador
+- `GET /api/ranking-avaliadores` - Top avaliadores
+- `GET /api/minha-reputacao` - Reputação do atleta logado
+
+**2. Componente Frontend:** `ReputacaoAvaliador.jsx`
+- Exibição compacta (badge) no perfil do atleta
+- Modal com detalhes completos ao clicar
+- Barra de progresso para próximo nível
+- Estatísticas: média das notas, meses ativos
+
+**3. Ranking de Avaliadores**
+- Botão "Top Avaliadores" na página de Ranking das Corridas
+- Lista com posição, nome, média, nível e total de avaliações
+- Top 3 destacados com medalhas visuais
+- Legenda dos níveis disponíveis
+
+**4. Informações Exibidas**
+- Nível atual com ícone e cor
+- Progresso percentual para próximo nível
+- Quantas avaliações faltam
+- Média das notas dadas pelo avaliador
+- Meses ativos avaliando
+
+**Arquivos Criados/Modificados:**
+- `/app/frontend/src/components/ReputacaoAvaliador.jsx` (NOVO)
+- `/app/frontend/src/pages/PerfilAtletaPage.jsx` (MODIFICADO)
+- `/app/frontend/src/pages/RankingCorridasPage.jsx` (MODIFICADO)
+- `/app/backend/server.py` (NOVOS endpoints)
+
+---
+
 ## Credenciais de Teste
 
 | Tipo | Email | Senha |
@@ -877,4 +922,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 6 - Tarefas 9, 10, 11, 12 + Autorizações)
+Última atualização: 09/03/2026 (Sessão 6 - Todas as 13 Tarefas Completas!)

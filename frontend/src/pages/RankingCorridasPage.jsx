@@ -17,6 +17,7 @@ import {
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
+import { RankingAvaliadores } from '@/components/ReputacaoAvaliador';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -52,6 +53,7 @@ const RankingCorridasPage = () => {
   const [corridaSelecionada, setCorridaSelecionada] = useState(null);
   const [avaliacaoLoading, setAvaliacaoLoading] = useState(false);
   const [termoTexto, setTermoTexto] = useState(null);
+  const [showRankingAvaliadores, setShowRankingAvaliadores] = useState(false);
   const [avaliacaoData, setAvaliacaoData] = useState({
     organizacao: 0,
     percurso: 0,
@@ -353,6 +355,15 @@ const RankingCorridasPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Button 
+              onClick={() => setShowRankingAvaliadores(!showRankingAvaliadores)}
+              variant={showRankingAvaliadores ? "default" : "outline"}
+              size="default"
+              className={showRankingAvaliadores ? "bg-amber-500 hover:bg-amber-600" : "text-amber-600 border-amber-500/30"}
+            >
+              <Award className="w-4 h-4 mr-2" />
+              Top Avaliadores
+            </Button>
             <RegulamentoButton 
               className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border-emerald-500/30"
               variant="outline"
@@ -428,6 +439,13 @@ const RankingCorridasPage = () => {
                 </div>
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Ranking de Avaliadores (toggle) */}
+        {showRankingAvaliadores && (
+          <div className="mb-6">
+            <RankingAvaliadores />
           </div>
         )}
 
