@@ -5443,6 +5443,133 @@ async def get_relatorios_assessoria(nome_equipe: str, current_user: dict = Depen
 
 
 # ============================================================
+# REGULAMENTO - Gerenciamento de Conteúdo
+# ============================================================
+
+@api_router.get("/regulamento")
+async def get_regulamento():
+    """Retorna o regulamento atual (público)"""
+    regulamento = await db.configuracoes.find_one({"tipo": "regulamento"}, {"_id": 0})
+    
+    if not regulamento:
+        # Retorna regulamento padrão se não existir
+        return {
+            "titulo": "Regulamento do Ranking Run Pró",
+            "conteudo": """
+## Regulamento Oficial do Ranking Run Pró
+
+### 1. Objetivo
+O Ranking Run Pró tem como objetivo classificar e premiar os atletas de corrida de rua em território nacional.
+
+### 2. Categorias
+- **Profissional/Amador**: Masculino e Feminino
+- **PCD**: Masculino e Feminino
+- **Cadeirante**: Masculino e Feminino
+
+### 3. Sistema de Pontuação
+- 1º lugar: 10 pontos
+- 2º lugar: 9 pontos
+- 3º lugar: 8 pontos
+- 4º lugar: 7 pontos
+- 5º lugar: 6 pontos
+- 6º lugar: 5 pontos
+- 7º lugar: 4 pontos
+- 8º lugar: 3 pontos
+- 9º lugar: 2 pontos
+- 10º lugar: 1 ponto
+
+### 4. Requisitos
+- Mínimo de 12 corridas para atletas normais
+- Mínimo de 8 corridas para PCD e Cadeirantes
+- Resultados devem ser submetidos em até 6 dias úteis após a prova
+
+### 5. Validação
+Todos os resultados são verificados pela equipe administrativa antes de serem contabilizados.
+
+---
+*Este é um regulamento padrão. O conteúdo oficial será atualizado pelo administrador.*
+            """,
+            "ultima_atualizacao": datetime.now(timezone.utc).isoformat(),
+            "atualizado_por": "Sistema"
+        }
+    
+    return regulamento
+
+
+@api_router.put("/admin/regulamento")
+async def atualizar_regulamento(
+    titulo: str = Form(...),
+    conteudo: str = Form(...),
+    admin: dict = Depends(get_admin_user)
+):
+    """Atualiza o regulamento (apenas admin)"""
+    
+    regulamento = {
+        "tipo": "regulamento",
+        "titulo": titulo,
+        "conteudo": conteudo,
+        "ultima_atualizacao": datetime.now(timezone.utc).isoformat(),
+        "atualizado_por": admin["nome"]
+    }
+    
+    await db.configuracoes.update_one(
+        {"tipo": "regulamento"},
+        {"$set": regulamento},
+        upsert=True
+    )
+    
+    return {"message": "Regulamento atualizado com sucesso", "regulamento": regulamento}
+
+
+@api_router.get("/admin/regulamento")
+async def get_regulamento_admin(admin: dict = Depends(get_admin_user)):
+    """Retorna o regulamento para edição (admin)"""
+    regulamento = await db.configuracoes.find_one({"tipo": "regulamento"}, {"_id": 0})
+    
+    if not regulamento:
+        # Retorna regulamento padrão para edição
+        return {
+            "titulo": "Regulamento do Ranking Run Pró",
+            "conteudo": """## Regulamento Oficial do Ranking Run Pró
+
+### 1. Objetivo
+O Ranking Run Pró tem como objetivo classificar e premiar os atletas de corrida de rua em território nacional.
+
+### 2. Categorias
+- **Profissional/Amador**: Masculino e Feminino
+- **PCD**: Masculino e Feminino
+- **Cadeirante**: Masculino e Feminino
+
+### 3. Sistema de Pontuação
+- 1º lugar: 10 pontos
+- 2º lugar: 9 pontos
+- 3º lugar: 8 pontos
+- 4º lugar: 7 pontos
+- 5º lugar: 6 pontos
+- 6º lugar: 5 pontos
+- 7º lugar: 4 pontos
+- 8º lugar: 3 pontos
+- 9º lugar: 2 pontos
+- 10º lugar: 1 ponto
+
+### 4. Requisitos
+- Mínimo de 12 corridas para atletas normais
+- Mínimo de 8 corridas para PCD e Cadeirantes
+- Resultados devem ser submetidos em até 6 dias úteis após a prova
+
+### 5. Validação
+Todos os resultados são verificados pela equipe administrativa antes de serem contabilizados.
+
+---
+*Este é um regulamento padrão. Edite o conteúdo conforme necessário.*""",
+            "ultima_atualizacao": None,
+            "atualizado_por": None
+        }
+    
+    return regulamento
+
+
+# ============================================================
 # RANKING DAS CORRIDAS - Sistema de Avaliação de Eventos
 # ============================================================
 

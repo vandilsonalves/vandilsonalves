@@ -12,10 +12,11 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Trophy, Star, MapPin, Calendar, ExternalLink, Users, Award, 
   RefreshCw, Loader2, Plus, ArrowLeft, Home, LogOut, Filter,
-  BarChart3, TrendingUp, Medal, ClipboardCheck, CheckCircle2
+  BarChart3, TrendingUp, Medal, ClipboardCheck, CheckCircle2, FileText
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { RegulamentoButton } from '@/components/RegulamentoModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -334,6 +335,11 @@ const RankingCorridasPage = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <RegulamentoButton 
+              className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border-emerald-500/30"
+              variant="outline"
+              size="default"
+            />
             {canCadastrar && (
               <Button onClick={() => setShowCadastroModal(true)} className="bg-emerald-500 hover:bg-emerald-600">
                 <Plus className="w-4 h-4 mr-2" />

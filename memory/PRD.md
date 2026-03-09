@@ -706,6 +706,47 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## ✅ 10ª Tarefa - Botão "REGULAMENTO" (09/03/2026)
+
+### Implementação Completa
+
+**1. Modal de Visualização do Regulamento**
+- Componente: `/app/frontend/src/components/RegulamentoModal.jsx`
+- Exibição em modal estilo "Como funciona?"
+- Formatação Markdown renderizada (títulos, listas, negrito, etc.)
+- Mostra data de atualização e quem atualizou
+
+**2. Seção de Gerenciamento no Admin**
+- Menu: "Regulamento" na sidebar do Admin Dashboard
+- Interface com:
+  - Dicas de formatação Markdown
+  - Campo de título
+  - Textarea para conteúdo
+  - Pré-visualização em tempo real
+  - Botões "Recarregar" e "Salvar Regulamento"
+
+**3. Botão nas Páginas de Ranking**
+- ✅ RankingPage.js (Ranking Principal) - ao lado do "Como funciona?"
+- ✅ RankingCorridasPage.jsx (Ranking das Corridas) - no header
+
+**4. Endpoints Backend**
+- `GET /api/regulamento` - Público, retorna regulamento para visualização
+- `GET /api/admin/regulamento` - Admin, retorna para edição
+- `PUT /api/admin/regulamento` - Admin, salva alterações
+
+**5. Armazenamento**
+- Collection: `configuracoes` (MongoDB)
+- Documento com `tipo: "regulamento"`, `titulo`, `conteudo`, `ultima_atualizacao`, `atualizado_por`
+
+**Arquivos Criados/Modificados:**
+- `/app/frontend/src/components/RegulamentoModal.jsx` (NOVO)
+- `/app/frontend/src/pages/RankingPage.js` (MODIFICADO)
+- `/app/frontend/src/pages/RankingCorridasPage.jsx` (MODIFICADO)
+- `/app/frontend/src/pages/AdminDashboard.jsx` (MODIFICADO - nova seção)
+- `/app/backend/server.py` (NOVO endpoints)
+
+---
+
 ## Credenciais de Teste
 
 | Tipo | Email | Senha |
@@ -714,4 +755,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login + 9ª Tarefa Relatórios)
+Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login + 9ª e 10ª Tarefas)
