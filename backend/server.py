@@ -5053,6 +5053,17 @@ async def get_detalhes_assessoria(nome_equipe: str):
             "genero": a.get("genero", ""),
             "pontos": a.get("pontos_carreira", 0)
         } for a in atletas],
+        "fotos_podio": [
+            {
+                "foto_url": c.get("foto_podio_url"),
+                "atleta_nome": next((a["nome"] for a in atletas if a["id"] == c.get("usuario_id")), "Atleta"),
+                "competicao": c.get("nome", ""),
+                "colocacao": c.get("colocacao", 0),
+                "data": c.get("data", "")
+            }
+            for c in corridas 
+            if c.get("foto_podio_url") and c.get("foto_podio_url").strip()
+        ][:12],  # Limitar a 12 fotos mais recentes
         "evolucao_mensal": [
             {"mes": m, "resultados": d["resultados"], "pontos": d["pontos"]}
             for m, d in evolucao_sorted

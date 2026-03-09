@@ -602,4 +602,23 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 - Card do responsável com avatar e informações
 - Sistema de Pontuação ROE-RR na barra lateral
 
-Última atualização: 09/03/2026 (Sessão 4)
+### ✅ Galeria de Fotos de Pódio (Enhancement)
+- Seção "Galeria de Pódios" na página de detalhes da assessoria
+- Grid responsivo de fotos (2x2 mobile, 3x3 tablet, 4x4 desktop)
+- Hover effect com informações do atleta, competição e colocação
+- Badge de posição (1º=ouro, 2º=prata, 3º=bronze)
+- Modal de visualização em tela cheia ao clicar
+- Limite de 12 fotos mais recentes
+- Backend: campo `fotos_podio` adicionado ao endpoint `/liga-assessorias/assessoria/{nome}`
+
+---
+
+## Credenciais de Teste
+
+| Tipo | Email | Senha |
+|------|-------|-------|
+| Admin | admin@rankingrun.com | admin123 |
+| Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
+| Atleta | rafael_souza_1@email.com | senha123 |
+
+Última atualização: 09/03/2026 (Sessão 5)

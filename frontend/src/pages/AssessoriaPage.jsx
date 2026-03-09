@@ -8,11 +8,12 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, 
   Send, Mail, Phone, Loader2, Zap, BarChart3, User, Star, Target, Medal,
-  Calendar, Flag, ExternalLink, Crown, Share2
+  Calendar, Flag, ExternalLink, Crown, Share2, Camera, X
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -24,6 +25,8 @@ const AssessoriaPage = () => {
   const [loading, setLoading] = useState(true);
   const [downloadingCertificado, setDownloadingCertificado] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [showFotoModal, setShowFotoModal] = useState(false);
+  const [fotoModalUrl, setFotoModalUrl] = useState('');
   const certificadoRef = useRef(null);
 
   useEffect(() => {
@@ -289,6 +292,55 @@ const AssessoriaPage = () => {
               </CardContent>
             </Card>
 
+            {/* Galeria de Fotos de Pódio */}
+            {assessoria.fotos_podio && assessoria.fotos_podio.length > 0 && (
+              <Card className="border-purple-200 overflow-hidden">
+                <CardHeader className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
+                  <CardTitle className="flex items-center gap-2 text-lg text-purple-700 dark:text-purple-400">
+                    <Camera className="w-5 h-5" />
+                    Galeria de Pódios ({assessoria.fotos_podio.length} fotos)
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    {assessoria.fotos_podio.map((foto, index) => (
+                      <div 
+                        key={index}
+                        className="group relative aspect-square rounded-xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer"
+                        onClick={() => {
+                          setFotoModalUrl(foto.foto_url.startsWith('http') ? foto.foto_url : `${BACKEND_URL}${foto.foto_url}`);
+                          setShowFotoModal(true);
+                        }}
+                      >
+                        <img 
+                          src={foto.foto_url.startsWith('http') ? foto.foto_url : `${BACKEND_URL}${foto.foto_url}`}
+                          alt={`Pódio - ${foto.atleta_nome}`}
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="absolute bottom-0 left-0 right-0 p-3 text-white">
+                            <p className="font-semibold text-sm truncate">{foto.atleta_nome}</p>
+                            <p className="text-xs opacity-90 truncate">{foto.competicao}</p>
+                            <div className="flex items-center gap-2 mt-1">
+                              <Badge className="bg-amber-500 text-xs">{foto.colocacao}º lugar</Badge>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Badge de posição no canto */}
+                        <div className={`absolute top-2 right-2 w-8 h-8 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-lg ${
+                          foto.colocacao === 1 ? 'bg-yellow-500' :
+                          foto.colocacao === 2 ? 'bg-slate-400' :
+                          foto.colocacao === 3 ? 'bg-amber-700' : 'bg-purple-500'
+                        }`}>
+                          {foto.colocacao}º
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Atletas da Equipe */}
             <Card>
               <CardHeader>
@@ -491,6 +543,22 @@ const AssessoriaPage = () => {
           </div>
         </div>
       </div>
+
+      {/* Modal de Visualização de Foto */}
+      <Dialog open={showFotoModal} onOpenChange={setShowFotoModal}>
+        <DialogContent className="max-w-4xl bg-black/95 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="text-white">Foto do Pódio</DialogTitle>
+          </DialogHeader>
+          <div className="flex items-center justify-center p-4">
+            <img
+              src={fotoModalUrl}
+              alt="Foto do Pódio"
+              className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-xl"
+            />
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
