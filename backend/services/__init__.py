@@ -148,6 +148,30 @@ CONQUISTAS = {
         "icone": "🏃",
         "pontos_bonus": 10
     },
+    "12_resultados": {
+        "nome": "Atleta Bronze",
+        "descricao": "Lançou 12 resultados no ranking",
+        "icone": "🥉",
+        "pontos_bonus": 12,
+        "cor": "#CD7F32",
+        "nivel": 1
+    },
+    "20_resultados": {
+        "nome": "Atleta Prata",
+        "descricao": "Lançou 20 resultados no ranking",
+        "icone": "🥈",
+        "pontos_bonus": 20,
+        "cor": "#C0C0C0",
+        "nivel": 2
+    },
+    "30_resultados": {
+        "nome": "Atleta Ouro",
+        "descricao": "Lançou 30 resultados no ranking",
+        "icone": "🥇",
+        "pontos_bonus": 30,
+        "cor": "#FFD700",
+        "nivel": 3
+    },
     "elite": {
         "nome": "Elite",
         "descricao": "Alcançou 100 pontos no ranking",

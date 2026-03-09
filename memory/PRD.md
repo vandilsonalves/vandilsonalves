@@ -796,6 +796,37 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## ✅ 11ª Tarefa - Selos/Medalhas de Conquista (09/03/2026)
+
+### Sistema de Selos por Número de Resultados
+
+**Novos Selos Implementados:**
+| Selo | Requisito | Cor | Ícone |
+|------|-----------|-----|-------|
+| Atleta Bronze | 12 resultados | #CD7F32 (Bronze) | 🥉 |
+| Atleta Prata | 20 resultados | #C0C0C0 (Prata) | 🥈 |
+| Atleta Ouro | 30 resultados | #FFD700 (Ouro) | 🥇 |
+
+**Endpoints Backend:**
+- `GET /api/selos-atleta/{atleta_id}` - Retorna selos com progresso
+- `POST /api/verificar-conquistas-atleta` - Verifica e atribui conquistas pendentes
+
+**Componente Frontend:** `/app/frontend/src/components/SelosAtleta.jsx`
+- Exibição visual dos selos com cards coloridos
+- Barra de progresso para selos não conquistados
+- Badge "✓ Conquistado" para selos obtidos
+- Versão compacta para perfil e completa para página de detalhes
+
+**Páginas Atualizadas:**
+- `PerfilAtletaPage.jsx` - Seção compacta de selos
+- `AtletaDetalhes.js` - Seção completa de "Selos e Conquistas"
+
+**Verificação Automática:**
+- Função `verificar_conquistas()` atualizada para verificar 12, 20 e 30 resultados
+- Notificação enviada ao atleta quando conquista novo selo
+
+---
+
 ## Credenciais de Teste
 
 | Tipo | Email | Senha |
@@ -804,4 +835,4 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | Dono Assessoria | gustavo_gomes_2@email.com | senha123 |
 | Atleta | rafael_souza_1@email.com | senha123 |
 
-Última atualização: 09/03/2026 (Sessão 6 - Bug Fix Login + 9ª, 10ª Tarefas + Autorizações)
+Última atualização: 09/03/2026 (Sessão 6 - Bug Fix + Tarefas 9, 10, 11 + Autorizações)

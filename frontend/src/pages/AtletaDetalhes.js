@@ -11,6 +11,7 @@ import PendingBadge from '@/components/PendingBadge';
 import RaceProgressBar from '@/components/RaceProgressBar';
 import ConquistasTable from '@/components/ConquistasTable';
 import GraficoEvolucao from '@/components/GraficoEvolucao';
+import SelosAtleta from '@/components/SelosAtleta';
 import html2canvas from 'html2canvas';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -409,6 +410,17 @@ const AtletaDetalhes = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Selos e Conquistas */}
+        <Card className="border-slate-200 dark:border-slate-800 shadow-lg">
+          <CardContent className="pt-6">
+            <h2 className="text-2xl font-bold text-amber-600 dark:text-amber-400 mb-4 flex items-center gap-2">
+              <Medal className="w-6 h-6" />
+              Selos e Conquistas
+            </h2>
+            <SelosAtleta atletaId={id} compact={false} />
+          </CardContent>
+        </Card>
 
         {/* Gráfico de Evolução */}
         <GraficoEvolucao atletaId={id} />
