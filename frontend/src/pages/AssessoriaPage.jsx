@@ -5,9 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
-import { Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, Send, Mail, Phone, Loader2, Zap, BarChart3, User } from 'lucide-react';
+import { 
+  Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, 
+  Send, Mail, Phone, Loader2, Zap, BarChart3, User, Star, Target, Medal,
+  Calendar, Flag, ExternalLink, Crown, Share2
+} from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
+import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -18,6 +23,7 @@ const AssessoriaPage = () => {
   const [assessoria, setAssessoria] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingCertificado, setDownloadingCertificado] = useState(false);
+  const [sharing, setSharing] = useState(false);
   const certificadoRef = useRef(null);
 
   useEffect(() => {
@@ -76,10 +82,41 @@ const AssessoriaPage = () => {
       link.download = `selo_${assessoria.nome.replace(/\s+/g, '_')}_ROE-RR_2026.png`;
       link.href = canvas.toDataURL('image/png');
       link.click();
+      toast.success('Selo baixado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar certificado:', error);
+      toast.error('Erro ao gerar o selo');
     } finally {
       setDownloadingCertificado(false);
+    }
+  };
+
+  const handleVerPerfilDono = () => {
+    if (assessoria.responsavel_id) {
+      navigate(`/atleta/${assessoria.responsavel_id}`);
+    } else {
+      toast.info('Perfil do responsável não disponível');
+    }
+  };
+
+  const handleCompartilhar = async () => {
+    setSharing(true);
+    try {
+      const url = window.location.href;
+      if (navigator.share) {
+        await navigator.share({
+          title: `${assessoria.nome} - Liga Nacional de Assessorias`,
+          text: `Confira a assessoria ${assessoria.nome} no Ranking Run!`,
+          url: url
+        });
+      } else {
+        await navigator.clipboard.writeText(url);
+        toast.success('Link copiado para a área de transferência!');
+      }
+    } catch (error) {
+      console.error('Erro ao compartilhar:', error);
+    } finally {
+      setSharing(false);
     }
   };
 
@@ -107,38 +144,70 @@ const AssessoriaPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
       <div className="container mx-auto px-4 py-8">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button onClick={() => navigate('/')} variant="outline" size="sm">
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Voltar
-          </Button>
-          <div className="flex-1">
-            <h1 className="text-2xl md:text-3xl font-bold text-amber-600 flex items-center gap-3">
-              {getSeloIcon(assessoria.selo)} {assessoria.nome}
-              <Badge className={`${getSeloColor(assessoria.selo)} text-white`}>
-                SELO {assessoria.selo?.toUpperCase()}
-              </Badge>
-            </h1>
-            <div className="space-y-1 mt-2">
-              <p className="text-slate-500 flex items-center gap-2">
-                <MapPin className="w-4 h-4" />
-                {assessoria.cidade}/{assessoria.estado}
-              </p>
-              {/* Responsável pela Assessoria */}
-              {assessoria.responsavel_nome && (
-                <p className="text-emerald-600 dark:text-emerald-400 flex items-center gap-2 font-medium">
-                  <Zap className="w-4 h-4" />
-                  Responsável / {assessoria.responsavel_nome}
+        {/* Header Melhorado */}
+        <div className="mb-8">
+          <div className="flex items-center gap-4 mb-4">
+            <Button onClick={() => navigate('/')} variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Voltar ao Ranking
+            </Button>
+            <Button onClick={handleCompartilhar} variant="outline" size="sm" disabled={sharing}>
+              <Share2 className="w-4 h-4 mr-2" />
+              Compartilhar
+            </Button>
+          </div>
+          
+          {/* Hero Section */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 md:p-8 text-white shadow-xl">
+            <div className="flex flex-col md:flex-row md:items-center gap-6">
+              {/* Logo/Avatar da Assessoria */}
+              <div className="flex-shrink-0">
+                <div className={`w-24 h-24 md:w-32 md:h-32 rounded-2xl ${getSeloColor(assessoria.selo)} flex items-center justify-center text-6xl shadow-lg border-4 border-white/30`}>
+                  {getSeloIcon(assessoria.selo)}
+                </div>
+              </div>
+              
+              {/* Informações */}
+              <div className="flex-1">
+                <div className="flex flex-wrap items-center gap-3 mb-2">
+                  <h1 className="text-2xl md:text-4xl font-bold">{assessoria.nome}</h1>
+                  <Badge className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
+                    SELO {assessoria.selo?.toUpperCase()}
+                  </Badge>
+                </div>
+                
+                <p className="text-amber-100 flex items-center gap-2 mb-3">
+                  <MapPin className="w-5 h-5" />
+                  <span className="text-lg">{assessoria.cidade}, {assessoria.estado}</span>
                 </p>
-              )}
-              {/* Mensagem da BIO */}
-              {assessoria.mensagem_bio && (
-                <p className="text-blue-600 dark:text-blue-400 flex items-center gap-2 text-sm italic">
-                  <BarChart3 className="w-4 h-4 flex-shrink-0" />
-                  <span>"{assessoria.mensagem_bio}"</span>
-                </p>
-              )}
+                
+                {/* Responsável com link */}
+                {assessoria.responsavel_nome && (
+                  <div 
+                    className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 w-fit cursor-pointer hover:bg-white/20 transition-colors"
+                    onClick={handleVerPerfilDono}
+                  >
+                    <Crown className="w-5 h-5 text-yellow-300" />
+                    <span className="font-medium">Responsável:</span>
+                    <span className="underline underline-offset-2">{assessoria.responsavel_nome}</span>
+                    <ExternalLink className="w-4 h-4 ml-1" />
+                  </div>
+                )}
+                
+                {/* Bio */}
+                {assessoria.mensagem_bio && (
+                  <div className="mt-3 bg-white/10 rounded-lg px-4 py-3 max-w-2xl">
+                    <p className="text-amber-50 italic">"{assessoria.mensagem_bio}"</p>
+                  </div>
+                )}
+              </div>
+              
+              {/* Posição Destaque */}
+              <div className="flex-shrink-0 text-center bg-white/10 rounded-xl p-4 md:p-6">
+                <Trophy className="w-10 h-10 mx-auto text-yellow-300 mb-2" />
+                <p className="text-4xl md:text-5xl font-bold">{assessoria.posicao_nacional || '-'}º</p>
+                <p className="text-sm text-amber-100">Ranking Nacional</p>
+              </div>
             </div>
           </div>
         </div>
@@ -148,58 +217,74 @@ const AssessoriaPage = () => {
           <div className="lg:col-span-2 space-y-6">
             {/* Stats Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <Card className="bg-amber-50 dark:bg-amber-900/20 border-amber-200">
+              <Card className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-900/30 dark:to-amber-800/20 border-amber-200 hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 text-center">
-                  <Trophy className="w-8 h-8 mx-auto text-amber-500 mb-2" />
-                  <p className="text-3xl font-bold text-amber-600">{assessoria.posicao_nacional || '-'}º</p>
-                  <p className="text-xs text-slate-500">Posição Nacional</p>
+                  <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-amber-500/20 flex items-center justify-center">
+                    <Trophy className="w-6 h-6 text-amber-600" />
+                  </div>
+                  <p className="text-3xl font-bold text-amber-600">{assessoria.posicao_estadual || '-'}º</p>
+                  <p className="text-xs text-slate-500 font-medium">Ranking Estadual</p>
                 </CardContent>
               </Card>
-              <Card className="bg-emerald-50 dark:bg-emerald-900/20 border-emerald-200">
+              <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-900/30 dark:to-emerald-800/20 border-emerald-200 hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 text-center">
-                  <Users className="w-8 h-8 mx-auto text-emerald-500 mb-2" />
+                  <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-emerald-500/20 flex items-center justify-center">
+                    <Users className="w-6 h-6 text-emerald-600" />
+                  </div>
                   <p className="text-3xl font-bold text-emerald-600">{assessoria.total_atletas}</p>
-                  <p className="text-xs text-slate-500">Atletas Ativos</p>
+                  <p className="text-xs text-slate-500 font-medium">Atletas Ativos</p>
                 </CardContent>
               </Card>
-              <Card className="bg-blue-50 dark:bg-blue-900/20 border-blue-200">
+              <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/20 border-blue-200 hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 text-center">
-                  <CheckCircle className="w-8 h-8 mx-auto text-blue-500 mb-2" />
+                  <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-blue-500/20 flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-blue-600" />
+                  </div>
                   <p className="text-3xl font-bold text-blue-600">{assessoria.total_resultados}</p>
-                  <p className="text-xs text-slate-500">Resultados</p>
+                  <p className="text-xs text-slate-500 font-medium">Resultados Aprovados</p>
                 </CardContent>
               </Card>
-              <Card className="bg-purple-50 dark:bg-purple-900/20 border-purple-200">
+              <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/20 border-purple-200 hover:shadow-lg transition-shadow">
                 <CardContent className="p-4 text-center">
-                  <Award className="w-8 h-8 mx-auto text-purple-500 mb-2" />
+                  <div className="w-12 h-12 mx-auto mb-2 rounded-full bg-purple-500/20 flex items-center justify-center">
+                    <Star className="w-6 h-6 text-purple-600" />
+                  </div>
                   <p className="text-3xl font-bold text-purple-600">{assessoria.pontos_total}</p>
-                  <p className="text-xs text-slate-500">Pontos Total</p>
+                  <p className="text-xs text-slate-500 font-medium">Pontos ROE-RR</p>
                 </CardContent>
               </Card>
             </div>
 
-            {/* Conquistas */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg">
-                  <Trophy className="w-5 h-5 text-yellow-500" />
-                  Conquistas
+            {/* Conquistas e Destaques */}
+            <Card className="border-amber-200 overflow-hidden">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20">
+                <CardTitle className="flex items-center gap-2 text-lg text-amber-700 dark:text-amber-400">
+                  <Medal className="w-5 h-5" />
+                  Conquistas e Destaques
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <div className="flex flex-wrap gap-3">
-                  <Badge variant="outline" className="bg-yellow-50 border-yellow-300 text-yellow-700 py-2 px-4">
-                    🥇 {assessoria.total_primeiros} Primeiros Lugares
-                  </Badge>
-                  <Badge variant="outline" className="bg-slate-50 border-slate-300 text-slate-700 py-2 px-4">
-                    🏅 {assessoria.total_podios} Pódios (2º-5º)
-                  </Badge>
-                  <Badge variant="outline" className="bg-emerald-50 border-emerald-300 text-emerald-700 py-2 px-4">
-                    📊 {assessoria.pontos_cadastro} pts de Cadastro
-                  </Badge>
-                  <Badge variant="outline" className="bg-blue-50 border-blue-300 text-blue-700 py-2 px-4">
-                    ✅ {assessoria.pontos_resultados} pts de Resultados
-                  </Badge>
+              <CardContent className="p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  <div className="text-center p-4 bg-gradient-to-br from-yellow-50 to-amber-50 dark:from-yellow-900/20 dark:to-amber-900/20 rounded-xl border border-yellow-200">
+                    <span className="text-3xl">🥇</span>
+                    <p className="text-2xl font-bold text-yellow-600 mt-1">{assessoria.total_primeiros}</p>
+                    <p className="text-xs text-slate-500">1º Lugares</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-slate-50 to-gray-50 dark:from-slate-800 dark:to-gray-800 rounded-xl border border-slate-200">
+                    <span className="text-3xl">🏅</span>
+                    <p className="text-2xl font-bold text-slate-600 mt-1">{assessoria.total_podios}</p>
+                    <p className="text-xs text-slate-500">Pódios (2º-5º)</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20 rounded-xl border border-emerald-200">
+                    <span className="text-3xl">👥</span>
+                    <p className="text-2xl font-bold text-emerald-600 mt-1">{assessoria.pontos_cadastro}</p>
+                    <p className="text-xs text-slate-500">Pts de Cadastro</p>
+                  </div>
+                  <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-xl border border-blue-200">
+                    <span className="text-3xl">✅</span>
+                    <p className="text-2xl font-bold text-blue-600 mt-1">{assessoria.pontos_resultados}</p>
+                    <p className="text-xs text-slate-500">Pts de Resultados</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
@@ -262,77 +347,144 @@ const AssessoriaPage = () => {
 
           {/* Coluna Lateral - Selo e Ações */}
           <div className="space-y-6">
+            {/* Card do Responsável */}
+            {assessoria.responsavel_nome && (
+              <Card className="overflow-hidden border-emerald-200">
+                <CardHeader className="bg-gradient-to-r from-emerald-500 to-green-500 text-white pb-4">
+                  <CardTitle className="flex items-center gap-2 text-lg">
+                    <Crown className="w-5 h-5 text-yellow-300" />
+                    Responsável da Assessoria
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-4">
+                  <div className="flex items-center gap-4 mb-4">
+                    <Avatar className="w-16 h-16 border-2 border-emerald-200">
+                      <AvatarFallback className="bg-emerald-100 text-emerald-700 text-xl">
+                        {assessoria.responsavel_nome?.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div>
+                      <p className="font-bold text-lg">{assessoria.responsavel_nome}</p>
+                      <p className="text-sm text-slate-500">Dono da Assessoria</p>
+                    </div>
+                  </div>
+                  <Button 
+                    className="w-full bg-emerald-500 hover:bg-emerald-600" 
+                    onClick={handleVerPerfilDono}
+                    data-testid="btn-ver-perfil-dono"
+                  >
+                    <User className="w-4 h-4 mr-2" />
+                    Ver Perfil Completo
+                  </Button>
+                </CardContent>
+              </Card>
+            )}
+
             {/* Selo Digital Oficial */}
-            <Card className="overflow-hidden">
+            <Card className="overflow-hidden border-amber-200">
               <CardHeader className="bg-gradient-to-r from-amber-500 to-yellow-500 text-white">
                 <CardTitle className="flex items-center gap-2">
                   <Award className="w-5 h-5" />
-                  Selo Digital Oficial
+                  Selo Digital Oficial 2026
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
                 {/* Certificado para Download */}
                 <div 
                   ref={certificadoRef}
-                  className={`${getSeloColor(assessoria.selo)} text-white p-6 rounded-lg text-center mb-4`}
+                  className={`${getSeloColor(assessoria.selo)} text-white p-6 rounded-xl text-center mb-4 shadow-lg`}
                 >
-                  <div className="text-5xl mb-3">{getSeloIcon(assessoria.selo)}</div>
+                  <div className="text-6xl mb-3">{getSeloIcon(assessoria.selo)}</div>
                   <h3 className="text-xl font-bold mb-1">{getSeloTitle(assessoria.selo)}</h3>
                   <p className="text-lg font-semibold">{assessoria.nome}</p>
+                  <p className="text-sm opacity-80 mt-1">{assessoria.cidade}/{assessoria.estado}</p>
                   <div className="border-t border-white/30 mt-4 pt-4">
                     <p className="text-sm opacity-90">Liga Nacional de Assessorias</p>
-                    <p className="text-sm font-semibold">Ranking Run</p>
-                    <p className="text-xs opacity-75 mt-2">Classificação Oficial ROE-RR – 2026</p>
+                    <p className="text-sm font-bold">RANKING RUN</p>
+                    <p className="text-xs opacity-75 mt-2">Certificação Oficial ROE-RR – 2026</p>
                   </div>
                 </div>
 
-                <Button 
-                  className="w-full bg-amber-500 hover:bg-amber-600" 
-                  onClick={downloadCertificado}
-                  disabled={downloadingCertificado}
-                >
-                  {downloadingCertificado ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Gerando...
-                    </>
-                  ) : (
-                    <>
-                      <Download className="w-4 h-4 mr-2" />
-                      Baixar Selo Oficial
-                    </>
+                <div className="space-y-2">
+                  <Button 
+                    className="w-full bg-amber-500 hover:bg-amber-600" 
+                    onClick={downloadCertificado}
+                    disabled={downloadingCertificado}
+                    data-testid="btn-baixar-selo"
+                  >
+                    {downloadingCertificado ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Gerando Selo...
+                      </>
+                    ) : (
+                      <>
+                        <Download className="w-4 h-4 mr-2" />
+                        Baixar Selo Oficial
+                      </>
+                    )}
+                  </Button>
+                  
+                  {assessoria.responsavel_id && (
+                    <Button 
+                      variant="outline"
+                      className="w-full border-amber-300 text-amber-700 hover:bg-amber-50" 
+                      onClick={handleVerPerfilDono}
+                    >
+                      <ExternalLink className="w-4 h-4 mr-2" />
+                      Ver Perfil do Responsável
+                    </Button>
                   )}
-                </Button>
+                </div>
               </CardContent>
             </Card>
 
             {/* Botão de Contato */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Quer treinar com esta equipe?</CardTitle>
+            <Card className="border-emerald-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Target className="w-5 h-5 text-emerald-500" />
+                  Quer Treinar com Esta Equipe?
+                </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 <p className="text-sm text-slate-600">
-                  Entre em contato com a assessoria para conhecer os planos de treino e começar sua jornada!
+                  Entre em contato com a assessoria para conhecer os planos de treino, 
+                  metodologia e comece sua jornada de evolução!
                 </p>
-                <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700">
+                <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-md">
                   <Send className="w-4 h-4 mr-2" />
                   Quero Treinar com Essa Assessoria
                 </Button>
               </CardContent>
             </Card>
 
-            {/* Informações */}
-            <Card className="bg-slate-50 dark:bg-slate-800">
-              <CardContent className="p-4">
-                <h4 className="font-semibold text-sm mb-3 text-slate-700 dark:text-slate-300">
+            {/* Sistema de Pontuação */}
+            <Card className="bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-800 dark:to-slate-900 border-slate-200">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <BarChart3 className="w-4 h-4 text-amber-500" />
                   Sistema de Pontuação ROE-RR
-                </h4>
-                <div className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
-                  <p>• Atleta cadastrado = +0,5 pts</p>
-                  <p>• Resultado aprovado = +1,0 pts</p>
-                  <p>• 2º a 5º lugar = +0,5 pts extra</p>
-                  <p>• 1º lugar = +1,0 pts extra</p>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2 text-xs">
+                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg">
+                    <span className="text-emerald-500">+0,5</span>
+                    <span className="text-slate-600 dark:text-slate-300">Atleta cadastrado</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg">
+                    <span className="text-blue-500">+1,0</span>
+                    <span className="text-slate-600 dark:text-slate-300">Resultado aprovado</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg">
+                    <span className="text-amber-500">+0,5</span>
+                    <span className="text-slate-600 dark:text-slate-300">2º a 5º lugar</span>
+                  </div>
+                  <div className="flex items-center gap-2 p-2 bg-white dark:bg-slate-700 rounded-lg">
+                    <span className="text-yellow-500">+1,0</span>
+                    <span className="text-slate-600 dark:text-slate-300">1º lugar</span>
+                  </div>
                 </div>
               </CardContent>
             </Card>
