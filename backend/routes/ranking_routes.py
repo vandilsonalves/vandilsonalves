@@ -13,6 +13,7 @@ import csv
 from config import db
 from models import RankingResponse
 from routes.auth_routes import get_current_user, get_admin_user
+from services.cache_service import cached, cache_service, invalidate_on_ranking_change
 
 router = APIRouter(tags=["Ranking"])
 
@@ -20,6 +21,7 @@ router = APIRouter(tags=["Ranking"])
 # ==================== RANKING POVÃO ====================
 
 @router.get("/ranking/povao")
+@cached(prefix='ranking', ttl_key='ranking_povao')
 async def get_ranking_povao(genero: str = "M"):
     """Retorna o ranking do Povão - Pace Livre"""
     ranking_list = await db.ranking_povao.find(
@@ -54,6 +56,7 @@ async def get_ranking_povao(genero: str = "M"):
 
 
 @router.get("/ranking/povao/stats")
+@cached(prefix='ranking', ttl_key='stats')
 async def get_povao_stats():
     """Retorna estatísticas do ranking do Povão"""
     total_atletas_m = await db.ranking_povao.count_documents({"ano": 2025, "genero": "M"})
@@ -83,6 +86,7 @@ async def get_povao_stats():
 # ==================== RANKING SEMANAL ====================
 
 @router.get("/ranking/semanal")
+@cached(prefix='ranking', ttl_key='ranking_semanal')
 async def get_ranking_semanal(
     genero: str = "M",
     categoria: str = "normal",
@@ -164,6 +168,7 @@ async def get_ranking_semanal(
 # ==================== RANKING MENSAL ====================
 
 @router.get("/ranking/mensal")
+@cached(prefix='ranking', ttl_key='ranking_mensal')
 async def get_ranking_mensal(
     genero: str = "M",
     categoria: str = "normal",
@@ -257,6 +262,7 @@ async def get_ranking_mensal(
 # ==================== DESTAQUE DO MÊS ====================
 
 @router.get("/ranking/destaque-mes")
+@cached(prefix='ranking', ttl_key='ranking_destaque')
 async def get_destaque_mes(mes: int = None, ano: int = None):
     """Retorna os destaques do mês (top 3 de cada categoria + estatísticas)"""
     
@@ -424,19 +430,22 @@ async def get_anos_disponiveis():
 # ==================== FILTROS AUXILIARES ====================
 
 @router.get("/ranking/estados")
+@cached(prefix='ranking', ttl_key='estados')
 async def get_estados():
     """Lista estados com atletas"""
     estados = await db.usuarios.distinct("estado", {"role": "atleta"})
-    return sorted([e for e in estados if e])
+    return {"estados": sorted([e for e in estados if e])}
 
 
 @router.get("/ranking/faixas-etarias")
+@cached(prefix='ranking', ttl_key='faixas_etarias')
 async def get_faixas_etarias():
     """Lista faixas etárias disponíveis"""
-    return ["18-29", "30-39", "40-49", "50-59", "60-69", "70+"]
+    return {"faixas": ["18-29", "30-39", "40-49", "50-59", "60-69", "70+"]}
 
 
 @router.get("/ranking/equipes")
+@cached(prefix='ranking', ttl_key='equipes')
 async def get_equipes():
     """Lista equipes/assessorias ativas"""
     pipeline = [
@@ -447,4 +456,4 @@ async def get_equipes():
     ]
     
     equipes = await db.usuarios.aggregate(pipeline).to_list(None)
-    return [{"nome": e["_id"], "atletas": e["count"]} for e in equipes if e["_id"]]
+    return {"equipes": [{"nome": e["_id"], "atletas": e["count"]} for e in equipes if e["_id"]]}

@@ -191,3 +191,40 @@ async def create_snapshot(current_user: dict = Depends(get_admin_user)):
     """
     await save_metrics_snapshot(db)
     return {"message": "Snapshot criado com sucesso", "timestamp": datetime.now(timezone.utc).isoformat()}
+
+
+# ==================== CACHE STATS ====================
+
+from services.cache_service import cache_service, invalidate_on_ranking_change
+
+@router.get("/monitoring/cache")
+async def get_cache_stats(current_user: dict = Depends(get_admin_user)):
+    """
+    Retorna estatísticas do cache Redis (apenas admin).
+    """
+    return cache_service.get_stats()
+
+
+@router.post("/monitoring/cache/invalidate")
+async def invalidate_cache(
+    prefix: str = None,
+    current_user: dict = Depends(get_admin_user)
+):
+    """
+    Invalida cache (apenas admin).
+    prefix: 'ranking', 'liga', 'corridas', 'all' ou None para tudo
+    """
+    if prefix == 'all' or prefix is None:
+        await cache_service.invalidate_all()
+        return {"message": "Todo o cache foi invalidado"}
+    elif prefix == 'ranking':
+        count = await cache_service.invalidate_prefix("cache:ranking:")
+        return {"message": f"Cache de ranking invalidado ({count} chaves)"}
+    elif prefix == 'liga':
+        count = await cache_service.invalidate_prefix("cache:liga:")
+        return {"message": f"Cache da liga invalidado ({count} chaves)"}
+    elif prefix == 'corridas':
+        count = await cache_service.invalidate_prefix("cache:corridas:")
+        return {"message": f"Cache de corridas invalidado ({count} chaves)"}
+    else:
+        return {"message": "Prefixo inválido. Use: ranking, liga, corridas ou all"}

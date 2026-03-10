@@ -572,7 +572,7 @@ const RankingPage = () => {
                   <SelectContent>
                     <SelectItem value="all">Todas as equipes</SelectItem>
                     {equipesDisponiveis.map((equipe) => (
-                      <SelectItem key={equipe} value={equipe}>{equipe}</SelectItem>
+                      <SelectItem key={equipe.nome} value={equipe.nome}>{equipe.nome}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -816,7 +816,7 @@ const RankingPage = () => {
                     <SelectContent>
                       <SelectItem value="all">Todas as equipes</SelectItem>
                       {equipesDisponiveis.map(eq => (
-                        <SelectItem key={eq} value={eq}>{eq}</SelectItem>
+                        <SelectItem key={eq.nome} value={eq.nome}>{eq.nome}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

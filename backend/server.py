@@ -141,6 +141,8 @@ from routes.atletas_routes import router as atletas_router
 from routes.resultados_routes import router as resultados_router
 from routes.ranking_routes import router as ranking_router
 from routes.monitoring_routes import router as monitoring_router
+from routes.admin_routes import router as admin_routes_router
+from routes.assessorias_routes import router as assessorias_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -150,6 +152,8 @@ api_router.include_router(atletas_router)
 api_router.include_router(resultados_router)
 api_router.include_router(ranking_router)
 api_router.include_router(monitoring_router)
+api_router.include_router(admin_routes_router)
+api_router.include_router(assessorias_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 
