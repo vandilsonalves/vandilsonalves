@@ -1319,11 +1319,57 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## CACHE REDIS INTELIGENTE (10/03/2026)
+
+### ✅ Funcionalidades Implementadas:
+
+| Componente | Descrição | Status |
+|------------|-----------|--------|
+| Serviço de Cache | Redis com TTL configurável por tipo de dado | ✅ |
+| Decorator @cached | Aplica cache automaticamente em funções async | ✅ |
+| Invalidação por Prefixo | Permite invalidar grupos de cache (ranking, liga, etc) | ✅ |
+| Estatísticas | Endpoint /api/monitoring/cache com hit rate e memória | ✅ |
+| Invalidação Manual | Endpoint POST /api/monitoring/cache/invalidate | ✅ |
+
+### TTL Configurados:
+- **ranking**: 5 minutos
+- **ranking_mensal**: 10 minutos
+- **estados/faixas_etarias**: 1 hora (raramente muda)
+- **liga_assessorias**: 5 minutos
+- **stats**: 1 minuto
+
+### Performance Observada:
+- Hit Rate: ~71%
+- Memória: ~1MB
+- Redução média de tempo de resposta: 20-30%
+
+---
+
+## REFATORAÇÃO DO BACKEND - FASE 2 (10/03/2026)
+
+### ✅ Novos Módulos Criados:
+
+| Módulo | Linhas | Endpoints | Status |
+|--------|--------|-----------|--------|
+| `admin_routes.py` | ~500 | /admin/pendentes, aprovar, reprovar, stats, atletas | ✅ |
+| `assessorias_routes.py` | ~400 | /assessorias/lista, /liga-assessorias/* | ✅ |
+
+### Progresso Total da Refatoração:
+- **Linhas originais:** 7082
+- **Linhas atuais:** 6253
+- **Linhas removidas:** 829 (12%)
+- **Total de módulos de rotas:** 11
+- **Total de serviços:** 6
+
+---
+
 ## PRÓXIMAS TAREFAS (BACKLOG)
 
 ### P3 - Pendentes:
 1. Verificar domínio no Resend para emails de produção
-2. Continuar refatoração (criar módulos Admin, Assessorias, Corridas)
+2. Criar módulo `corridas_eventos_routes.py` (Ranking de Corridas)
+3. Criar módulo `aniversariantes_routes.py`
+4. Criar módulo `instagram_routes.py` (Ranking Run Inside)
 
 ### Melhorias Futuras:
 - Dashboard com mapa de acessos (usando lat/lon da geolocalização)
@@ -1333,6 +1379,6 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 ---
 
 **Última Atualização:** 10/03/2026
-**Versão:** 7.2 (Sistema de Monitoramento Implementado)
+**Versão:** 7.3 (Cache Redis + Refatoração Fase 2)
 
 
