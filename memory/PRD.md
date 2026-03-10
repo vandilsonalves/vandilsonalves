@@ -1286,6 +1286,39 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## SISTEMA DE MONITORAMENTO (10/03/2026)
+
+### ✅ Funcionalidades Implementadas:
+
+| Componente | Descrição | Status |
+|------------|-----------|--------|
+| Middleware de Métricas | Coleta automática de todas as requisições | ✅ |
+| Endpoint /api/health | Health check público básico | ✅ |
+| Endpoint /api/health/detailed | Health check detalhado público | ✅ |
+| Dashboard Admin | Painel visual completo de métricas | ✅ |
+| Histórico 7 dias | Snapshots salvos a cada 5 minutos no MongoDB | ✅ |
+| Alertas por Email | Via Resend quando limites são ultrapassados | ✅ |
+
+### Métricas Coletadas:
+- **Sistema:** CPU, Memória, Disco, Conexões de Rede
+- **Requisições:** Total, Req/min, Tempo médio, Taxa de erros, Status HTTP
+- **Endpoints:** Tempo médio/máximo por endpoint, mais lentos
+
+### Limites de Alerta Configurados:
+- CPU > 90%
+- Memória > 85%
+- Disco > 90%
+- Taxa de Erros > 10%
+- Tempo de Resposta > 5s
+
+### Arquivos Criados:
+- `/app/backend/services/monitoring_service.py`
+- `/app/backend/routes/monitoring_routes.py`
+- `/app/backend/middleware/__init__.py`
+- `/app/frontend/src/pages/admin/dashboards/DashboardMonitoramento.jsx`
+
+---
+
 ## PRÓXIMAS TAREFAS (BACKLOG)
 
 ### P3 - Pendentes:
@@ -1300,6 +1333,6 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 ---
 
 **Última Atualização:** 10/03/2026
-**Versão:** 7.1 (Refatoração Backend - Fase 1 Concluída)
+**Versão:** 7.2 (Sistema de Monitoramento Implementado)
 
 
