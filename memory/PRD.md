@@ -1354,12 +1354,49 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 | `admin_routes.py` | ~500 | /admin/pendentes, aprovar, reprovar, stats, atletas | ✅ |
 | `assessorias_routes.py` | ~400 | /assessorias/lista, /liga-assessorias/* | ✅ |
 
+---
+
+## SISTEMA DE FILAS CELERY (10/03/2026)
+
+### ✅ Funcionalidades Implementadas:
+
+| Componente | Descrição | Status |
+|------------|-----------|--------|
+| Celery Worker | 2 processos concorrentes com Redis broker | ✅ |
+| Filas Múltiplas | default, ranking, email, reports | ✅ |
+| Task Routing | Tarefas roteadas para filas específicas | ✅ |
+| API de Gerenciamento | /api/celery/* para status e controle | ✅ |
+
+### Tarefas Implementadas:
+- `recalcular_ranking_task` - Recálculo de rankings em background
+- `verificar_conquistas_task` - Verificação de conquistas para atletas
+- `enviar_email_task` - Envio de email individual
+- `enviar_emails_aniversario_task` - Envio em massa de aniversários
+- `gerar_relatorio_*_task` - Geração de relatórios Excel
+- `save_metrics_snapshot_task` - Snapshot periódico de métricas
+- `check_alerts_task` - Verificação periódica de alertas
+- `cleanup_expired_cache` - Limpeza de cache
+
+---
+
+## REFATORAÇÃO DO BACKEND - FASE 3 (10/03/2026)
+
+### ✅ Novos Módulos Criados:
+
+| Módulo | Linhas | Endpoints | Status |
+|--------|--------|-----------|--------|
+| `celery_routes.py` | ~250 | /celery/status, tasks, purge | ✅ |
+| `corridas_eventos_routes.py` | ~350 | /corridas-eventos/*, /ranking-corridas/* | ✅ |
+| `aniversariantes_routes.py` | ~280 | /admin/aniversariantes/* | ✅ |
+| `instagram_routes.py` | ~300 | /admin/instagram/* | ✅ |
+
 ### Progresso Total da Refatoração:
 - **Linhas originais:** 7082
-- **Linhas atuais:** 6253
-- **Linhas removidas:** 829 (12%)
-- **Total de módulos de rotas:** 11
+- **Linhas atuais:** 6261
+- **Linhas removidas:** 821 (12%)
+- **Total de módulos de rotas:** 16
 - **Total de serviços:** 6
+- **Arquivos de tasks:** 3
 
 ---
 
@@ -1367,18 +1404,17 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ### P3 - Pendentes:
 1. Verificar domínio no Resend para emails de produção
-2. Criar módulo `corridas_eventos_routes.py` (Ranking de Corridas)
-3. Criar módulo `aniversariantes_routes.py`
-4. Criar módulo `instagram_routes.py` (Ranking Run Inside)
+2. Integrar Flower (dashboard Celery) se necessário
 
 ### Melhorias Futuras:
 - Dashboard com mapa de acessos (usando lat/lon da geolocalização)
 - Sistema de backup automático
 - Notificações push
+- Dashboard de monitoramento Celery no Admin
 
 ---
 
 **Última Atualização:** 10/03/2026
-**Versão:** 7.3 (Cache Redis + Refatoração Fase 2)
+**Versão:** 7.4 (Celery + Refatoração Fase 3)
 
 
