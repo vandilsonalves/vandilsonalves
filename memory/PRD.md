@@ -1261,6 +1261,31 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ---
 
+## REFATORAÇÃO DO BACKEND (10/03/2026)
+
+### ✅ Módulos Criados e Funcionando:
+| Módulo | Endpoints | Status |
+|--------|-----------|--------|
+| `auth_routes.py` | /auth/register, /auth/login, /auth/me | ✅ Funcionando |
+| `notificacoes_routes.py` | /notificacoes, marcar lida | ✅ Funcionando |
+| `conquistas_routes.py` | /conquistas, /selos-atleta | ✅ Funcionando |
+| `atletas_routes.py` | /atletas/meu-perfil, perfil, senha, foto, troca-equipe | ✅ Funcionando |
+| `resultados_routes.py` | /resultados/submeter | ✅ Funcionando |
+| `ranking_routes.py` | /ranking/povao, semanal, mensal, destaque-mes, etc | ✅ Funcionando |
+
+### Progresso:
+- **Linhas originais:** 7082
+- **Linhas atuais:** 6199
+- **Linhas removidas:** 883 (12.5%)
+- **Testes:** 100% passaram (19/19 backend + frontend OK)
+
+### Próximos Módulos a Criar:
+- `admin_routes.py` (endpoints de administração)
+- `assessorias_routes.py` (Liga de Assessorias)
+- `corridas_eventos_routes.py` (Ranking de Corridas)
+
+---
+
 ## PRÓXIMAS TAREFAS (BACKLOG)
 
 ### P3 - Pendentes:
@@ -1269,13 +1294,12 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 
 ### Melhorias Futuras:
 - Dashboard com mapa de acessos (usando lat/lon da geolocalização)
-- Remover código duplicado do server.py
 - Sistema de backup automático
 - Notificações push
 
 ---
 
 **Última Atualização:** 10/03/2026
-**Versão:** 7.0 (Sistema RBAC + Email + Geolocalização + Refatoração)
+**Versão:** 7.1 (Refatoração Backend - Fase 1 Concluída)
 
 
