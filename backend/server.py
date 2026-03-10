@@ -7039,13 +7039,22 @@ async def get_ranking_corridas_interno(limite: int = 100):
 
 # ==================== INCLUDE ROUTER ====================
 # Import dos routers modulares
-# NOTA: Routers de auth, notificações e conquistas estão prontos em /routes/
-# mas ainda não foram ativados para evitar duplicação.
-# Ativar após remover os endpoints correspondentes do server.py
 from routes.rbac import router as rbac_router
+from routes.auth_routes import router as auth_routes_router
+from routes.notificacoes_routes import router as notificacoes_router
+from routes.conquistas_routes import router as conquistas_router
+from routes.atletas_routes import router as atletas_router
+from routes.resultados_routes import router as resultados_router
+from routes.ranking_routes import router as ranking_router
 
-# Incluir routers modulares
+# Incluir routers modulares (ordem importa - mais específico primeiro)
 api_router.include_router(rbac_router)
+api_router.include_router(auth_routes_router)
+api_router.include_router(notificacoes_router)
+api_router.include_router(conquistas_router)
+api_router.include_router(atletas_router)
+api_router.include_router(resultados_router)
+api_router.include_router(ranking_router)
 
 app.include_router(api_router)
 

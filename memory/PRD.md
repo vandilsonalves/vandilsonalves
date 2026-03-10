@@ -1101,31 +1101,29 @@ Dividido o AdminDashboard monolítico em componentes modulares:
 - `/app/frontend/src/context/AuthContext.js` - Adicionado suporte a permissões RBAC
 - `/app/frontend/src/pages/AdminDashboard.jsx` - Menu filtrado por permissões
 
-### 16. Refatoração do Backend em Módulos 🔄 EM PROGRESSO (09/03/2026)
+### 16. Refatoração do Backend em Módulos 🔄 EM PROGRESSO (09-10/03/2026)
 
 **Descrição**: Divisão do arquivo monolítico `server.py` (~7000 linhas) em módulos menores usando `APIRouter`.
 
-**Progresso:**
+**Progresso Atualizado (7 módulos ativos):**
 
-| Módulo | Status | Descrição |
-|--------|--------|-----------|
-| `config.py` | ✅ Criado | Configurações compartilhadas (DB, Security) |
-| `routes/rbac.py` | ✅ **ATIVO** | Sistema RBAC (administradores, permissões, logs) |
-| `routes/auth_routes.py` | 🟡 Pronto | Autenticação (login, registro, me) |
-| `routes/notificacoes_routes.py` | 🟡 Pronto | Sistema de notificações |
-| `routes/conquistas_routes.py` | 🟡 Pronto | Selos e conquistas |
-| `routes/atletas_routes.py` | 🟡 Pronto | Perfil, troca de equipe, aniversário |
-| `routes/resultados_routes.py` | 🟡 Pronto | Submissão de resultados |
-| `services/email_service.py` | ✅ **ATIVO** | Serviço de email (Resend) |
+| Módulo | Status | Linhas | Descrição |
+|--------|--------|--------|-----------|
+| `config.py` | ✅ Ativo | 22 | Configurações compartilhadas |
+| `routes/rbac.py` | ✅ Ativo | 920 | Sistema RBAC |
+| `routes/auth_routes.py` | ✅ Ativo | 170 | Autenticação |
+| `routes/notificacoes_routes.py` | ✅ Ativo | 60 | Notificações |
+| `routes/conquistas_routes.py` | ✅ Ativo | 200 | Selos e conquistas |
+| `routes/atletas_routes.py` | ✅ Ativo | 280 | Perfil, troca de equipe |
+| `routes/resultados_routes.py` | ✅ Ativo | 115 | Submissão de resultados |
+| `routes/ranking_routes.py` | ✅ Ativo | 340 | Rankings (povão, semanal, mensal) |
 
-**Legenda:**
-- ✅ **ATIVO**: Router incluído no server.py
-- 🟡 **Pronto**: Módulo criado e testado, aguardando ativação
+**Total: ~2100 linhas em módulos**
 
-**Próximos passos:**
-1. Criar módulos para Admin, Ranking, Assessorias, Corridas
-2. Ativar gradualmente os módulos prontos
-3. Remover código duplicado do server.py
+**Serviços Modulares:**
+- `services/email_service.py` ✅
+- `services/rbac_service.py` ✅
+- `services/geolocation_service.py` ✅
 
 **Guia completo:** `/app/backend/docs/REFACTORING_GUIDE.md`
 
