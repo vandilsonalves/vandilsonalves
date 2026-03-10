@@ -1,55 +1,57 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou uma reestruturação completa do Painel de Administração e uma lista de 13 tarefas para corrigir bugs e adicionar novas funcionalidades. A lista de tarefas incluía refatorar o dashboard, corrigir filtros, implementar lógicas de negócio (troca de equipe), melhorar UIs e adicionar novos sistemas como Minha Assessoria, selos de conquista, sistema de reputação e gerenciamento de autorizações.
+O usuário solicitou inicialmente a reestruturação do painel de administração e a implementação de 13 tarefas. Subsequentemente, o usuário forneceu um novo e detalhado requisito para um sistema robusto de controle de acesso baseado em função (RBAC) e um plano de refatoração para o backend.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Reestruturação do Dashboard do Admin:** Dividir o painel em dashboards especializados (Geral, Atletas, Assessorias, etc.).
-2.  **Novas Seções no Admin:** Criar um sistema de Autorizações para gerenciar o acesso de atletas após um período de teste gratuito, permitindo a emissão de uma carteirinha de membro.
-3.  **13 Tarefas:**
-    *   **TAREFA 1-8 (CONCLUÍDAS ANTERIORMENTE/NO INÍCIO):** Correções de bugs e melhorias.
-    *   **TAREFA 9:** Criar o dashboard Minha Assessoria com estatísticas e gráficos detalhados.
-    *   **TAREFA 10:** Adicionar um botão REGULAMENTO nas páginas de ranking, com conteúdo gerenciável pelo admin.
-    *   **TAREFA 11:** Implementar um sistema de selos de conquista para atletas (12, 20, 30 resultados).
-    *   **TAREFA 12:** Aprimorar o sistema de avaliação de corridas com um termo de responsabilidade e registro de IP.
-    *   **TAREFA 13:** Criar um sistema de reputação (Bronze, Prata, Ouro) para avaliadores de corridas.
-4.  **Refatoração do Backend:** Organizar o arquivo monolítico .
+1.  **Sistema RBAC (Controle de Acesso Baseado em Função):**
+    *   **Níveis de Acesso:** Criar múltiplos níveis de administradores, incluindo Super Admin (acesso total) e Colaboradores Operacionais (permissões limitadas).
+    *   **Log de Auditoria:** Implementar um sistema de log detalhado para todas as ações administrativas, registrando ID do admin, ação, IP, dispositivo e geolocalização.
+    *   **Admin de Emergência (Break Glass Account):** Criar uma conta especial para situações críticas com privilégios elevados, 2FA obrigatório e alertas automáticos por e-mail sobre seu uso.
+    *   **Interface de Gerenciamento:** Desenvolver um painel no frontend para gerenciar administradores, funções (roles) e visualizar os logs de auditoria e alertas de segurança.
+2.  **Integração de Email (Resend):** Integrar um serviço de email para enviar códigos de 2FA e alertas de segurança. O usuário forneceu a chave de API.
+3.  **Painel Diferenciado:** A interface do painel de administração deve se adaptar com base no nível de permissão do usuário logado, ocultando menus e funcionalidades para os quais ele não tem acesso.
+4.  **Geolocalização:** Enriquecer os logs de auditoria com dados de geolocalização (cidade, país) baseados no endereço IP do administrador.
+5.  **Refatoração do Backend:** Dividir o arquivo monolítico  (com mais de 7000 linhas) em múltiplos módulos de rotas para melhorar a manutenibilidade e escalabilidade.
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-A aplicação é uma plataforma full-stack (React + FastAPI) de ranking de corridas. A sessão foi extremamente produtiva, concluindo todas as 13 tarefas originais do usuário e adicionando novas funcionalidades críticas. O bug de login que bloqueava o uso foi corrigido. Foram implementados dashboards avançados, sistemas de autorização, selos de conquista, e um sistema de reputação. O backend, embora funcional, permanece em um único arquivo  que cresceu para mais de 7000 linhas, e um trabalho de refatoração foi iniciado.
+A aplicação é uma plataforma full-stack (React + FastAPI) para ranking de corridas. Nesta sessão, foi implementado um sistema RBAC completo, incluindo diferentes papéis de administrador (Super Admin, Colaborador), um painel de gerenciamento, logs de auditoria detalhados e uma conta de emergência com 2FA. A integração com o serviço de email Resend foi concluída e está funcional para enviar alertas e códigos. A interface do administrador agora exibe menus diferentes com base nas permissões do usuário. Os logs de auditoria foram aprimorados com geolocalização via IP. A refatoração do backend monolítico () foi iniciada, com vários módulos de rotas criados, mas a tarefa ainda está em andamento.
 
 **Last working item**:
-*   **Last item agent was working:** Refatoração do backend. Devido ao alto risco de quebrar a aplicação ao refatorar o arquivo  de mais de 7000 linhas de uma só vez, o agente optou por uma abordagem preparatória. Foi adicionado um índice detalhado no topo de  para facilitar a navegação e criado um guia de refatoração () para orientar a divisão do arquivo em módulos.
+*   **Last item agent was working:** Refatoração do backend (). O agente estava extraindo endpoints do arquivo monolítico e movendo-os para arquivos de rotas modulares em . Módulos para autenticação, notificações, conquistas, atletas, resultados e parte do ranking foram criados e seus roteadores foram incluídos no .
 *   **Status:** IN PROGRESS
-*   **Agent Testing Done:** N/A (Esta é uma tarefa de organização de código, não funcional).
-*   **Which testing method agent to use?** Após a conclusão da refatoração modular, o uso de  (frontend e backend testing agent) será crucial para garantir que nenhuma funcionalidade foi quebrada (regressão).
+*   **Agent Testing Done:** Y (O agente usou  para testar endpoints-chave após incluir os novos roteadores para garantir que a aplicação continuava funcional.)
+*   **Which testing method agent to use?** . A refatoração é uma mudança estrutural de alto risco. Após a migração completa de cada módulo e a remoção do código duplicado, testes de regressão extensivos no backend e no frontend serão cruciais para garantir que nenhuma funcionalidade foi quebrada.
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
 *   Não há issues pendentes.
 
 **In progress Task List**:
-*   **Task 1:** Concluir a refatoração do backend (PRIORIDADE: P0)
-    *   **Where to resume:** Seguir o guia em . Começar a mover a lógica de  para arquivos de rotas modulares usando  (ex: , , , etc.). O agente já criou a estrutura de pastas.
-    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável, facilitando o desenvolvimento futuro e a correção de bugs.
+*   **Task 1:** Concluir a refatoração do backend  (PRIORIDADE: P0)
+    *   **Where to resume:** O agente já criou e incluiu os roteadores para os módulos , , , ,  e . O próximo passo crítico é **remover o código duplicado correspondente do arquivo ** para cada um desses módulos, um de cada vez, testando exaustivamente após cada remoção. Depois, continuar criando os módulos para as seções restantes (ex: , ).
+    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável. Redução drástica do tamanho do , facilitando o desenvolvimento futuro.
     *   **Status:** IN PROGRESS
     *   **Should Test frontend/backend/both after fix?** both
     *   **Blocked on something:** Não.
 
 **Upcoming and Future Tasks**
-*   Não há tarefas futuras pendentes. Todas as 13 solicitações originais do usuário foram concluídas. O foco agora é na melhoria técnica através da refatoração.
+*   **Verificar domínio no Resend para emails de produção (P3):** O usuário adiou esta tarefa. É uma etapa de configuração na plataforma Resend, necessária para que os e-mails possam ser enviados para qualquer endereço (e não apenas para o e-mail do proprietário da conta Resend). O agente deve lembrar o usuário sobre isso.
 
 **Completed work in this session**
-- **Bug de Login Crítico (RESOLVED):** Corrigido o problema que impedia o login de usuários do tipo  e , que era causado por uma  no endpoint .
-- **9ª Tarefa (DONE):** Implementado o dashboard Minha Assessoria () com uma nova aba Relatórios contendo múltiplos gráficos avançados (linha, pizza, radar, mapa geográfico, treemap, etc.).
-- **10ª Tarefa (DONE):** Criado o sistema de Regulamento, que inclui um modal de visualização para os usuários e uma seção no painel de admin para o gerenciamento de conteúdo via Markdown (, ).
-- **Seção Autorizações (DONE):** Implementado um sistema de gerenciamento de acesso para atletas após o período de teste, com status (Em Teste, Autorizado, Expirado), contagem de dias restantes e a geração de uma Carteirinha de Membro virtual.
-- **11ª Tarefa (DONE):** Criado um sistema de selos de conquista para atletas com base no número de resultados lançados (Bronze: 12, Prata: 20, Ouro: 30), exibido de forma visual no perfil do atleta ().
-- **12ª Tarefa (DONE):** Aprimorado o sistema de avaliação de corridas, adicionando um termo de responsabilidade com checkbox obrigatório e registrando o endereço IP do avaliador no backend.
-- **13ª Tarefa (DONE):** Criado um sistema de reputação para avaliadores (Bronze, Prata, Ouro) com um ranking público na página de Ranking das Corridas.
-- **Mudança de Lógica de Negócio (DONE):** Alterada a regra de submissão de resultados de até 6 dias após a corrida para até 30 dias após a data de cadastro do atleta.
-- **Refatoração (Iniciada):** Organizado o  com um índice e criado um guia de refatoração ().
-- **Credenciais de Teste (DONE):** Fornecidas 4 novas credenciais de atletas para o usuário.
+- **Sistema RBAC Completo (DONE):**
+  - Implementado backend com múltiplos níveis de acesso (Super Admin, Colaborador) e um Admin de Emergência com 2FA.
+  - Criado um módulo de rotas dedicado () e serviços de suporte ().
+  - Desenvolvido painel de frontend () para gerenciar admins, visualizar logs de auditoria e alertas de segurança.
+- **Integração de Email com Resend (DONE):**
+  - Integrado o serviço de email Resend para enviar códigos de 2FA e alertas de segurança, utilizando a chave de API fornecida pelo usuário.
+  - O sistema está funcional, com um aviso de que em ambiente de teste os e-mails só podem ser enviados para o dono da conta Resend.
+- **Painel Diferenciado para Colaboradores (DONE):**
+  - O menu do painel de administração agora é renderizado dinamicamente com base nas permissões do usuário logado, ocultando itens para Colaboradores.
+- **Geolocalização por IP (DONE):**
+  - Os logs de auditoria e de login agora registram e exibem a localização aproximada (cidade, país, ISP) do usuário.
+- **Início da Refatoração do Backend (IN PROGRESS):**
+  - Criados múltiplos arquivos de rotas modulares (ex: , , ) a partir do monolítico .
 
 **Earlier issues found/mentioned but not fixed**
 *   Nenhum.
@@ -61,86 +63,87 @@ A aplicação é uma plataforma full-stack (React + FastAPI) de ranking de corri
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, MongoDB (com ), JWT, . Lógica complexa de agregação com MongoDB para os dashboards.
-*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui,  para múltiplos tipos de gráficos,  para renderização de conteúdo dinâmico.
-*   **Arquitetura:** Monorepo. O foco da próxima fase será a modularização do backend monolítico.
+*   **Backend:** FastAPI,  para modularização, Pydantic, Motor (MongoDB async),  (JWT),  (hashing).
+*   **Frontend:** React, Context API () para gerenciamento de estado e permissões, renderização condicional, Tailwind CSS, shadcn/ui.
+*   **Arquitetura:** Monorepo com um backend monolítico em processo de refatoração para uma arquitetura modular baseada em rotas.
+*   **Integrações:** Resend (email transacional), ip-api.com (geolocalização por IP).
 
 **key DB schema**
-*   ****: Adicionado  (DateTime) para a nova lógica de submissão de resultados.
-*   ****: Adicionado  (String) para registrar o IP do avaliador.
-*   ****: Nova coleção para armazenar o conteúdo do regulamento ().
-*   ****: Nova coleção para gerenciar o acesso de atletas ().
+*   **Novas Coleções:**
+    *   : 
+    *   : 
+    *   : 
+    *   : 
+    *   : 
+    *   : 
 
 **changes in tech stack**
-*   Adicionadas as dependências  e  ao  do frontend.
+*   **Backend:** Adicionadas as dependências , , .
 
 **All files of reference**
-*   **/app/backend/server.py:** Arquivo principal que foi organizado e é o alvo da refatoração em andamento.
-*   **/app/backend/docs/REFACTORING_GUIDE.md:** Novo guia com o plano de refatoração do backend.
-*   **/app/frontend/src/pages/admin/AdminDashboard.jsx:** Modificado para incluir as seções Autorizações e Gerenciar Regulamento.
-*   **/app/frontend/src/pages/DonoAssessoriaDashboard.jsx:** Modificado para incluir a nova aba Relatórios.
-*   **/app/frontend/src/pages/admin/dashboards/RelatoriosAssessoria.jsx:** Novo componente com todos os gráficos do dashboard da assessoria.
-*   **/app/frontend/src/pages/PerfilAtletaPage.jsx:** Modificado para usar o novo componente .
-*   **/app/frontend/src/components/atleta/SelosConquistas.jsx:** Novo componente para exibir os selos e o progresso do atleta.
-*   **/app/frontend/src/pages/RankingCorridasPage.js:** Modificado para incluir o botão Regulamento e o ranking de Top Avaliadores.
+*   : Alvo principal da refatoração.
+*   : Endpoints do novo sistema de administração.
+*   : Lógica de negócio central para o RBAC.
+*   : Serviço para abstrair o envio de emails via Resend.
+*   : Nova interface de gerenciamento de administradores e logs.
+*   : Modificado para ter menus dinâmicos baseados em permissões.
+*   : Modificado para carregar e prover as permissões do usuário.
+*   : Documento de acompanhamento da refatoração.
 
 **Areas that need refactoring**:
-*   ** (CRÍTICO):** A refatoração deste arquivo é a tarefa atualmente em andamento e a principal dívida técnica do projeto.
+*    **(CRÍTICO):** A refatoração deste arquivo é a tarefa principal em andamento. É crucial remover o código legado à medida que os módulos são validados para evitar redundância e confusão.
 
 **key api endpoints**
-*   : Fornece todos os dados agregados para os gráficos da assessoria.
-*   : Lista os atletas com seus status de autorização.
-*   : Cria ou atualiza uma autorização para um atleta.
-*   : Retorna os selos conquistados e o progresso para os próximos.
-*   : Retorna o ranking dos melhores avaliadores da plataforma.
-*   : Modificado para aceitar o termo e registrar o IP.
-*   : Endpoints para gerenciar o conteúdo do regulamento.
+*   , : Autenticação do administrador com suporte a 2FA.
+*   : Gerenciamento de contas de administrador.
+*   : Acesso aos logs de auditoria.
+*   : Acesso aos alertas de segurança.
+*   : Verifica se a API de email está configurada.
 
 **Critical Info for New Agent**
-*   **Foco Imediato:** Sua prioridade é continuar a tarefa de **refatoração do backend**, que já foi iniciada. Consulte o arquivo  para entender o plano.
-*   **Abordagem de Refatoração:** Prossiga de forma incremental. Mova um conjunto de rotas relacionadas (ex: autenticação) de  para um novo arquivo em  por vez. Após cada movimentação, teste exaustivamente para garantir que nada foi quebrado.
-*   **Conclusão das Tarefas:** Todas as 13 tarefas funcionais solicitadas pelo usuário foram concluídas. Não proponha novas funcionalidades até que a refatoração esteja em um bom estado.
+*   **Foco Principal:** A sua prioridade máxima é continuar e avançar na refatoração do . A estratégia deve ser:
+    1.  Escolha um módulo já criado (ex: ).
+    2.  **Remova o código correspondente do **.
+    3.  Teste exaustivamente (usando  e o ) para garantir que as funcionalidades de autenticação não foram quebradas.
+    4.  Repita o processo para os outros módulos já criados (, , etc.).
+    5.  Continue criando os módulos restantes.
+*   **Risco de Regressão:** A refatoração é uma operação de alto risco. Não prossiga com novas funcionalidades até que a refatoração esteja em um estado muito mais avançado e estável. Testes rigorosos são obrigatórios.
+*   **Email em Produção:** Lembre ao usuário que para os emails funcionarem em produção (enviando para qualquer pessoa), ele precisará verificar o domínio de envio na plataforma do Resend.
 
 **documents and test reports created in this job**
-*   /app/backend/docs/REFACTORING_GUIDE.md
-*   /app/memory/PRD.md (atualizado extensivamente)
+*   /app/backend/docs/REFACTORING_PROGRESS.md
+*   /app/memory/PRD.md (atualizado com os novos requisitos de RBAC)
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user:**  - Confirmação para iniciar a refatoração do backend. (IN PROGRESS)
-2.  **user:**  - Solicitação da 13ª tarefa. (COMPLETED)
-3.  **user:**  - Pedido de credenciais de teste. (COMPLETED)
-4.  **user:**  - Solicitação da 12ª tarefa. (COMPLETED)
-5.  **user:**  - Solicitação da 11ª tarefa. (COMPLETED)
-6.  **user:**  - Solicitação do sistema de autorização e mudança na lógica de submissão. (COMPLETED)
-7.  **user:**  - Detalhes sobre a implementação do Regulamento. (COMPLETED)
-8.  **user:**  - Solicitação da 10ª tarefa. (COMPLETED)
-9.  **user:**  - Detalhes para os relatórios da assessoria (9ª tarefa). (COMPLETED)
-10. **user:**  - Relato de bug de login. (COMPLETED - O agente re-verificou, confirmou que estava funcionando e atribuiu a um possível cache do navegador do usuário).
+1.  **user:** Pediu para continuar a refatoração do backend. (IN PROGRESS)
+2.  **user:** Pediu para implementar a geolocalização real baseada em IP. (COMPLETED)
+3.  **user:** Pediu para implementar o painel diferenciado para Colaboradores com menu reduzido. (COMPLETED)
+4.  **user:** Pediu para adiar a verificação do domínio no Resend. (ACKNOWLEDGED)
+5.  **user:** Enviou a chave de API do Resend. (COMPLETED)
+6.  **user:** Confirmou para executar a refatoração do . (IN PROGRESS)
+7.  **user:** Listou as próximas tarefas em ordem de prioridade. (ACKNOWLEDGED)
+8.  **user:** Confirmou para implementar a integração com Resend. (COMPLETED)
+9.  **user:** Pediu para adiar a integração de email para o final. (DECISION REVERSED)
+10. **user:** Aprovou o plano do agente para iniciar com a refatoração e depois o sistema RBAC. (DECISION REVISED, RBAC foi priorizado).
 
 **Project Health Check:**
-*   **Working:** A aplicação está estável e todas as funcionalidades solicitadas pelo usuário estão implementadas e funcionando.
-*   **Broken:** Nada.
+*   **Working:** A aplicação está totalmente funcional e estável. Todas as novas funcionalidades (RBAC, Email, UI dinâmica) foram implementadas com sucesso.
+*   **Broken:** Nada. O principal risco é a dívida técnica do backend monolítico, que está sendo ativamente tratada.
 
 **3rd Party Integrations**
-*   
-*   
-*   
-*   
+*   **Resend:** Para envio de emails transacionais (2FA, alertas). Requer chave de API do usuário.
+*   **ip-api.com:** API gratuita para geolocalização baseada em endereço IP. Não requer chave.
 
 **Testing status**
-*   **Testing agent used after significant changes:** NO (o agente realizou testes manuais extensivos com  e ).
+*   **Testing agent used after significant changes:** NO
 *   **Troubleshoot agent used after agent stuck in loop:** NO
 *   **Test files created:** N/A
 *   **Known regressions:** Nenhuma.
 
 **Credentials to test flow:**
-*   **Admin:**  / 
-*   **Dono Assessoria:**  / 
-*   **Atletas:**
-    *    / 
-    *    / 
-    *    / 
-    *    / 
+*   **Super Admin:**  / 
+*   **Colaborador:**  / 
+*   **Admin de Emergência:**  /  (requer código 2FA enviado por email/log).
 
 **What agent forgot to execute**
-*   Nada. O agente completou todas as solicitações do usuário e iniciou a tarefa final de refatoração conforme solicitado.</analysis>
+*   O agente criou os módulos de rota e os incluiu no , mas ainda não **removeu o código duplicado** do arquivo monolítico . Este é o próximo passo lógico e crucial na tarefa de refatoração para efetivamente reduzir a complexidade do arquivo principal.</analysis>
