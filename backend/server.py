@@ -110,6 +110,11 @@ security = HTTPBearer()
 app = FastAPI(title="Ranking Run Pró API")
 api_router = APIRouter(prefix="/api")
 
+# ==================== MIDDLEWARE DE MONITORAMENTO ====================
+from services.monitoring_service import metrics_collector
+from middleware import MetricsMiddleware
+app.add_middleware(MetricsMiddleware, metrics_collector=metrics_collector)
+
 # Servir arquivos de uploads
 uploads_path = Path("/app/uploads")
 uploads_path.mkdir(exist_ok=True)
@@ -124,6 +129,7 @@ app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 # - atletas_routes.py: /atletas/meu-perfil, perfil, senha, foto, troca-equipe, aniversario
 # - resultados_routes.py: /resultados/submeter
 # - ranking_routes.py: /ranking/povao, semanal, mensal, categoria, etc.
+# - monitoring_routes.py: /health, /monitoring/*
 # ====================================================================================
 
 # Incluir routers modulares PRIMEIRO (ordem importa para evitar conflitos de path params)
@@ -134,6 +140,7 @@ from routes.conquistas_routes import router as conquistas_router
 from routes.atletas_routes import router as atletas_router
 from routes.resultados_routes import router as resultados_router
 from routes.ranking_routes import router as ranking_router
+from routes.monitoring_routes import router as monitoring_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -142,6 +149,7 @@ api_router.include_router(conquistas_router)
 api_router.include_router(atletas_router)
 api_router.include_router(resultados_router)
 api_router.include_router(ranking_router)
+api_router.include_router(monitoring_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 
@@ -6178,7 +6186,7 @@ app.include_router(api_router)
 
 @app.on_event("startup")
 async def startup_event():
-    """Inicia o scheduler de aniversários"""
+    """Inicia o scheduler de aniversários e monitoramento"""
     logger.info("🚀 Iniciando scheduler de aniversários...")
     
     # Agendar tarefa para rodar às 00:00 todos os dias
@@ -6189,8 +6197,50 @@ async def startup_event():
         replace_existing=True
     )
     
+    # Agendar snapshot de métricas a cada 5 minutos
+    from services.monitoring_service import save_metrics_snapshot
+    scheduler.add_job(
+        save_metrics_snapshot,
+        'interval',
+        minutes=5,
+        args=[db],
+        id="metrics_snapshot",
+        replace_existing=True
+    )
+    
+    # Agendar verificação de alertas a cada 1 minuto
+    scheduler.add_job(
+        check_and_send_alerts,
+        'interval',
+        minutes=1,
+        id="check_alerts",
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logger.info("✅ Scheduler de aniversários iniciado! Próxima execução às 00:00")
+    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min")
+
+
+async def check_and_send_alerts():
+    """Verifica alertas e envia emails se necessário"""
+    from services.monitoring_service import metrics_collector, generate_alert_email_html
+    from services.email_service import enviar_email
+    
+    alerts = metrics_collector.check_alerts()
+    
+    if alerts:
+        # Buscar email do super admin
+        admin = await db.admins.find_one({"role": "super_admin"}, {"_id": 0, "email": 1})
+        if admin and admin.get("email"):
+            health = metrics_collector.get_health_status()
+            html = generate_alert_email_html(alerts, health)
+            
+            await enviar_email(
+                destinatario=admin["email"],
+                assunto=f"[ALERTA] Sistema - {len(alerts)} problemas detectados",
+                html_content=html
+            )
+            logger.warning(f"⚠️ Alerta enviado para {admin['email']}: {[a['type'] for a in alerts]}")
 
 
 @app.on_event("shutdown")
