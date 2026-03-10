@@ -23,7 +23,7 @@
     "frontend": "100% (all features verified)"
   },
   "test_credentials": {
-    "api_url": "https://backend-refactor-wip.preview.emergentagent.com"
+    "api_url": "https://admin-dashboard-1008.preview.emergentagent.com"
   },
   "seed_data_creation": "None - used existing test data",
   "retest_needed": false,

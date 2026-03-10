@@ -7,6 +7,7 @@ from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List
 import uuid
+import asyncio
 from motor.motor_asyncio import AsyncIOMotorClient
 from jose import JWTError, jwt
 import os
@@ -880,15 +881,12 @@ async def registrar_tentativa_login(
     admin_id: str = None,
     admin_nome: str = None
 ):
-    """Registra tentativa de login com geolocalização"""
-    from services.geolocation_service import get_location_details
-    
+    """Registra tentativa de login (sem geolocalização bloqueante para não atrasar login)"""
     info_dispositivo = extrair_info_dispositivo(request.headers.get("User-Agent", ""))
     ip = get_client_ip(request)
     
-    # Obter geolocalização
-    geo = await get_location_details(ip)
-    
+    # Registra sem geolocalização para não atrasar o login
+    # A geolocalização pode ser buscada depois se necessário
     registro = {
         "id": str(uuid.uuid4()),
         "admin_id": admin_id,
@@ -899,16 +897,39 @@ async def registrar_tentativa_login(
         "user_agent": request.headers.get("User-Agent", ""),
         "dispositivo": info_dispositivo["dispositivo"],
         "navegador": info_dispositivo["navegador"],
-        "cidade_aproximada": geo.get("formatado", "Desconhecido"),
-        "geo_cidade": geo.get("cidade", ""),
-        "geo_regiao": geo.get("regiao", ""),
-        "geo_pais": geo.get("pais", ""),
-        "geo_isp": geo.get("isp", ""),
+        "cidade_aproximada": "Pendente",
+        "geo_cidade": "",
+        "geo_regiao": "",
+        "geo_pais": "",
+        "geo_isp": "",
         "data_hora": datetime.now(timezone.utc).isoformat(),
         "motivo_falha": motivo_falha
     }
     
     await db.login_history.insert_one(registro)
+    
+    # Atualizar geolocalização em background (não bloqueia)
+    asyncio.create_task(_atualizar_geo_login(registro["id"], ip))
+
+
+async def _atualizar_geo_login(login_id: str, ip: str):
+    """Atualiza geolocalização de um registro de login em background"""
+    try:
+        from services.geolocation_service import get_location_details
+        geo = await get_location_details(ip)
+        await db.login_history.update_one(
+            {"id": login_id},
+            {"$set": {
+                "cidade_aproximada": geo.get("formatado", "Desconhecido"),
+                "geo_cidade": geo.get("cidade", ""),
+                "geo_regiao": geo.get("regiao", ""),
+                "geo_pais": geo.get("pais", ""),
+                "geo_isp": geo.get("isp", "")
+            }}
+        )
+    except Exception as e:
+        logger.error(f"Erro ao atualizar geolocalização do login {login_id}: {e}")
+
 
 
 # ==================== VERIFICAR PERMISSÃO ====================

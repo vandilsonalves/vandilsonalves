@@ -147,6 +147,7 @@ from routes.celery_routes import router as celery_router
 from routes.corridas_eventos_routes import router as corridas_eventos_router
 from routes.aniversariantes_routes import router as aniversariantes_router
 from routes.instagram_routes import router as instagram_router
+from routes.websocket_routes import router as websocket_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -162,6 +163,7 @@ api_router.include_router(celery_router)
 api_router.include_router(corridas_eventos_router)
 api_router.include_router(aniversariantes_router)
 api_router.include_router(instagram_router)
+api_router.include_router(websocket_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 
@@ -1935,7 +1937,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://backend-refactor-wip.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://admin-dashboard-1008.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
