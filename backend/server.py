@@ -143,6 +143,10 @@ from routes.ranking_routes import router as ranking_router
 from routes.monitoring_routes import router as monitoring_router
 from routes.admin_routes import router as admin_routes_router
 from routes.assessorias_routes import router as assessorias_router
+from routes.celery_routes import router as celery_router
+from routes.corridas_eventos_routes import router as corridas_eventos_router
+from routes.aniversariantes_routes import router as aniversariantes_router
+from routes.instagram_routes import router as instagram_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -154,6 +158,10 @@ api_router.include_router(ranking_router)
 api_router.include_router(monitoring_router)
 api_router.include_router(admin_routes_router)
 api_router.include_router(assessorias_router)
+api_router.include_router(celery_router)
+api_router.include_router(corridas_eventos_router)
+api_router.include_router(aniversariantes_router)
+api_router.include_router(instagram_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 
