@@ -1164,8 +1164,211 @@ async def calcular_ranking_povao():
     return len(ranking_docs)
 
 
-# [REFATORADO] Endpoints /ranking/povao e /ranking/povao/stats migrados para routes/ranking_routes.py
-# [REFATORADO] Endpoints /ranking/semanal, /ranking/mensal, /ranking/destaque-mes migrados para routes/ranking_routes.py
+@api_router.get("/ranking/povao")
+async def get_ranking_povao(genero: str = "M"):
+    """Retorna o ranking do Povão - Pace Livre"""
+    
+    ranking_list = await db.ranking_povao.find(
+        {"ano": 2025, "genero": genero},
+        {"_id": 0}
+    ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).to_list(None)
+    
+    result = []
+    for rank in ranking_list:
+        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+        if usuario:
+            result.append({
+                "colocacao": rank.get("ranking_genero", 0),
+                "posicao": rank.get("ranking_genero", 0),
+                "atleta_id": rank["usuario_id"],
+                "nome": usuario.get("nome", ""),
+                "uf": usuario.get("estado", ""),
+                "cidade": usuario.get("cidade", ""),
+                "faixa_etaria": usuario.get("faixa_etaria", "Não informado"),
+                "foto_url": usuario.get("foto_url", ""),
+                "equipe": usuario.get("equipe", ""),
+                "total_corridas": rank.get("total_corridas", 0),
+                "distancia_acumulada": rank.get("distancia_acumulada", 0),
+                "pontos": rank.get("pontos_total", 0)
+            })
+    
+    return {
+        "genero": "Masculino" if genero == "M" else "Feminino",
+        "total_atletas": len(result),
+        "ranking": result
+    }
+
+
+@api_router.get("/ranking/povao/stats")
+async def get_povao_stats():
+    """Retorna estatísticas do ranking do Povão"""
+    
+    total_atletas_m = await db.ranking_povao.count_documents({"ano": 2025, "genero": "M"})
+    total_atletas_f = await db.ranking_povao.count_documents({"ano": 2025, "genero": "F"})
+    
+    # Total de provas e pontos
+    pipeline = [
+        {"$match": {"modalidade": "povao_pace_livre", "ano": 2025}},
+        {"$group": {
+            "_id": None,
+            "total_provas": {"$sum": 1},
+            "total_pontos": {"$sum": "$pontos_povao"},
+            "total_distancia": {"$sum": {"$toDouble": {"$replaceAll": {"input": {"$toUpper": "$distancia"}, "find": "KM", "replacement": ""}}}}
+        }}
+    ]
+    
+    stats = await db.corridas.aggregate(pipeline).to_list(1)
+    
+    return {
+        "total_atletas_masculino": total_atletas_m,
+        "total_atletas_feminino": total_atletas_f,
+        "total_atletas": total_atletas_m + total_atletas_f,
+        "total_provas": stats[0]["total_provas"] if stats else 0,
+        "total_pontos": stats[0]["total_pontos"] if stats else 0
+    }
+
+
+# ==================== RANKING SEMANAL E MENSAL ====================
+
+@api_router.get("/ranking/semanal")
+async def get_ranking_semanal(categoria: str = "masculino"):
+    """Retorna o ranking semanal baseado em corridas da última semana (apenas Profissional/Amador)"""
+    cat_map = {
+        "masculino": ("normal", "M"),
+        "feminino": ("normal", "F"),
+        "pcd-m": ("pcd", "M"),
+        "pcd-f": ("pcd", "F"),
+        "cadeirante-m": ("cadeirante", "M"),
+        "cadeirante-f": ("cadeirante", "F")
+    }
+    
+    cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
+    
+    # Calcular data da semana atual (últimos 7 dias)
+    hoje = datetime.now()
+    inicio_semana = (hoje - timedelta(days=7)).strftime("%Y-%m-%d")
+    fim_semana = hoje.strftime("%Y-%m-%d")
+    
+    # Buscar corridas da semana
+    pipeline = [
+        {"$match": {
+            "data": {"$gte": inicio_semana, "$lte": fim_semana}
+        }},
+        {"$group": {
+            "_id": "$usuario_id",
+            "pontos_semana": {"$sum": "$pontos"},
+            "corridas_semana": {"$sum": 1}
+        }},
+        {"$sort": {"pontos_semana": -1}}
+    ]
+    
+    agregados = await db.corridas.aggregate(pipeline).to_list(None)
+    
+    ranking = []
+    posicao = 1
+    for agg in agregados:
+        usuario = await db.usuarios.find_one({"id": agg["_id"]}, {"_id": 0})
+        # Filtrar apenas atletas Profissional/Amador (não Povão)
+        if usuario and usuario.get("categoria") == cat_db and usuario.get("genero") == gen_db:
+            # Verificar modalidade - apenas profissional_amador ou não definido (default)
+            modalidade = usuario.get("modalidade_usuario", "profissional_amador")
+            if modalidade != "povao_pace_livre":
+                ranking.append({
+                    "posicao": posicao,
+                    "atleta_id": agg["_id"],
+                    "nome": usuario["nome"],
+                    "equipe": usuario["equipe"],
+                    "cidade": usuario["cidade"],
+                    "estado": usuario["estado"],
+                    "foto_url": usuario.get("foto_url", ""),
+                    "pontos_semana": agg["pontos_semana"],
+                    "corridas_semana": agg["corridas_semana"]
+                })
+                posicao += 1
+                if posicao > 10:  # Top 10
+                    break
+    
+    return {
+        "periodo": f"{inicio_semana} a {fim_semana}",
+        "categoria": categoria,
+        "ranking": ranking
+    }
+
+
+@api_router.get("/ranking/mensal")
+async def get_ranking_mensal(categoria: str = "masculino", mes: int = None, ano: int = None):
+    """Retorna o ranking mensal baseado em corridas do mês (apenas Profissional/Amador)"""
+    cat_map = {
+        "masculino": ("normal", "M"),
+        "feminino": ("normal", "F"),
+        "pcd-m": ("pcd", "M"),
+        "pcd-f": ("pcd", "F"),
+        "cadeirante-m": ("cadeirante", "M"),
+        "cadeirante-f": ("cadeirante", "F")
+    }
+    
+    cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
+    
+    # Se não especificado, usar mês atual
+    hoje = datetime.now()
+    mes_atual = mes or hoje.month
+    ano_atual = ano or hoje.year
+    
+    # Calcular início e fim do mês
+    inicio_mes = f"{ano_atual}-{mes_atual:02d}-01"
+    if mes_atual == 12:
+        fim_mes = f"{ano_atual + 1}-01-01"
+    else:
+        fim_mes = f"{ano_atual}-{mes_atual + 1:02d}-01"
+    
+    # Buscar corridas do mês
+    pipeline = [
+        {"$match": {
+            "data": {"$gte": inicio_mes, "$lt": fim_mes}
+        }},
+        {"$group": {
+            "_id": "$usuario_id",
+            "pontos_mes": {"$sum": "$pontos"},
+            "corridas_mes": {"$sum": 1}
+        }},
+        {"$sort": {"pontos_mes": -1}}
+    ]
+    
+    agregados = await db.corridas.aggregate(pipeline).to_list(None)
+    
+    ranking = []
+    posicao = 1
+    for agg in agregados:
+        usuario = await db.usuarios.find_one({"id": agg["_id"]}, {"_id": 0})
+        # Filtrar apenas atletas Profissional/Amador (não Povão)
+        if usuario and usuario.get("categoria") == cat_db and usuario.get("genero") == gen_db:
+            # Verificar modalidade - apenas profissional_amador ou não definido (default)
+            modalidade = usuario.get("modalidade_usuario", "profissional_amador")
+            if modalidade != "povao_pace_livre":
+                ranking.append({
+                    "posicao": posicao,
+                    "atleta_id": agg["_id"],
+                    "nome": usuario["nome"],
+                    "equipe": usuario["equipe"],
+                    "cidade": usuario["cidade"],
+                    "estado": usuario["estado"],
+                    "foto_url": usuario.get("foto_url", ""),
+                    "pontos_mes": agg["pontos_mes"],
+                    "corridas_mes": agg["corridas_mes"]
+                })
+                posicao += 1
+                if posicao > 10:  # Top 10
+                    break
+    
+    meses_nome = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
+                  "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
+    
+    return {
+        "mes": meses_nome[mes_atual],
+        "ano": ano_atual,
+        "categoria": categoria,
+        "ranking": ranking
+    }
 
 
 @api_router.get("/ranking/destaque-mes")
