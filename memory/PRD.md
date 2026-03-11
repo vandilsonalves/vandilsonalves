@@ -66,6 +66,8 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - [x] Bug fix: Geolocalização não bloqueante no login (~25s -> ~1.3s)
 - [x] Instalação do Redis no ambiente
 - [x] **Refatoração MAJOR do server.py** - Reduzido de 6263 para 4498 linhas (~28% reduction)
+- [x] **Redis no Supervisor** - Auto-start configurado
+- [x] **Celery no Supervisor** - Auto-start configurado com 2 workers
 
 ### Módulos Refatorados (16 módulos criados)
 - `auth_routes.py` - Autenticação
@@ -85,11 +87,11 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - `websocket_routes.py` - Notificações em tempo real
 
 ### Backlog (P2-P3)
-- [ ] Verificar domínio no Resend para emails de produção (P3)
+- [ ] **Verificar domínio no Resend** - Atualmente usando `onboarding@resend.dev` (domínio de teste)
+  - Só envia para o email do dono da conta Resend
+  - Para produção: verificar domínio próprio em https://resend.com/domains
 - [ ] Testes automatizados completos
-- [ ] Documentação da API (Swagger)
-- [ ] Adicionar Celery ao supervisor para auto-start
-- [ ] Configurar persistência do Redis
+- [ ] Documentação Swagger da API
 
 ---
 
