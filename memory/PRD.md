@@ -65,18 +65,31 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - [x] WebSocket para notificações em tempo real
 - [x] Bug fix: Geolocalização não bloqueante no login (~25s -> ~1.3s)
 - [x] Instalação do Redis no ambiente
-- [x] Refatoração parcial do server.py (~200 linhas removidas)
+- [x] **Refatoração MAJOR do server.py** - Reduzido de 6263 para 4498 linhas (~28% reduction)
 
-### In Progress
-- [ ] Refatoração completa do server.py
-  - Módulos criados: 16 (auth, notificacoes, conquistas, atletas, resultados, ranking, rbac, admin, assessorias, corridas_eventos, aniversariantes, instagram, monitoring, celery, websocket)
-  - Código duplicado ainda presente no server.py
-  - Próximo: Remover endpoints duplicados de admin, assessorias, instagram, aniversariantes
+### Módulos Refatorados (16 módulos criados)
+- `auth_routes.py` - Autenticação
+- `notificacoes_routes.py` - Sistema de notificações
+- `conquistas_routes.py` - Conquistas/badges
+- `atletas_routes.py` - Perfil do atleta
+- `resultados_routes.py` - Resultados de corridas
+- `ranking_routes.py` - Rankings (com cache Redis)
+- `rbac.py` - Controle de acesso
+- `admin_routes.py` - Gestão administrativa
+- `assessorias_routes.py` - Liga de assessorias
+- `corridas_eventos_routes.py` - Eventos e corridas
+- `aniversariantes_routes.py` - Sistema de aniversariantes
+- `instagram_routes.py` - Analytics do Instagram
+- `monitoring_routes.py` - Monitoramento de saúde
+- `celery_routes.py` - Tarefas assíncronas
+- `websocket_routes.py` - Notificações em tempo real
 
 ### Backlog (P2-P3)
 - [ ] Verificar domínio no Resend para emails de produção (P3)
 - [ ] Testes automatizados completos
 - [ ] Documentação da API (Swagger)
+- [ ] Adicionar Celery ao supervisor para auto-start
+- [ ] Configurar persistência do Redis
 
 ---
 
@@ -98,14 +111,17 @@ O usuário solicitou a reestruturação do painel de administração e implement
 ### File Structure
 ```
 /app/backend/
-├── server.py           # Monolítico (alvo da refatoração)
-├── routes/
+├── server.py           # Reduzido de 6263 para 4498 linhas
+├── routes/             # 16 módulos de rotas
 │   ├── auth_routes.py
-│   ├── ranking_routes.py  # Com cache Redis
+│   ├── ranking_routes.py
 │   ├── admin_routes.py
+│   ├── assessorias_routes.py
+│   ├── aniversariantes_routes.py
+│   ├── instagram_routes.py
 │   ├── monitoring_routes.py
 │   ├── websocket_routes.py
-│   └── ... (16 módulos)
+│   └── ... (8 outros)
 ├── services/
 │   ├── cache_service.py
 │   ├── monitoring_service.py
@@ -132,19 +148,20 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - GET /api/ranking/semanal
 - GET /api/ranking/mensal
 - GET /api/ranking/destaque-mes
-- GET /api/ranking/categoria/{categoria}/{genero}
+
+### Admin (via admin_routes.py)
+- GET /api/admin/pendentes
+- POST /api/admin/aprovar/{id}
+- GET /api/admin/stats
+- GET /api/admin/atletas
+
+### Liga Assessorias (via assessorias_routes.py)
+- GET /api/liga-assessorias/ranking
+- GET /api/liga-assessorias/stats
 
 ### Monitoring
 - GET /api/health
 - GET /api/monitoring/dashboard
-- GET /api/monitoring/history
-
-### WebSocket
-- WS /api/ws/notifications?token=JWT
-
-### Cache
-- GET /api/monitoring/cache
-- POST /api/monitoring/cache/invalidate
 
 ---
 
@@ -155,13 +172,16 @@ O usuário solicitou a reestruturação do painel de administração e implement
 
 ---
 
-## Known Issues
-- Redis não persiste entre restarts (deve ser iniciado manualmente)
-- Celery worker não configurado no supervisor ainda
+## Refactoring Summary (Session March 11, 2026)
 
----
+### Lines Removed from server.py: ~1765 lines
+- Endpoints de admin (pendentes, stats, atletas) → admin_routes.py
+- Endpoints de ranking (povao, semanal, mensal) → ranking_routes.py
+- Endpoints de assessorias/liga → assessorias_routes.py
+- Endpoints de aniversariantes → aniversariantes_routes.py
+- Endpoints de instagram (analises) → instagram_routes.py
 
-## Next Priority Tasks
-1. Continuar refatoração do server.py (remover código dos módulos já criados)
-2. Adicionar Celery ao supervisor para auto-start
-3. Configurar persistência do Redis
+### Bug Fixes Applied
+- Login RBAC lento (25s → 1.3s) - geolocalização em background
+- Redefinições de funções duplicadas corrigidas
+- Imports de funções entre módulos corrigidos
