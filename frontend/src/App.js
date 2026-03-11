@@ -13,6 +13,7 @@ import AssessoriaPage from "@/pages/AssessoriaPage.jsx";
 import DonoAssessoriaDashboard from "@/pages/DonoAssessoriaDashboard.jsx";
 import RankingCorridasPage from "@/pages/RankingCorridasPage.jsx";
 import BirthdayPopup from "@/components/BirthdayPopup";
+import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
             <Route path="/ranking-corridas" element={<RankingCorridasPage />} />
             <Route path="/submeter-resultado" element={<SubmeterResultadoPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/estrategico" element={<DashboardEstrategico />} />
             <Route path="/perfil" element={<PerfilAtletaPage />} />
           </Routes>
         </BrowserRouter>

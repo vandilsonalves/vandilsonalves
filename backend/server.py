@@ -148,6 +148,7 @@ from routes.corridas_eventos_routes import router as corridas_eventos_router
 from routes.aniversariantes_routes import router as aniversariantes_router
 from routes.instagram_routes import router as instagram_router
 from routes.websocket_routes import router as websocket_router
+from routes.dashboard_stats_routes import router as dashboard_stats_router
 from routes.assessorias_routes import get_ranking_assessorias
 
 api_router.include_router(rbac_router)
@@ -165,6 +166,7 @@ api_router.include_router(corridas_eventos_router)
 api_router.include_router(aniversariantes_router)
 api_router.include_router(instagram_router)
 api_router.include_router(websocket_router)
+api_router.include_router(dashboard_stats_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:

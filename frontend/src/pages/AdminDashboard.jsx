@@ -55,6 +55,7 @@ import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
 // Definição dos itens do menu com permissões necessárias
 const allMenuItems = [
   { id: 'dashboard', label: 'Dashboard Geral', icon: Home, permissoes: [] }, // Todos podem ver
+  { id: 'estrategico', label: '📊 Dashboard Estratégico', icon: BarChart3, permissoes: [], superAdminOnly: true },
   { id: 'atletas', label: 'Atletas', icon: Users, permissoes: ['visualizar_atletas'] },
   { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
   { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
@@ -1367,6 +1368,26 @@ const AdminDashboard = () => {
             statsEquipes={statsEquipes}
             loadingStats={loadingStats}
           />
+        )}
+
+        {/* Dashboard Estratégico - Redireciona para página dedicada */}
+        {activeMenu === 'estrategico' && (
+          <div className="flex flex-col items-center justify-center min-h-[60vh] space-y-6">
+            <div className="text-center">
+              <BarChart3 className="w-16 h-16 text-emerald-500 mx-auto mb-4" />
+              <h2 className="text-2xl font-bold text-white mb-2">Dashboard Estratégico</h2>
+              <p className="text-slate-400 max-w-md">
+                Acesse o painel completo com 31 gráficos e indicadores estratégicos da plataforma.
+              </p>
+            </div>
+            <Button 
+              onClick={() => navigate('/admin/estrategico')}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3 text-lg"
+            >
+              <BarChart3 className="w-5 h-5 mr-2" />
+              Abrir Dashboard Estratégico
+            </Button>
+          </div>
         )}
 
         {/* Pendentes View - Usando componente modular */}
