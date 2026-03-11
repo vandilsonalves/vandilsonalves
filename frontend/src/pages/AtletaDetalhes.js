@@ -12,6 +12,7 @@ import RaceProgressBar from '@/components/RaceProgressBar';
 import ConquistasTable from '@/components/ConquistasTable';
 import GraficoEvolucao from '@/components/GraficoEvolucao';
 import SelosAtleta from '@/components/SelosAtleta';
+import { BadgesDisplay } from '@/components/BadgesDisplay';
 import html2canvas from 'html2canvas';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -410,6 +411,9 @@ const AtletaDetalhes = () => {
             </CardContent>
           </Card>
         </div>
+
+        {/* Badges Visuais - Nova Seção */}
+        <BadgesDisplay atletaId={id} showTitle={true} />
 
         {/* Selos e Conquistas */}
         <Card className="border-slate-200 dark:border-slate-800 shadow-lg">

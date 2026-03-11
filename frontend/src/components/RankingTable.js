@@ -3,6 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import MedalIcon from '@/components/MedalIcon';
 import UFBadge from '@/components/UFBadge';
 import PendingBadge from '@/components/PendingBadge';
+import { BadgesMini } from '@/components/BadgesDisplay';
 
 const RankingTable = ({ data, onAtletaClick }) => {
   if (!data || data.length === 0) {
@@ -92,13 +93,14 @@ const RankingTable = ({ data, onAtletaClick }) => {
                     )}
                   </div>
                   <div>
-                    <div className="font-bold text-slate-900 dark:text-white text-sm">
+                    <div className="font-bold text-slate-900 dark:text-white text-sm flex items-center gap-2">
                       {atleta.nome}
                       {atleta.is_elite && (
-                        <Badge variant="secondary" className="ml-2 text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
+                        <Badge variant="secondary" className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400">
                           Elite
                         </Badge>
                       )}
+                      <BadgesMini atletaId={atleta.id} />
                     </div>
                     <div className="text-xs text-slate-600 dark:text-slate-400">
                       {atleta.equipe}

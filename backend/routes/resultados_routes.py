@@ -18,12 +18,12 @@ router = APIRouter(tags=["Resultados"])
 @router.post("/resultados/submeter")
 async def submeter_resultado(
     nome_competicao: str = Form(...),
-    colocacao: int = Form(...),
+    colocacao: int = Form(0),  # Opcional para Povão (default=0)
     cidade_competicao: str = Form(...),
     estado_competicao: str = Form(...),
     data_competicao: str = Form(...),
     link_resultado: str = Form(...),
-    tempo: str = Form(...),
+    tempo: str = Form("00:00:00"),  # Opcional para Povão (default=00:00:00)
     distancia: str = Form(...),
     foto_podio: UploadFile = File(None),
     current_user: dict = Depends(get_current_user)
