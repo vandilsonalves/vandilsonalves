@@ -1,115 +1,84 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou inicialmente a reestruturação do painel de administração e a implementação de 13 tarefas. Subsequentemente, o usuário forneceu requisitos detalhados para um sistema robusto de controle de acesso baseado em função (RBAC) e um plano de refatoração para o backend.
+O usuário solicitou inicialmente a reestruturação do painel de administração e a implementação de 13 tarefas. O escopo foi expandido para incluir monitoramento de saúde, cache com Redis, filas com Celery e notificações por WebSocket.
 
-Ao longo da sessão, o usuário expandiu o escopo para incluir novas funcionalidades, solicitando a implementação de:
-1.  Um sistema de monitoramento de saúde do backend com um painel de visualização.
-2.  Um sistema de cache inteligente com Redis para otimizar endpoints.
-3.  Um sistema de filas com Celery para processamento de tarefas em background.
-4.  Um sistema de notificações em tempo real usando WebSockets.
+Recentemente, o usuário solicitou duas grandes funcionalidades:
+1.  **Dashboard Estratégico:** Um novo painel para o Super Admin contendo 31 gráficos e métricas detalhadas sobre o crescimento e engajamento na plataforma.
+2.  **Geração de Dados de Teste:** Após relatar lentidão no sistema, o usuário pediu a criação de 220 novos atletas e 40 novas corridas para popular a aplicação e permitir testes realistas.
 
-A tarefa principal, paralela a estas novas funcionalidades, continua sendo a refatoração do backend monolítico () em módulos de rotas.
+Após a implementação, o usuário identificou um bug crítico: os novos atletas não apareciam nos rankings da página principal (Profissional/Amador), apesar de estarem associados a equipes. O usuário enfatizou que todos os atletas devem, obrigatoriamente, estar vinculados a uma das duas modalidades de ranking.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Refatoração do Backend:** Dividir o arquivo monolítico  em múltiplos módulos de rotas para melhorar a manutenibilidade e escalabilidade (em andamento).
-2.  **Sistema de Monitoramento de Saúde (Implementado):** Criar um painel para administradores com métricas de performance em tempo real (CPU, memória, requisições/min, taxa de erro) e alertas para anomalias.
-3.  **Cache Inteligente com Redis (Implementado):** Integrar Redis para cachear os endpoints mais acessados (ex: rankings), reduzindo a carga no banco de dados e o tempo de resposta.
-4.  **Filas de Tarefas com Celery (Implementado):** Implementar Celery para processar tarefas pesadas em background, como recálculo de rankings e envio de emails em massa.
-5.  **Notificações em Tempo Real (Implementado):** Usar WebSockets para enviar notificações em tempo real aos usuários conectados (ex: no painel de administração).
-6.  **Sistema RBAC (Implementado anteriormente):** Sistema de controle de acesso com múltiplos níveis de administradores, logs de auditoria e conta de emergência.
+1.  **Refatoração do Backend:** Dividir o arquivo monolítico  em múltiplos módulos de rotas (em andamento).
+2.  **Sistema de Monitoramento de Saúde:** Implementado.
+3.  **Cache Inteligente com Redis:** Implementado.
+4.  **Filas de Tarefas com Celery:** Implementado.
+5.  **Notificações em Tempo Real:** Implementado.
+6.  **Sistema RBAC:** Implementado.
+7.  **Dashboard Estratégico (NOVO):** Implementar um painel de super admin com 31 gráficos para análise de dados da plataforma (Implementado).
+8.  **Correção de Lentidão e Geração de Dados (NOVO):** Diagnosticar e corrigir a lentidão do sistema e popular o banco de dados com dados de teste (Implementado).
+9.  **Correção de Bug no Ranking (NOVO):** Garantir que todos os atletas cadastrados apareçam corretamente nos rankings Profissional/Amador e Povão (Em andamento).
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-A aplicação é uma plataforma full-stack (React + FastAPI) para ranking de corridas. A refatoração do backend monolítico () está bem avançada, com 16 módulos de rotas criados. Além do sistema RBAC, foram implementados e integrados com sucesso:
--   Um serviço de monitoramento de saúde do backend com um painel no frontend.
--   Um serviço de cache com Redis, aplicado aos endpoints de ranking.
--   Um sistema de filas com Celery e Redis para tarefas assíncronas.
--   Um sistema de notificações em tempo real via WebSockets.
-O frontend foi atualizado para incluir painéis para as novas funcionalidades de monitoramento e notificações.
+A aplicação full-stack (React + FastAPI) foi significativamente expandida. A refatoração do  progrediu, com a remoção de mais de 1700 linhas de código legado. Um novo e complexo Dashboard Estratégico foi implementado com 31 gráficos usando Recharts. A lentidão do sistema foi resolvida ao garantir que o Redis estivesse em execução. O banco de dados foi populado com 220 novos atletas e 40 corridas. Os serviços de Redis e Celery agora são gerenciados pelo supervisor para inicialização automática. No entanto, um bug crítico impede que os novos atletas sejam exibidos nos rankings da página principal.
 
 **Last working item**:
-*   **Last item agent was working:** Implementação do sistema de notificações em tempo real com WebSockets. O agente criou o  no backend, uma rota WebSocket (), o hook  no frontend e o integrou no  para exibir um ícone de sino com um contador de notificações.
-*   **Status:** USER VERIFICATION PENDING
-*   **Agent Testing Done:** Y (O agente validou a implementação, mas não houve um teste de ponta a ponta para confirmar o recebimento da notificação em tempo real no frontend.)
-*   **Which testing method agent to use?** . O backend precisa ser testado para garantir que o WebSocket lida com conexões e envia mensagens corretamente. O frontend precisa ser testado para garantir que o hook se conecta, recebe mensagens e atualiza a UI em tempo real.
+*   **Last item agent was working:** Corrigir o bug que impede a exibição de atletas nos rankings Profissional/Amador e Povão. O agente identificou que o problema é uma incompatibilidade entre os parâmetros de categoria enviados pelo frontend (ex: , ) e o que o endpoint do backend () esperava (ex: categoria=, genero=). O agente estava no processo de modificar o endpoint  em  para mapear corretamente as categorias recebidas do frontend.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** . Primeiro, usar  para testar o endpoint do backend modificado com as novas categorias (ex: ). Depois, usar a ferramenta de  para verificar visualmente se a tabela de ranking no frontend é populada corretamente com os atletas.
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   Não há issues pendentes.
+*   **Issue 1:** Atletas recém-criados não aparecem nos rankings do frontend. (PRIORIDADE: P0)
+    *   **Attempted fixes:**
+        1.  Os rankings (, ) foram recalculados para incluir os novos atletas. Isso corrigiu os dados no backend, mas não o problema de visualização.
+        2.  Um bug no modelo Pydantic  foi corrigido.
+        3.  A causa raiz foi identificada como uma incompatibilidade de parâmetros entre o frontend e o endpoint de ranking. Uma correção foi iniciada em .
+    *   **Next debug checklist:**
+        1.  Revisar e finalizar a lógica de mapeamento de categorias no endpoint  em .
+        2.  Testar o endpoint com  para cada categoria vinda do frontend: , , , , , .
+        3.  Verificar o frontend com um  da página inicial para confirmar que as tabelas de ranking agora mostram os atletas.
+    *   **Why fix this issue and what will be achieved with the fix?** É a principal queixa do usuário e quebra uma funcionalidade central da aplicação (visualização de rankings). A correção tornará a aplicação utilizável para testes.
+    *   **Status:** IN PROGRESS
+    *   **Is recurring issue?** N
+    *   **Should Test frontend/backend/both after fix?** both
+    *   **Blocked on other issue:** Não.
 
 **In progress Task List**:
-*   **Task 1:** Concluir a refatoração do backend  (PRIORIDADE: P0)
-    *   **Where to resume:** O agente já criou 16 módulos de rotas (, , , , , , , , , , , , , Usage: celery [OPTIONS] COMMAND [ARGS]...
-
-  Celery command entrypoint.
-
-Options:
-  -A, --app TEXT
-  -b, --broker TEXT
-  --result-backend TEXT
-  --loader TEXT
-  --config TEXT
-  --workdir PATH
-  -C, --no-color
-  -q, --quiet
-  --version
-  --skip-checks          Skip Django core checks on startup. Setting the
-                         SKIP_CHECKS environment variable to any non-empty
-                         string will have the same effect.
-  --help                 Show this message and exit.
-
-Commands:
-  amqp     AMQP Administration Shell.
-  beat     Start the beat periodic task scheduler.
-  call     Call a task by name.
-  control  Send the COMMAND control command to the workers.
-  events   Event-stream utilities.
-  flower   Web based tool for monitoring and administrating Celery clusters.
-  graph    The ``celery graph`` command.
-  inspect  Inspect the workers by sending them the COMMAND inspect command.
-  list     Get info from broker.
-  logtool  The ``celery logtool`` command.
-  migrate  Migrate tasks from one broker to another.
-  multi    Start multiple worker instances.
-  purge    Erase all messages from all known task queues.
-  report   Shows information useful to include in bug-reports.
-  result   Print the return value for a given task id.
-  shell    Start shell session with convenient access to celery symbols.
-  status   Show list of workers that are online.
-  upgrade  Perform upgrade between versions.
-  worker   Start worker instance., ). O próximo passo crítico é **remover sistematicamente o código original correspondente do arquivo ** para cada um desses módulos, um de cada vez, testando exaustivamente após cada remoção para garantir que não haja regressões. A remoção dos blocos de ,  e  ainda não foi feita.
-    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável. Redução drástica do tamanho e complexidade do , facilitando o desenvolvimento futuro.
+*   **Task 1:** Concluir a refatoração do backend  (PRIORIDADE: P1)
+    *   **Where to resume:** Embora ~27% do arquivo tenha sido removido, ainda existem endpoints legados que não foram migrados para seus respectivos módulos (ex: alguns endpoints de  e ). O próximo passo é identificar esses endpoints restantes, migrá-los para os arquivos de rotas apropriados e remover o código duplicado do .
+    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável, eliminando a dívida técnica do arquivo monolítico.
     *   **Status:** IN PROGRESS
     *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on something:** Não.
+    *   **Blocked on something:** Não, mas deve ser retomado após a correção do bug do ranking (Issue 1).
 
 **Upcoming and Future Tasks**
 *   **Future Tasks:**
-    *   **Verificar domínio no Resend para emails de produção (P3):** O usuário adiou esta tarefa. É necessária para que os e-mails possam ser enviados para qualquer endereço. O agente deve lembrar o usuário sobre isso.
+    *   **Verificar domínio no Resend para emails de produção (P3):** Lembre o usuário da necessidade de configurar um domínio verificado no Resend para permitir o envio de e-mails para qualquer destinatário, não apenas para o e-mail do dono da conta.
 
 **Completed work in this session**
-- **Refatoração Parcial do Backend (IN PROGRESS):**
-  - Removidos mais de 880 linhas de código do , migrando lógica de , , ,  e  para seus respectivos módulos.
-  - Corrigido um bug crítico de precedência de rotas movendo a inclusão dos roteadores modulares para o início do .
-  - Criados 16 módulos de rotas no total.
-- **Sistema de Monitoramento de Saúde (DONE):**
-  - Criado  e  para coletar e expor métricas.
-  - Criado o painel  no frontend para visualização em tempo real.
-  - Implementado job agendado para salvar snapshots de métricas e sistema de alerta por email para anomalias.
-- **Cache com Redis (DONE):**
-  - Instalado e configurado o Redis.
-  - Criado  para gerenciar a lógica de cache.
-  - Aplicado o decorador de cache em vários endpoints de alto tráfego no módulo .
-- **Filas de Tarefas com Celery (DONE):**
-  - Instalado e configurado Celery, Redis (como broker) e Flower (para monitoramento).
-  - Criado  e .
-  - Criada uma tarefa de exemplo () e um endpoint para dispará-la.
-- **Notificações em Tempo Real com WebSockets (DONE):**
-  - Criado  e  no backend.
-  - Criado o hook  e integrado no  do frontend.
+- **Dashboard Estratégico (DONE):**
+  - Criado o backend em  com 31 endpoints para as métricas.
+  - Criado o frontend em  com todos os gráficos solicitados.
+- **Correção de Performance e Geração de Dados (DONE):**
+  - Resolvida a lentidão do sistema causada pela indisponibilidade do Redis.
+  - Criado um script () que adicionou 220 atletas, 40 corridas e 15 donos de assessoria.
+- **Refatoração do Backend (IN PROGRESS):**
+  - Removidas ~1713 linhas do , migrando rotas de , , ,  e  para seus módulos.
+- **Melhorias de DevOps (DONE):**
+  - Configurado o Supervisor para gerenciar e reiniciar automaticamente os serviços de Redis e Celery.
+  - Criados scripts de inicialização e verificação de saúde ().
+- **Correção de Bug Crítico de Login (DONE):**
+  - Resolvida uma lentidão de ~25 segundos no login ao tornar assíncrona a chamada para a API de geolocalização.
 
 **Earlier issues found/mentioned but not fixed**
-*   Nenhum.
+*   **Issue 1:** Funções de API do Instagram não implementadas.
+    *   **Debug checklist:** Durante a refatoração, as funções  e  foram stubbed (criadas vazias) em  para evitar erros de compilação.
+    *   **Why to solve this issue and what will be achieved with this?** O endpoint  provavelmente não funciona. Isso precisa ser implementado ou removido para evitar funcionalidades quebradas.
+    *   **Should Test frontend/backend/both after fix:** backend
+    *   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
 *   Nenhum.
@@ -118,119 +87,82 @@ Commands:
 
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI,  para modularização, Pydantic, Motor (MongoDB async).
-*   **Frontend:** React, Context API, Tailwind CSS, shadcn/ui.
-*   **Caching:** Redis.
-*   **Filas de Tarefas:** Celery, com Redis como broker.
-*   **Tempo Real:** WebSockets.
-*   **Integrações:** Resend (email), ip-api.com (geolocalização).
-*   **DevOps:** Supervisor para gerenciamento de processos (FastAPI, Celery).
+*   **Backend:** FastAPI, , Pydantic, Motor (MongoDB async).
+*   **Frontend:** React, Context API, Tailwind CSS, shadcn/ui, **Recharts** (para gráficos).
+*   **Banco de Dados:** MongoDB (coleções , ,  foram as mais manipuladas).
+*   **Serviços:** Redis (cache e broker), Celery (tarefas assíncronas).
+*   **DevOps:** Supervisor para gerenciamento de processos.
 
 **key DB schema**
-*   **Novas Coleções:**
-    *   : 
-    *   : 
-
-**changes in tech stack**
-*   **Backend:** Adicionadas as dependências , Usage: celery [OPTIONS] COMMAND [ARGS]...
-
-  Celery command entrypoint.
-
-Options:
-  -A, --app TEXT
-  -b, --broker TEXT
-  --result-backend TEXT
-  --loader TEXT
-  --config TEXT
-  --workdir PATH
-  -C, --no-color
-  -q, --quiet
-  --version
-  --skip-checks          Skip Django core checks on startup. Setting the
-                         SKIP_CHECKS environment variable to any non-empty
-                         string will have the same effect.
-  --help                 Show this message and exit.
-
-Commands:
-  amqp     AMQP Administration Shell.
-  beat     Start the beat periodic task scheduler.
-  call     Call a task by name.
-  control  Send the COMMAND control command to the workers.
-  events   Event-stream utilities.
-  flower   Web based tool for monitoring and administrating Celery clusters.
-  graph    The ``celery graph`` command.
-  inspect  Inspect the workers by sending them the COMMAND inspect command.
-  list     Get info from broker.
-  logtool  The ``celery logtool`` command.
-  migrate  Migrate tasks from one broker to another.
-  multi    Start multiple worker instances.
-  purge    Erase all messages from all known task queues.
-  report   Shows information useful to include in bug-reports.
-  result   Print the return value for a given task id.
-  shell    Start shell session with convenient access to celery symbols.
-  status   Show list of workers that are online.
-  upgrade  Perform upgrade between versions.
-  worker   Start worker instance., , . A dependência de websockets é fornecida nativamente pelo FastAPI.
+*   Nenhuma nova coleção foi adicionada. A sessão se concentrou em popular as coleções existentes: , , , .
 
 **All files of reference**
-*   : Alvo principal da refatoração em andamento.
-*   : Lógica de coleta de métricas de saúde.
-*   : Painel de visualização das métricas.
-*   : Lógica de cache com Redis.
-*   : Definição das tarefas assíncronas.
-*   : Gerenciador de conexões WebSocket.
-*   : Hook do React para notificações em tempo real.
+*   : **Arquivo crítico** para resolver o bug atual.
+*   : Página do frontend onde o bug é visível.
+*   : Alvo da tarefa de refatoração em andamento.
+*   : Novo componente de dashboard.
+*   : Endpoints que alimentam o novo dashboard.
+*   : Script usado para criar os dados de teste.
 
 **Areas that need refactoring**:
-*    **(CRÍTICO):** A refatoração deste arquivo é a tarefa principal em andamento. Apesar do progresso, ainda contém milhares de linhas de código que pertencem aos módulos já criados. A remoção agressiva desse código legado é a próxima prioridade.
+*   : A refatoração precisa continuar para extrair os endpoints restantes.
+*    (linhas ~1986): As funções  e  estão vazias e precisam de implementação.
 
 **key api endpoints**
-*   **Monitoramento:** , , 
-*   **Cache:** , 
-*   **Celery:** , 
-*   **WebSocket:** 
+*   : Endpoint com o bug que precisa ser corrigido para aceitar categorias como .
+*   : 31 novos endpoints para o Dashboard Estratégico.
 
 **Critical Info for New Agent**
-*   **Foco Principal na Refatoração:** A prioridade máxima é continuar a refatoração do . A estratégia é: escolher um módulo já criado (ex: ), **remover todo o código correspondente do **, e testar exaustivamente a funcionalidade relacionada para garantir que não houve regressão. Repita para todos os módulos restantes.
-*   **Precedência de Rotas:** A solução para um bug de conflito de rotas foi mover a inclusão dos roteadores modulares () para o início do arquivo , antes da definição das rotas monolíticas. Isso garante que as rotas modulares tenham prioridade. É crucial manter essa estrutura.
-*   **Testes Pós-Refatoração:** A refatoração é uma operação de alto risco. O agente anterior encontrou um bug onde uma rota refatorada () tinha uma implementação diferente da original, quebrando o frontend. Testes completos de backend e frontend são obrigatórios após cada etapa de remoção de código do .
+*   **FOCO IMEDIATO:** A prioridade absoluta é resolver o bug do ranking (Issue 1). A correção já foi iniciada em  e precisa ser concluída e testada. O usuário está bloqueado por este problema.
+*   **Lógica do Bug:** O frontend envia categorias como masculino, pcd-m, etc. O backend precisa mapear essas strings para a consulta correta no MongoDB (ex: ).
+*   **Refatoração em Pausa:** A tarefa de refatoração do  é importante, mas só deve ser retomada após a correção do bug do ranking e a validação do usuário.
 
 **documents and test reports created in this job**
-*   O  foi usado com sucesso várias vezes. Os relatórios estão em .
-*   O arquivo  foi atualizado com as novas funcionalidades.
+*   : Script de geração de dados.
+*   : Arquivo de configuração de serviços.
+*   , 🔍 Health Check - 2026-03-11 19:33:40
+================================================
+Supervisor: [0;32m✓ RUNNING[0m
+MongoDB: [0;32m✓ RUNNING[0m
+Redis: [0;31m✗ FAILED[0m
+Celery: [0;32m✓ RUNNING[0m
+Backend: [0;32m✓ RUNNING (API: OK)[0m
+Frontend: [0;32m✓ RUNNING[0m
+================================================: Scripts de inicialização.
+*    foi atualizado com as novas funcionalidades.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user:**  - Aprovou a implementação de WebSockets com persistência no banco. (COMPLETED)
-2.  **user:**  - Solicitou a funcionalidade de WebSocket. (IN PROGRESS, now COMPLETED)
-3.  **user:**  - Aprovou a implementação do Celery e a continuação da refatoração. (COMPLETED)
-4.  **user:**  - Solicitou a funcionalidade do Celery e mais refatoração. (IN PROGRESS, now COMPLETED)
-5.  **user:**  - Aprovou a implementação do Redis e a continuação da refatoração. (COMPLETED)
-6.  **user:**  - Solicitou a funcionalidade de cache e mais refatoração. (IN PROGRESS, now COMPLETED)
-7.  **user:** Forneceu as credenciais de teste para admin e atletas. (COMPLETED)
-8.  **user:**  - Solicitou credenciais de teste. (IN PROGRESS, now COMPLETED)
-9.  **user:**  - Escolheu as opções mais completas para a implementação do sistema de monitoramento. (COMPLETED)
-10. **user:**  - Solicitou a funcionalidade de monitoramento de saúde. (IN PROGRESS, now COMPLETED)
+1.  **user:** ao analisar essa imagem, se percebe que não tem nenhum atleta no ranking Profissional/Amador... - O usuário identifica e descreve detalhadamente o bug do ranking, instruindo que todos os atletas devem estar em um dos dois rankings. (PENDING FIX)
+2.  **user:** o sistema está muito lento. Corrija isso. Depois... Quero que adicione alguns atletas... - Relatou lentidão e solicitou a criação de 220 atletas e 40 corridas para teste. (COMPLETED)
+3.  **user:** No Painel do Super Amin do Dashboard Geral quero que conste OBRIGATORIAMENTE esses 31 Gráficos... - Solicitou a criação do Dashboard Estratégico com uma lista detalhada de requisitos. (COMPLETED)
+4.  **user:** me forneca alguns loguins de atletas - Pediu credenciais de atletas para teste. (COMPLETED)
+5.  **user:** crie um script de inicialização que inicie automaticamente o Redis e Celery... - Solicitou automação da inicialização dos serviços. (COMPLETED)
+6.  **user:** [Seleção de tarefas] Adicionar Celery ao supervisor, Configurar Redis persistente, Verificar domínio Resend. (COMPLETED)
+7.  **user:** [Seleção de tarefas] Continuar refatoração do server.py... (IN PROGRESS)
+8.  **user:** [Seleção de tarefas] Continuar com a refatoração, Instalar Redis, Testar WebSocket. (COMPLETED)
+9.  **user:** Continuar com a refatoração do server.py... - Confirmação para prosseguir com a refatoração. (IN PROGRESS)
+10. **user:** corrigir o problema... o endpoint está demorando 25 segundos! - Embora não seja uma mensagem do usuário, o agente identificou e corrigiu este problema crítico. (COMPLETED)
 
 **Project Health Check:**
-*   **Working:** A aplicação está funcional, com várias novas funcionalidades avançadas (cache, filas, tempo real, monitoramento) integradas com sucesso.
-*   **Broken:** Nada. O principal risco continua sendo a dívida técnica do , que está sendo ativamente paga.
+*   **Working:** Grande parte da aplicação, incluindo as novas funcionalidades como o Dashboard Estratégico, login e performance geral.
+*   **Broken:** A página principal de ranking () está quebrada, pois não exibe os atletas nas categorias Profissional/Amador.
 
 **3rd Party Integrations**
-*   **Resend:** Para envio de emails transacionais. Requer chave de API do usuário.
-*   **ip-api.com:** API gratuita para geolocalização.
-*   **Redis:** Usado como broker para o Celery e como camada de cache para endpoints.
-*   **Celery:** Para execução de tarefas assíncronas em background.
+*   **Resend:** Para envio de emails (requer verificação de domínio para produção).
+*   **Redis:** Cache e broker para Celery.
+*   **Celery:** Tarefas assíncronas.
+*   **Recharts:** Biblioteca de gráficos usada no novo dashboard.
 
 **Testing status**
-*   **Testing agent used after significant changes:** YES. O agente de teste foi executado com sucesso após as implementações do sistema de monitoramento, cache e Celery.
+*   **Testing agent used after significant changes:** NO. O agente usou testes manuais () e .
 *   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** N/A. O agente de teste gerou testes dinamicamente.
-*   **Known regressions:** Nenhuma no final da sessão. Uma regressão no frontend foi identificada e corrigida pelo testing agent.
+*   **Test files created:** N/A.
+*   **Known regressions:** A página de ranking principal não funciona para os dados de teste recém-adicionados.
 
 **Credentials to test flow:**
 *   **Super Admin:**  / 
-*   **Atleta Masculino:**  / 
-*   **Atleta Feminina:**  / 
+*   **Senha padrão para atletas:** . Emails podem ser encontrados nos logs ou no arquivo .
 
 **What agent forgot to execute**
-*   O principal item não concluído é a remoção completa do código legado do . Embora muitos módulos tenham sido *criados*, o código original correspondente a módulos como , , ,  e  ainda reside no . Para finalizar a refatoração dessas seções, o código antigo precisa ser identificado e removido.</analysis>
+*   O agente não concluiu a correção do bug do ranking, que era o item de trabalho mais recente e de maior prioridade.
+*   A implementação das funções  e  em  foi ignorada, deixando um endpoint potencialmente quebrado.</analysis>

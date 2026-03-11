@@ -1193,7 +1193,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://admin-dashboard-1008.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://athlete-dashboard-15.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 

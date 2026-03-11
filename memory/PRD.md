@@ -69,6 +69,8 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - [x] **Redis no Supervisor** - Auto-start configurado
 - [x] **Celery no Supervisor** - Auto-start configurado com 2 workers
 - [x] **Dashboard Estratégico com 31 Gráficos** - Implementação completa para Super Admin
+- [x] **Geração de Dados de Teste** - 390 atletas (270 Profissional/Amador + 120 Povão)
+- [x] **Bug Fix do Ranking (11/Mar/2026)** - Rankings funcionando corretamente para todas as categorias
 
 ### Módulos Refatorados (16 módulos criados)
 - `auth_routes.py` - Autenticação

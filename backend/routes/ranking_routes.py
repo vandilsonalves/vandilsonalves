@@ -390,11 +390,44 @@ async def get_ranking_por_categoria(
     categoria: str,
     genero: str,
     ano: int = 2025,
-    limit: int = 100
+    limit: int = 100,
+    faixa: str = None,
+    equipe: str = None,
+    cidade: str = None
 ):
-    """Retorna ranking por categoria e gênero"""
+    """Retorna ranking por categoria e gênero
+    
+    Categoria pode ser:
+    - masculino, feminino -> normal M/F
+    - pcd-m, pcd-f -> pcd M/F
+    - cadeirante-m, cadeirante-f -> cadeirante M/F
+    - normal, pcd, cadeirante -> usa gênero passado
+    """
+    # Mapear categoria do frontend para valores do banco
+    cat_map = {
+        "masculino": ("normal", "M"),
+        "feminino": ("normal", "F"),
+        "pcd-m": ("pcd", "M"),
+        "pcd-f": ("pcd", "F"),
+        "cadeirante-m": ("cadeirante", "M"),
+        "cadeirante-f": ("cadeirante", "F")
+    }
+    
+    if categoria.lower() in cat_map:
+        cat_db, gen_db = cat_map[categoria.lower()]
+    else:
+        # Valores diretos
+        cat_db = categoria
+        gen_db = genero
+    
+    query = {"ano": ano, "genero": gen_db, "categoria": cat_db}
+    
+    # Filtros adicionais
+    if faixa:
+        query["faixa_etaria"] = faixa
+    
     ranking_list = await db.ranking_anual.find(
-        {"ano": ano, "genero": genero, "categoria": categoria},
+        query,
         {"_id": 0}
     ).sort([("pontos_total", -1), ("total_corridas", -1)]).limit(limit).to_list(None)
     
@@ -402,17 +435,26 @@ async def get_ranking_por_categoria(
     for rank in ranking_list:
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
+            # Filtros de equipe e cidade no nível do usuário
+            if equipe and equipe.lower() not in usuario.get("equipe", "").lower():
+                continue
+            if cidade and cidade.lower() not in usuario.get("cidade", "").lower():
+                continue
+                
+            posicao = rank.get("ranking_categoria", rank.get("ranking_genero", len(result) + 1))
             result.append(RankingResponse(
-                posicao=rank.get("ranking_categoria_genero", 0),
-                atleta_id=rank["usuario_id"],
-                nome=usuario.get("nome", ""),
+                id=rank["usuario_id"],
+                colocacao=posicao,
                 uf=usuario.get("estado", ""),
-                cidade=usuario.get("cidade", ""),
-                faixa_etaria=usuario.get("faixa_etaria", "Não informado"),
                 foto_url=usuario.get("foto_url", ""),
+                nome=usuario.get("nome", ""),
+                cidade=usuario.get("cidade", ""),
                 equipe=usuario.get("equipe", ""),
+                faixa_etaria=usuario.get("faixa_etaria", "Não informado"),
                 total_corridas=rank.get("total_corridas", 0),
-                pontos=rank.get("pontos_total", 0)
+                pontos=rank.get("pontos_total", 0),
+                is_elite=rank.get("pontos_total", 0) >= 100,
+                is_pendente=rank.get("total_corridas", 0) < 3
             ))
     
     return result

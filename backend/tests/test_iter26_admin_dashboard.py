@@ -8,7 +8,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://admin-dashboard-1008.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://athlete-dashboard-15.preview.emergentagent.com')
 API = f"{BASE_URL}/api"
 
 # =============================================
