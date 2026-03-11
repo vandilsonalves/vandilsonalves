@@ -72,6 +72,18 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - [x] **Geração de Dados de Teste** - 390 atletas (270 Profissional/Amador + 120 Povão)
 - [x] **Bug Fix do Ranking (11/Mar/2026)** - Rankings funcionando corretamente para todas as categorias
 - [x] **Sistema de Gamificação com Badges (11/Mar/2026)** - 13 badges visuais com compartilhamento social
+- [x] **Bloqueio de Colocações Inválidas (11/Mar/2026)** - Validação por modalidade implementada
+
+### Sistema de Validação de Colocações (NOVO - 11/Mar/2026)
+- **Profissional/Amador Normal**: Aceita apenas 1º a 10º lugar (10-1 pontos)
+- **PCD**: Aceita apenas 1º a 3º lugar (10-8 pontos)
+- **Cadeirante**: Aceita apenas 1º a 3º lugar (10-8 pontos)
+- **Povão - Pace Livre**: Campo colocação bloqueado (=0), pontua APENAS por distância
+  - 5-9km = 5 pontos
+  - 10-20km = 7 pontos
+  - 21km+ = 9 pontos
+- **Correção de dados existentes**: 941 registros corrigidos (482 Povão, 162 Normal, 187 PCD, 110 Cadeirante)
+- **Rankings recalculados**: 390 atletas com pontuação corrigida
 
 ### Sistema de Badges (NOVO - 11/Mar/2026)
 - **13 tipos de badges** em 3 categorias (performance, participação, especial)

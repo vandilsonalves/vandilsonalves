@@ -68,19 +68,29 @@ async def submeter_resultado(
     modalidade_usuario = current_user.get("modalidade_usuario", "profissional_amador")
     categoria = current_user.get("categoria", "normal")
     
-    # Validação para Profissional/Amador
-    if modalidade_usuario == "profissional_amador":
+    # ==================== VALIDAÇÃO DE COLOCAÇÃO POR MODALIDADE ====================
+    
+    # POVÃO - Pace Livre: NÃO ACEITA colocação, apenas distância
+    if modalidade_usuario == "povao_pace_livre":
+        # Forçar colocação = 0 para Povão (ignora qualquer valor enviado)
+        colocacao = 0
+        # Povão pontua APENAS por distância, colocação é irrelevante
+    
+    # PROFISSIONAL/AMADOR: Validação por categoria
+    elif modalidade_usuario == "profissional_amador":
+        # PCD e CADEIRANTE: apenas 1º a 3º lugar
         if categoria in ["pcd", "cadeirante"]:
             if colocacao < 1 or colocacao > 3:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"Para categoria {categoria.upper()}, apenas colocações de 1º a 3º são válidas."
+                    detail=f"Atletas {categoria.upper()} só podem registrar colocações de 1º a 3º lugar. Colocação informada: {colocacao}º"
                 )
+        # NORMAL (Masculino/Feminino): apenas 1º a 10º lugar
         else:
             if colocacao < 1 or colocacao > 10:
                 raise HTTPException(
                     status_code=400,
-                    detail="Para categoria Normal, apenas colocações de 1º a 10º são válidas."
+                    detail=f"Atletas Profissional/Amador só podem registrar colocações de 1º a 10º lugar. Colocação informada: {colocacao}º"
                 )
     
     # Salvar foto (opcional)
