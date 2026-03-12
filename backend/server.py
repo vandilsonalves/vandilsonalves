@@ -1062,7 +1062,8 @@ async def get_atleta_detalhes(atleta_id: str):
     # Buscar ranking de acordo com a modalidade
     if modalidade_usuario == "povao_pace_livre":
         ranking = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
-        melhor_colocacao = 0  # Não se aplica ao Povão
+        # Para Povão, mostrar a posição no ranking (não há colocação em corrida)
+        melhor_colocacao = ranking.get("ranking_genero", 0) if ranking else 0
         total_corridas = ranking["total_corridas"] if ranking else 0
         pontos_carreira = ranking["pontos_total"] if ranking else 0
     else:
