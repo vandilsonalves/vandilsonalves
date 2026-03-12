@@ -122,6 +122,29 @@ O usuário solicitou a reestruturação do painel de administração e implement
 
 ---
 
+## 🚀 ROADMAP DE ENGAJAMENTO E RETENÇÃO (Aprovado pelo usuário)
+
+### Fase 1: Notificações e Gamificação Avançada
+- [ ] **Notificações Push para Badges** - In-app + Toast quando conquista + Botão compartilhar
+- [ ] **Sistema de Metas Pessoais** - Atleta define metas, barra de progresso, celebração
+- [ ] **Sistema de Streaks** - Sequências de semanas com corridas, badges especiais
+
+### Fase 2: Social e Competição
+- [ ] **Comparação com Rivais** - Adicionar atletas como rivais, notificação quando ultrapassar
+- [ ] **Feed Social/Timeline** - Ver conquistas da assessoria, curtir/comentar
+- [ ] **Desafios Mensais/Semanais** - Desafios coletivos e individuais com ranking especial
+
+### Fase 3: Evolução e Níveis
+- [ ] **Histórico de Evolução** - Gráficos mensais/anuais, comparativo com período anterior
+- [ ] **Sistema de Níveis (XP)** - Iniciante → Amador → Profissional → Elite → Lenda
+- [ ] **Lembretes Inteligentes** - Inatividade, eventos próximos, calendário
+
+### Fase 4: Diferencial Competitivo
+- [ ] **Previsão de Ranking com IA** - Simulador de pontuação, projeções
+- [ ] **Certificados Digitais** - PDF personalizável, QR Code de validação
+
+---
+
 ## Technical Architecture
 
 ### Backend Stack
