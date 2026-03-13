@@ -707,7 +707,7 @@ const RankingPage = () => {
                     Carregando ranking...
                   </div>
                 ) : (
-                  <RankingTable data={rankingFiltrado} onAtletaClick={handleAtletaClick} />
+                  <RankingTable data={rankingFiltrado} onAtletaClick={handleAtletaClick} modalidade="profissional" />
                 )}
               </CardContent>
             </Card>
@@ -965,9 +965,9 @@ const RankingPage = () => {
                             </td>
                             <td className="px-4 py-3">
                               <div className="flex items-center gap-3">
-                                <Avatar className="h-10 w-10">
+                                <Avatar className="h-10 w-10 ring-2 ring-purple-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900">
                                   <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
-                                  <AvatarFallback className="bg-purple-600 text-white">
+                                  <AvatarFallback className="bg-purple-600 text-white font-semibold">
                                     {atleta.nome?.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>

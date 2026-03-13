@@ -5,7 +5,26 @@ import UFBadge from '@/components/UFBadge';
 import PendingBadge from '@/components/PendingBadge';
 import { BadgesMini } from '@/components/BadgesDisplay';
 
-const RankingTable = ({ data, onAtletaClick }) => {
+// Cores por modalidade
+const MODALIDADE_COLORS = {
+  profissional: {
+    bg: 'bg-emerald-500',
+    bgLight: 'bg-emerald-100',
+    text: 'text-emerald-700',
+    border: 'ring-emerald-500',
+    hex: '#10B981'
+  },
+  povao: {
+    bg: 'bg-purple-500',
+    bgLight: 'bg-purple-100',
+    text: 'text-purple-700',
+    border: 'ring-purple-500',
+    hex: '#8B5CF6'
+  }
+};
+
+const RankingTable = ({ data, onAtletaClick, modalidade = 'profissional' }) => {
+  const colors = MODALIDADE_COLORS[modalidade] || MODALIDADE_COLORS.profissional;
   if (!data || data.length === 0) {
     return (
       <div className="text-center py-12 text-slate-600 dark:text-slate-400">
@@ -75,14 +94,14 @@ const RankingTable = ({ data, onAtletaClick }) => {
                 <div className="flex items-center gap-3">
                   <div className="relative">
                     <Avatar
-                      className={`h-12 w-12 ${
+                      className={`h-12 w-12 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ${
                         atleta.is_elite
-                          ? 'ring-2 ring-amber-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900'
-                          : ''
+                          ? 'ring-amber-500'
+                          : colors.border
                       }`}
                     >
                       <AvatarImage src={atleta.foto_url} alt={atleta.nome} />
-                      <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 font-semibold">
+                      <AvatarFallback className={`${colors.bg} text-white font-semibold`}>
                         {atleta.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
                       </AvatarFallback>
                     </Avatar>

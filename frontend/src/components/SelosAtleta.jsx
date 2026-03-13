@@ -138,8 +138,8 @@ const SelosCompleto = ({ dados }) => {
               key={selo.codigo}
               className={`relative p-4 rounded-xl border-2 transition-all ${
                 selo.conquistado 
-                  ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-transparent'
-                  : 'border-slate-700 bg-slate-800/50'
+                  ? 'border-amber-500 bg-gradient-to-br from-amber-500/20 to-amber-500/5'
+                  : 'border-slate-300 bg-white dark:bg-slate-100'
               }`}
             >
               {selo.conquistado && (
@@ -151,29 +151,29 @@ const SelosCompleto = ({ dados }) => {
               <div className="text-center mb-3">
                 <span className="text-4xl">{selo.icone}</span>
                 <p 
-                  className="font-bold mt-1"
+                  className="font-bold mt-1 text-lg"
                   style={{ color: selo.cor }}
                 >
                   {selo.nome}
                 </p>
-                <p className="text-xs text-slate-400">{selo.meta} resultados</p>
+                <p className="text-sm text-slate-600 dark:text-slate-700 font-medium">{selo.meta} resultados</p>
               </div>
               
               {!selo.conquistado && (
-                <div className="space-y-1">
-                  <div className="flex justify-between text-xs text-slate-400">
+                <div className="space-y-2">
+                  <div className="flex justify-between text-sm font-semibold text-slate-700">
                     <span>{selo.atual}/{selo.meta}</span>
                     <span>{Math.round(selo.progresso)}%</span>
                   </div>
-                  <Progress value={selo.progresso} className="h-2" />
-                  <p className="text-xs text-center text-slate-500 mt-1">
+                  <Progress value={selo.progresso} className="h-3 bg-slate-200" />
+                  <p className="text-sm text-center text-slate-600 mt-1 font-medium">
                     Faltam {selo.meta - selo.atual} resultados
                   </p>
                 </div>
               )}
               
               {selo.conquistado && (
-                <p className="text-xs text-center text-emerald-400 font-medium">
+                <p className="text-sm text-center text-emerald-600 font-bold">
                   Conquistado!
                 </p>
               )}
