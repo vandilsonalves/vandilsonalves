@@ -14,6 +14,73 @@ from services import (
     calcular_faixa_etaria, gerar_foto_url, SECRET_KEY, ALGORITHM
 )
 
+# Função auxiliar para registrar indicação
+async def registrar_indicacao_interna(indicado_id: str, codigo_indicacao: str):
+    """Registra uma indicação quando um novo usuário se cadastra com código"""
+    if not codigo_indicacao:
+        return None
+    
+    # Buscar indicador pelo código
+    indicador = await db.usuarios.find_one(
+        {"codigo_indicacao": codigo_indicacao.upper()},
+        {"_id": 0, "id": 1, "nome": 1}
+    )
+    
+    if not indicador:
+        return None
+    
+    # Não permitir auto-indicação
+    if indicador["id"] == indicado_id:
+        return None
+    
+    # Verificar se já existe essa indicação
+    existente = await db.indicacoes.find_one({
+        "indicador_id": indicador["id"],
+        "indicado_id": indicado_id
+    })
+    
+    if existente:
+        return None
+    
+    # Registrar indicação
+    await db.indicacoes.insert_one({
+        "id": str(uuid.uuid4()),
+        "indicador_id": indicador["id"],
+        "indicado_id": indicado_id,
+        "codigo_usado": codigo_indicacao.upper(),
+        "data_indicacao": datetime.now(timezone.utc).isoformat(),
+        "status": "confirmada"
+    })
+    
+    # Atualizar contador no indicador
+    await db.usuarios.update_one(
+        {"id": indicador["id"]},
+        {"$inc": {"total_indicacoes": 1}}
+    )
+    
+    # Verificar se ganhou insígnia de embaixador (5+ indicações)
+    total_indicacoes = await db.indicacoes.count_documents({
+        "indicador_id": indicador["id"],
+        "status": "confirmada"
+    })
+    
+    if total_indicacoes >= 5:
+        # Verificar se já tem a insígnia
+        badge_existente = await db.badges_atleta.find_one({
+            "atleta_id": indicador["id"],
+            "badge_id": "embaixador"
+        })
+        
+        if not badge_existente:
+            # Conceder insígnia
+            await db.badges_atleta.insert_one({
+                "atleta_id": indicador["id"],
+                "badge_id": "embaixador",
+                "data_conquista": datetime.now(timezone.utc).isoformat()
+            })
+    
+    return indicador["nome"]
+
 router = APIRouter(tags=["Autenticação"])
 
 
@@ -126,6 +193,11 @@ async def register_atleta(dados: UsuarioRegister):
     
     await db.usuarios.insert_one(doc)
     
+    # Processar código de indicação (se fornecido)
+    indicador_nome = None
+    if dados.codigo_indicacao:
+        indicador_nome = await registrar_indicacao_interna(usuario.id, dados.codigo_indicacao)
+    
     token = create_access_token({"sub": usuario.id})
     
     return {
@@ -137,7 +209,11 @@ async def register_atleta(dados: UsuarioRegister):
             "email": usuario.email,
             "role": role,
             "modalidade_usuario": usuario.modalidade_usuario
-        }
+        },
+        "indicacao": {
+            "registrada": indicador_nome is not None,
+            "indicador_nome": indicador_nome
+        } if dados.codigo_indicacao else None
     }
 
 

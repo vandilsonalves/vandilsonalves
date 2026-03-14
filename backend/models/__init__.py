@@ -50,6 +50,8 @@ class UsuarioRegister(BaseModel):
     # Campos para dono de assessoria (3ª Tarefa)
     is_dono_assessoria: bool = False
     assessoria_data: Optional[dict] = None
+    # Campo para código de indicação de amigo
+    codigo_indicacao: Optional[str] = None
 
 class UsuarioLogin(BaseModel):
     email: EmailStr
