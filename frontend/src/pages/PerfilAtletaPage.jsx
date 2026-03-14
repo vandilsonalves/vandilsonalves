@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import SelosAtleta from '@/components/SelosAtleta';
 import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
+import IndicarAmigos from '@/components/IndicarAmigos';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -1075,6 +1076,11 @@ const PerfilAtletaPage = () => {
             </p>
           </CardContent>
         </Card>
+        
+        {/* Indicar Amigos */}
+        <div className="mt-6">
+          <IndicarAmigos />
+        </div>
       </div>
     </div>
   );

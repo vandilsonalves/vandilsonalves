@@ -151,6 +151,7 @@ from routes.websocket_routes import router as websocket_router
 from routes.dashboard_stats_routes import router as dashboard_stats_router
 from routes.assessorias_routes import get_ranking_assessorias
 from routes.badges_routes import router as badges_router
+from routes.indicacao_routes import router as indicacao_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -169,6 +170,7 @@ api_router.include_router(instagram_router)
 api_router.include_router(websocket_router)
 api_router.include_router(dashboard_stats_router)
 api_router.include_router(badges_router)
+api_router.include_router(indicacao_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:

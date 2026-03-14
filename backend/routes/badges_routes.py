@@ -240,6 +240,14 @@ async def verificar_badges_atleta(atleta_id: str) -> List[dict]:
             
             conquistado = max_consecutivos >= criterio["meses_consecutivos"]
         
+        elif "indicacoes_minimas" in criterio:
+            # Verificar indicações bem-sucedidas
+            total_indicacoes = await db.indicacoes.count_documents({
+                "indicador_id": atleta_id,
+                "status": "confirmada"
+            })
+            conquistado = total_indicacoes >= criterio["indicacoes_minimas"]
+        
         # Salvar badge no banco se conquistado
         if conquistado:
             badge_existente = await db.badges_atleta.find_one({
