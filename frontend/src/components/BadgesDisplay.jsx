@@ -134,7 +134,7 @@ const ShareCard = ({ atletaId, atleta, stats, badges, onClose }) => {
   const [copying, setCopying] = useState(false);
   
   const handleCopyText = async () => {
-    const texto = `🏆 Meus Badges no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} badges conquistados\n⭐ ${stats.pontos} pontos | ${stats.total_corridas} corridas\n\n🏅 Badges:\n${badges.slice(0, 5).map(b => `• ${b.nome}`).join('\n')}\n\n#RankingRunPro #Corrida #Running`;
+    const texto = `🏆 Minhas Insígnias no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} insígnias conquistadas\n⭐ ${stats.pontos} pontos | ${stats.total_corridas} corridas\n\n🏅 Insígnias:\n${badges.slice(0, 5).map(b => `• ${b.nome}`).join('\n')}\n\n#RankingRunPro #Corrida #Running`;
     
     try {
       await navigator.clipboard.writeText(texto);
@@ -147,12 +147,12 @@ const ShareCard = ({ atletaId, atleta, stats, badges, onClose }) => {
   };
   
   const handleShareWhatsApp = () => {
-    const texto = encodeURIComponent(`🏆 Confira meus badges no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} badges\n⭐ ${stats.pontos} pontos\n\nhttps://athlete-dashboard-15.preview.emergentagent.com/atleta/${atletaId}`);
+    const texto = encodeURIComponent(`🏆 Confira minhas insígnias no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} insígnias\n⭐ ${stats.pontos} pontos\n\nhttps://athlete-dashboard-15.preview.emergentagent.com/atleta/${atletaId}`);
     window.open(`https://wa.me/?text=${texto}`, '_blank');
   };
   
   const handleShareTwitter = () => {
-    const texto = encodeURIComponent(`🏆 Conquistei ${badges.length} badges no @RankingRunPro! ${stats.pontos} pontos e ${stats.total_corridas} corridas! #RankingRunPro #Corrida`);
+    const texto = encodeURIComponent(`🏆 Conquistei ${badges.length} insígnias no @RankingRunPro! ${stats.pontos} pontos e ${stats.total_corridas} corridas! #RankingRunPro #Corrida`);
     window.open(`https://twitter.com/intent/tweet?text=${texto}`, '_blank');
   };
   
@@ -200,7 +200,7 @@ const ShareCard = ({ atletaId, atleta, stats, badges, onClose }) => {
             </div>
             <div className="text-center bg-white/10 rounded-xl p-3">
               <p className="text-2xl font-bold text-white">{badges.length}</p>
-              <p className="text-xs text-emerald-100">Badges</p>
+              <p className="text-xs text-emerald-100">Insígnias</p>
             </div>
           </div>
           
@@ -302,7 +302,7 @@ export const BadgesDisplay = ({ atletaId, showTitle = true, compact = false }) =
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-500" />
-              Badges & Conquistas
+              Insígnias & Conquistas
               <Badge variant="outline" className="ml-2">
                 {badgesConquistados.length}/{badges.length}
               </Badge>
@@ -318,7 +318,7 @@ export const BadgesDisplay = ({ atletaId, showTitle = true, compact = false }) =
                 </DialogTrigger>
                 <DialogContent className="max-w-md">
                   <DialogHeader>
-                    <DialogTitle>Compartilhar Badges</DialogTitle>
+                    <DialogTitle>Compartilhar Insígnias</DialogTitle>
                   </DialogHeader>
                   <ShareCard 
                     atletaId={atletaId}
