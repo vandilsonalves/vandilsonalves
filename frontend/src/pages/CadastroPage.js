@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
-import { UserPlus, Search, ScrollText, CheckCircle2, HelpCircle, Building2, Upload, FileImage } from 'lucide-react';
+import { UserPlus, Search, ScrollText, CheckCircle2, HelpCircle, Building2, Upload, FileImage, Users, Gift } from 'lucide-react';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -49,9 +49,14 @@ const ETNIAS = ['Branco', 'Negro', 'Pardo', 'Indígena', 'Amarelo', 'Mulato'];
 
 const CadastroPage = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { register } = useAuth();
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
+  // Estado para código de indicação
+  const [codigoIndicacaoValido, setCodigoIndicacaoValido] = useState(null);
+  const [nomeIndicador, setNomeIndicador] = useState('');
   
   // Listas dinâmicas
   const [cidades, setCidades] = useState([]);
@@ -72,7 +77,8 @@ const CadastroPage = () => {
     data_nascimento: '',
     etnia: '',
     apelido: '',
-    modalidade_usuario: 'profissional_amador'
+    modalidade_usuario: 'profissional_amador',
+    codigo_indicacao: ''
   });
 
   // Estados do Termo de Aceite
@@ -92,6 +98,38 @@ const CadastroPage = () => {
   });
   const [cidadesAssessoria, setCidadesAssessoria] = useState([]);
   const [loadingCidadesAssessoria, setLoadingCidadesAssessoria] = useState(false);
+
+  // Capturar código de indicação da URL
+  useEffect(() => {
+    const refCode = searchParams.get('ref');
+    if (refCode) {
+      setFormData(prev => ({ ...prev, codigo_indicacao: refCode.toUpperCase() }));
+      verificarCodigoIndicacao(refCode.toUpperCase());
+    }
+  }, [searchParams]);
+
+  // Verificar código de indicação
+  const verificarCodigoIndicacao = async (codigo) => {
+    if (!codigo || codigo.length < 5) {
+      setCodigoIndicacaoValido(null);
+      setNomeIndicador('');
+      return;
+    }
+    
+    try {
+      const response = await axios.get(`${API}/indicacao/verificar-codigo/${codigo}`);
+      if (response.data.valido) {
+        setCodigoIndicacaoValido(true);
+        setNomeIndicador(response.data.indicador?.nome || '');
+      } else {
+        setCodigoIndicacaoValido(false);
+        setNomeIndicador('');
+      }
+    } catch (err) {
+      setCodigoIndicacaoValido(false);
+      setNomeIndicador('');
+    }
+  };
 
   // Buscar equipes cadastradas ao carregar a página
   useEffect(() => {
@@ -731,6 +769,53 @@ const CadastroPage = () => {
                       </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* Código de Indicação de Amigo(a) */}
+              <div className="border-2 border-pink-200 bg-gradient-to-r from-pink-50 to-purple-50 dark:from-pink-900/20 dark:to-purple-900/20 rounded-xl p-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <Users className="w-5 h-5 text-pink-500" />
+                  <Label className="text-base font-semibold text-pink-700 dark:text-pink-300">
+                    Código de Indicação de Amigo(a)
+                  </Label>
+                  <span className="text-xs text-slate-500">(opcional)</span>
+                </div>
+                
+                <div className="space-y-2">
+                  <Input
+                    placeholder="Ex: REF-AB123XYZ"
+                    value={formData.codigo_indicacao}
+                    onChange={(e) => {
+                      const codigo = e.target.value.toUpperCase();
+                      handleChange('codigo_indicacao', codigo);
+                      verificarCodigoIndicacao(codigo);
+                    }}
+                    className={`bg-white font-mono ${
+                      codigoIndicacaoValido === true 
+                        ? 'border-emerald-500 focus:ring-emerald-500' 
+                        : codigoIndicacaoValido === false 
+                          ? 'border-red-500 focus:ring-red-500'
+                          : ''
+                    }`}
+                    data-testid="input-codigo-indicacao"
+                  />
+                  
+                  {codigoIndicacaoValido === true && nomeIndicador && (
+                    <div className="flex items-center gap-2 text-emerald-600 text-sm">
+                      <CheckCircle2 className="w-4 h-4" />
+                      <span>Indicado por: <strong>{nomeIndicador}</strong></span>
+                    </div>
+                  )}
+                  
+                  {codigoIndicacaoValido === false && formData.codigo_indicacao.length >= 5 && (
+                    <p className="text-red-500 text-sm">Código de indicação inválido</p>
+                  )}
+                  
+                  <p className="text-xs text-slate-500">
+                    <Gift className="w-3 h-3 inline mr-1" />
+                    Se um amigo te indicou, insira o código dele aqui!
+                  </p>
                 </div>
               </div>
 

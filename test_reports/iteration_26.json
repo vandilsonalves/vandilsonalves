@@ -37,7 +37,7 @@
       "email": "admin@runpro.com",
       "password": "admin123"
     },
-    "api_url": "https://athlete-dashboard-15.preview.emergentagent.com"
+    "api_url": "https://performance-tracker-75.preview.emergentagent.com"
   },
   "seed_data_creation": "None - used existing test data",
   "retest_needed": false,

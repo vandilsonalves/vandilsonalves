@@ -11,7 +11,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://athlete-dashboard-15.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://performance-tracker-75.preview.emergentagent.com')
 
 class TestLigaAssessorias:
     """Test suite for Liga de Assessorias API endpoints"""
