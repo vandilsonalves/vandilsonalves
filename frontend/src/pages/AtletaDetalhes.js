@@ -18,6 +18,27 @@ import html2canvas from 'html2canvas';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Cores por modalidade
+const getModalidadeColors = (modalidade) => {
+  if (modalidade === 'povao_pace_livre') {
+    return {
+      ring: 'ring-purple-500',
+      bg: '#8B5CF6',
+      bgClass: 'bg-purple-500',
+      text: 'text-purple-700 dark:text-purple-300',
+      bgLight: 'bg-purple-100 dark:bg-purple-900'
+    };
+  }
+  // Profissional/Amador (default)
+  return {
+    ring: 'ring-emerald-500',
+    bg: '#10B981',
+    bgClass: 'bg-emerald-500',
+    text: 'text-emerald-700 dark:text-emerald-300',
+    bgLight: 'bg-emerald-100 dark:bg-emerald-900'
+  };
+};
+
 const AtletaDetalhes = () => {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -289,12 +310,18 @@ const AtletaDetalhes = () => {
         {/* Header do Atleta */}
         <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg">
           <CardContent className="pt-6">
+            {(() => {
+              const colors = getModalidadeColors(atleta.modalidade_usuario);
+              return (
             <div className="flex flex-col md:flex-row items-center md:items-start gap-6">
               {/* Foto com Selo P */}
               <div className="relative">
-                <Avatar className="h-32 w-32 ring-4 ring-emerald-500 ring-offset-4 ring-offset-white dark:ring-offset-slate-900">
+                <Avatar className={`h-32 w-32 ring-4 ${colors.ring} ring-offset-4 ring-offset-white dark:ring-offset-slate-900`}>
                   <AvatarImage src={getFotoUrl()} alt={atleta.nome} />
-                  <AvatarFallback className="bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 text-3xl font-bold">
+                  <AvatarFallback 
+                    className="text-white text-3xl font-bold"
+                    style={{ backgroundColor: colors.bg }}
+                  >
                     {atleta.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
                   </AvatarFallback>
                 </Avatar>
@@ -309,7 +336,7 @@ const AtletaDetalhes = () => {
 
               {/* Informações */}
               <div className="flex-1 text-center md:text-left">
-                <h1 className="text-3xl font-bold text-emerald-600 dark:text-emerald-400 mb-2">
+                <h1 className={`text-3xl font-bold mb-2 ${atleta.modalidade_usuario === 'povao_pace_livre' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
                   {atleta.nome}
                 </h1>
                 <div className="flex items-center justify-center md:justify-start gap-2 text-slate-600 dark:text-slate-400 mb-3">
@@ -367,6 +394,8 @@ const AtletaDetalhes = () => {
                 </div>
               </div>
             </div>
+              );
+            })()}
           </CardContent>
         </Card>
 

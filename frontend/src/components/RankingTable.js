@@ -101,7 +101,10 @@ const RankingTable = ({ data, onAtletaClick, modalidade = 'profissional' }) => {
                       }`}
                     >
                       <AvatarImage src={atleta.foto_url} alt={atleta.nome} />
-                      <AvatarFallback className={`${colors.bg} text-white font-semibold`}>
+                      <AvatarFallback 
+                        className="text-white font-semibold text-sm"
+                        style={{ backgroundColor: colors.hex }}
+                      >
                         {atleta.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
                       </AvatarFallback>
                     </Avatar>

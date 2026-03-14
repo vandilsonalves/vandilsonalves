@@ -967,7 +967,10 @@ const RankingPage = () => {
                               <div className="flex items-center gap-3">
                                 <Avatar className="h-10 w-10 ring-2 ring-purple-500 ring-offset-2 ring-offset-white dark:ring-offset-slate-900">
                                   <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
-                                  <AvatarFallback className="bg-purple-600 text-white font-semibold">
+                                  <AvatarFallback 
+                                    className="text-white font-semibold"
+                                    style={{ backgroundColor: '#8B5CF6' }}
+                                  >
                                     {atleta.nome?.charAt(0)}
                                   </AvatarFallback>
                                 </Avatar>
