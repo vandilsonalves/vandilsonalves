@@ -95,8 +95,22 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - **Badges mini** na tabela de ranking ao lado do nome do atleta
 - **Seção completa** na página de detalhes do atleta
 
-### Módulos Refatorados (17 módulos criados)
-- `auth_routes.py` - Autenticação
+### Sistema de Indicação de Amigos (NOVO - 14/Mar/2026)
+- **Código de Indicação Único**: Formato REF-[INICIAIS][HASH] (ex: REF-CS123ABC)
+- **Campo no Cadastro**: Campo "Código de Indicação de Amigo(a)" opcional na página de cadastro
+- **Captura via URL**: Código preenchido automaticamente via `?ref=CODIGO` na URL
+- **Validação em Tempo Real**: Verifica código enquanto digita, mostra nome do indicador se válido
+- **Registro Automático**: Indicação registrada automaticamente ao completar cadastro com código válido
+- **Contador de Indicações**: Indicador acumula indicações para desbloquear badge "Embaixador" (5+)
+- **Endpoints**:
+  - GET /api/indicacao/verificar-codigo/{codigo} - Valida código
+  - GET /api/indicacao/meu-codigo - Retorna código do usuário logado
+  - GET /api/indicacao/minhas-indicacoes - Lista pessoas indicadas
+  - GET /api/indicacao/ranking - Ranking de indicadores
+- **Arquivos**: `indicacao_routes.py`, `IndicarAmigos.jsx`, campo em `CadastroPage.js`
+
+### Módulos Refatorados (18 módulos criados)
+- `auth_routes.py` - Autenticação (com sistema de indicação integrado)
 - `notificacoes_routes.py` - Sistema de notificações
 - `conquistas_routes.py` - Conquistas/badges
 - `atletas_routes.py` - Perfil do atleta
@@ -111,7 +125,8 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - `monitoring_routes.py` - Monitoramento de saúde
 - `celery_routes.py` - Tarefas assíncronas
 - `websocket_routes.py` - Notificações em tempo real
-- `badges_routes.py` - Sistema de gamificação com badges (NOVO)
+- `badges_routes.py` - Sistema de gamificação com badges
+- `indicacao_routes.py` - Sistema de indicação de amigos (NOVO)
 
 ### Backlog (P2-P3)
 - [ ] **Verificar domínio no Resend** - Atualmente usando `onboarding@resend.dev` (domínio de teste)
@@ -219,6 +234,7 @@ O usuário solicitou a reestruturação do painel de administração e implement
 
 ## Test Credentials
 - **Super Admin**: admin@rankingrun.com / admin123
+- **Atleta Indicador**: carlos.silva@teste.com / senha123 (código: REF-CSAC0455)
 - **Atleta Masculino**: rafael_souza_1@email.com / senha123
 - **Atleta Feminina**: raquel_pereira_21@email.com / senha123
 
