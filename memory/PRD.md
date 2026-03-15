@@ -102,12 +102,17 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - **Validação em Tempo Real**: Verifica código enquanto digita, mostra nome do indicador se válido
 - **Registro Automático**: Indicação registrada automaticamente ao completar cadastro com código válido
 - **Contador de Indicações**: Indicador acumula indicações para desbloquear badge "Embaixador" (5+)
+- **Notificação Push (15/Mar/2026)**: Quando alguém usa o código, o indicador recebe notificação "🎉 [Nome] se cadastrou usando seu código de indicação!"
+- **Quadro no Perfil (15/Mar/2026)**: Componente MinhasIndicacoes mostra estatísticas e lista de indicados
+  - Dono vê: código, botão copiar, botão WhatsApp, lista de indicados
+  - Visitante vê: apenas dados públicos (contagem e lista)
 - **Endpoints**:
   - GET /api/indicacao/verificar-codigo/{codigo} - Valida código
   - GET /api/indicacao/meu-codigo - Retorna código do usuário logado
   - GET /api/indicacao/minhas-indicacoes - Lista pessoas indicadas
   - GET /api/indicacao/ranking - Ranking de indicadores
-- **Arquivos**: `indicacao_routes.py`, `IndicarAmigos.jsx`, campo em `CadastroPage.js`
+  - GET /api/indicacao/atleta/{id}/publico - Dados públicos de indicação
+- **Arquivos**: `indicacao_routes.py`, `MinhasIndicacoes.jsx`, `IndicarAmigos.jsx`, campo em `CadastroPage.js`
 
 ### Módulos Refatorados (18 módulos criados)
 - `auth_routes.py` - Autenticação (com sistema de indicação integrado)
