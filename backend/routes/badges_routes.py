@@ -43,7 +43,8 @@ BADGES_CONFIG = {
         "cor_primaria": "#10B981",
         "cor_secundaria": "#059669",
         "categoria": "performance",
-        "criterio": {"ranking_mes_maximo": 10}
+        "criterio": {"ranking_mes_maximo": 10},
+        "exclusivo_profissional": True  # Não disponível para Povão
     },
     "podio": {
         "nome": "Pódio",
@@ -52,7 +53,8 @@ BADGES_CONFIG = {
         "cor_primaria": "#F59E0B",
         "cor_secundaria": "#D97706",
         "categoria": "performance",
-        "criterio": {"colocacao_maxima": 3}
+        "criterio": {"colocacao_maxima": 3},
+        "exclusivo_profissional": True  # Não disponível para Povão
     },
     "rei_velocidade": {
         "nome": "Rei da Velocidade",
@@ -61,7 +63,8 @@ BADGES_CONFIG = {
         "cor_primaria": "#EF4444",
         "cor_secundaria": "#DC2626",
         "categoria": "performance",
-        "criterio": {"top_semanal": 1}
+        "criterio": {"top_semanal": 1},
+        "exclusivo_profissional": True  # Não disponível para Povão
     },
     
     # === Participação ===
@@ -173,7 +176,8 @@ BADGES_CONFIG = {
         "cor_primaria": "#FBBF24",
         "cor_secundaria": "#F59E0B",
         "categoria": "especial",
-        "criterio": {"top_equipe": 1}
+        "criterio": {"top_equipe": 1},
+        "exclusivo_profissional": True  # Não disponível para Povão
     }
 }
 
@@ -351,8 +355,16 @@ async def get_badges_atleta(atleta_id: str):
     if not usuario:
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
+    # Verificar se é atleta do Povão
+    is_povao = usuario.get("modalidade_usuario") == "povao_pace_livre"
+    
     # Verificar e atualizar badges
     badges = await verificar_badges_atleta(atleta_id)
+    
+    # Filtrar badges exclusivas do profissional se for atleta do Povão
+    if is_povao:
+        badges_exclusivos = ["top_10_mes", "podio", "rei_velocidade", "estrela_assessoria"]
+        badges = [b for b in badges if b["id"] not in badges_exclusivos]
     
     # Calcular pontos e corridas
     ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
@@ -371,6 +383,7 @@ async def get_badges_atleta(atleta_id: str):
         "atleta_id": atleta_id,
         "atleta_nome": usuario.get("nome", ""),
         "equipe": usuario.get("equipe", ""),
+        "modalidade": usuario.get("modalidade_usuario", "profissional_amador"),
         "badges": badges,
         "badges_conquistados": len(badges_conquistados),
         "total_badges": len(badges),
