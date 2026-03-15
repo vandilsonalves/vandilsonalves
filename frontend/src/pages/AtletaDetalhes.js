@@ -447,10 +447,12 @@ const AtletaDetalhes = () => {
           </Card>
         </div>
 
-        {/* Quadro de Indicações */}
-        <div className="mb-6">
-          <MinhasIndicacoes atletaId={id} isOwner={isOwner} />
-        </div>
+        {/* Quadro de Indicações - Visível apenas para o próprio atleta */}
+        {isOwner && (
+          <div className="mb-6">
+            <MinhasIndicacoes atletaId={id} isOwner={true} />
+          </div>
+        )}
 
         {/* Badges Visuais - Nova Seção */}
         <BadgesDisplay atletaId={id} showTitle={true} />
