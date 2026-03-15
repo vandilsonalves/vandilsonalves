@@ -112,14 +112,50 @@ BADGES_CONFIG = {
     },
     
     # === Especiais ===
-    "embaixador": {
-        "nome": "Embaixador",
+    "embaixador_run": {
+        "nome": "Embaixador Run",
         "descricao": "Indicou 5+ atletas para a plataforma",
         "icone": "users",
         "cor_primaria": "#EC4899",
         "cor_secundaria": "#DB2777",
         "categoria": "especial",
         "criterio": {"indicacoes_minimas": 5}
+    },
+    "indicador_bronze": {
+        "nome": "Indicador Bronze",
+        "descricao": "Indicou 10+ atletas para a plataforma",
+        "icone": "award",
+        "cor_primaria": "#CD7F32",
+        "cor_secundaria": "#B87333",
+        "categoria": "especial",
+        "criterio": {"indicacoes_minimas": 10}
+    },
+    "indicador_prata": {
+        "nome": "Indicador Prata",
+        "descricao": "Indicou 20+ atletas para a plataforma",
+        "icone": "medal",
+        "cor_primaria": "#C0C0C0",
+        "cor_secundaria": "#A8A8A8",
+        "categoria": "especial",
+        "criterio": {"indicacoes_minimas": 20}
+    },
+    "indicador_ouro": {
+        "nome": "Indicador Ouro",
+        "descricao": "Indicou 30+ atletas para a plataforma",
+        "icone": "trophy",
+        "cor_primaria": "#FFD700",
+        "cor_secundaria": "#FFC000",
+        "categoria": "especial",
+        "criterio": {"indicacoes_minimas": 30}
+    },
+    "indicador_diamante": {
+        "nome": "Indicador Diamante",
+        "descricao": "Indicou 50+ atletas para a plataforma",
+        "icone": "gem",
+        "cor_primaria": "#B9F2FF",
+        "cor_secundaria": "#00CED1",
+        "categoria": "especial",
+        "criterio": {"indicacoes_minimas": 50}
     },
     "influencer": {
         "nome": "Influencer",

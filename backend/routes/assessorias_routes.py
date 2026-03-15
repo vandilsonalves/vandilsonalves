@@ -367,7 +367,7 @@ async def get_detalhes_assessoria(nome_equipe: str):
     if assessoria_doc and assessoria_doc.get("dono_id"):
         dono = await db.usuarios.find_one(
             {"id": assessoria_doc["dono_id"]},
-            {"_id": 0, "password_hash": 0, "id": 1, "nome": 1, "foto_url": 1}
+            {"_id": 0, "id": 1, "nome": 1, "foto_url": 1}
         )
         if dono:
             dono_info = dono

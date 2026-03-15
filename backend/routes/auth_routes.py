@@ -79,34 +79,45 @@ async def registrar_indicacao_interna(indicado_id: str, indicado_nome: str, codi
     )
     await db.notificacoes.insert_one(notificacao.model_dump())
     
-    # Verificar se ganhou insígnia de embaixador (5+ indicações)
-    if total_indicacoes >= 5:
-        # Verificar se já tem a insígnia
-        badge_existente = await db.badges_atleta.find_one({
-            "atleta_id": indicador["id"],
-            "badge_id": "embaixador"
-        })
-        
-        if not badge_existente:
-            # Conceder insígnia
-            await db.badges_atleta.insert_one({
+    # Verificar e conceder insígnias por indicação
+    # Níveis: Embaixador Run (5), Bronze (10), Prata (20), Ouro (30), Diamante (50)
+    niveis_insignias = [
+        {"id": "embaixador_run", "nome": "Embaixador Run", "minimo": 5, "emoji": "🏃"},
+        {"id": "indicador_bronze", "nome": "Indicador Bronze", "minimo": 10, "emoji": "🥉"},
+        {"id": "indicador_prata", "nome": "Indicador Prata", "minimo": 20, "emoji": "🥈"},
+        {"id": "indicador_ouro", "nome": "Indicador Ouro", "minimo": 30, "emoji": "🥇"},
+        {"id": "indicador_diamante", "nome": "Indicador Diamante", "minimo": 50, "emoji": "💎"},
+    ]
+    
+    for nivel in niveis_insignias:
+        if total_indicacoes >= nivel["minimo"]:
+            # Verificar se já tem a insígnia
+            badge_existente = await db.badges_atleta.find_one({
                 "atleta_id": indicador["id"],
-                "badge_id": "embaixador",
-                "data_conquista": datetime.now(timezone.utc).isoformat()
+                "badge_id": nivel["id"]
             })
             
-            # Notificação de conquista de badge
-            notificacao_badge = Notificacao(
-                usuario_id=indicador["id"],
-                tipo="badge",
-                titulo="🏅 Nova Insígnia Desbloqueada!",
-                mensagem=f"Parabéns! Você conquistou a insígnia 'Embaixador' por indicar 5 amigos!",
-                dados_extras={
-                    "badge_id": "embaixador",
-                    "badge_nome": "Embaixador"
-                }
-            )
-            await db.notificacoes.insert_one(notificacao_badge.model_dump())
+            if not badge_existente:
+                # Conceder insígnia
+                await db.badges_atleta.insert_one({
+                    "atleta_id": indicador["id"],
+                    "badge_id": nivel["id"],
+                    "data_conquista": datetime.now(timezone.utc).isoformat()
+                })
+                
+                # Notificação de conquista de badge
+                notificacao_badge = Notificacao(
+                    usuario_id=indicador["id"],
+                    tipo="badge",
+                    titulo=f"{nivel['emoji']} Nova Insígnia Desbloqueada!",
+                    mensagem=f"Parabéns! Você conquistou a insígnia '{nivel['nome']}' por indicar {nivel['minimo']} amigos!",
+                    dados_extras={
+                        "badge_id": nivel["id"],
+                        "badge_nome": nivel["nome"],
+                        "total_indicacoes": total_indicacoes
+                    }
+                )
+                await db.notificacoes.insert_one(notificacao_badge.model_dump())
     
     return indicador["nome"]
 
