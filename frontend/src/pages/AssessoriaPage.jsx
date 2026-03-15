@@ -14,6 +14,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -21,6 +22,7 @@ const API = `${BACKEND_URL}/api`;
 const AssessoriaPage = () => {
   const { nome } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [assessoria, setAssessoria] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingCertificado, setDownloadingCertificado] = useState(false);
@@ -28,6 +30,9 @@ const AssessoriaPage = () => {
   const [showFotoModal, setShowFotoModal] = useState(false);
   const [fotoModalUrl, setFotoModalUrl] = useState('');
   const certificadoRef = useRef(null);
+  
+  // Verificar se o usuário logado é o dono da assessoria
+  const isDono = user && assessoria && assessoria.responsavel_id === user.id;
 
   useEffect(() => {
     const fetchAssessoria = async () => {
@@ -184,23 +189,24 @@ const AssessoriaPage = () => {
                   <span className="text-lg">{assessoria.cidade}, {assessoria.estado}</span>
                 </p>
                 
-                {/* Responsável com link */}
-                {assessoria.responsavel_nome && (
-                  <div 
-                    className="flex items-center gap-2 bg-white/10 rounded-lg px-4 py-2 w-fit cursor-pointer hover:bg-white/20 transition-colors"
-                    onClick={handleVerPerfilDono}
-                  >
-                    <Crown className="w-5 h-5 text-yellow-300" />
-                    <span className="font-medium">Responsável:</span>
-                    <span className="underline underline-offset-2">{assessoria.responsavel_nome}</span>
-                    <ExternalLink className="w-4 h-4 ml-1" />
+                {/* Bio */}
+                {assessoria.mensagem_bio && (
+                  <div className="bg-white/10 rounded-lg px-4 py-3 max-w-2xl mb-3">
+                    <p className="text-amber-50 italic">"{assessoria.mensagem_bio}"</p>
                   </div>
                 )}
                 
-                {/* Bio */}
-                {assessoria.mensagem_bio && (
-                  <div className="mt-3 bg-white/10 rounded-lg px-4 py-3 max-w-2xl">
-                    <p className="text-amber-50 italic">"{assessoria.mensagem_bio}"</p>
+                {/* Dono da Assessoria no Cabeçalho */}
+                {assessoria.responsavel_nome && (
+                  <div className="flex items-center gap-2 text-lg">
+                    <Crown className="w-5 h-5 text-yellow-300" />
+                    <span className="font-medium text-amber-100">Dono da Assessoria:</span>
+                    <span 
+                      className="font-bold text-yellow-300 cursor-pointer hover:underline"
+                      onClick={handleVerPerfilDono}
+                    >
+                      {assessoria.responsavel_nome}
+                    </span>
                   </div>
                 )}
               </div>
@@ -458,24 +464,27 @@ const AssessoriaPage = () => {
                 </div>
 
                 <div className="space-y-2">
-                  <Button 
-                    className="w-full bg-amber-500 hover:bg-amber-600" 
-                    onClick={downloadCertificado}
-                    disabled={downloadingCertificado}
-                    data-testid="btn-baixar-selo"
-                  >
-                    {downloadingCertificado ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Gerando Selo...
-                      </>
-                    ) : (
-                      <>
-                        <Download className="w-4 h-4 mr-2" />
-                        Baixar Selo Oficial
-                      </>
-                    )}
-                  </Button>
+                  {/* Botão Baixar Selo - Apenas para o Dono */}
+                  {isDono && (
+                    <Button 
+                      className="w-full bg-amber-500 hover:bg-amber-600" 
+                      onClick={downloadCertificado}
+                      disabled={downloadingCertificado}
+                      data-testid="btn-baixar-selo"
+                    >
+                      {downloadingCertificado ? (
+                        <>
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                          Gerando Selo...
+                        </>
+                      ) : (
+                        <>
+                          <Download className="w-4 h-4 mr-2" />
+                          Baixar Selo Oficial
+                        </>
+                      )}
+                    </Button>
+                  )}
                   
                   {assessoria.responsavel_id && (
                     <Button 

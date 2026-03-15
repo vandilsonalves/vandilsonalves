@@ -336,6 +336,36 @@ async def get_detalhes_assessoria(nome_equipe: str):
     
     atletas_ids = [a["id"] for a in atletas]
     
+    # Buscar pontos de cada atleta
+    atletas_com_pontos = []
+    for atleta in atletas:
+        ranking_atleta = await db.ranking_anual.find_one(
+            {"usuario_id": atleta["id"], "ano": 2025},
+            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+        )
+        ranking_povao = await db.ranking_povao.find_one(
+            {"usuario_id": atleta["id"], "ano": 2025},
+            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+        )
+        
+        pontos_atleta = 0
+        corridas_atleta = 0
+        if ranking_atleta:
+            pontos_atleta = ranking_atleta.get("pontos_total", 0)
+            corridas_atleta = ranking_atleta.get("total_corridas", 0)
+        if ranking_povao:
+            pontos_atleta = max(pontos_atleta, ranking_povao.get("pontos_total", 0))
+            corridas_atleta = max(corridas_atleta, ranking_povao.get("total_corridas", 0))
+        
+        atletas_com_pontos.append({
+            **atleta,
+            "pontos": pontos_atleta,
+            "total_corridas": corridas_atleta
+        })
+    
+    # Ordenar atletas por pontos (decrescente)
+    atletas_com_pontos.sort(key=lambda x: x.get("pontos", 0), reverse=True)
+    
     corridas = await db.corridas.find(
         {"usuario_id": {"$in": atletas_ids}},
         {"_id": 0}
@@ -352,11 +382,32 @@ async def get_detalhes_assessoria(nome_equipe: str):
         elif 2 <= c.get("colocacao", 0) <= 5:
             pontos_resultados += 0.5
     
-    ranking_data = await get_ranking_assessorias(tipo="nacional")
-    posicao = next(
-        (eq["posicao"] for eq in ranking_data.get("ranking", []) if eq["nome"] == nome_equipe),
+    # Buscar posição no ranking NACIONAL
+    ranking_nacional = await get_ranking_assessorias(tipo="nacional")
+    posicao_nacional = next(
+        (eq["posicao"] for eq in ranking_nacional.get("ranking", []) if eq["nome"] == nome_equipe),
         None
     )
+    
+    # Buscar posição no ranking ESTADUAL
+    estado_equipe = atletas[0].get("estado", "") if atletas else ""
+    posicao_estadual = None
+    if estado_equipe:
+        ranking_estadual = await get_ranking_assessorias(tipo="estadual", estado=estado_equipe)
+        posicao_estadual = next(
+            (eq["posicao"] for eq in ranking_estadual.get("ranking", []) if eq["nome"] == nome_equipe),
+            None
+        )
+    
+    # Determinar selo baseado na posição
+    selo = "participante"
+    if posicao_nacional:
+        if posicao_nacional <= 20:
+            selo = "ouro"
+        elif posicao_nacional <= 50:
+            selo = "prata"
+        else:
+            selo = "bronze"
     
     assessoria_doc = await db.assessorias.find_one(
         {"nome": nome_equipe},
@@ -364,6 +415,8 @@ async def get_detalhes_assessoria(nome_equipe: str):
     )
     
     dono_info = None
+    responsavel_nome = None
+    responsavel_id = None
     if assessoria_doc and assessoria_doc.get("dono_id"):
         dono = await db.usuarios.find_one(
             {"id": assessoria_doc["dono_id"]},
@@ -371,10 +424,12 @@ async def get_detalhes_assessoria(nome_equipe: str):
         )
         if dono:
             dono_info = dono
+            responsavel_nome = dono.get("nome")
+            responsavel_id = dono.get("id")
     
     return {
         "nome": nome_equipe,
-        "estado": atletas[0].get("estado", "") if atletas else "",
+        "estado": estado_equipe,
         "cidade": atletas[0].get("cidade", "") if atletas else "",
         "total_atletas": len(atletas),
         "pontos_cadastro": pontos_cadastro,
@@ -383,9 +438,14 @@ async def get_detalhes_assessoria(nome_equipe: str):
         "total_resultados": len(corridas),
         "total_primeiros": total_primeiros,
         "total_podios": total_podios,
-        "posicao_ranking": posicao,
-        "atletas": atletas,
+        "posicao_ranking": posicao_nacional,
+        "posicao_nacional": posicao_nacional,
+        "posicao_estadual": posicao_estadual,
+        "selo": selo,
+        "atletas": atletas_com_pontos,
         "dono": dono_info,
+        "responsavel_nome": responsavel_nome,
+        "responsavel_id": responsavel_id,
         "mensagem_bio": assessoria_doc.get("mensagem_bio", "") if assessoria_doc else "",
         "foto_url": assessoria_doc.get("foto_url", "") if assessoria_doc else ""
     }
