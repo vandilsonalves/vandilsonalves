@@ -12,7 +12,7 @@ import uuid
 import io
 
 from config import db
-from models import PerfilUpdate
+from models import PerfilUpdate, Notificacao
 from services import calcular_faixa_etaria, verify_password, get_password_hash
 from routes.auth_routes import get_current_user
 
@@ -299,15 +299,28 @@ async def trocar_equipe_atleta(
     if not nova_equipe:
         raise HTTPException(status_code=400, detail="Nome da equipe é obrigatório")
     
+    equipe_anterior = current_user.get("equipe", "INDIVIDUAL") or "INDIVIDUAL"
+    dono_assessoria = None
+    
     if nova_equipe.upper() != "INDIVIDUAL":
+        # Verificar se a equipe existe
         equipe_existe = await db.usuarios.find_one({"equipe": nova_equipe})
         assessoria_existe = await db.assessorias.find_one({"nome": nova_equipe})
         
         if not equipe_existe and not assessoria_existe:
             raise HTTPException(
                 status_code=404, 
-                detail="Equipe não encontrada."
+                detail="Equipe não encontrada. Verifique o nome da equipe/assessoria."
             )
+        
+        # Buscar dono da assessoria para notificar
+        if assessoria_existe:
+            dono_id = assessoria_existe.get("dono_id")
+            if dono_id:
+                dono_assessoria = await db.usuarios.find_one(
+                    {"id": dono_id},
+                    {"_id": 0, "id": 1, "nome": 1}
+                )
     
     equipe_final = "" if nova_equipe.upper() == "INDIVIDUAL" else nova_equipe
     
@@ -318,6 +331,22 @@ async def trocar_equipe_atleta(
             "ultima_troca_equipe": datetime.now().isoformat()
         }}
     )
+    
+    # Enviar notificação push para o dono da assessoria
+    if dono_assessoria and dono_assessoria["id"] != current_user["id"]:
+        notificacao = Notificacao(
+            usuario_id=dono_assessoria["id"],
+            tipo="nova_entrada_equipe",
+            titulo="🏃 Novo atleta na sua equipe!",
+            mensagem=f"{current_user.get('nome', 'Um atleta')} entrou para {nova_equipe}!",
+            dados_extras={
+                "atleta_id": current_user["id"],
+                "atleta_nome": current_user.get("nome", ""),
+                "equipe_anterior": equipe_anterior,
+                "nova_equipe": nova_equipe
+            }
+        )
+        await db.notificacoes.insert_one(notificacao.model_dump())
     
     return {
         "success": True,
