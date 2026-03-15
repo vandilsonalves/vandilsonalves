@@ -283,3 +283,56 @@ async def ranking_indicacoes():
         "total": len(resultado),
         "ranking": resultado
     }
+
+
+@router.get("/atleta/{atleta_id}/publico")
+async def get_indicacoes_publico(atleta_id: str):
+    """Retorna dados públicos de indicação de um atleta (para perfil público)"""
+    
+    # Buscar atleta
+    atleta = await db.usuarios.find_one(
+        {"id": atleta_id},
+        {"_id": 0, "id": 1, "nome": 1, "codigo_indicacao": 1, "total_indicacoes": 1}
+    )
+    
+    if not atleta:
+        return {
+            "total_indicacoes": 0,
+            "is_embaixador": False,
+            "indicacoes": []
+        }
+    
+    # Contar indicações
+    total_indicacoes = await db.indicacoes.count_documents({
+        "indicador_id": atleta_id,
+        "status": "confirmada"
+    })
+    
+    # Buscar indicações
+    indicacoes = await db.indicacoes.find(
+        {"indicador_id": atleta_id, "status": "confirmada"},
+        {"_id": 0}
+    ).sort("data_indicacao", -1).to_list(50)
+    
+    # Buscar dados dos indicados
+    resultado_indicacoes = []
+    for ind in indicacoes:
+        indicado = await db.usuarios.find_one(
+            {"id": ind.get("indicado_id")},
+            {"_id": 0, "nome": 1, "foto_url": 1}
+        )
+        
+        if indicado:
+            resultado_indicacoes.append({
+                "id": ind.get("indicado_id"),
+                "nome": indicado.get("nome", "Atleta"),
+                "foto_url": indicado.get("foto_url", ""),
+                "data_cadastro": ind.get("data_indicacao"),
+                "status": ind.get("status", "confirmada")
+            })
+    
+    return {
+        "total_indicacoes": total_indicacoes,
+        "is_embaixador": total_indicacoes >= 5,
+        "indicacoes": resultado_indicacoes
+    }

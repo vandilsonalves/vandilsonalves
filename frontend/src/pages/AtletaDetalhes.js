@@ -13,6 +13,8 @@ import ConquistasTable from '@/components/ConquistasTable';
 import GraficoEvolucao from '@/components/GraficoEvolucao';
 import SelosAtleta from '@/components/SelosAtleta';
 import { BadgesDisplay } from '@/components/BadgesDisplay';
+import MinhasIndicacoes from '@/components/MinhasIndicacoes';
+import { useAuth } from '@/context/AuthContext';
 import html2canvas from 'html2canvas';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -42,6 +44,7 @@ const getModalidadeColors = (modalidade) => {
 const AtletaDetalhes = () => {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [atleta, setAtleta] = useState(null);
   const [corridas, setCorridas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -50,6 +53,9 @@ const AtletaDetalhes = () => {
   const [generatingImage, setGeneratingImage] = useState(false);
   const [copied, setCopied] = useState(false);
   const shareCardRef = useRef(null);
+  
+  // Verificar se é o dono do perfil
+  const isOwner = user?.id === id;
 
   useEffect(() => {
     const fetchAtleta = async () => {
@@ -439,6 +445,11 @@ const AtletaDetalhes = () => {
               </div>
             </CardContent>
           </Card>
+        </div>
+
+        {/* Quadro de Indicações */}
+        <div className="mb-6">
+          <MinhasIndicacoes atletaId={id} isOwner={isOwner} />
         </div>
 
         {/* Badges Visuais - Nova Seção */}

@@ -15,7 +15,7 @@ from services import (
 )
 
 # Função auxiliar para registrar indicação
-async def registrar_indicacao_interna(indicado_id: str, codigo_indicacao: str):
+async def registrar_indicacao_interna(indicado_id: str, indicado_nome: str, codigo_indicacao: str):
     """Registra uma indicação quando um novo usuário se cadastra com código"""
     if not codigo_indicacao:
         return None
@@ -58,12 +58,28 @@ async def registrar_indicacao_interna(indicado_id: str, codigo_indicacao: str):
         {"$inc": {"total_indicacoes": 1}}
     )
     
-    # Verificar se ganhou insígnia de embaixador (5+ indicações)
+    # Contar total de indicações para verificar badge
     total_indicacoes = await db.indicacoes.count_documents({
         "indicador_id": indicador["id"],
         "status": "confirmada"
     })
     
+    # Criar notificação push para o indicador
+    from models import Notificacao
+    notificacao = Notificacao(
+        usuario_id=indicador["id"],
+        tipo="indicacao",
+        titulo="🎉 Nova indicação!",
+        mensagem=f"{indicado_nome} se cadastrou usando seu código de indicação!",
+        dados_extras={
+            "indicado_id": indicado_id,
+            "indicado_nome": indicado_nome,
+            "total_indicacoes": total_indicacoes
+        }
+    )
+    await db.notificacoes.insert_one(notificacao.model_dump())
+    
+    # Verificar se ganhou insígnia de embaixador (5+ indicações)
     if total_indicacoes >= 5:
         # Verificar se já tem a insígnia
         badge_existente = await db.badges_atleta.find_one({
@@ -78,6 +94,19 @@ async def registrar_indicacao_interna(indicado_id: str, codigo_indicacao: str):
                 "badge_id": "embaixador",
                 "data_conquista": datetime.now(timezone.utc).isoformat()
             })
+            
+            # Notificação de conquista de badge
+            notificacao_badge = Notificacao(
+                usuario_id=indicador["id"],
+                tipo="badge",
+                titulo="🏅 Nova Insígnia Desbloqueada!",
+                mensagem=f"Parabéns! Você conquistou a insígnia 'Embaixador' por indicar 5 amigos!",
+                dados_extras={
+                    "badge_id": "embaixador",
+                    "badge_nome": "Embaixador"
+                }
+            )
+            await db.notificacoes.insert_one(notificacao_badge.model_dump())
     
     return indicador["nome"]
 
@@ -196,7 +225,7 @@ async def register_atleta(dados: UsuarioRegister):
     # Processar código de indicação (se fornecido)
     indicador_nome = None
     if dados.codigo_indicacao:
-        indicador_nome = await registrar_indicacao_interna(usuario.id, dados.codigo_indicacao)
+        indicador_nome = await registrar_indicacao_interna(usuario.id, usuario.nome, dados.codigo_indicacao)
     
     token = create_access_token({"sub": usuario.id})
     
