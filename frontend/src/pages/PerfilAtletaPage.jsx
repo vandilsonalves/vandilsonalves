@@ -20,6 +20,7 @@ import axios from 'axios';
 import SelosAtleta from '@/components/SelosAtleta';
 import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
 import IndicarAmigos from '@/components/IndicarAmigos';
+import CriarAssessoria from '@/components/CriarAssessoria';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -71,6 +72,8 @@ const PerfilAtletaPage = () => {
   // Dados do atleta
   const [atleta, setAtleta] = useState(null);
   const [conquistas, setConquistas] = useState([]);
+  const [assessoriaPendente, setAssessoriaPendente] = useState(false);
+  const [isDono, setIsDono] = useState(false);
   
   // Campos editáveis
   const [nome, setNome] = useState('');
@@ -134,8 +137,14 @@ const PerfilAtletaPage = () => {
         equipe: data.equipe,
         data_nascimento: data.data_nascimento,
         pontos_carreira: data.pontos_carreira || 0,
-        total_corridas: data.total_corridas || 0
+        total_corridas: data.total_corridas || 0,
+        role: data.role,
+        is_dono_assessoria: data.is_dono_assessoria
       });
+      
+      // Verificar se é dono de assessoria com assessoria pendente
+      setIsDono(data.role === 'dono_assessoria' || data.is_dono_assessoria);
+      setAssessoriaPendente(data.assessoria_pendente === true);
       
       // Preencher campos editáveis
       setNome(data.nome || '');
@@ -528,6 +537,20 @@ const PerfilAtletaPage = () => {
           <Alert className="mb-6 bg-red-500/10 border-red-500/30">
             <AlertDescription className="text-red-300">{error}</AlertDescription>
           </Alert>
+        )}
+
+        {/* Formulário para Criar Assessoria (Dono Pendente) */}
+        {isDono && assessoriaPendente && (
+          <div className="mb-6">
+            <CriarAssessoria 
+              token={token} 
+              onSuccess={() => {
+                setAssessoriaPendente(false);
+                fetchAtletaData();
+                toast.success('Sua assessoria foi criada! Acesse "Minha Assessoria" no menu.');
+              }} 
+            />
+          </div>
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

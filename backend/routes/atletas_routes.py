@@ -382,3 +382,166 @@ async def marcar_mensagem_visualizada(current_user: dict = Depends(get_current_u
     )
     
     return {"message": "Mensagem marcada como visualizada"}
+
+
+
+# ==================== CRIAR/ATUALIZAR ASSESSORIA (DONO) ====================
+
+class CriarAssessoriaRequest(BaseModel):
+    nome: str
+    cidade: str
+    estado: str
+    mensagem_bio: str = ""
+
+@router.post("/atletas/criar-assessoria")
+async def criar_assessoria(
+    dados: CriarAssessoriaRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Cria uma assessoria para o atleta promovido a Dono"""
+    
+    # Verificar se é dono de assessoria
+    if current_user.get("role") != "dono_assessoria":
+        raise HTTPException(
+            status_code=403, 
+            detail="Você precisa ser promovido a Dono de Assessoria para criar uma equipe"
+        )
+    
+    # Verificar se já tem assessoria
+    assessoria_existente = await db.assessorias.find_one({"dono_id": current_user["id"]})
+    if assessoria_existente:
+        raise HTTPException(status_code=400, detail="Você já possui uma assessoria cadastrada")
+    
+    # Verificar se nome já existe
+    nome_existe = await db.assessorias.find_one({"nome": dados.nome})
+    if nome_existe:
+        raise HTTPException(status_code=400, detail="Já existe uma assessoria com este nome")
+    
+    # Criar assessoria
+    assessoria_id = str(uuid.uuid4())
+    assessoria_doc = {
+        "id": assessoria_id,
+        "nome": dados.nome,
+        "cidade": dados.cidade,
+        "estado": dados.estado,
+        "mensagem_bio": dados.mensagem_bio,
+        "foto_url": "",
+        "dono_id": current_user["id"],
+        "dono_nome": current_user["nome"],
+        "status": "ativa",
+        "data_criacao": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.assessorias.insert_one(assessoria_doc)
+    
+    # Atualizar o usuário com a assessoria
+    await db.usuarios.update_one(
+        {"id": current_user["id"]},
+        {"$set": {
+            "assessoria_id": assessoria_id,
+            "assessoria_nome": dados.nome,
+            "equipe": dados.nome,
+            "assessoria_pendente": False
+        }}
+    )
+    
+    return {
+        "message": "Assessoria criada com sucesso!",
+        "assessoria": {
+            "id": assessoria_id,
+            "nome": dados.nome,
+            "cidade": dados.cidade,
+            "estado": dados.estado
+        }
+    }
+
+
+@router.get("/atletas/minha-assessoria")
+async def get_minha_assessoria(current_user: dict = Depends(get_current_user)):
+    """Retorna dados da assessoria do dono logado"""
+    
+    if current_user.get("role") != "dono_assessoria":
+        raise HTTPException(status_code=403, detail="Você não é Dono de Assessoria")
+    
+    # Verificar se tem assessoria pendente (precisa criar)
+    if current_user.get("assessoria_pendente", False):
+        return {
+            "assessoria": None,
+            "pendente": True,
+            "message": "Você ainda não criou sua assessoria. Preencha os dados para criar."
+        }
+    
+    # Buscar assessoria
+    assessoria = await db.assessorias.find_one(
+        {"dono_id": current_user["id"]},
+        {"_id": 0}
+    )
+    
+    if not assessoria:
+        return {
+            "assessoria": None,
+            "pendente": True,
+            "message": "Você ainda não criou sua assessoria."
+        }
+    
+    # Buscar atletas da equipe
+    atletas = await db.usuarios.find(
+        {"equipe": assessoria["nome"], "role": "atleta"},
+        {"_id": 0, "id": 1, "nome": 1, "foto_url": 1, "cidade": 1, "estado": 1}
+    ).to_list(100)
+    
+    return {
+        "assessoria": assessoria,
+        "pendente": False,
+        "total_atletas": len(atletas),
+        "atletas": atletas
+    }
+
+
+@router.put("/atletas/minha-assessoria")
+async def atualizar_minha_assessoria(
+    dados: CriarAssessoriaRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Atualiza dados da assessoria do dono"""
+    
+    if current_user.get("role") != "dono_assessoria":
+        raise HTTPException(status_code=403, detail="Você não é Dono de Assessoria")
+    
+    assessoria = await db.assessorias.find_one({"dono_id": current_user["id"]})
+    if not assessoria:
+        raise HTTPException(status_code=404, detail="Assessoria não encontrada")
+    
+    # Verificar se novo nome já existe (se mudou)
+    if dados.nome != assessoria["nome"]:
+        nome_existe = await db.assessorias.find_one({"nome": dados.nome, "id": {"$ne": assessoria["id"]}})
+        if nome_existe:
+            raise HTTPException(status_code=400, detail="Já existe uma assessoria com este nome")
+    
+    nome_antigo = assessoria["nome"]
+    
+    # Atualizar assessoria
+    await db.assessorias.update_one(
+        {"id": assessoria["id"]},
+        {"$set": {
+            "nome": dados.nome,
+            "cidade": dados.cidade,
+            "estado": dados.estado,
+            "mensagem_bio": dados.mensagem_bio
+        }}
+    )
+    
+    # Atualizar equipe dos atletas se nome mudou
+    if dados.nome != nome_antigo:
+        await db.usuarios.update_many(
+            {"equipe": nome_antigo},
+            {"$set": {"equipe": dados.nome}}
+        )
+        
+        # Atualizar dados do dono
+        await db.usuarios.update_one(
+            {"id": current_user["id"]},
+            {"$set": {"assessoria_nome": dados.nome, "equipe": dados.nome}}
+        )
+    
+    return {"message": "Assessoria atualizada com sucesso!"}

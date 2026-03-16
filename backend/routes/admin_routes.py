@@ -594,3 +594,100 @@ async def transferir_modalidade(
         "modalidade_anterior": modalidade_atual,
         "nova_modalidade": nova_modalidade
     }
+
+
+
+# ==================== PROMOVER A DONO DE ASSESSORIA ====================
+
+@router.post("/admin/atletas/{atleta_id}/promover-dono-assessoria")
+async def promover_dono_assessoria(
+    atleta_id: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """Promove um atleta a Dono de Assessoria - ele poderá criar sua assessoria depois"""
+    
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    if atleta.get("role") == "dono_assessoria":
+        raise HTTPException(status_code=400, detail="Atleta já é Dono de Assessoria")
+    
+    if atleta.get("role") == "admin":
+        raise HTTPException(status_code=400, detail="Administradores não podem ser promovidos")
+    
+    # Atualizar atleta para pré-dono de assessoria (aguardando criar assessoria)
+    await db.usuarios.update_one(
+        {"id": atleta_id},
+        {"$set": {
+            "role": "dono_assessoria",
+            "is_dono_assessoria": True,
+            "assessoria_pendente": True,  # Flag indicando que precisa criar a assessoria
+            "data_promocao": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    # Notificar o atleta
+    await criar_notificacao(
+        usuario_id=atleta_id,
+        tipo="promocao",
+        titulo="🎉 Você foi promovido a Dono de Assessoria!",
+        mensagem="Parabéns! Agora você pode criar sua própria assessoria. Acesse seu perfil e preencha os dados da sua equipe.",
+        dados_extras={"tipo_promocao": "dono_assessoria"}
+    )
+    
+    return {
+        "message": f"{atleta['nome']} foi promovido a Dono de Assessoria!",
+        "atleta_id": atleta_id,
+        "atleta_nome": atleta["nome"]
+    }
+
+
+@router.post("/admin/atletas/{atleta_id}/rebaixar-dono-assessoria")
+async def rebaixar_dono_assessoria(
+    atleta_id: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """Rebaixa um Dono de Assessoria a atleta comum"""
+    
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    if atleta.get("role") != "dono_assessoria":
+        raise HTTPException(status_code=400, detail="Atleta não é Dono de Assessoria")
+    
+    # Verificar se tem assessoria vinculada
+    assessoria = await db.assessorias.find_one({"dono_id": atleta_id})
+    if assessoria:
+        # Remover vínculo da assessoria
+        await db.assessorias.update_one(
+            {"dono_id": atleta_id},
+            {"$set": {"dono_id": None, "dono_nome": None}}
+        )
+    
+    # Rebaixar atleta
+    await db.usuarios.update_one(
+        {"id": atleta_id},
+        {"$set": {
+            "role": "atleta",
+            "is_dono_assessoria": False,
+            "assessoria_pendente": False,
+            "assessoria_id": None,
+            "assessoria_nome": None
+        }}
+    )
+    
+    # Notificar o atleta
+    await criar_notificacao(
+        usuario_id=atleta_id,
+        tipo="sistema",
+        titulo="Alteração de Função",
+        mensagem="Sua função foi alterada para Atleta.",
+        dados_extras={"tipo_alteracao": "rebaixamento"}
+    )
+    
+    return {
+        "message": f"{atleta['nome']} foi rebaixado a Atleta",
+        "atleta_id": atleta_id
+    }
