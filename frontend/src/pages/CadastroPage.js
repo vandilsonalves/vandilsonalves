@@ -757,8 +757,8 @@ const CadastroPage = () => {
                           </p>
                           <div className="mt-2 text-xs text-slate-400">
                             <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded mr-1">5-9km = 5pts</span>
-                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded mr-1">10-20km = 7pts</span>
-                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded">21km+ = 9pts</span>
+                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded mr-1">10-20km = 10pts</span>
+                            <span className="inline-block bg-purple-100 dark:bg-purple-800 px-2 py-1 rounded">21km+ = distância em pts</span>
                           </div>
                           {!podeSelecionarPovao && (
                             <p className="text-xs text-red-500 mt-2">
@@ -936,7 +936,7 @@ const CadastroPage = () => {
               <section>
                 <h4 className="font-semibold text-emerald-600">4. SISTEMA DE PONTUAÇÃO</h4>
                 <p>4.1. PROFISSIONAL/AMADOR: 1º lugar = 10pts, 2º = 9pts, 3º = 8pts, até 10º = 1pt.</p>
-                <p>4.2. POVÃO: 5km a 9km = 5pts, 10km a 20km = 7pts, 21km ou mais = 9pts.</p>
+                <p>4.2. POVÃO: 5km a 9km = 5pts, 10km a 20km = 10pts, 21km ou mais = distância em pts.</p>
                 <p>4.3. EQUIPES: Atleta cadastrado = +0,5pt, Resultado lançado = +1,0pt, Pódio (2º-5º) = +0,5pt, 1º lugar = +1,0pt.</p>
                 <p>4.4. Os pontos são acumulados por período (mensal, anual e histórico).</p>
               </section>

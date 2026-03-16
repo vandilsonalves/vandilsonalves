@@ -74,14 +74,15 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - [x] **Sistema de Gamificação com Badges (11/Mar/2026)** - 13 badges visuais com compartilhamento social
 - [x] **Bloqueio de Colocações Inválidas (11/Mar/2026)** - Validação por modalidade implementada
 
-### Sistema de Validação de Colocações (NOVO - 11/Mar/2026)
+### Sistema de Validação de Colocações (ATUALIZADO - 16/Mar/2026)
 - **Profissional/Amador Normal**: Aceita apenas 1º a 10º lugar (10-1 pontos)
 - **PCD**: Aceita apenas 1º a 3º lugar (10-8 pontos)
 - **Cadeirante**: Aceita apenas 1º a 3º lugar (10-8 pontos)
 - **Povão - Pace Livre**: Campo colocação bloqueado (=0), pontua APENAS por distância
   - 5-9km = 5 pontos
-  - 10-20km = 7 pontos
-  - 21km+ = 9 pontos
+  - 10-20km = 10 pontos  
+  - 21km+ = distância em pontos (ex: 42km = 42pts, 100km = 100pts)
+- **Distância Customizada**: Campo adicional aparece quando "Outra distância" é selecionado
 - **Correção de dados existentes**: 941 registros corrigidos (482 Povão, 162 Normal, 187 PCD, 110 Cadeirante)
 - **Rankings recalculados**: 390 atletas com pontuação corrigida
 
@@ -258,3 +259,24 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - Login RBAC lento (25s → 1.3s) - geolocalização em background
 - Redefinições de funções duplicadas corrigidas
 - Imports de funções entre módulos corrigidos
+
+
+
+### Formulário de Submissão de Resultados (NOVO - 16/Mar/2026)
+- **Campo de Distância Customizada**: 
+  - Dropdown de distância inclui opção "Outra distância"
+  - Quando selecionado, exibe campo numérico (1-500km, step 0.1)
+  - Validação: apenas números, máximo 500km
+  - Pontuação calculada automaticamente conforme regras do Povão
+
+- **Dropdowns de Localização (Estado/Cidade)**:
+  - Dropdown de Estado com todos os 27 estados brasileiros
+  - Dropdown de Cidade carrega automaticamente via API do IBGE
+  - Cidades são populadas após seleção do estado
+  - Loading state exibido durante carregamento das cidades
+  - Fallback para input de texto caso API falhe
+
+- **Arquivos modificados**:
+  - `/app/frontend/src/pages/SubmeterResultadoPage.js`
+  - `/app/backend/routes/admin_routes.py` (função calcular_pontos_povao)
+  - `/app/frontend/src/pages/CadastroPage.js` (correção de valores de pontuação)
