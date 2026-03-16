@@ -30,6 +30,8 @@ const DashboardAtletas = ({
   setFiltroCategoria,
   filtroModalidade,
   setFiltroModalidade,
+  filtroEquipe,
+  setFiltroEquipe,
   searchQuery,
   setSearchQuery,
   token,
@@ -74,7 +76,20 @@ const DashboardAtletas = ({
         }
       }
       
-      return matchSearch && matchModalidade && matchCategoria;
+      // Filtro de equipe/assessoria
+      let matchEquipe = !filtroEquipe || filtroEquipe === 'all';
+      if (!matchEquipe) {
+        const temEquipe = a.equipe && a.equipe.trim() !== '' && 
+                          a.equipe.toLowerCase() !== 'individual' && 
+                          a.equipe.toLowerCase() !== 'sem equipe';
+        if (filtroEquipe === 'com_assessoria') {
+          matchEquipe = temEquipe;
+        } else if (filtroEquipe === 'individual') {
+          matchEquipe = !temEquipe;
+        }
+      }
+      
+      return matchSearch && matchModalidade && matchCategoria && matchEquipe;
     })
     .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
 
@@ -152,6 +167,18 @@ const DashboardAtletas = ({
                 <SelectItem value="all">Todas Modalidades</SelectItem>
                 <SelectItem value="profissional_amador">Pro/Amador</SelectItem>
                 <SelectItem value="povao_pace_livre">Povão</SelectItem>
+              </SelectContent>
+            </Select>
+
+            {/* Filtro por Equipe/Assessoria */}
+            <Select value={filtroEquipe || 'all'} onValueChange={setFiltroEquipe}>
+              <SelectTrigger className="w-full md:w-44">
+                <SelectValue placeholder="Equipe" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Equipes</SelectItem>
+                <SelectItem value="com_assessoria">Com Assessoria</SelectItem>
+                <SelectItem value="individual">Individual</SelectItem>
               </SelectContent>
             </Select>
           </div>

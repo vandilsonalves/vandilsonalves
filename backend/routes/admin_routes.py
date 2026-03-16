@@ -479,10 +479,33 @@ async def deletar_atleta(atleta_id: str, admin: dict = Depends(get_admin_user)):
 
 
 @router.get("/admin/atletas/export")
-async def exportar_atletas(admin: dict = Depends(get_admin_user)):
-    """Exporta lista de atletas em Excel"""
+async def exportar_atletas(
+    categoria: str = None,
+    modalidade: str = None,
+    equipe: str = None,
+    admin: dict = Depends(get_admin_user)
+):
+    """Exporta lista de atletas em Excel com filtros"""
+    filtro = {"role": "atleta"}
+    
+    # Aplicar filtros
+    if modalidade:
+        if modalidade == "povao_pace_livre":
+            filtro["modalidade_usuario"] = "povao_pace_livre"
+        elif modalidade == "profissional_amador":
+            filtro["modalidade_usuario"] = {"$ne": "povao_pace_livre"}
+    
+    if equipe:
+        if equipe == "com_assessoria":
+            filtro["equipe"] = {"$nin": ["", None, "Individual", "INDIVIDUAL", "Sem equipe"]}
+        elif equipe == "individual":
+            filtro["$or"] = [
+                {"equipe": {"$in": ["", None, "Individual", "INDIVIDUAL", "Sem equipe"]}},
+                {"equipe": {"$exists": False}}
+            ]
+    
     atletas = await db.usuarios.find(
-        {"role": "atleta"},
+        filtro,
         {"_id": 0, "password_hash": 0}
     ).to_list(None)
     
@@ -501,18 +524,27 @@ async def exportar_atletas(admin: dict = Depends(get_admin_user)):
         cell.font = header_font
     
     for atleta in atletas:
+        equipe_nome = atleta.get("equipe", "") or "Individual"
         ws.append([
             atleta.get("nome", ""),
             atleta.get("email", ""),
-            atleta.get("equipe", ""),
+            equipe_nome,
             atleta.get("cidade", ""),
             atleta.get("estado", ""),
             atleta.get("genero", ""),
             atleta.get("categoria", ""),
             atleta.get("faixa_etaria", ""),
-            atleta.get("modalidade_usuario", "profissional_amador"),
+            "Povão" if atleta.get("modalidade_usuario") == "povao_pace_livre" else "Pro/Amador",
             "Ativo" if atleta.get("is_active", True) else "Inativo"
         ])
+    
+    # Nome do arquivo com filtros
+    filtro_nome = []
+    if modalidade:
+        filtro_nome.append(modalidade)
+    if equipe:
+        filtro_nome.append(equipe)
+    nome_arquivo = f"atletas_{'_'.join(filtro_nome) if filtro_nome else 'todos'}_{datetime.now().strftime('%Y%m%d')}.xlsx"
     
     output = io.BytesIO()
     wb.save(output)
@@ -521,7 +553,7 @@ async def exportar_atletas(admin: dict = Depends(get_admin_user)):
     return StreamingResponse(
         output,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f"attachment; filename=atletas_{datetime.now().strftime('%Y%m%d')}.xlsx"}
+        headers={"Content-Disposition": f"attachment; filename={nome_arquivo}"}
     )
 
 

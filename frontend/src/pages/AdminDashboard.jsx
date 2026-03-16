@@ -118,6 +118,7 @@ const AdminDashboard = () => {
   const [loadingAtletas, setLoadingAtletas] = useState(false);
   const [filtroCategoria, setFiltroCategoria] = useState('all');
   const [filtroModalidade, setFiltroModalidade] = useState('all'); // all, profissional_amador, povao_pace_livre
+  const [filtroEquipe, setFiltroEquipe] = useState('all'); // all, com_assessoria, individual
   const [searchQuery, setSearchQuery] = useState('');
   const [showAtletaModal, setShowAtletaModal] = useState(false);
   const [atletaEditando, setAtletaEditando] = useState(null);
@@ -1210,16 +1211,27 @@ const AdminDashboard = () => {
 
   const handleExportAtletas = async () => {
     try {
+      const params = {};
+      if (filtroCategoria !== 'all') params.categoria = filtroCategoria;
+      if (filtroModalidade !== 'all') params.modalidade = filtroModalidade;
+      if (filtroEquipe !== 'all') params.equipe = filtroEquipe;
+      
       const response = await axios.get(`${API}/admin/atletas/export`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { categoria: filtroCategoria },
+        params,
         responseType: 'blob'
       });
+      
+      // Gerar nome do arquivo com base nos filtros
+      const filtros = [];
+      if (filtroModalidade !== 'all') filtros.push(filtroModalidade);
+      if (filtroEquipe !== 'all') filtros.push(filtroEquipe);
+      const nomeArquivo = `atletas_${filtros.length ? filtros.join('_') : 'todos'}.xlsx`;
       
       const url = window.URL.createObjectURL(new Blob([response.data]));
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', `atletas_${filtroCategoria}.xlsx`);
+      link.setAttribute('download', nomeArquivo);
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -1418,6 +1430,8 @@ const AdminDashboard = () => {
             setFiltroCategoria={setFiltroCategoria}
             filtroModalidade={filtroModalidade}
             setFiltroModalidade={setFiltroModalidade}
+            filtroEquipe={filtroEquipe}
+            setFiltroEquipe={setFiltroEquipe}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             token={token}
