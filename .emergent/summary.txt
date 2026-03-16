@@ -1,168 +1,183 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou inicialmente a reestruturação do painel de administração e a implementação de 13 tarefas. O escopo foi expandido para incluir monitoramento de saúde, cache com Redis, filas com Celery e notificações por WebSocket.
+O usuário solicitou inicialmente a reestruturação do painel de administração e, em seguida, expandiu o escopo para incluir um Dashboard Estratégico, geração de dados de teste e a correção de bugs críticos de ranking.
 
-Recentemente, o usuário solicitou duas grandes funcionalidades:
-1.  **Dashboard Estratégico:** Um novo painel para o Super Admin contendo 31 gráficos e métricas detalhadas sobre o crescimento e engajamento na plataforma.
-2.  **Geração de Dados de Teste:** Após relatar lentidão no sistema, o usuário pediu a criação de 220 novos atletas e 40 novas corridas para popular a aplicação e permitir testes realistas.
-
-Após a implementação, o usuário identificou um bug crítico: os novos atletas não apareciam nos rankings da página principal (Profissional/Amador), apesar de estarem associados a equipes. O usuário enfatizou que todos os atletas devem, obrigatoriamente, estar vinculados a uma das duas modalidades de ranking.
+Ao longo das sessões, as solicitações evoluíram para incluir uma série de melhorias de UI/UX e lógica de negócios, tais como:
+1.  Correção do sistema de pontuação e validação de resultados.
+2.  Padronização de avatares e adição de bordas coloridas baseadas na categoria do atleta.
+3.  Implementação de um sistema de gamificação com Insígnias.
+4.  Implementação de um sistema completo de indicação de amigos, com múltiplos níveis de recompensa.
+5.  Correção de múltiplos bugs e adição de funcionalidades ao Painel de Administração, incluindo a promoção de atletas a Donos de Assessoria e novos filtros.
+6.  Adição de uma badge Dono de Assessoria no perfil do atleta.
+7.  Privacidade do painel de indicações no perfil do atleta.
+8.  Implementação de notificações push para novas indicações e novos membros em uma equipe.
+9.  Ajuste nas regras de negócio para que certas insígnias sejam exclusivas da categoria Profissional/Amador.
+10. **(Última Solicitação):** Modificar o formulário de submissão de resultados para incluir um campo de distância customizada e usar menus suspensos (dropdowns) para Estado e Cidade.
 
 **PRODUCT REQUIREMENTS:**
-1.  **Refatoração do Backend:** Dividir o arquivo monolítico  em múltiplos módulos de rotas (em andamento).
-2.  **Sistema de Monitoramento de Saúde:** Implementado.
-3.  **Cache Inteligente com Redis:** Implementado.
-4.  **Filas de Tarefas com Celery:** Implementado.
-5.  **Notificações em Tempo Real:** Implementado.
-6.  **Sistema RBAC:** Implementado.
-7.  **Dashboard Estratégico (NOVO):** Implementar um painel de super admin com 31 gráficos para análise de dados da plataforma (Implementado).
-8.  **Correção de Lentidão e Geração de Dados (NOVO):** Diagnosticar e corrigir a lentidão do sistema e popular o banco de dados com dados de teste (Implementado).
-9.  **Correção de Bug no Ranking (NOVO):** Garantir que todos os atletas cadastrados apareçam corretamente nos rankings Profissional/Amador e Povão (Em andamento).
+1.  **Refatoração do Backend:** Dividir o arquivo monolítico  em múltiplos módulos (Em andamento).
+2.  **Dashboard Estratégico:** Implementado.
+3.  **Sistema de Pontuação e Validação:** Implementado e refinado.
+4.  **Melhorias de UI:** Implementado (avatares, bordas, badges).
+5.  **Sistema de Gamificação (Insígnias):** Implementado com múltiplos níveis.
+6.  **Sistema de Indicação de Amigos:** Implementado.
+7.  **Painel de Administração:** Funcionalidades expandidas e bugs corrigidos.
+8.  **Formulário de Submissão de Resultados (NOVO):** Implementar campo de distância customizada e dropdowns de localização (Pendente).
 
 **User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
 
 **what currently exists?**
-A aplicação full-stack (React + FastAPI) foi significativamente expandida. A refatoração do  progrediu, com a remoção de mais de 1700 linhas de código legado. Um novo e complexo Dashboard Estratégico foi implementado com 31 gráficos usando Recharts. A lentidão do sistema foi resolvida ao garantir que o Redis estivesse em execução. O banco de dados foi populado com 220 novos atletas e 40 corridas. Os serviços de Redis e Celery agora são gerenciados pelo supervisor para inicialização automática. No entanto, um bug crítico impede que os novos atletas sejam exibidos nos rankings da página principal.
+Uma aplicação full-stack (React + FastAPI) funcional e com múltiplas funcionalidades, incluindo rankings, um sistema de gamificação (Insígnias) com vários níveis, um sistema completo de indicação de amigos com notificações push, e um painel de administração robusto. Foram corrigidos diversos bugs relacionados à lógica de negócio e à interface do usuário. A refatoração do backend continua em andamento. Um problema conhecido e recorrente é a instabilidade do serviço Redis, que exige reinicializações manuais.
 
 **Last working item**:
-*   **Last item agent was working:** Corrigir o bug que impede a exibição de atletas nos rankings Profissional/Amador e Povão. O agente identificou que o problema é uma incompatibilidade entre os parâmetros de categoria enviados pelo frontend (ex: , ) e o que o endpoint do backend () esperava (ex: categoria=, genero=). O agente estava no processo de modificar o endpoint  em  para mapear corretamente as categorias recebidas do frontend.
-*   **Status:** IN PROGRESS
+*   **Last item agent was working:** O agente estava começando a investigar como implementar as duas solicitações do usuário para o formulário de submissão de resultados:
+    1.  Criar um campo de texto obrigatório para Distância que aparece somente quando a opção Outra é selecionada no dropdown de distância. Este campo deve aceitar apenas números.
+    2.  Transformar os campos Estado UF e Cidade da Competição em dropdowns interligados, onde a seleção do estado popula as cidades disponíveis.
+*   **Status:** NOT STARTED
 *   **Agent Testing Done:** N
-*   **Which testing method agent to use?** . Primeiro, usar  para testar o endpoint do backend modificado com as novas categorias (ex: ). Depois, usar a ferramenta de  para verificar visualmente se a tabela de ranking no frontend é populada corretamente com os atletas.
+*   **Which testing method agent to use?** . Primeiro, usar  para testar o backend, garantindo que o novo campo de distância seja processado e que os pontos para o Ranking do Povão sejam calculados corretamente. Depois, usar a ferramenta de  para verificar se o campo de distância customizada aparece condicionalmente e se os dropdowns de estado/cidade funcionam como esperado no frontend.
 *   **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-*   **Issue 1:** Atletas recém-criados não aparecem nos rankings do frontend. (PRIORIDADE: P0)
-    *   **Attempted fixes:**
-        1.  Os rankings (, ) foram recalculados para incluir os novos atletas. Isso corrigiu os dados no backend, mas não o problema de visualização.
-        2.  Um bug no modelo Pydantic  foi corrigido.
-        3.  A causa raiz foi identificada como uma incompatibilidade de parâmetros entre o frontend e o endpoint de ranking. Uma correção foi iniciada em .
-    *   **Next debug checklist:**
-        1.  Revisar e finalizar a lógica de mapeamento de categorias no endpoint  em .
-        2.  Testar o endpoint com  para cada categoria vinda do frontend: , , , , , .
-        3.  Verificar o frontend com um  da página inicial para confirmar que as tabelas de ranking agora mostram os atletas.
-    *   **Why fix this issue and what will be achieved with the fix?** É a principal queixa do usuário e quebra uma funcionalidade central da aplicação (visualização de rankings). A correção tornará a aplicação utilizável para testes.
-    *   **Status:** IN PROGRESS
-    *   **Is recurring issue?** N
-    *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on other issue:** Não.
+Nenhum. O trabalho pendente é uma nova feature.
 
 **In progress Task List**:
-*   **Task 1:** Concluir a refatoração do backend  (PRIORIDADE: P1)
-    *   **Where to resume:** Embora ~27% do arquivo tenha sido removido, ainda existem endpoints legados que não foram migrados para seus respectivos módulos (ex: alguns endpoints de  e ). O próximo passo é identificar esses endpoints restantes, migrá-los para os arquivos de rotas apropriados e remover o código duplicado do .
-    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável, eliminando a dívida técnica do arquivo monolítico.
-    *   **Status:** IN PROGRESS
+*   **Task 1:** Implementar melhorias no formulário de submissão de resultados (PRIORIDADE: P0)
+    *   **Where to resume:** O agente precisa localizar o arquivo do componente React responsável pelo formulário de submissão de resultados (provavelmente algo como ) para iniciar as modificações no frontend. Em seguida, precisará ajustar o endpoint do backend que recebe esses dados para processar a nova distância customizada.
+    *   **What will be achieved with this?** Um formulário de submissão mais robusto e intuitivo, garantindo a correta pontuação para distâncias não padronizadas e prevenindo erros de digitação nos campos de localização.
+    *   **Status:** NOT STARTED
     *   **Should Test frontend/backend/both after fix?** both
-    *   **Blocked on something:** Não, mas deve ser retomado após a correção do bug do ranking (Issue 1).
+    *   **Blocked on something:** Não.
+
+*   **Task 2:** Concluir a refatoração do backend  (PRIORIDADE: P1)
+    *   **Where to resume:** Migrar os endpoints restantes (ex: , ) de  para seus próprios módulos de rotas. Remover rotas duplicadas ou obsoletas.
+    *   **What will be achieved with this?** Um backend mais organizado, manutenível e escalável, facilitando futuros desenvolvimentos.
+    *   **Status:** IN PROGRESS
+    *   **Should Test frontend/backend/both after fix?** backend
+    *   **Blocked on something:** Não, mas deve ser retomado após a conclusão da Task 1.
 
 **Upcoming and Future Tasks**
-*   **Future Tasks:**
-    *   **Verificar domínio no Resend para emails de produção (P3):** Lembre o usuário da necessidade de configurar um domínio verificado no Resend para permitir o envio de e-mails para qualquer destinatário, não apenas para o e-mail do dono da conta.
+*   **Upcoming Tasks (Roadmap - Fase 1 - Alto Impacto):**
+    *   **Metas Pessoais:** Permitir que atletas definam e acompanhem metas (ex: correr 100km em um mês).
+    *   **Sistema de Streaks (Sequências):** Recompensar atletas por manterem a consistência (ex: correr 3 vezes por semana).
+
+*   **Future Tasks (Roadmap - Fases 2, 3, 4):**
+    *   **Fase 2 (Alto Impacto):** Sistema de Rivais, Feed Social, Desafios Mensais.
+    *   **Fase 3 (Médio Impacto):** Gráficos de Evolução, Sistema de Níveis/XP, Lembretes Inteligentes.
+    *   **Fase 4 (Diferencial):** Previsão de Ranking com IA, Certificados Digitais para compartilhar.
+    *   **Verificar domínio no Resend para emails de produção (P3):** Lembre o usuário da necessidade de configurar um domínio verificado no Resend.
 
 **Completed work in this session**
-- **Dashboard Estratégico (DONE):**
-  - Criado o backend em  com 31 endpoints para as métricas.
-  - Criado o frontend em  com todos os gráficos solicitados.
-- **Correção de Performance e Geração de Dados (DONE):**
-  - Resolvida a lentidão do sistema causada pela indisponibilidade do Redis.
-  - Criado um script () que adicionou 220 atletas, 40 corridas e 15 donos de assessoria.
-- **Refatoração do Backend (IN PROGRESS):**
-  - Removidas ~1713 linhas do , migrando rotas de , , ,  e  para seus módulos.
-- **Melhorias de DevOps (DONE):**
-  - Configurado o Supervisor para gerenciar e reiniciar automaticamente os serviços de Redis e Celery.
-  - Criados scripts de inicialização e verificação de saúde ().
-- **Correção de Bug Crítico de Login (DONE):**
-  - Resolvida uma lentidão de ~25 segundos no login ao tornar assíncrona a chamada para a API de geolocalização.
+- **Sistema de Indicação e Notificações:**
+    - Implementado fluxo completo de indicação com código no cadastro.
+    - Adicionadas notificações push para o indicador quando seu código é usado.
+    - Criado um painel privado Minhas Indicações no perfil do atleta, com estatísticas e lista de indicados.
+- **Sistema de Assessorias e Notificações:**
+    - Implementada notificação push para o dono da assessoria quando um novo atleta entra na equipe.
+    - Corrigido bug na página de detalhes da equipe que não exibia os rankings e os pontos dos atletas corretamente.
+    - Adicionada a identificação do Dono da Assessoria no cabeçalho da página da equipe.
+    - Ocultado o botão Baixar Selo Oficial para usuários que não são donos da assessoria.
+- **Sistema de Gamificação (Insígnias):**
+    - Criados 5 novos níveis de insígnias por indicação (Embaixador Run, Bronze, Prata, Ouro, Diamante).
+    - Implementada regra de negócio para restringir 4 insígnias de performance apenas para atletas Profissional/Amador.
+    - Adicionado um badge 🏆 Dono de Assessoria no perfil do atleta.
+- **Painel de Administração:**
+    - Corrigido bug crítico que impedia a aprovação/reprovação de resultados.
+    - Corrigido bug que quebrava a aba Atletas ().
+    - Adicionado um ícone de categoria (Povão/Profissional) na lista de aprovações pendentes.
+    - Corrigido bug nos filtros da lista de atletas que não funcionavam corretamente.
+    - Implementada a funcionalidade Promover a Dono de Assessoria.
+    - Criado o fluxo no perfil do atleta para um novo dono criar os dados da sua assessoria.
+    - Adicionados filtros por Com Assessoria / Individual e implementada a exportação de dados com base nesses filtros.
 
 **Earlier issues found/mentioned but not fixed**
 *   **Issue 1:** Funções de API do Instagram não implementadas.
-    *   **Debug checklist:** Durante a refatoração, as funções  e  foram stubbed (criadas vazias) em  para evitar erros de compilação.
-    *   **Why to solve this issue and what will be achieved with this?** O endpoint  provavelmente não funciona. Isso precisa ser implementado ou removido para evitar funcionalidades quebradas.
+    *   **Debug checklist:** As funções  e  em  estão vazias. O endpoint  provavelmente não funciona.
+    *   **Why to solve this issue and what will be achieved with this?** Para evitar funcionalidades quebradas ou remover código morto.
     *   **Should Test frontend/backend/both after fix:** backend
     *   **Is recurring issue?** N
 
 **Known issue recurrence from previous fork**
-*   Nenhum.
+*   **Issue:** O serviço do Redis para de funcionar periodicamente no ambiente de preview.
+*   **Recurrence count:** High (ocorreu múltiplas vezes nesta sessão).
+*   **Status:** RECURRING. Este é um problema ambiental. A solução temporária continua sendo  ou a reinstalação do serviço.
 
 **Code Architecture**
-
+AtletaDetalhes
 
 **Key Technical Concepts**
-*   **Backend:** FastAPI, , Pydantic, Motor (MongoDB async).
-*   **Frontend:** React, Context API, Tailwind CSS, shadcn/ui, **Recharts** (para gráficos).
-*   **Banco de Dados:** MongoDB (coleções , ,  foram as mais manipuladas).
-*   **Serviços:** Redis (cache e broker), Celery (tarefas assíncronas).
-*   **DevOps:** Supervisor para gerenciamento de processos.
+*   **Backend:** FastAPI, Pydantic, Motor (MongoDB async), JWT para autenticação.
+*   **Frontend:** React, React Router, Tailwind CSS, shadcn/ui, Hooks (, , ).
+*   **Lógica de Negócio:** Gamificação (Insígnias com níveis), Sistema de Indicação (Referral), Regras de pontuação, Gerenciamento de Assessorias (equipes), Notificações Push, Controle de Acesso (Admin, Dono de Assessoria, Atleta).
+*   **UI Dinâmica:** Renderização condicional de componentes e badges baseada no papel () e estado do usuário (, ).
 
 **key DB schema**
-*   Nenhuma nova coleção foi adicionada. A sessão se concentrou em popular as coleções existentes: , , , .
+*   : Campo  agora é usado para determinar admin, dono_assessoria. Adicionado  (Boolean). O array  e o contador são usados para as insígnias.
+*   : Contém  para vincular ao atleta dono.
+*   : Nova coleção para armazenar notificações push para os usuários.
+*   : Coleção para submissões que aguardam aprovação do admin.
 
 **All files of reference**
-*   : **Arquivo crítico** para resolver o bug atual.
-*   : Página do frontend onde o bug é visível.
-*   : Alvo da tarefa de refatoração em andamento.
-*   : Novo componente de dashboard.
-*   : Endpoints que alimentam o novo dashboard.
-*   : Script usado para criar os dados de teste.
+*   : Contém a lógica do painel de admin, incluindo os filtros e ações que foram corrigidos.
+*   : Contém a lógica de exibição do perfil, incluindo o painel privado de indicações e o badge de dono de assessoria.
+*   : Arquivo com a lógica dos endpoints do painel de admin.
+*   : Contém a lógica de promoção a dono e criação de assessoria.
+*   : Contém a lógica de filtragem das insígnias.
+*   **Próxima tarefa:** O arquivo do formulário de submissão de resultados (a ser localizado).
 
 **Areas that need refactoring**:
-*   : A refatoração precisa continuar para extrair os endpoints restantes.
-*    (linhas ~1986): As funções  e  estão vazias e precisam de implementação.
+*   : A refatoração precisa ser concluída. A migração de rotas legadas para módulos específicos é a principal pendência.
 
 **key api endpoints**
-*   : Endpoint com o bug que precisa ser corrigido para aceitar categorias como .
-*   : 31 novos endpoints para o Dashboard Estratégico.
+*   : Corrigido.
+*   : Corrigido.
+*   : Novo endpoint implementado.
+*   : Novo endpoint para atletas promovidos.
+*   : Endpoint do admin modificado para aceitar filtros.
+*   : Modificado para filtrar insígnias para atletas Povão.
 
 **Critical Info for New Agent**
-*   **FOCO IMEDIATO:** A prioridade absoluta é resolver o bug do ranking (Issue 1). A correção já foi iniciada em  e precisa ser concluída e testada. O usuário está bloqueado por este problema.
-*   **Lógica do Bug:** O frontend envia categorias como masculino, pcd-m, etc. O backend precisa mapear essas strings para a consulta correta no MongoDB (ex: ).
-*   **Refatoração em Pausa:** A tarefa de refatoração do  é importante, mas só deve ser retomada após a correção do bug do ranking e a validação do usuário.
+*   **Prioridade Máxima:** Implementar as modificações no formulário de submissão de resultados (campo de distância customizada e dropdowns de localização).
+*   **Problema Recorrente do Redis:** O serviço do Redis é instável. Se a aplicação estiver lenta ou com falhas de carregamento, o primeiro passo é verificar e reiniciar o serviço ().
+*   **Backend Refactoring:** A tarefa de refatorar  é de baixa prioridade em relação às features do usuário, mas importante para a saúde do código a longo prazo.
+*   **Dropdowns de Localização:** Para implementar os dropdowns de Estado/Cidade, será necessário usar uma API externa (como a do IBGE) ou uma fonte de dados local. Pesquisar e escolher a melhor abordagem será o primeiro passo técnico.
 
 **documents and test reports created in this job**
-*   : Script de geração de dados.
-*   : Arquivo de configuração de serviços.
-*   , 🔍 Health Check - 2026-03-11 19:33:40
-================================================
-Supervisor: [0;32m✓ RUNNING[0m
-MongoDB: [0;32m✓ RUNNING[0m
-Redis: [0;31m✗ FAILED[0m
-Celery: [0;32m✓ RUNNING[0m
-Backend: [0;32m✓ RUNNING (API: OK)[0m
-Frontend: [0;32m✓ RUNNING[0m
-================================================: Scripts de inicialização.
-*    foi atualizado com as novas funcionalidades.
+Nenhum documento formal. Scripts de correção foram usados em sessões anteriores.
 
 **Last 10 User Messages and any pending HUMAN messages**
-1.  **user:** ao analisar essa imagem, se percebe que não tem nenhum atleta no ranking Profissional/Amador... - O usuário identifica e descreve detalhadamente o bug do ranking, instruindo que todos os atletas devem estar em um dos dois rankings. (PENDING FIX)
-2.  **user:** o sistema está muito lento. Corrija isso. Depois... Quero que adicione alguns atletas... - Relatou lentidão e solicitou a criação de 220 atletas e 40 corridas para teste. (COMPLETED)
-3.  **user:** No Painel do Super Amin do Dashboard Geral quero que conste OBRIGATORIAMENTE esses 31 Gráficos... - Solicitou a criação do Dashboard Estratégico com uma lista detalhada de requisitos. (COMPLETED)
-4.  **user:** me forneca alguns loguins de atletas - Pediu credenciais de atletas para teste. (COMPLETED)
-5.  **user:** crie um script de inicialização que inicie automaticamente o Redis e Celery... - Solicitou automação da inicialização dos serviços. (COMPLETED)
-6.  **user:** [Seleção de tarefas] Adicionar Celery ao supervisor, Configurar Redis persistente, Verificar domínio Resend. (COMPLETED)
-7.  **user:** [Seleção de tarefas] Continuar refatoração do server.py... (IN PROGRESS)
-8.  **user:** [Seleção de tarefas] Continuar com a refatoração, Instalar Redis, Testar WebSocket. (COMPLETED)
-9.  **user:** Continuar com a refatoração do server.py... - Confirmação para prosseguir com a refatoração. (IN PROGRESS)
-10. **user:** corrigir o problema... o endpoint está demorando 25 segundos! - Embora não seja uma mensagem do usuário, o agente identificou e corrigiu este problema crítico. (COMPLETED)
+1.  **user:** Pediu para alterar o formulário de submissão de resultados com um campo de distância customizada e dropdowns de estado/cidade. (NOT STARTED)
+2.  **user:** Pediu para adicionar filtros de Com Assessoria / Individual no painel de admin e uma função de exportação. (COMPLETED)
+3.  **user:** Pediu para atualizar o app. (COMPLETED)
+4.  **user:** Solicitou a implementação da funcionalidade Promover a Dono de Assessoria e o formulário para o novo dono criar sua assessoria. (COMPLETED)
+5.  **user:** Pediu para atualizar o app. (COMPLETED)
+6.  **user:** Reportou que a aprovação/reprovação de resultados ainda estava com erro e pediu uma badge para Dono de Assessoria. (COMPLETED)
+7.  **user:** Reportou que a aprovação/reprovação de resultados estava falhando e que os filtros de atletas no admin não funcionavam. (COMPLETED)
+8.  **user:** Reportou um erro na aba Atletas do admin e pediu um ícone de categoria na lista de aprovações. (COMPLETED)
+9.  **user:** Pediu para atualizar o app. (COMPLETED)
+10. **user:** Pediu para remover 4 insígnias específicas de atletas Povão e investigar por que algumas equipes não tinham um dono listado. (COMPLETED)
 
 **Project Health Check:**
-*   **Working:** Grande parte da aplicação, incluindo as novas funcionalidades como o Dashboard Estratégico, login e performance geral.
-*   **Broken:** A página principal de ranking () está quebrada, pois não exibe os atletas nas categorias Profissional/Amador.
+*   **Working:** A aplicação está majoritariamente estável e funcional. Os sistemas de gamificação, indicação e administração foram significativamente melhorados e corrigidos.
+*   **Broken:** O formulário de submissão de resultados não atende aos novos requisitos do usuário.
+*   **Mocked/Fragile:** A dependência do serviço Redis continua sendo um ponto fraco no ambiente de preview, exigindo intervenção manual para garantir a performance da aplicação.
 
 **3rd Party Integrations**
-*   **Resend:** Para envio de emails (requer verificação de domínio para produção).
-*   **Redis:** Cache e broker para Celery.
-*   **Celery:** Tarefas assíncronas.
-*   **Recharts:** Biblioteca de gráficos usada no novo dashboard.
+*   **Resend:** Para envio de emails.
+*   **Redis:** Para cache.
+*   **Celery:** Para tarefas assíncronas.
+*   **Recharts:** Para gráficos.
 
 **Testing status**
-*   **Testing agent used after significant changes:** NO. O agente usou testes manuais () e .
+*   **Testing agent used after significant changes:** YES, em sessões anteriores.
 *   **Troubleshoot agent used after agent stuck in loop:** NO
-*   **Test files created:** N/A.
-*   **Known regressions:** A página de ranking principal não funciona para os dados de teste recém-adicionados.
+*   **Test files created:** Nenhum.
+*   **Known regressions:** Nenhuma regressão de funcionalidade identificada, mas o problema ambiental com o Redis persiste.
 
 **Credentials to test flow:**
 *   **Super Admin:**  / 
-*   **Senha padrão para atletas:** . Emails podem ser encontrados nos logs ou no arquivo .
+*   **Dono de Assessoria (com assessoria criada):**  / 
+*   **Atleta com muitas indicações (Embaixador):**  / 
+*   **Atletas com todas as insígnias:**  (Profissional),  (Povão). Senha padrão .
 
 **What agent forgot to execute**
-*   O agente não concluiu a correção do bug do ranking, que era o item de trabalho mais recente e de maior prioridade.
-*   A implementação das funções  e  em  foi ignorada, deixando um endpoint potencialmente quebrado.</analysis>
+Nada foi esquecido. O agente estava prestes a iniciar a última solicitação do usuário quando a sessão terminou.</analysis>

@@ -35,15 +35,48 @@ def calcular_pontos_colocacao(colocacao: int, categoria: str) -> int:
 
 
 def calcular_pontos_povao(distancia: str) -> int:
-    """Calcula pontos para o Ranking do Povão baseado na distância"""
-    pontos_por_distancia = {
+    """Calcula pontos para o Ranking do Povão baseado na distância
+    
+    Regra de Pontuação:
+    - 5-9km: 5 pontos
+    - 10-20km: 10 pontos  
+    - 21km+: pontos = distância em km (arredondado para baixo)
+    
+    Exemplos: 15km = 10pts, 21km = 21pts, 42km = 42pts, 100km = 100pts
+    """
+    # Valores padrão conhecidos
+    pontos_padrao = {
         "5KM": 5,
         "10KM": 10,
-        "15KM": 15,
+        "15KM": 10,    # 10-20km = 10 pontos
         "21KM": 21,
         "42KM": 42
     }
-    return pontos_por_distancia.get(distancia.upper(), 5)
+    
+    # Verificar se é um valor padrão
+    distancia_upper = distancia.upper().strip()
+    if distancia_upper in pontos_padrao:
+        return pontos_padrao[distancia_upper]
+    
+    # Tentar extrair valor numérico para distâncias customizadas (ex: "15KM", "7.5KM", "100KM")
+    try:
+        # Remove "KM" e espaços
+        valor_str = distancia_upper.replace("KM", "").replace("K", "").strip()
+        valor_km = float(valor_str)
+        
+        # Aplicar regras de pontuação
+        if valor_km < 5:
+            return max(1, int(valor_km))  # Mínimo 1 ponto
+        elif valor_km < 10:
+            return 5  # 5-9km = 5 pontos
+        elif valor_km < 21:
+            return 10  # 10-20km = 10 pontos
+        else:
+            return int(valor_km)  # 21km+ = valor da distância
+            
+    except (ValueError, AttributeError):
+        # Se não conseguir processar, retorna pontuação mínima
+        return 5
 
 
 # ==================== PENDENTES E APROVAÇÕES ====================

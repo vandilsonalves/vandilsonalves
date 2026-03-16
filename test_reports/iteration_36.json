@@ -1,0 +1,98 @@
+{
+  "summary": "Iteration 36: Geo Location Form Testing - Custom distance field and IBGE State/City integration. Backend calcular_pontos_povao() working correctly (100% pass). IBGE API integration verified via direct API tests (3/3 pass) and frontend UI testing. State/City dropdowns cascade properly - selecting a state loads cities from IBGE API.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "CadastroPage.js (linha 759-761)",
+        "issues": [
+          "Point values displayed incorrectly for Ranking do Povão: shows '10-20km = 7pts' and '21km+ = 9pts' but backend calculates '10-20km = 10pts' and '21km+ = distance in pts'. This is inconsistent with SubmeterResultadoPage.js which shows correct values.",
+          "Regulamento text (linha 939) also shows incorrect values: '10km a 20km = 7pts, 21km ou mais = 9pts'"
+        ],
+        "priority": "MEDIUM",
+        "fix_required": "Update CadastroPage.js lines 759-761 and line 939 to match backend logic: 10-20km = 10pts, 21km+ = distância em pts"
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter36_geo_form.py",
+    "/app/test_reports/pytest/pytest_iter36_geo_form.xml"
+  ],
+  "action_items": [
+    "Fix CadastroPage.js point display inconsistency - change '10-20km = 7pts' to '10-20km = 10pts' and '21km+ = 9pts' to '21km+ = distância em pts'",
+    "Update regulamento text in CadastroPage.js line 939 to match backend calculation"
+  ],
+  "critical_code_review_comments": [
+    "SubmeterResultadoPage.js correctly implements custom distance functionality",
+    "data-testid attributes properly added: distancia-select, distancia-customizada-input, estado-select, cidade-select",
+    "IBGE API integration (https://servicodados.ibge.gov.br/api/v1/localidades/estados/{UF}/municipios) working correctly",
+    "Backend calcular_pontos_povao() correctly calculates: 5-9km=5pts, 10-20km=10pts, 21km+=distance in pts",
+    "Custom distance input has proper validation: type=number, min=1, max=500, step=0.1",
+    "City dropdown shows loading state while fetching from IBGE API"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter36_geo_form.py"
+  ],
+  "success_rate": {
+    "backend": "100% (All API tests passed: IBGE integration, auth, result submission, admin pendentes)",
+    "frontend": "90% (UI functional, one display inconsistency in CadastroPage)"
+  },
+  "test_credentials": {
+    "povao_user": {
+      "email": "test.povao@teste.com",
+      "password": "senha123",
+      "modalidade_usuario": "povao_pace_livre"
+    },
+    "admin_user": {
+      "email": "admin@rankingrun.com",
+      "password": "admin123"
+    }
+  },
+  "seed_data_creation": "No new seed data created. Used existing test.povao@teste.com user.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Custom distance feature in SubmeterResultadoPage.js is fully implemented. IBGE State/City integration working. Login via Playwright may timeout - use localStorage token injection approach if needed. CadastroPage.js has display inconsistency in point values that needs fixing.",
+  "verified_features": {
+    "custom_distance_dropdown": {
+      "status": "WORKING",
+      "details": "Distance dropdown includes 'Outra distância' option. When selected, shows numeric input field with validation (1-500km, step 0.1)"
+    },
+    "custom_distance_field_conditional": {
+      "status": "WORKING",
+      "details": "Custom distance input field (data-testid='distancia-customizada-input') only appears when 'OUTRA' is selected in distance dropdown"
+    },
+    "custom_distance_numeric_only": {
+      "status": "WORKING",
+      "details": "Input has type='number' with min=1, max=500, step=0.1 validation"
+    },
+    "estado_dropdown_all_states": {
+      "status": "WORKING",
+      "details": "Estado dropdown contains all 27 Brazilian states (AC, AL, AP, AM, BA, CE, DF, ES, GO, MA, MT, MS, MG, PA, PB, PR, PE, PI, RJ, RN, RS, RO, RR, SC, SP, SE, TO)"
+    },
+    "cidade_dropdown_ibge_integration": {
+      "status": "WORKING",
+      "details": "When state is selected, cities are fetched from IBGE API (https://servicodados.ibge.gov.br/api/v1/localidades/estados/{UF}/municipios). Verified: RJ has 92 cities, SP has 645 cities"
+    },
+    "backend_pontos_povao_calculation": {
+      "status": "WORKING",
+      "details": "calcular_pontos_povao() correctly calculates: 5KM=5pts, 7KM=5pts, 10KM=10pts, 15KM=10pts, 21KM=21pts, 42KM=42pts, 100KM=100pts"
+    },
+    "result_submission_custom_distance": {
+      "status": "WORKING",
+      "details": "API /api/resultados/submeter accepts custom distance format (e.g., '15KM', '7KM', '100KM')"
+    }
+  },
+  "endpoints_tested": {
+    "POST /api/auth/login": "200 OK - Both povao and admin users",
+    "GET /api/auth/me": "200 OK - Returns user with modalidade_usuario field",
+    "POST /api/resultados/submeter": "200 OK - Accepts custom distance values",
+    "GET /api/admin/pendentes": "200 OK - Returns pending results list",
+    "IBGE API GET /estados/{UF}/municipios": "200 OK - Returns cities for selected state"
+  },
+  "rca_of_the_issue": "Frontend display inconsistency: CadastroPage.js shows old/incorrect point values for Ranking do Povão (7pts and 9pts) while SubmeterResultadoPage.js and backend both use correct values (10pts and distance pts). This appears to be a missed update when the point calculation logic was updated."
+}

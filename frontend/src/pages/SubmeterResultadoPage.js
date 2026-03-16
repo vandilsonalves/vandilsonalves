@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,9 +7,40 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Upload, CheckCircle, ArrowLeft } from 'lucide-react';
+import { Upload, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+
+// Lista de Estados Brasileiros
+const ESTADOS_BRASIL = [
+  { sigla: 'AC', nome: 'Acre' },
+  { sigla: 'AL', nome: 'Alagoas' },
+  { sigla: 'AP', nome: 'Amapá' },
+  { sigla: 'AM', nome: 'Amazonas' },
+  { sigla: 'BA', nome: 'Bahia' },
+  { sigla: 'CE', nome: 'Ceará' },
+  { sigla: 'DF', nome: 'Distrito Federal' },
+  { sigla: 'ES', nome: 'Espírito Santo' },
+  { sigla: 'GO', nome: 'Goiás' },
+  { sigla: 'MA', nome: 'Maranhão' },
+  { sigla: 'MT', nome: 'Mato Grosso' },
+  { sigla: 'MS', nome: 'Mato Grosso do Sul' },
+  { sigla: 'MG', nome: 'Minas Gerais' },
+  { sigla: 'PA', nome: 'Pará' },
+  { sigla: 'PB', nome: 'Paraíba' },
+  { sigla: 'PR', nome: 'Paraná' },
+  { sigla: 'PE', nome: 'Pernambuco' },
+  { sigla: 'PI', nome: 'Piauí' },
+  { sigla: 'RJ', nome: 'Rio de Janeiro' },
+  { sigla: 'RN', nome: 'Rio Grande do Norte' },
+  { sigla: 'RS', nome: 'Rio Grande do Sul' },
+  { sigla: 'RO', nome: 'Rondônia' },
+  { sigla: 'RR', nome: 'Roraima' },
+  { sigla: 'SC', nome: 'Santa Catarina' },
+  { sigla: 'SP', nome: 'São Paulo' },
+  { sigla: 'SE', nome: 'Sergipe' },
+  { sigla: 'TO', nome: 'Tocantins' }
+];
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -32,10 +63,40 @@ const SubmeterResultadoPage = () => {
     data_competicao: '',
     link_resultado: '',
     tempo: isPovao ? '00:00:00' : '',
-    distancia: ''
+    distancia: '',
+    distancia_customizada: ''  // Novo campo para distância em KM quando "Outra"
   });
   
   const [fotoPodio, setFotoPodio] = useState(null);
+  const [cidades, setCidades] = useState([]);
+  const [loadingCidades, setLoadingCidades] = useState(false);
+
+  // Buscar cidades quando estado é selecionado
+  useEffect(() => {
+    const fetchCidades = async () => {
+      if (!formData.estado_competicao) {
+        setCidades([]);
+        return;
+      }
+      
+      setLoadingCidades(true);
+      try {
+        const response = await fetch(
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${formData.estado_competicao}/municipios?orderBy=nome`
+        );
+        const data = await response.json();
+        setCidades(data.map(cidade => cidade.nome));
+      } catch (err) {
+        console.error('Erro ao buscar cidades:', err);
+        setCidades([]);
+        toast.error('Erro ao carregar cidades', { description: 'Tente novamente ou digite manualmente' });
+      } finally {
+        setLoadingCidades(false);
+      }
+    };
+    
+    fetchCidades();
+  }, [formData.estado_competicao]);
 
   if (!user) {
     return (
@@ -55,12 +116,38 @@ const SubmeterResultadoPage = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    // Validar distância customizada se "OUTRA" for selecionado
+    if (formData.distancia === 'OUTRA') {
+      const distanciaNum = parseFloat(formData.distancia_customizada);
+      if (!formData.distancia_customizada || isNaN(distanciaNum) || distanciaNum <= 0) {
+        setError('Por favor, informe uma distância válida em KM (apenas números)');
+        toast.error('Erro de Validação', { description: 'Informe a distância em KM (apenas números)' });
+        return;
+      }
+      if (distanciaNum > 500) {
+        setError('A distância máxima permitida é 500 KM');
+        toast.error('Erro de Validação', { description: 'A distância máxima permitida é 500 KM' });
+        return;
+      }
+    }
+    
     setLoading(true);
 
     try {
       const formDataToSend = new FormData();
+      
+      // Processar distância: se for "OUTRA", enviar o valor customizado
+      const distanciaFinal = formData.distancia === 'OUTRA' 
+        ? `${formData.distancia_customizada}KM` 
+        : formData.distancia;
+      
       Object.keys(formData).forEach(key => {
-        formDataToSend.append(key, formData[key]);
+        if (key === 'distancia') {
+          formDataToSend.append('distancia', distanciaFinal);
+        } else if (key !== 'distancia_customizada') {
+          formDataToSend.append(key, formData[key]);
+        }
       });
       
       if (fotoPodio) {
@@ -153,7 +240,7 @@ const SubmeterResultadoPage = () => {
                   <AlertDescription>
                     <strong>Ranking do Povão - Pace Livre</strong><br />
                     Você compete pela distância percorrida, não pela colocação!<br />
-                    <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 7pts | 21km+ = 9pts
+                    <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 10pts | 21km+ = distância em pts
                   </AlertDescription>
                 </Alert>
               ) : (
@@ -203,7 +290,7 @@ const SubmeterResultadoPage = () => {
                 <div>
                   <Label>Distância *</Label>
                   <Select value={formData.distancia} onValueChange={(value) => handleChange('distancia', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger data-testid="distancia-select">
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
@@ -211,39 +298,112 @@ const SubmeterResultadoPage = () => {
                       <SelectItem value="10KM">10 KM</SelectItem>
                       <SelectItem value="21KM">21 KM (Meia Maratona)</SelectItem>
                       <SelectItem value="42KM">42 KM (Maratona)</SelectItem>
-                      <SelectItem value="OUTRA">Outra</SelectItem>
+                      <SelectItem value="OUTRA">Outra distância</SelectItem>
                     </SelectContent>
                   </Select>
-                  {isPovao && (
+                  {isPovao && formData.distancia && formData.distancia !== 'OUTRA' && (
                     <p className="text-xs text-purple-600 mt-1">
                       {formData.distancia === '5KM' && '5 pontos'}
-                      {formData.distancia === '10KM' && '7 pontos'}
-                      {formData.distancia === '21KM' && '9 pontos'}
-                      {formData.distancia === '42KM' && '9 pontos'}
-                      {formData.distancia === 'OUTRA' && 'Pontuação depende da distância'}
+                      {formData.distancia === '10KM' && '10 pontos'}
+                      {formData.distancia === '21KM' && '21 pontos'}
+                      {formData.distancia === '42KM' && '42 pontos'}
                     </p>
                   )}
                 </div>
 
-                <div>
-                  <Label>Cidade da Competição *</Label>
-                  <Input
-                    value={formData.cidade_competicao}
-                    onChange={(e) => handleChange('cidade_competicao', e.target.value)}
-                    placeholder="Ex: São Paulo"
-                    required
-                  />
-                </div>
+                {/* Campo de Distância Customizada - aparece quando "Outra" é selecionado */}
+                {formData.distancia === 'OUTRA' && (
+                  <div>
+                    <Label>Distância em KM *</Label>
+                    <Input
+                      type="number"
+                      min="1"
+                      max="500"
+                      step="0.1"
+                      value={formData.distancia_customizada}
+                      onChange={(e) => handleChange('distancia_customizada', e.target.value)}
+                      placeholder="Ex: 15"
+                      required
+                      data-testid="distancia-customizada-input"
+                    />
+                    <p className="text-xs text-slate-500 mt-1">
+                      Digite apenas números (ex: 15 para 15km)
+                    </p>
+                    {isPovao && formData.distancia_customizada && (
+                      <p className="text-xs text-purple-600 mt-1">
+                        {(() => {
+                          const dist = parseFloat(formData.distancia_customizada);
+                          if (isNaN(dist)) return '';
+                          if (dist < 5) return `${Math.floor(dist)} pontos (distância menor que 5km)`;
+                          if (dist < 10) return '5 pontos (5-9km)';
+                          if (dist < 21) return '10 pontos (10-20km)';
+                          return `${Math.floor(dist)} pontos`;
+                        })()}
+                      </p>
+                    )}
+                  </div>
+                )}
 
                 <div>
                   <Label>Estado (UF) *</Label>
-                  <Input
-                    value={formData.estado_competicao}
-                    onChange={(e) => handleChange('estado_competicao', e.target.value.toUpperCase())}
-                    placeholder="SP"
-                    maxLength={2}
-                    required
-                  />
+                  <Select 
+                    value={formData.estado_competicao} 
+                    onValueChange={(value) => {
+                      handleChange('estado_competicao', value);
+                      handleChange('cidade_competicao', ''); // Resetar cidade ao mudar estado
+                    }}
+                  >
+                    <SelectTrigger data-testid="estado-select">
+                      <SelectValue placeholder="Selecione o estado" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ESTADOS_BRASIL.map(estado => (
+                        <SelectItem key={estado.sigla} value={estado.sigla}>
+                          {estado.sigla} - {estado.nome}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Cidade da Competição *</Label>
+                  {loadingCidades ? (
+                    <div className="flex items-center gap-2 h-10 px-3 border rounded-md bg-slate-50">
+                      <Loader2 className="w-4 h-4 animate-spin text-slate-500" />
+                      <span className="text-sm text-slate-500">Carregando cidades...</span>
+                    </div>
+                  ) : formData.estado_competicao && cidades.length > 0 ? (
+                    <Select 
+                      value={formData.cidade_competicao} 
+                      onValueChange={(value) => handleChange('cidade_competicao', value)}
+                    >
+                      <SelectTrigger data-testid="cidade-select">
+                        <SelectValue placeholder="Selecione a cidade" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {cidades.map(cidade => (
+                          <SelectItem key={cidade} value={cidade}>
+                            {cidade}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input
+                      value={formData.cidade_competicao}
+                      onChange={(e) => handleChange('cidade_competicao', e.target.value)}
+                      placeholder={formData.estado_competicao ? "Digite a cidade" : "Selecione o estado primeiro"}
+                      required
+                      disabled={!formData.estado_competicao}
+                      data-testid="cidade-input"
+                    />
+                  )}
+                  {!formData.estado_competicao && (
+                    <p className="text-xs text-slate-500 mt-1">
+                      Selecione o estado primeiro para ver as cidades
+                    </p>
+                  )}
                 </div>
 
                 <div>
