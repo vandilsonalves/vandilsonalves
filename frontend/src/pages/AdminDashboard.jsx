@@ -529,9 +529,11 @@ const AdminDashboard = () => {
         headers: { Authorization: `Bearer ${token}` },
         params: { categoria: filtroCategoria !== 'all' ? filtroCategoria : undefined }
       });
-      setAtletas(response.data);
+      // O endpoint retorna {atletas: [], total: ..., page: ...}
+      setAtletas(response.data.atletas || response.data || []);
     } catch (error) {
       console.error('Erro ao buscar atletas:', error);
+      setAtletas([]);
     } finally {
       setLoadingAtletas(false);
     }

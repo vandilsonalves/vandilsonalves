@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   CheckCircle, XCircle, ExternalLink, Calendar, MapPin, Trophy, Clock, 
-  AlertCircle, Eye, Image, X, Loader2
+  AlertCircle, Eye, Image, X, Loader2, Users, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -98,7 +98,21 @@ const DashboardResultados = ({
                   {/* Header do Card */}
                   <div className="flex items-start justify-between">
                     <div>
-                      <h3 className="font-bold text-lg">{resultado.atleta_nome}</h3>
+                      <div className="flex items-center gap-2 mb-1">
+                        <h3 className="font-bold text-lg">{resultado.atleta_nome}</h3>
+                        {/* Badge de Modalidade */}
+                        {resultado.modalidade_usuario === 'povao_pace_livre' ? (
+                          <Badge className="bg-purple-500 text-white text-xs flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Povão
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-emerald-500 text-white text-xs flex items-center gap-1">
+                            <Zap className="w-3 h-3" />
+                            Pro/Amador
+                          </Badge>
+                        )}
+                      </div>
                       <p className="text-sm text-slate-500">{resultado.atleta_email}</p>
                     </div>
                     <Badge className="bg-amber-100 text-amber-800">

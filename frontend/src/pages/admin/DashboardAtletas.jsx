@@ -24,7 +24,7 @@ const ESTADOS_BR = [
 ];
 
 const DashboardAtletas = ({ 
-  atletas, 
+  atletas = [], 
   loadingAtletas, 
   filtroCategoria, 
   setFiltroCategoria,
@@ -41,8 +41,11 @@ const DashboardAtletas = ({
   onExportAtletas,
   onViewAtleta
 }) => {
+  // Garantir que atletas é sempre um array
+  const atletasArray = Array.isArray(atletas) ? atletas : [];
+  
   // Filtrar atletas localmente
-  const atletasFiltrados = atletas
+  const atletasFiltrados = atletasArray
     .filter(a => {
       const matchSearch = !searchQuery || 
         a.nome?.toLowerCase().includes(searchQuery.toLowerCase()) ||

@@ -60,8 +60,10 @@ async def listar_pendentes(admin: dict = Depends(get_admin_user)):
         usuario = await db.usuarios.find_one({"id": resultado["usuario_id"]}, {"_id": 0})
         if usuario:
             resultado["atleta_nome"] = usuario["nome"]
+            resultado["atleta_email"] = usuario.get("email", "")
             resultado["atleta_equipe"] = usuario.get("equipe", "")
             resultado["atleta_categoria"] = usuario.get("categoria", "normal")
+            resultado["modalidade_usuario"] = usuario.get("modalidade_usuario", "profissional_amador")
     
     return resultados
 
