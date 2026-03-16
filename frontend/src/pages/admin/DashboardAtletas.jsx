@@ -56,7 +56,25 @@ const DashboardAtletas = ({
         (filtroModalidade === 'profissional_amador' && a.modalidade_usuario !== 'povao_pace_livre') ||
         (filtroModalidade === 'povao_pace_livre' && a.modalidade_usuario === 'povao_pace_livre');
       
-      return matchSearch && matchModalidade;
+      // Filtro de categoria/gênero
+      let matchCategoria = filtroCategoria === 'all';
+      if (!matchCategoria) {
+        if (filtroCategoria === 'masculino') {
+          matchCategoria = a.genero === 'M' && a.categoria !== 'pcd' && a.categoria !== 'cadeirante';
+        } else if (filtroCategoria === 'feminino') {
+          matchCategoria = a.genero === 'F' && a.categoria !== 'pcd' && a.categoria !== 'cadeirante';
+        } else if (filtroCategoria === 'pcd_m') {
+          matchCategoria = a.genero === 'M' && a.categoria === 'pcd';
+        } else if (filtroCategoria === 'pcd_f') {
+          matchCategoria = a.genero === 'F' && a.categoria === 'pcd';
+        } else if (filtroCategoria === 'cadeirante_m') {
+          matchCategoria = a.genero === 'M' && a.categoria === 'cadeirante';
+        } else if (filtroCategoria === 'cadeirante_f') {
+          matchCategoria = a.genero === 'F' && a.categoria === 'cadeirante';
+        }
+      }
+      
+      return matchSearch && matchModalidade && matchCategoria;
     })
     .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
 

@@ -365,10 +365,11 @@ async def get_stats_equipes_estado(admin: dict = Depends(get_admin_user)):
 @router.get("/admin/atletas")
 async def listar_atletas(
     page: int = Query(1, ge=1),
-    limit: int = Query(20, ge=1, le=100),
+    limit: int = Query(20, ge=1, le=1000),
     search: str = None,
     estado: str = None,
     categoria: str = None,
+    modalidade: str = None,
     admin: dict = Depends(get_admin_user)
 ):
     """Lista atletas com paginação e filtros"""
@@ -384,6 +385,11 @@ async def listar_atletas(
         filtro["estado"] = estado
     if categoria:
         filtro["categoria"] = categoria
+    if modalidade:
+        if modalidade == "povao_pace_livre":
+            filtro["modalidade_usuario"] = "povao_pace_livre"
+        elif modalidade == "profissional_amador":
+            filtro["modalidade_usuario"] = {"$ne": "povao_pace_livre"}
     
     skip = (page - 1) * limit
     

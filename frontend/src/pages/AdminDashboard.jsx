@@ -527,7 +527,11 @@ const AdminDashboard = () => {
     try {
       const response = await axios.get(`${API}/admin/atletas`, {
         headers: { Authorization: `Bearer ${token}` },
-        params: { categoria: filtroCategoria !== 'all' ? filtroCategoria : undefined }
+        params: { 
+          categoria: filtroCategoria !== 'all' ? filtroCategoria : undefined,
+          modalidade: filtroModalidade !== 'all' ? filtroModalidade : undefined,
+          limit: 1000 // Buscar mais atletas para filtro local funcionar
+        }
       });
       // O endpoint retorna {atletas: [], total: ..., page: ...}
       setAtletas(response.data.atletas || response.data || []);
@@ -978,17 +982,14 @@ const AdminDashboard = () => {
     }
   };
 
-  const handleReprovar = async () => {
+  const handleReprovar = async (resultadoId, motivo) => {
     setActionLoading(true);
     try {
       await axios.post(
-        `${API}/admin/reprovar/${selectedResultado.id}`,
-        { motivo: motivoReprovacao },
+        `${API}/admin/reprovar/${resultadoId}`,
+        { motivo: motivo },
         { headers: { Authorization: `Bearer ${token}` }}
       );
-      setShowReprovarModal(false);
-      setMotivoReprovacao('');
-      setSelectedResultado(null);
       toast.success('Ação Concluída', { description: 'Resultado reprovado com sucesso!' });
       fetchPendentes();
     } catch (error) {
