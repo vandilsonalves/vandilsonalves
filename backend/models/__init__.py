@@ -198,6 +198,10 @@ class AtletaDetalhes(BaseModel):
     instagram_url: str = ""
     facebook_url: str = ""
     modalidade_usuario: str = "profissional_amador"
+    # Campos para dono de assessoria
+    role: str = "atleta"
+    is_dono_assessoria: bool = False
+    assessoria_nome: Optional[str] = None
 
 class CorridaResponse(BaseModel):
     id: str

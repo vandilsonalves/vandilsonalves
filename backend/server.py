@@ -1096,7 +1096,10 @@ async def get_atleta_detalhes(atleta_id: str):
         etnia=usuario.get("etnia", ""),
         instagram_url=usuario.get("instagram_url", ""),
         facebook_url=usuario.get("facebook_url", ""),
-        modalidade_usuario=modalidade_usuario
+        modalidade_usuario=modalidade_usuario,
+        role=usuario.get("role", "atleta"),
+        is_dono_assessoria=usuario.get("is_dono_assessoria", False),
+        assessoria_nome=usuario.get("assessoria_nome")
     )
 
 @api_router.get("/atletas/{atleta_id}/corridas", response_model=List[CorridaResponse])

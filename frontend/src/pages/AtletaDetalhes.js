@@ -342,9 +342,18 @@ const AtletaDetalhes = () => {
 
               {/* Informações */}
               <div className="flex-1 text-center md:text-left">
-                <h1 className={`text-3xl font-bold mb-2 ${atleta.modalidade_usuario === 'povao_pace_livre' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
-                  {atleta.nome}
-                </h1>
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2 mb-2">
+                  <h1 className={`text-3xl font-bold ${atleta.modalidade_usuario === 'povao_pace_livre' ? 'text-purple-600 dark:text-purple-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                    {atleta.nome}
+                  </h1>
+                  {/* Badge de Dono de Assessoria */}
+                  {(atleta.role === 'dono_assessoria' || atleta.is_dono_assessoria) && (
+                    <Badge className="bg-gradient-to-r from-amber-500 to-orange-500 text-white px-3 py-1 text-sm font-semibold shadow-md">
+                      <Trophy className="w-4 h-4 mr-1" />
+                      Dono de Assessoria
+                    </Badge>
+                  )}
+                </div>
                 <div className="flex items-center justify-center md:justify-start gap-2 text-slate-600 dark:text-slate-400 mb-3">
                   <MapPin className="w-4 h-4" />
                   <span>{atleta.cidade}, {atleta.estado}, Brasil</span>

@@ -85,20 +85,24 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
     modalidade_usuario = usuario.get("modalidade_usuario", "profissional_amador")
+    nome_competicao = resultado.get("nome_competicao") or resultado.get("competicao") or "competição"
+    cidade_competicao = resultado.get("cidade_competicao") or resultado.get("cidade") or ""
+    estado_competicao = resultado.get("estado_competicao") or resultado.get("estado") or ""
+    data_competicao = resultado.get("data_competicao") or resultado.get("data") or ""
     
     if modalidade_usuario == "povao_pace_livre":
-        pontos_povao = calcular_pontos_povao(resultado["distancia"])
+        pontos_povao = calcular_pontos_povao(resultado.get("distancia", 0))
         
         corrida = Corrida(
             usuario_id=resultado["usuario_id"],
-            nome=resultado["nome_competicao"],
+            nome=nome_competicao,
             colocacao=0,
             tempo="00:00:00",
             pontos=0,
             pontos_povao=pontos_povao,
-            local=f"{resultado['cidade_competicao']}/{resultado['estado_competicao']}",
-            distancia=resultado["distancia"],
-            data=resultado["data_competicao"],
+            local=f"{cidade_competicao}/{estado_competicao}",
+            distancia=resultado.get("distancia", 0),
+            data=data_competicao,
             ano=2025,
             modalidade="povao_pace_livre"
         )
@@ -117,31 +121,31 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             usuario_id=resultado["usuario_id"],
             tipo="aprovacao",
             titulo="Resultado aprovado!",
-            mensagem=f"Seu resultado na {resultado['nome_competicao']} foi aprovado! Você ganhou {pontos_povao} pontos no Ranking do Povão.",
-            dados_extras={"pontos": pontos_povao, "competicao": resultado["nome_competicao"], "modalidade": "povao"}
+            mensagem=f"Seu resultado na {nome_competicao} foi aprovado! Você ganhou {pontos_povao} pontos no Ranking do Povão.",
+            dados_extras={"pontos": pontos_povao, "competicao": nome_competicao, "modalidade": "povao"}
         )
         
         return {"message": "Resultado aprovado com sucesso!", "pontos_adicionados": pontos_povao, "modalidade": "povao_pace_livre"}
     
     else:
-        pontos = calcular_pontos_colocacao(resultado["colocacao"], usuario.get("categoria", "normal"))
+        pontos = calcular_pontos_colocacao(resultado.get("colocacao", 0), usuario.get("categoria", "normal"))
         
         if pontos == 0:
             raise HTTPException(
                 status_code=400,
-                detail=f"Colocação {resultado['colocacao']}º não pontua para categoria {usuario.get('categoria', 'normal')}"
+                detail=f"Colocação {resultado.get('colocacao', 0)}º não pontua para categoria {usuario.get('categoria', 'normal')}"
             )
         
         corrida = Corrida(
             usuario_id=resultado["usuario_id"],
-            nome=resultado["nome_competicao"],
-            colocacao=resultado["colocacao"],
-            tempo=resultado["tempo"],
+            nome=nome_competicao,
+            colocacao=resultado.get("colocacao", 0),
+            tempo=resultado.get("tempo", "00:00:00"),
             pontos=pontos,
             pontos_povao=0,
-            local=f"{resultado['cidade_competicao']}/{resultado['estado_competicao']}",
-            distancia=resultado["distancia"],
-            data=resultado["data_competicao"],
+            local=f"{cidade_competicao}/{estado_competicao}",
+            distancia=resultado.get("distancia", 0),
+            data=data_competicao,
             ano=2025,
             modalidade="profissional_amador"
         )
@@ -160,8 +164,8 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             usuario_id=resultado["usuario_id"],
             tipo="aprovacao",
             titulo="Resultado aprovado!",
-            mensagem=f"Seu resultado na {resultado['nome_competicao']} foi aprovado! Você ganhou {pontos} pontos.",
-            dados_extras={"pontos": pontos, "competicao": resultado["nome_competicao"]}
+            mensagem=f"Seu resultado na {nome_competicao} foi aprovado! Você ganhou {pontos} pontos.",
+            dados_extras={"pontos": pontos, "competicao": nome_competicao}
         )
         
         await verificar_conquistas(resultado["usuario_id"])
@@ -184,6 +188,7 @@ async def reprovar_resultado(
         raise HTTPException(status_code=400, detail="Resultado já processado")
     
     motivo = dados.get("motivo") or "Não atende aos critérios do regulamento"
+    nome_competicao = resultado.get("nome_competicao") or resultado.get("competicao") or "competição"
     
     await db.resultados_pendentes.update_one(
         {"id": resultado_id},
@@ -197,9 +202,9 @@ async def reprovar_resultado(
         usuario_id=resultado["usuario_id"],
         tipo="reprovacao",
         titulo="Resultado reprovado",
-        mensagem=f"Seu resultado na {resultado['nome_competicao']} foi reprovado. Motivo: {motivo}",
+        mensagem=f"Seu resultado na {nome_competicao} foi reprovado. Motivo: {motivo}",
         dados_extras={
-            "competicao": resultado["nome_competicao"],
+            "competicao": nome_competicao,
             "motivo": motivo,
             "resultado_id": resultado_id
         }
