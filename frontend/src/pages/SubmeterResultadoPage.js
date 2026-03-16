@@ -62,7 +62,7 @@ const SubmeterResultadoPage = () => {
     estado_competicao: '',
     data_competicao: '',
     link_resultado: '',
-    tempo: isPovao ? '00:00:00' : '',
+    tempo: '',  // Vazio para todos - obrigatório apenas para Pro/Amador
     distancia: '',
     distancia_customizada: ''  // Novo campo para distância em KM quando "Outra"
   });
@@ -416,19 +416,26 @@ const SubmeterResultadoPage = () => {
                   />
                 </div>
 
-                {/* Campo de Tempo - oculto para Povão */}
-                {!isPovao && (
-                  <div>
-                    <Label>Seu Tempo (HH:MM:SS) *</Label>
-                    <Input
-                      type="time"
-                      step="1"
-                      value={formData.tempo}
-                      onChange={(e) => handleChange('tempo', e.target.value)}
-                      required
-                    />
-                  </div>
-                )}
+                {/* Campo de Tempo - obrigatório para Pro/Amador, opcional para Povão */}
+                <div>
+                  <Label>
+                    Seu Tempo (HH:MM:SS) {!isPovao && '*'}
+                    {isPovao && <span className="text-purple-500 text-xs ml-1">(opcional)</span>}
+                  </Label>
+                  <Input
+                    type="time"
+                    step="1"
+                    value={formData.tempo}
+                    onChange={(e) => handleChange('tempo', e.target.value)}
+                    required={!isPovao}
+                    data-testid="tempo-input"
+                  />
+                  {isPovao && (
+                    <p className="text-xs text-purple-500 mt-1">
+                      Informar seu tempo nos ajuda a conhecer melhor seu desempenho
+                    </p>
+                  )}
+                </div>
 
                 <div className="md:col-span-2">
                   <Label>Link do Resultado (Site de Cronometragem) *</Label>
