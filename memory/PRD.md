@@ -280,3 +280,33 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - `/app/frontend/src/pages/SubmeterResultadoPage.js`
   - `/app/backend/routes/admin_routes.py` (função calcular_pontos_povao)
   - `/app/frontend/src/pages/CadastroPage.js` (correção de valores de pontuação)
+
+### Seção de Destaques do Ranking do Povão (NOVO - 17/Mar/2026)
+- **Frontend implementado** em `/app/frontend/src/pages/RankingPage.js`:
+  - Seção "Destaques do Povão" com toggle para exibir/ocultar
+  - Seletor de período: Semanal ou Mensal
+  - Card "Top 10" exibindo ranking do período selecionado
+  - Card "Destaque do Mês" com stats (corridas no mês, atletas ativos)
+  - Destaque para atleta "Mais Ativo" (mais corridas)
+  - Destaque para atleta "Mais Pontos"
+  - Botões: "Ocultar Destaques", "Como funciona?", "Regulamento"
+  - Modal "Como funciona?" com explicação completa do sistema
+  - Modal "Regulamento" com 7 seções detalhadas
+
+- **Backend endpoints** em `/app/backend/routes/ranking_routes.py`:
+  - `GET /api/ranking/povao/semanal` - Top 10 da última semana
+  - `GET /api/ranking/povao/mensal` - Top 10 do mês atual
+  - `GET /api/ranking/povao/destaque-mes` - Destaques do mês (mais ativo, mais pontos)
+
+---
+
+## P1 (Próximas Tarefas)
+- Refatoração do Backend (server.py → módulos específicos)
+- Sistema de Metas Pessoais para atletas
+- Sistema de Streaks (consistência)
+
+## P2+ (Tarefas Futuras)
+- Sistema de Rivais, Feed Social, Desafios Mensais
+- Gráficos de Evolução, Níveis/XP
+- Previsão de Ranking com IA, Certificados Digitais
+- Configuração de `REDIS_URL` para produção

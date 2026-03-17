@@ -15,7 +15,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://geo-location-form.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ranking-features.preview.emergentagent.com').rstrip('/')
 
 class TestInstagramRankingInside:
     """Tests for Instagram Analytics (Ranking Run Inside) feature"""

@@ -35,6 +35,13 @@ const RankingPage = () => {
   const [rankingPovao, setRankingPovao] = useState([]);
   const [povaoStats, setPovaoStats] = useState(null);
   const [loadingPovao, setLoadingPovao] = useState(false);
+  const [showDestaquePovao, setShowDestaquePovao] = useState(true);
+  const [showComoFuncionaPovao, setShowComoFuncionaPovao] = useState(false);
+  const [showRegulamentoPovao, setShowRegulamentoPovao] = useState(false);
+  const [povaoRankingSemanal, setPovaoRankingSemanal] = useState([]);
+  const [povaoRankingMensal, setPovaoRankingMensal] = useState([]);
+  const [povaoDestaqueMes, setPovaoDestaqueMes] = useState(null);
+  const [periodoRankingPovao, setPeriodoRankingPovao] = useState('semanal'); // 'semanal' ou 'mensal'
   
   // Liga de Assessorias (Equipes)
   const [ligaRanking, setLigaRanking] = useState([]);
@@ -156,8 +163,25 @@ const RankingPage = () => {
 
     if (tipoRanking === 'povao') {
       fetchRankingPovao();
+      fetchPovaoDestaques();
     }
   }, [tipoRanking, generoPovao]);
+
+  // Buscar destaques do Povão (semanal, mensal, destaque do mês)
+  const fetchPovaoDestaques = async () => {
+    try {
+      const [semanalRes, mensalRes, destaqueRes] = await Promise.all([
+        axios.get(`${API}/ranking/povao/semanal?genero=${generoPovao}`),
+        axios.get(`${API}/ranking/povao/mensal?genero=${generoPovao}`),
+        axios.get(`${API}/ranking/povao/destaque-mes`)
+      ]);
+      setPovaoRankingSemanal(semanalRes.data);
+      setPovaoRankingMensal(mensalRes.data);
+      setPovaoDestaqueMes(destaqueRes.data);
+    } catch (error) {
+      console.error('Erro ao buscar destaques do Povão:', error);
+    }
+  };
 
   // Aplicar filtros locais
   const rankingFiltrado = rankingData.filter(atleta => {
@@ -850,8 +874,176 @@ const RankingPage = () => {
                     Limpar Filtros
                   </Button>
                 </div>
+
+                {/* Separador */}
+                <div className="border-t border-purple-200 pt-4 mt-4">
+                  <p className="text-xs text-purple-600 font-medium mb-3">DESTAQUES & INFO</p>
+                  
+                  {/* Botão Mostrar/Ocultar Destaques */}
+                  <Button 
+                    variant="outline"
+                    className={`w-full mb-2 ${showDestaquePovao ? 'bg-purple-50 border-purple-300' : ''}`}
+                    onClick={() => setShowDestaquePovao(!showDestaquePovao)}
+                    data-testid="btn-toggle-destaque-povao"
+                  >
+                    <Flame className="w-4 h-4 mr-2" />
+                    {showDestaquePovao ? 'Ocultar Destaques' : 'Ver Destaques'}
+                  </Button>
+
+                  {/* Botão Como funciona? */}
+                  <Button 
+                    variant="outline"
+                    className="w-full mb-2 bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold border-0"
+                    onClick={() => setShowComoFuncionaPovao(true)}
+                    data-testid="btn-como-funciona-povao"
+                  >
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    Como funciona?
+                  </Button>
+
+                  {/* Botão Regulamento */}
+                  <Button 
+                    variant="outline"
+                    className="w-full bg-purple-500/10 hover:bg-purple-500/20 text-purple-600 font-semibold border-purple-500/30"
+                    onClick={() => setShowRegulamentoPovao(true)}
+                    data-testid="btn-regulamento-povao"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Regulamento
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+
+            {/* Modal Como Funciona - Povão */}
+            <Dialog open={showComoFuncionaPovao} onOpenChange={setShowComoFuncionaPovao}>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-purple-600 flex items-center gap-2">
+                    <HelpCircle className="w-6 h-6" />
+                    Como funciona o Ranking do Povão?
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 text-slate-700 dark:text-slate-300">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-lg mb-2 text-purple-700">O que é o Ranking do Povão?</h3>
+                    <p>O Ranking do Povão é uma modalidade especial que valoriza a <strong>participação</strong> acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Sistema de Pontuação</h3>
+                    <p className="mb-2">A pontuação é baseada <strong>apenas na distância percorrida</strong>:</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-purple-100 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-purple-700">5 pts</div>
+                        <div className="text-sm text-purple-600">5km a 9km</div>
+                      </div>
+                      <div className="bg-purple-200 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-purple-800">7 pts</div>
+                        <div className="text-sm text-purple-700">10km a 20km</div>
+                      </div>
+                      <div className="bg-purple-300 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-purple-900">9 pts</div>
+                        <div className="text-sm text-purple-800">21km+</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Critérios de Desempate</h3>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      <li><strong>Pontos totais</strong> - Quem tem mais pontos</li>
+                      <li><strong>Número de provas</strong> - Quem participou de mais corridas</li>
+                      <li><strong>Distância acumulada</strong> - Quem correu mais km no total</li>
+                    </ol>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Rankings por Período</h3>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li><strong>Ranking Semanal:</strong> Top 10 da última semana</li>
+                      <li><strong>Ranking Mensal:</strong> Top 10 do mês atual</li>
+                      <li><strong>Destaque do Mês:</strong> Atletas mais ativos e com mais pontos</li>
+                    </ul>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => setShowComoFuncionaPovao(false)} className="bg-purple-600 hover:bg-purple-700">
+                    Entendi!
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal Regulamento - Povão */}
+            <Dialog open={showRegulamentoPovao} onOpenChange={setShowRegulamentoPovao}>
+              <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-purple-600 flex items-center gap-2">
+                    <FileText className="w-6 h-6" />
+                    Regulamento do Ranking do Povão
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 text-slate-700 dark:text-slate-300 text-sm">
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-base mb-2">1. Objetivo</h3>
+                    <p>O Ranking do Povão tem como objetivo incentivar a prática da corrida de rua, valorizando a participação e a constância dos atletas amadores.</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">2. Elegibilidade</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Qualquer pessoa cadastrada na plataforma pode participar</li>
+                      <li>Não há restrição de idade ou nível de experiência</li>
+                      <li>É necessário submeter resultados de corridas oficiais</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">3. Pontuação</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>5km a 9km: <strong>5 pontos</strong></li>
+                      <li>10km a 20km: <strong>7 pontos</strong></li>
+                      <li>21km ou mais: <strong>9 pontos</strong></li>
+                    </ul>
+                    <p className="mt-2 text-xs text-slate-500">* A colocação na prova não influencia a pontuação</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">4. Submissão de Resultados</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Os resultados devem ser submetidos em até 30 dias após a prova</li>
+                      <li>É obrigatório anexar comprovante (foto do certificado ou print do resultado)</li>
+                      <li>Resultados são verificados pela equipe antes da aprovação</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">5. Desclassificação</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Submissão de resultados falsos ou adulterados</li>
+                      <li>Múltiplas submissões da mesma prova</li>
+                      <li>Comportamento antidesportivo</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">6. Premiação</h3>
+                    <p>Os destaques mensais e anuais recebem reconhecimento na plataforma. Premiações físicas podem ser oferecidas em parcerias com eventos e patrocinadores.</p>
+                  </div>
+                  
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-base mb-2">7. Disposições Gerais</h3>
+                    <p>A organização reserva-se o direito de alterar este regulamento a qualquer momento, mediante aviso prévio aos participantes.</p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => setShowRegulamentoPovao(false)} className="bg-purple-600 hover:bg-purple-700">
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Conteúdo Principal - Povão */}
             <div className="lg:col-span-3 space-y-6">
@@ -886,6 +1078,190 @@ const RankingPage = () => {
                       <div className="text-sm text-amber-600">Provas Registradas</div>
                     </CardContent>
                   </Card>
+                </div>
+              )}
+
+              {/* Seção de Destaques do Povão */}
+              {showDestaquePovao && (
+                <div className="space-y-4">
+                  {/* Seletor de Período */}
+                  <Card className="border-purple-200 dark:border-purple-800">
+                    <CardContent className="p-4">
+                      <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex items-center gap-2">
+                          <Flame className="w-5 h-5 text-purple-600" />
+                          <span className="font-semibold text-purple-700">Destaques do Povão</span>
+                        </div>
+                        <div className="flex gap-2">
+                          <Button
+                            variant={periodoRankingPovao === 'semanal' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPeriodoRankingPovao('semanal')}
+                            className={periodoRankingPovao === 'semanal' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                            data-testid="btn-periodo-semanal"
+                          >
+                            Semanal
+                          </Button>
+                          <Button
+                            variant={periodoRankingPovao === 'mensal' ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setPeriodoRankingPovao('mensal')}
+                            className={periodoRankingPovao === 'mensal' ? 'bg-purple-600 hover:bg-purple-700' : ''}
+                            data-testid="btn-periodo-mensal"
+                          >
+                            Mensal
+                          </Button>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Grid de Destaques */}
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    {/* Ranking Semanal ou Mensal */}
+                    <Card className="border-purple-200 dark:border-purple-800 shadow-lg">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
+                          <Trophy className="w-5 h-5" />
+                          Top 10 - {periodoRankingPovao === 'semanal' ? 'Semanal' : 'Mensal'}
+                        </CardTitle>
+                        <p className="text-xs text-slate-500">
+                          {periodoRankingPovao === 'semanal' 
+                            ? povaoRankingSemanal?.periodo 
+                            : povaoRankingMensal?.periodo}
+                        </p>
+                      </CardHeader>
+                      <CardContent>
+                        {(periodoRankingPovao === 'semanal' ? povaoRankingSemanal?.ranking : povaoRankingMensal?.ranking)?.length > 0 ? (
+                          <div className="space-y-2">
+                            {(periodoRankingPovao === 'semanal' ? povaoRankingSemanal.ranking : povaoRankingMensal.ranking).slice(0, 10).map((atleta, idx) => (
+                              <div 
+                                key={atleta.atleta_id} 
+                                className="flex items-center gap-3 p-2 rounded-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 cursor-pointer transition-colors"
+                                onClick={() => handleAtletaClick(atleta.atleta_id)}
+                              >
+                                <div className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+                                  idx === 0 ? 'bg-yellow-500 text-white' :
+                                  idx === 1 ? 'bg-slate-400 text-white' :
+                                  idx === 2 ? 'bg-amber-600 text-white' :
+                                  'bg-slate-200 text-slate-700'
+                                }`}>
+                                  {idx + 1}
+                                </div>
+                                <Avatar className="h-8 w-8">
+                                  <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
+                                  <AvatarFallback className="bg-purple-500 text-white text-xs">
+                                    {atleta.nome?.charAt(0)}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="flex-1 min-w-0">
+                                  <p className="font-medium text-sm truncate">{atleta.nome}</p>
+                                  <p className="text-xs text-slate-500">{atleta.total_corridas} provas</p>
+                                </div>
+                                <Badge className="bg-purple-100 text-purple-700 border-0">
+                                  {atleta.pontos} pts
+                                </Badge>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-slate-500">
+                            <Users className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                            <p className="text-sm">Nenhum resultado encontrado para este período</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+
+                    {/* Destaque do Mês */}
+                    <Card className="border-purple-200 dark:border-purple-800 shadow-lg bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-slate-900">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
+                          <Star className="w-5 h-5" />
+                          Destaque do Mês
+                        </CardTitle>
+                        <p className="text-xs text-slate-500">{povaoDestaqueMes?.mes}</p>
+                      </CardHeader>
+                      <CardContent>
+                        {povaoDestaqueMes ? (
+                          <div className="space-y-4">
+                            {/* Stats do mês */}
+                            <div className="grid grid-cols-2 gap-2">
+                              <div className="bg-white dark:bg-slate-800 p-3 rounded-lg text-center shadow-sm">
+                                <div className="text-2xl font-bold text-purple-600">{povaoDestaqueMes.total_corridas || 0}</div>
+                                <div className="text-xs text-slate-500">Corridas no mês</div>
+                              </div>
+                              <div className="bg-white dark:bg-slate-800 p-3 rounded-lg text-center shadow-sm">
+                                <div className="text-2xl font-bold text-purple-600">{povaoDestaqueMes.atletas_participantes || 0}</div>
+                                <div className="text-xs text-slate-500">Atletas ativos</div>
+                              </div>
+                            </div>
+
+                            {/* Mais Ativo */}
+                            {povaoDestaqueMes.mais_ativo && (
+                              <div 
+                                className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                                onClick={() => handleAtletaClick(povaoDestaqueMes.mais_ativo.atleta_id)}
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Flame className="w-4 h-4 text-orange-500" />
+                                  <span className="text-xs font-semibold text-orange-600">MAIS ATIVO</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-12 w-12 ring-2 ring-orange-500">
+                                    <AvatarImage src={povaoDestaqueMes.mais_ativo.foto_url?.startsWith('http') ? povaoDestaqueMes.mais_ativo.foto_url : `${BACKEND_URL}${povaoDestaqueMes.mais_ativo.foto_url}`} />
+                                    <AvatarFallback className="bg-orange-500 text-white">
+                                      {povaoDestaqueMes.mais_ativo.nome?.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-semibold">{povaoDestaqueMes.mais_ativo.nome}</p>
+                                    <p className="text-sm text-slate-500">{povaoDestaqueMes.mais_ativo.total_corridas} corridas</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Mais Pontos */}
+                            {povaoDestaqueMes.mais_pontos && (
+                              <div 
+                                className="bg-white dark:bg-slate-800 p-4 rounded-lg shadow-sm cursor-pointer hover:shadow-md transition-shadow"
+                                onClick={() => handleAtletaClick(povaoDestaqueMes.mais_pontos.atleta_id)}
+                              >
+                                <div className="flex items-center gap-2 mb-2">
+                                  <Trophy className="w-4 h-4 text-amber-500" />
+                                  <span className="text-xs font-semibold text-amber-600">MAIS PONTOS</span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  <Avatar className="h-12 w-12 ring-2 ring-amber-500">
+                                    <AvatarImage src={povaoDestaqueMes.mais_pontos.foto_url?.startsWith('http') ? povaoDestaqueMes.mais_pontos.foto_url : `${BACKEND_URL}${povaoDestaqueMes.mais_pontos.foto_url}`} />
+                                    <AvatarFallback className="bg-amber-500 text-white">
+                                      {povaoDestaqueMes.mais_pontos.nome?.charAt(0)}
+                                    </AvatarFallback>
+                                  </Avatar>
+                                  <div>
+                                    <p className="font-semibold">{povaoDestaqueMes.mais_pontos.nome}</p>
+                                    <p className="text-sm text-slate-500">{povaoDestaqueMes.mais_pontos.total_pontos} pontos</p>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+
+                            {!povaoDestaqueMes.mais_ativo && !povaoDestaqueMes.mais_pontos && (
+                              <div className="text-center py-4 text-slate-500">
+                                <p className="text-sm">Ainda não há destaques para este mês</p>
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div className="text-center py-8 text-slate-500">
+                            <Star className="w-10 h-10 mx-auto mb-2 text-slate-300" />
+                            <p className="text-sm">Carregando destaques...</p>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
                 </div>
               )}
 

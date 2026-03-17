@@ -83,6 +83,208 @@ async def get_povao_stats():
     }
 
 
+@router.get("/ranking/povao/semanal")
+async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10):
+    """Retorna o Top 10 do Povão da última semana"""
+    from datetime import datetime, timedelta
+    
+    hoje = datetime.now()
+    inicio_semana = hoje - timedelta(days=7)
+    
+    # Buscar corridas da última semana para atletas do Povão
+    pipeline = [
+        {
+            "$match": {
+                "modalidade": "povao_pace_livre",
+                "data_competicao": {"$gte": inicio_semana.strftime("%Y-%m-%d")},
+                "status": "aprovado"
+            }
+        },
+        {
+            "$group": {
+                "_id": "$usuario_id",
+                "total_corridas": {"$sum": 1},
+                "total_pontos": {"$sum": "$pontos_povao"},
+                "distancia_acumulada": {"$sum": {"$toDouble": {"$replaceAll": {"input": {"$toUpper": "$distancia"}, "find": "KM", "replacement": ""}}}}
+            }
+        },
+        {"$sort": {"total_pontos": -1, "total_corridas": -1}},
+        {"$limit": limit}
+    ]
+    
+    resultados = await db.corridas.aggregate(pipeline).to_list(None)
+    
+    ranking = []
+    for idx, r in enumerate(resultados):
+        usuario = await db.usuarios.find_one({"id": r["_id"], "genero": genero}, {"_id": 0})
+        if usuario:
+            ranking.append({
+                "posicao": idx + 1,
+                "atleta_id": r["_id"],
+                "nome": usuario.get("nome", ""),
+                "foto_url": usuario.get("foto_url", ""),
+                "equipe": usuario.get("equipe", ""),
+                "cidade": usuario.get("cidade", ""),
+                "uf": usuario.get("estado", ""),
+                "total_corridas": r["total_corridas"],
+                "pontos": r["total_pontos"],
+                "distancia_acumulada": r.get("distancia_acumulada", 0)
+            })
+    
+    return {
+        "periodo": f"{inicio_semana.strftime('%d/%m/%Y')} a {hoje.strftime('%d/%m/%Y')}",
+        "total": len(ranking),
+        "ranking": ranking
+    }
+
+
+@router.get("/ranking/povao/mensal")
+async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10):
+    """Retorna o Top 10 do Povão do mês atual"""
+    from datetime import datetime
+    
+    hoje = datetime.now()
+    inicio_mes = hoje.replace(day=1).strftime("%Y-%m-%d")
+    
+    pipeline = [
+        {
+            "$match": {
+                "modalidade": "povao_pace_livre",
+                "data_competicao": {"$gte": inicio_mes},
+                "status": "aprovado"
+            }
+        },
+        {
+            "$group": {
+                "_id": "$usuario_id",
+                "total_corridas": {"$sum": 1},
+                "total_pontos": {"$sum": "$pontos_povao"},
+                "distancia_acumulada": {"$sum": {"$toDouble": {"$replaceAll": {"input": {"$toUpper": "$distancia"}, "find": "KM", "replacement": ""}}}}
+            }
+        },
+        {"$sort": {"total_pontos": -1, "total_corridas": -1}},
+        {"$limit": limit}
+    ]
+    
+    resultados = await db.corridas.aggregate(pipeline).to_list(None)
+    
+    ranking = []
+    for idx, r in enumerate(resultados):
+        usuario = await db.usuarios.find_one({"id": r["_id"], "genero": genero}, {"_id": 0})
+        if usuario:
+            ranking.append({
+                "posicao": idx + 1,
+                "atleta_id": r["_id"],
+                "nome": usuario.get("nome", ""),
+                "foto_url": usuario.get("foto_url", ""),
+                "equipe": usuario.get("equipe", ""),
+                "cidade": usuario.get("cidade", ""),
+                "uf": usuario.get("estado", ""),
+                "total_corridas": r["total_corridas"],
+                "pontos": r["total_pontos"],
+                "distancia_acumulada": r.get("distancia_acumulada", 0)
+            })
+    
+    meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
+    return {
+        "periodo": f"{meses[hoje.month]} {hoje.year}",
+        "total": len(ranking),
+        "ranking": ranking
+    }
+
+
+@router.get("/ranking/povao/destaque-mes")
+async def get_povao_destaque_mes():
+    """Retorna os destaques do mês do Povão"""
+    from datetime import datetime
+    
+    hoje = datetime.now()
+    inicio_mes = hoje.replace(day=1).strftime("%Y-%m-%d")
+    
+    # Total de corridas no mês
+    total_corridas_mes = await db.corridas.count_documents({
+        "modalidade": "povao_pace_livre",
+        "data_competicao": {"$gte": inicio_mes},
+        "status": "aprovado"
+    })
+    
+    # Atletas únicos que participaram
+    pipeline_atletas = [
+        {
+            "$match": {
+                "modalidade": "povao_pace_livre",
+                "data_competicao": {"$gte": inicio_mes},
+                "status": "aprovado"
+            }
+        },
+        {"$group": {"_id": "$usuario_id"}}
+    ]
+    atletas_unicos = len(await db.corridas.aggregate(pipeline_atletas).to_list(None))
+    
+    # Mais ativo (mais corridas)
+    pipeline_ativo = [
+        {
+            "$match": {
+                "modalidade": "povao_pace_livre",
+                "data_competicao": {"$gte": inicio_mes},
+                "status": "aprovado"
+            }
+        },
+        {"$group": {"_id": "$usuario_id", "total": {"$sum": 1}}},
+        {"$sort": {"total": -1}},
+        {"$limit": 1}
+    ]
+    mais_ativo_result = await db.corridas.aggregate(pipeline_ativo).to_list(1)
+    mais_ativo = None
+    if mais_ativo_result:
+        usuario = await db.usuarios.find_one({"id": mais_ativo_result[0]["_id"]}, {"_id": 0})
+        if usuario:
+            mais_ativo = {
+                "atleta_id": mais_ativo_result[0]["_id"],
+                "nome": usuario.get("nome", ""),
+                "foto_url": usuario.get("foto_url", ""),
+                "total_corridas": mais_ativo_result[0]["total"]
+            }
+    
+    # Mais pontos
+    pipeline_pontos = [
+        {
+            "$match": {
+                "modalidade": "povao_pace_livre",
+                "data_competicao": {"$gte": inicio_mes},
+                "status": "aprovado"
+            }
+        },
+        {"$group": {"_id": "$usuario_id", "total": {"$sum": "$pontos_povao"}}},
+        {"$sort": {"total": -1}},
+        {"$limit": 1}
+    ]
+    mais_pontos_result = await db.corridas.aggregate(pipeline_pontos).to_list(1)
+    mais_pontos = None
+    if mais_pontos_result:
+        usuario = await db.usuarios.find_one({"id": mais_pontos_result[0]["_id"]}, {"_id": 0})
+        if usuario:
+            mais_pontos = {
+                "atleta_id": mais_pontos_result[0]["_id"],
+                "nome": usuario.get("nome", ""),
+                "foto_url": usuario.get("foto_url", ""),
+                "total_pontos": mais_pontos_result[0]["total"]
+            }
+    
+    meses = ['', 'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 
+             'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro']
+    
+    return {
+        "mes": f"{meses[hoje.month]} {hoje.year}",
+        "total_corridas": total_corridas_mes,
+        "atletas_participantes": atletas_unicos,
+        "mais_ativo": mais_ativo,
+        "mais_pontos": mais_pontos
+    }
+
+
 # ==================== RANKING SEMANAL ====================
 
 @router.get("/ranking/semanal")
