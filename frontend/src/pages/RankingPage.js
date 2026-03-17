@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -1418,6 +1418,9 @@ const RankingPage = () => {
                                 <span className="font-medium text-amber-700 dark:text-amber-300 hover:underline">
                                   {equipe.nome}
                                 </span>
+                                {equipe.verificada && (
+                                  <BadgeCheck className="w-5 h-5 text-blue-500" title="Assessoria Verificada" />
+                                )}
                               </div>
                             </td>
                             <td className="py-3 px-2 md:px-4 text-slate-600 dark:text-slate-400 hidden md:table-cell">
@@ -1447,6 +1450,12 @@ const RankingPage = () => {
               <DialogTitle className="flex items-center gap-3">
                 <Award className="w-6 h-6 text-amber-500" />
                 {assessoriaDetalhe?.nome}
+                {assessoriaDetalhe?.verificada && (
+                  <Badge className="bg-blue-500 text-white flex items-center gap-1">
+                    <BadgeCheck className="w-4 h-4" />
+                    Verificada
+                  </Badge>
+                )}
                 {assessoriaDetalhe?.selo && (
                   <Badge className={getSeloColor(assessoriaDetalhe.selo)}>
                     {getSeloIcon(assessoriaDetalhe.selo)} SELO {assessoriaDetalhe.selo.toUpperCase()}

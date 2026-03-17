@@ -8,7 +8,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, 
   Send, Mail, Phone, Loader2, Zap, BarChart3, User, Star, Target, Medal,
-  Calendar, Flag, ExternalLink, Crown, Share2, Camera, X
+  Calendar, Flag, ExternalLink, Crown, Share2, Camera, X, BadgeCheck
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
@@ -33,6 +33,12 @@ const AssessoriaPage = () => {
   
   // Verificar se o usuário logado é o dono da assessoria
   const isDono = user && assessoria && assessoria.responsavel_id === user.id;
+  
+  // Verificar se a assessoria atende os critérios de verificação
+  const isVerificada = assessoria && 
+    assessoria.responsavel_nome && 
+    assessoria.total_atletas >= 10 && 
+    assessoria.total_resultados >= 5;
 
   useEffect(() => {
     const fetchAssessoria = async () => {
@@ -179,6 +185,12 @@ const AssessoriaPage = () => {
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3 mb-2">
                   <h1 className="text-2xl md:text-4xl font-bold">{assessoria.nome}</h1>
+                  {isVerificada && (
+                    <Badge className="bg-blue-500 text-white border-blue-400 text-sm px-3 py-1 flex items-center gap-1" title="Assessoria Verificada: 10+ atletas, 5+ resultados, dono definido">
+                      <BadgeCheck className="w-4 h-4" />
+                      Verificada
+                    </Badge>
+                  )}
                   <Badge className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
                     SELO {assessoria.selo?.toUpperCase()}
                   </Badge>
