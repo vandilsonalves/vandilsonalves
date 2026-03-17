@@ -111,6 +111,28 @@ async def get_ranking_assessorias(
         
         pontos_cadastro = len(atletas_ids) * 0.5
         
+        # Buscar dados da assessoria cadastrada (se existir)
+        assessoria_db = await db.assessorias.find_one(
+            {"nome": nome_equipe},
+            {"_id": 0, "dono_id": 1, "dono_nome": 1}
+        )
+        
+        dono_nome = None
+        dono_id = None
+        
+        if assessoria_db:
+            dono_nome = assessoria_db.get("dono_nome")
+            dono_id = assessoria_db.get("dono_id")
+        
+        # Se não tem dono_nome na assessoria, buscar no usuário
+        if not dono_nome and dono_id:
+            dono_user = await db.usuarios.find_one(
+                {"id": dono_id},
+                {"_id": 0, "nome": 1}
+            )
+            if dono_user:
+                dono_nome = dono_user.get("nome")
+        
         filtro_corridas_equipe = {
             "usuario_id": {"$in": atletas_ids},
             **filtro_corridas
@@ -150,6 +172,8 @@ async def get_ranking_assessorias(
             "total_resultados": total_resultados,
             "total_primeiros": total_primeiros,
             "total_podios": total_podios,
+            "dono_nome": dono_nome,
+            "dono_id": dono_id,
             "atletas": equipe["atletas"][:10],
             "data_mais_antiga": equipe.get("data_mais_antiga", "")
         })

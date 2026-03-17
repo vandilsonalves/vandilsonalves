@@ -1,15 +1,25 @@
+import { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  Users, Trophy, TrendingUp, MapPin, Award, RefreshCw, Loader2, Eye, CheckCircle
+  Users, Trophy, TrendingUp, MapPin, Award, RefreshCw, Loader2, Eye, CheckCircle,
+  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
   PieChart as RechartsPie, Pie, Cell, LineChart, Line, Legend
 } from 'recharts';
+import { toast } from 'sonner';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
@@ -27,8 +37,87 @@ const DashboardAssessorias = ({
   fetchCidades,
   cidadesComAssessorias,
   ligaCidade,
-  setLigaCidade
+  setLigaCidade,
+  token
 }) => {
+  // Estado do modal de detalhes
+  const [showDetalhesModal, setShowDetalhesModal] = useState(false);
+  const [assessoriaDetalhes, setAssessoriaDetalhes] = useState(null);
+  const [loadingDetalhes, setLoadingDetalhes] = useState(false);
+  const [membrosAssessoria, setMembrosAssessoria] = useState([]);
+
+  // Buscar detalhes completos da assessoria
+  const handleViewDetalhes = async (nomeAssessoria) => {
+    setLoadingDetalhes(true);
+    setShowDetalhesModal(true);
+    
+    try {
+      // Buscar dados da assessoria na liga
+      const response = await axios.get(`${API}/liga-assessorias/assessoria/${encodeURIComponent(nomeAssessoria)}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      const data = response.data;
+      
+      // Mapear dados para o formato esperado pelo modal
+      setAssessoriaDetalhes({
+        ...data,
+        dono_nome: data.responsavel_nome || data.dono?.nome || 'Não definido',
+        dono_email: data.dono?.email,
+        dono_foto: data.dono?.foto_url,
+        posicao: data.posicao_nacional
+      });
+      
+      // Preparar lista de membros com marcação do dono
+      const membros = (data.atletas || []).map(m => ({
+        ...m,
+        is_dono: m.id === data.responsavel_id
+      }));
+      setMembrosAssessoria(membros);
+      
+    } catch (error) {
+      console.error('Erro ao buscar detalhes:', error);
+      toast.error('Erro ao carregar detalhes da assessoria');
+      
+      // Usar dados do ranking como fallback
+      const assessoriaRanking = ligaRanking.find(a => a.nome === nomeAssessoria);
+      if (assessoriaRanking) {
+        setAssessoriaDetalhes({
+          ...assessoriaRanking,
+          dono_nome: assessoriaRanking.dono_nome || 'Não definido',
+          membros: []
+        });
+      }
+    } finally {
+      setLoadingDetalhes(false);
+    }
+  };
+
+  // Exportar lista de assessorias
+  const handleExportAssessorias = () => {
+    const headers = ['Posição', 'Assessoria', 'Dono', 'UF', 'Cidade', 'Atletas', '1º Lugares', 'Resultados', 'Pontos', 'Selo'];
+    const rows = ligaRanking.map((eq, idx) => [
+      eq.posicao || idx + 1,
+      eq.nome,
+      eq.dono_nome || 'N/A',
+      eq.estado,
+      eq.cidade || '',
+      eq.total_atletas,
+      eq.total_primeiros || 0,
+      eq.total_resultados,
+      eq.pontos_total,
+      eq.selo?.toUpperCase() || 'N/A'
+    ]);
+    
+    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    link.href = URL.createObjectURL(blob);
+    link.download = `assessorias_ranking_${new Date().toISOString().split('T')[0]}.csv`;
+    link.click();
+    toast.success('Lista de assessorias exportada!');
+  };
+
   const getSeloIcon = (selo) => {
     switch(selo) {
       case 'ouro': return '🥇';
@@ -286,11 +375,17 @@ const DashboardAssessorias = ({
       {/* Tabela de Ranking */}
       <Card>
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Trophy className="w-5 h-5 text-amber-500" />
-            Ranking das Assessorias
-            <Badge variant="secondary">{ligaRanking.length} assessorias</Badge>
-          </CardTitle>
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <CardTitle className="flex items-center gap-2">
+              <Trophy className="w-5 h-5 text-amber-500" />
+              Ranking das Assessorias
+              <Badge variant="secondary">{ligaRanking.length} assessorias</Badge>
+            </CardTitle>
+            <Button onClick={handleExportAssessorias} variant="outline" size="sm">
+              <Download className="w-4 h-4 mr-2" />
+              Exportar Lista
+            </Button>
+          </div>
         </CardHeader>
         <CardContent>
           {loadingLiga ? (
@@ -310,6 +405,7 @@ const DashboardAssessorias = ({
                     <th className="text-left py-3 px-4 font-semibold">Pos</th>
                     <th className="text-left py-3 px-4 font-semibold">Selo</th>
                     <th className="text-left py-3 px-4 font-semibold">Assessoria</th>
+                    <th className="text-left py-3 px-4 font-semibold">Dono</th>
                     <th className="text-left py-3 px-4 font-semibold">UF</th>
                     <th className="text-center py-3 px-4 font-semibold">Atletas</th>
                     <th className="text-center py-3 px-4 font-semibold">1º Lugares</th>
@@ -334,6 +430,14 @@ const DashboardAssessorias = ({
                         </Badge>
                       </td>
                       <td className="py-3 px-4 font-medium">{eq.nome}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <UserCog className="w-4 h-4 text-slate-400" />
+                          <span className={eq.dono_nome ? 'text-slate-700' : 'text-slate-400 italic'}>
+                            {eq.dono_nome || 'Não definido'}
+                          </span>
+                        </div>
+                      </td>
                       <td className="py-3 px-4">{eq.estado}</td>
                       <td className="py-3 px-4 text-center">{eq.total_atletas}</td>
                       <td className="py-3 px-4 text-center">{eq.total_primeiros || 0}</td>
@@ -343,9 +447,11 @@ const DashboardAssessorias = ({
                         <Button 
                           variant="ghost" 
                           size="sm" 
-                          onClick={() => onViewAssessoria(eq.nome)}
+                          onClick={() => handleViewDetalhes(eq.nome)}
+                          title="Ver detalhes da assessoria"
+                          className="hover:bg-amber-100"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-4 h-4 text-amber-600" />
                         </Button>
                       </td>
                     </tr>
@@ -356,6 +462,163 @@ const DashboardAssessorias = ({
           )}
         </CardContent>
       </Card>
+
+      {/* Modal de Detalhes da Assessoria */}
+      <Dialog open={showDetalhesModal} onOpenChange={setShowDetalhesModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <Trophy className="w-6 h-6 text-amber-500" />
+              {assessoriaDetalhes?.nome || 'Detalhes da Assessoria'}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {loadingDetalhes ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
+            </div>
+          ) : assessoriaDetalhes && (
+            <div className="space-y-6">
+              {/* Informações Principais */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Card className="bg-gradient-to-br from-amber-50 to-orange-50 border-amber-200">
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <Award className="w-5 h-5 text-amber-500" />
+                      Informações Gerais
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Posição:</span>
+                        <Badge className="bg-amber-500">{assessoriaDetalhes.posicao || 'N/A'}º lugar</Badge>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Selo:</span>
+                        <Badge className={getSeloColor(assessoriaDetalhes.selo)}>
+                          {getSeloIcon(assessoriaDetalhes.selo)} {assessoriaDetalhes.selo?.toUpperCase()}
+                        </Badge>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Localização:</span>
+                        <span className="font-medium">{assessoriaDetalhes.cidade}/{assessoriaDetalhes.estado}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-600">Pontos Total:</span>
+                        <span className="font-bold text-amber-600 text-lg">{assessoriaDetalhes.pontos_total}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-green-50 to-emerald-50 border-green-200">
+                  <CardContent className="pt-6">
+                    <h3 className="font-semibold text-lg mb-4 flex items-center gap-2">
+                      <UserCog className="w-5 h-5 text-green-500" />
+                      Dono da Assessoria
+                    </h3>
+                    <div className="space-y-3">
+                      <div className="flex items-center gap-3">
+                        <Avatar className="w-12 h-12 border-2 border-green-300">
+                          <AvatarImage src={assessoriaDetalhes.dono_foto} />
+                          <AvatarFallback className="bg-green-100 text-green-700">
+                            {assessoriaDetalhes.dono_nome?.charAt(0) || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div>
+                          <p className="font-semibold">{assessoriaDetalhes.dono_nome || 'Não definido'}</p>
+                          {assessoriaDetalhes.dono_email && (
+                            <p className="text-sm text-slate-500 flex items-center gap-1">
+                              <Mail className="w-3 h-3" />
+                              {assessoriaDetalhes.dono_email}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Estatísticas */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <Users className="w-8 h-8 mx-auto text-blue-500 mb-2" />
+                    <p className="text-2xl font-bold">{assessoriaDetalhes.total_atletas}</p>
+                    <p className="text-sm text-slate-500">Atletas</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <CheckCircle className="w-8 h-8 mx-auto text-green-500 mb-2" />
+                    <p className="text-2xl font-bold">{assessoriaDetalhes.total_resultados}</p>
+                    <p className="text-sm text-slate-500">Resultados</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <Trophy className="w-8 h-8 mx-auto text-amber-500 mb-2" />
+                    <p className="text-2xl font-bold">{assessoriaDetalhes.total_primeiros || 0}</p>
+                    <p className="text-sm text-slate-500">1º Lugares</p>
+                  </CardContent>
+                </Card>
+                <Card>
+                  <CardContent className="pt-4 text-center">
+                    <Target className="w-8 h-8 mx-auto text-purple-500 mb-2" />
+                    <p className="text-2xl font-bold">{assessoriaDetalhes.pontos_total}</p>
+                    <p className="text-sm text-slate-500">Pontos</p>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Lista de Membros */}
+              {membrosAssessoria.length > 0 && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                      <Users className="w-5 h-5 text-blue-500" />
+                      Membros da Equipe ({membrosAssessoria.length})
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
+                      {membrosAssessoria.slice(0, 15).map((membro, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-2 rounded-lg bg-slate-50 hover:bg-slate-100">
+                          <Avatar className="w-8 h-8">
+                            <AvatarImage src={membro.foto_url} />
+                            <AvatarFallback className="bg-blue-100 text-blue-700 text-xs">
+                              {membro.nome?.charAt(0) || '?'}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-medium truncate">{membro.nome}</p>
+                            <p className="text-xs text-slate-500">{membro.cidade}/{membro.estado}</p>
+                          </div>
+                          {membro.is_dono && (
+                            <Badge className="bg-green-500 text-xs">Dono</Badge>
+                          )}
+                        </div>
+                      ))}
+                      {membrosAssessoria.length > 15 && (
+                        <div className="col-span-full text-center text-sm text-slate-500 py-2">
+                          ... e mais {membrosAssessoria.length - 15} membros
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowDetalhesModal(false)}>
+              <X className="w-4 h-4 mr-2" />
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -408,10 +408,12 @@ async def listar_atletas(
     estado: str = None,
     categoria: str = None,
     modalidade: str = None,
+    equipe: str = None,
     admin: dict = Depends(get_admin_user)
 ):
     """Lista atletas com paginação e filtros"""
-    filtro = {"role": "atleta"}
+    # Incluir atletas e donos de assessoria
+    filtro = {"role": {"$in": ["atleta", "dono_assessoria"]}}
     
     if search:
         filtro["$or"] = [
@@ -428,6 +430,21 @@ async def listar_atletas(
             filtro["modalidade_usuario"] = "povao_pace_livre"
         elif modalidade == "profissional_amador":
             filtro["modalidade_usuario"] = {"$ne": "povao_pace_livre"}
+    
+    # Filtro por tipo de equipe
+    if equipe:
+        if equipe == "com_assessoria":
+            filtro["equipe"] = {"$nin": ["", None, "Individual", "INDIVIDUAL", "Sem equipe"]}
+        elif equipe == "individual":
+            filtro["$or"] = [
+                {"equipe": {"$in": ["", None, "Individual", "INDIVIDUAL", "Sem equipe"]}},
+                {"equipe": {"$exists": False}}
+            ]
+        elif equipe == "dono_assessoria":
+            filtro["$or"] = [
+                {"role": "dono_assessoria"},
+                {"is_dono_assessoria": True}
+            ]
     
     skip = (page - 1) * limit
     

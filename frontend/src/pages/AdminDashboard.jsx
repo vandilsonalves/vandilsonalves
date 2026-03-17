@@ -278,7 +278,7 @@ const AdminDashboard = () => {
     if (activeMenu === 'autorizacoes') {
       fetchAtletasPeriodoTeste();
     }
-  }, [activeMenu, filtroCategoria, mesCalendario, anoCalendario, ligaTipo, ligaEstado, ligaCidade]);
+  }, [activeMenu, filtroCategoria, filtroEquipe, mesCalendario, anoCalendario, ligaTipo, ligaEstado, ligaCidade]);
 
   // Buscar corridas do atleta quando selecionar para remover
   useEffect(() => {
@@ -531,6 +531,7 @@ const AdminDashboard = () => {
         params: { 
           categoria: filtroCategoria !== 'all' ? filtroCategoria : undefined,
           modalidade: filtroModalidade !== 'all' ? filtroModalidade : undefined,
+          equipe: filtroEquipe !== 'all' ? filtroEquipe : undefined,
           limit: 1000 // Buscar mais atletas para filtro local funcionar
         }
       });
@@ -1475,6 +1476,7 @@ const AdminDashboard = () => {
             onRefresh={fetchLigaRanking}
             onViewAssessoria={fetchAssessoriaDetalhe}
             fetchCidades={fetchCidadesComAssessorias}
+            token={token}
           />
         )}
 

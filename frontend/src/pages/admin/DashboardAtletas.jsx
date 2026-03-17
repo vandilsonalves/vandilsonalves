@@ -86,6 +86,8 @@ const DashboardAtletas = ({
           matchEquipe = temEquipe;
         } else if (filtroEquipe === 'individual') {
           matchEquipe = !temEquipe;
+        } else if (filtroEquipe === 'dono_assessoria') {
+          matchEquipe = a.role === 'dono_assessoria' || a.is_dono_assessoria === true;
         }
       }
       
@@ -172,13 +174,14 @@ const DashboardAtletas = ({
 
             {/* Filtro por Equipe/Assessoria */}
             <Select value={filtroEquipe || 'all'} onValueChange={setFiltroEquipe}>
-              <SelectTrigger className="w-full md:w-44">
+              <SelectTrigger className="w-full md:w-48">
                 <SelectValue placeholder="Equipe" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Todas Equipes</SelectItem>
                 <SelectItem value="com_assessoria">Com Assessoria</SelectItem>
                 <SelectItem value="individual">Individual</SelectItem>
+                <SelectItem value="dono_assessoria">Dono de Assessoria</SelectItem>
               </SelectContent>
             </Select>
           </div>
