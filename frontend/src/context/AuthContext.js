@@ -43,7 +43,7 @@ export function AuthProvider({ children }) {
       setUser(response.data);
       
       // Se for admin, buscar permissões
-      if (response.data.role === 'admin') {
+      if (response.data.role === 'admin' || response.data.role === 'super_admin') {
         await fetchAdminPermissoes();
       }
     } catch (error) {
@@ -123,7 +123,7 @@ export function AuthProvider({ children }) {
     setUser(userData);
     
     // Se for admin, tentar login RBAC para obter permissões
-    if (userData.role === 'admin') {
+    if (userData.role === 'admin' || userData.role === 'super_admin') {
       try {
         const rbacResponse = await axios.post(`${API}/rbac/login`, { email, password });
         if (rbacResponse.data.user) {
@@ -131,10 +131,12 @@ export function AuthProvider({ children }) {
           localStorage.setItem('adminData', JSON.stringify(adminData));
           setAdminPermissoes(adminData.permissoes || []);
           setTipoAdmin(adminData.tipo_admin);
-          setIsSuperAdmin(adminData.is_super_admin || false);
+          setIsSuperAdmin(adminData.is_super_admin || userData.role === 'super_admin');
         }
       } catch (e) {
-        // Fallback para admin legado
+        // Fallback para admin legado ou super_admin
+        const isSuperAdminRole = userData.role === 'super_admin';
+        setIsSuperAdmin(isSuperAdminRole);
         setAdminPermissoes([
           'aprovar_corridas', 'reprovar_corridas', 'aprovar_resultados',
           'moderar_avaliacoes', 'visualizar_atletas', 'editar_atletas',
@@ -174,7 +176,7 @@ export function AuthProvider({ children }) {
     setIsSuperAdmin(false);
   };
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
   
   // Função para verificar se tem uma permissão específica
   const temPermissao = (permissao) => {
