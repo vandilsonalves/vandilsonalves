@@ -144,8 +144,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
 
 
 async def get_admin_user(current_user: dict = Depends(get_current_user)):
-    """Verifica se o usuário é administrador"""
-    if current_user.get("role") != "admin":
+    """Verifica se o usuário é administrador (admin ou super_admin)"""
+    if current_user.get("role") not in ["admin", "super_admin"]:
         raise HTTPException(status_code=403, detail="Acesso negado. Apenas administradores.")
     return current_user
 
@@ -298,4 +298,79 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "equipe": current_user.get("equipe", ""),
         "estado": current_user.get("estado", ""),
         "modalidade_usuario": current_user.get("modalidade_usuario", "profissional_amador")
+    }
+
+
+# ==================== LOGIN COM SENHA DE EMERGÊNCIA ====================
+
+import hashlib
+from pydantic import BaseModel
+
+class LoginEmergencia(BaseModel):
+    email: str
+    senha_emergencia: str
+
+@router.post("/auth/login-emergencia")
+async def login_com_senha_emergencia(dados: LoginEmergencia):
+    """
+    Login usando a senha de emergência do sistema.
+    
+    - Apenas Super Admin pode ter gerado esta senha
+    - Limite de 3 usos por atleta
+    - Todos os usos são registrados em log
+    """
+    # Buscar o usuário pelo email
+    user = await db.usuarios.find_one({"email": dados.email}, {"_id": 0})
+    if not user:
+        raise HTTPException(status_code=401, detail="Usuário não encontrado")
+    
+    # Verificar a senha de emergência
+    config_senha = await db.configuracoes_sistema.find_one(
+        {"tipo": "senha_emergencia"},
+        {"_id": 0}
+    )
+    
+    if not config_senha:
+        raise HTTPException(status_code=401, detail="Senha de emergência não configurada")
+    
+    # Validar hash da senha
+    senha_hash = hashlib.sha256(dados.senha_emergencia.encode()).hexdigest()
+    if senha_hash != config_senha["senha_hash"]:
+        raise HTTPException(status_code=401, detail="Senha de emergência inválida")
+    
+    # Verificar limite de usos para este atleta (máximo 3)
+    usos_atleta = await db.logs_senha_emergencia.count_documents({"atleta_id": user["id"]})
+    
+    if usos_atleta >= 3:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Limite de usos excedido para este atleta ({usos_atleta}/3). Solicite reset ao Super Admin."
+        )
+    
+    # Registrar o uso
+    log_uso = {
+        "id": str(uuid.uuid4()),
+        "atleta_id": user["id"],
+        "atleta_nome": user["nome"],
+        "atleta_email": user["email"],
+        "data_uso": datetime.now(timezone.utc).isoformat(),
+        "uso_numero": usos_atleta + 1
+    }
+    await db.logs_senha_emergencia.insert_one(log_uso)
+    
+    # Criar token de acesso
+    token = create_access_token({"sub": user["id"]})
+    
+    return {
+        "token": token,
+        "user": {
+            "id": user["id"],
+            "nome": user["nome"],
+            "email": user["email"],
+            "role": user["role"],
+            "foto_url": user.get("foto_url", ""),
+            "categoria": user.get("categoria", "normal")
+        },
+        "aviso": f"Login via senha de emergência. Uso {usos_atleta + 1}/3 para este atleta.",
+        "usos_restantes": 3 - (usos_atleta + 1)
     }

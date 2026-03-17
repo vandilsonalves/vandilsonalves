@@ -300,6 +300,29 @@ O usuário solicitou a reestruturação do painel de administração e implement
 
 ---
 
+### Exclusão de Assessoria com Migração (NOVO - 17/Mar/2026)
+- **Hard Delete implementado**: Ao deletar uma assessoria, todos os atletas são migrados automaticamente para "Individual"
+- **Pontos preservados**: Os pontos dos atletas não são afetados pela exclusão
+- **Histórico mantido**: Campo `equipe_anterior` armazena a assessoria original
+- **Log completo**: Registro de quem deletou, quando e quais atletas foram afetados
+- **Endpoint**: `DELETE /api/admin/assessorias/{nome_assessoria}` (apenas Super Admin)
+
+### Sistema de Senha de Emergência (NOVO - 17/Mar/2026)
+- **Senha aleatória segura**: Gerada com `secrets.token_urlsafe(24)` (~32 caracteres)
+- **Acesso restrito**: Apenas Super Admin pode visualizar, regenerar e resetar
+- **Limite de 3 usos por atleta**: Proteção contra uso abusivo
+- **Reset manual**: Super Admin pode resetar o contador de qualquer atleta
+- **Log completo**: Todos os usos são registrados (data, atleta, número do uso)
+
+**Endpoints implementados:**
+- `GET /api/admin/senha-emergencia` - Visualizar senha atual
+- `POST /api/admin/senha-emergencia/regenerar` - Gerar nova senha
+- `GET /api/admin/senha-emergencia/usos` - Listar log de usos
+- `POST /api/admin/senha-emergencia/resetar-contador/{atleta_id}` - Resetar contador
+- `POST /api/auth/login-emergencia` - Login usando senha de emergência
+
+---
+
 ## P1 (Próximas Tarefas)
 - Refatoração do Backend (server.py → módulos específicos)
 - Sistema de Metas Pessoais para atletas

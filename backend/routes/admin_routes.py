@@ -884,3 +884,235 @@ async def rebaixar_dono_assessoria(
         "message": f"{atleta['nome']} foi rebaixado a Atleta",
         "atleta_id": atleta_id
     }
+
+
+# ==================== GESTÃO DE ASSESSORIAS ====================
+
+@router.delete("/admin/assessorias/{nome_assessoria}")
+async def deletar_assessoria(nome_assessoria: str, admin: dict = Depends(get_admin_user)):
+    """
+    Deleta uma assessoria e migra todos os atletas vinculados para 'Individual'.
+    Os pontos dos atletas são mantidos intactos.
+    
+    Apenas Super Admin pode executar esta ação.
+    """
+    from urllib.parse import unquote
+    
+    # Verificar se é super_admin
+    if admin.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Apenas Super Admin pode deletar assessorias")
+    
+    nome_decoded = unquote(nome_assessoria)
+    
+    # Buscar atletas vinculados a esta assessoria
+    atletas_vinculados = await db.usuarios.find(
+        {"equipe": nome_decoded},
+        {"_id": 0, "id": 1, "nome": 1, "email": 1, "role": 1}
+    ).to_list(None)
+    
+    total_atletas = len(atletas_vinculados)
+    
+    # Registrar log antes da exclusão
+    log_exclusao = {
+        "id": str(uuid.uuid4()),
+        "tipo": "exclusao_assessoria",
+        "assessoria_nome": nome_decoded,
+        "admin_id": admin["id"],
+        "admin_nome": admin.get("nome", "Admin"),
+        "total_atletas_migrados": total_atletas,
+        "atletas_afetados": [{"id": a["id"], "nome": a["nome"]} for a in atletas_vinculados],
+        "data_exclusao": datetime.now(timezone.utc).isoformat()
+    }
+    await db.logs_sistema.insert_one(log_exclusao)
+    
+    # Migrar todos os atletas para Individual
+    if total_atletas > 0:
+        # Atualizar equipe para "Individual" e remover flags de dono se existirem
+        await db.usuarios.update_many(
+            {"equipe": nome_decoded},
+            {
+                "$set": {
+                    "equipe": "Individual",
+                    "equipe_anterior": nome_decoded  # Guardar histórico
+                },
+                "$unset": {
+                    "is_dono_assessoria": "",
+                    "assessoria_pendente": "",
+                    "assessoria_nome": ""
+                }
+            }
+        )
+        
+        # Rebaixar donos de assessoria para atleta
+        await db.usuarios.update_many(
+            {"equipe_anterior": nome_decoded, "role": "dono_assessoria"},
+            {"$set": {"role": "atleta"}}
+        )
+    
+    # Deletar a assessoria do banco (se existir na coleção assessorias)
+    await db.assessorias.delete_one({"nome": nome_decoded})
+    
+    # Invalidar cache relacionado
+    try:
+        from services.cache_service import cache_service
+        await cache_service.invalidate_pattern("liga:*")
+    except Exception:
+        pass
+    
+    return {
+        "message": f"Assessoria '{nome_decoded}' deletada com sucesso!",
+        "atletas_migrados": total_atletas,
+        "atletas_afetados": [a["nome"] for a in atletas_vinculados[:10]],  # Primeiros 10
+        "log_id": log_exclusao["id"]
+    }
+
+
+@router.get("/admin/assessorias/{nome_assessoria}/atletas")
+async def listar_atletas_assessoria(nome_assessoria: str, admin: dict = Depends(get_admin_user)):
+    """Lista todos os atletas de uma assessoria (para confirmar antes de deletar)"""
+    from urllib.parse import unquote
+    nome_decoded = unquote(nome_assessoria)
+    
+    atletas = await db.usuarios.find(
+        {"equipe": nome_decoded},
+        {"_id": 0, "id": 1, "nome": 1, "email": 1, "role": 1, "pontos_total": 1}
+    ).to_list(None)
+    
+    return {
+        "assessoria": nome_decoded,
+        "total_atletas": len(atletas),
+        "atletas": atletas
+    }
+
+
+# ==================== SENHA DE EMERGÊNCIA ====================
+
+import secrets
+import hashlib
+
+# Senha de emergência - armazenada de forma segura
+# Esta senha é gerada apenas uma vez e salva no banco
+EMERGENCY_PASSWORD_COLLECTION = "configuracoes_sistema"
+
+@router.get("/admin/senha-emergencia")
+async def get_senha_emergencia(admin: dict = Depends(get_admin_user)):
+    """
+    Retorna a senha de emergência atual (apenas Super Admin).
+    Se não existir, gera uma nova.
+    """
+    if admin.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Apenas Super Admin pode visualizar a senha de emergência")
+    
+    config = await db.configuracoes_sistema.find_one(
+        {"tipo": "senha_emergencia"},
+        {"_id": 0}
+    )
+    
+    if not config:
+        # Gerar nova senha
+        nova_senha = secrets.token_urlsafe(24)  # ~32 caracteres seguros
+        config = {
+            "tipo": "senha_emergencia",
+            "senha_plain": nova_senha,  # Armazenada para visualização pelo Super Admin
+            "senha_hash": hashlib.sha256(nova_senha.encode()).hexdigest(),
+            "criada_em": datetime.now(timezone.utc).isoformat(),
+            "criada_por": admin["id"]
+        }
+        await db.configuracoes_sistema.insert_one(config)
+    
+    return {
+        "senha": config["senha_plain"],
+        "criada_em": config.get("criada_em"),
+        "aviso": "Esta senha permite acesso a qualquer conta de atleta. Limite: 3 usos por atleta."
+    }
+
+
+@router.post("/admin/senha-emergencia/regenerar")
+async def regenerar_senha_emergencia(admin: dict = Depends(get_admin_user)):
+    """Gera uma nova senha de emergência (invalida a anterior)"""
+    if admin.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Apenas Super Admin pode regenerar a senha")
+    
+    nova_senha = secrets.token_urlsafe(24)
+    
+    await db.configuracoes_sistema.update_one(
+        {"tipo": "senha_emergencia"},
+        {
+            "$set": {
+                "senha_plain": nova_senha,
+                "senha_hash": hashlib.sha256(nova_senha.encode()).hexdigest(),
+                "criada_em": datetime.now(timezone.utc).isoformat(),
+                "criada_por": admin["id"],
+                "regenerada": True
+            }
+        },
+        upsert=True
+    )
+    
+    # Log da regeneração
+    await db.logs_sistema.insert_one({
+        "id": str(uuid.uuid4()),
+        "tipo": "senha_emergencia_regenerada",
+        "admin_id": admin["id"],
+        "admin_nome": admin.get("nome"),
+        "data": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {
+        "message": "Senha de emergência regenerada com sucesso!",
+        "nova_senha": nova_senha
+    }
+
+
+@router.get("/admin/senha-emergencia/usos")
+async def listar_usos_senha_emergencia(
+    admin: dict = Depends(get_admin_user),
+    limit: int = 50
+):
+    """Lista os usos da senha de emergência (log de acessos)"""
+    if admin.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Apenas Super Admin pode visualizar")
+    
+    usos = await db.logs_senha_emergencia.find(
+        {},
+        {"_id": 0}
+    ).sort("data_uso", -1).limit(limit).to_list(None)
+    
+    return {
+        "total_registros": len(usos),
+        "usos": usos
+    }
+
+
+@router.post("/admin/senha-emergencia/resetar-contador/{atleta_id}")
+async def resetar_contador_senha_emergencia(
+    atleta_id: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """Reseta o contador de usos da senha de emergência para um atleta específico"""
+    if admin.get("role") != "super_admin":
+        raise HTTPException(status_code=403, detail="Apenas Super Admin pode resetar contadores")
+    
+    atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0, "nome": 1})
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta não encontrado")
+    
+    # Deletar registros de uso para este atleta
+    result = await db.logs_senha_emergencia.delete_many({"atleta_id": atleta_id})
+    
+    # Log do reset
+    await db.logs_sistema.insert_one({
+        "id": str(uuid.uuid4()),
+        "tipo": "reset_senha_emergencia",
+        "atleta_id": atleta_id,
+        "atleta_nome": atleta["nome"],
+        "admin_id": admin["id"],
+        "admin_nome": admin.get("nome"),
+        "usos_resetados": result.deleted_count,
+        "data": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {
+        "message": f"Contador resetado para {atleta['nome']}",
+        "usos_removidos": result.deleted_count
+    }
