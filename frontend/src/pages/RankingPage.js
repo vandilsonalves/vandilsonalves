@@ -57,6 +57,8 @@ const RankingPage = () => {
   const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
   const [evolucaoMensal, setEvolucaoMensal] = useState(null); // Dados do gráfico de evolução
   const [showEvolucaoChart, setShowEvolucaoChart] = useState(true); // Toggle para mostrar/ocultar gráfico
+  const [showComoFuncionaEquipes, setShowComoFuncionaEquipes] = useState(false);
+  const [showRegulamentoEquipes, setShowRegulamentoEquipes] = useState(false);
   
   // Meses disponíveis para filtro (apenas meses passados ou atual)
   const getMesesDisponiveis = () => {
@@ -1472,8 +1474,199 @@ const RankingPage = () => {
                     🥇 1º = +1,0
                   </Badge>
                 </div>
+                {/* Botões Como funciona e Regulamento */}
+                <div className="flex justify-center gap-3 mt-4">
+                  <Button 
+                    variant="outline"
+                    className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold border-0"
+                    onClick={() => setShowComoFuncionaEquipes(true)}
+                    data-testid="btn-como-funciona-equipes"
+                  >
+                    <HelpCircle className="w-4 h-4 mr-2" />
+                    Como funciona?
+                  </Button>
+                  <Button 
+                    variant="outline"
+                    className="bg-amber-500/10 hover:bg-amber-500/20 text-amber-700 font-semibold border-amber-500/30"
+                    onClick={() => setShowRegulamentoEquipes(true)}
+                    data-testid="btn-regulamento-equipes"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    Regulamento
+                  </Button>
+                </div>
               </CardContent>
             </Card>
+
+            {/* Modal Como Funciona - Equipes */}
+            <Dialog open={showComoFuncionaEquipes} onOpenChange={setShowComoFuncionaEquipes}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-amber-600 flex items-center gap-2">
+                    <HelpCircle className="w-6 h-6" />
+                    Como funciona a Liga Nacional de Assessorias?
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 text-slate-700 dark:text-slate-300">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-lg mb-2 text-amber-700">O que é a Liga?</h3>
+                    <p>A Liga Nacional de Assessorias é o sistema oficial de <strong>classificação de equipes</strong> do Ranking Run. Ela avalia assessorias esportivas de corrida de rua em todo o Brasil com base em critérios técnicos e desempenho dos atletas vinculados.</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Sistema de Pontuação</h3>
+                    <p className="mb-3">A pontuação de cada assessoria é calculada com base em múltiplos fatores:</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div className="bg-emerald-100 dark:bg-emerald-900/30 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-emerald-700">+0,5</div>
+                        <div className="text-sm text-emerald-600">Por atleta vinculado</div>
+                      </div>
+                      <div className="bg-blue-100 dark:bg-blue-900/30 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-blue-700">+1,0</div>
+                        <div className="text-sm text-blue-600">Por resultado aprovado</div>
+                      </div>
+                      <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-amber-700">+0,5</div>
+                        <div className="text-sm text-amber-600">2º ao 5º lugar</div>
+                      </div>
+                      <div className="bg-yellow-100 dark:bg-yellow-900/30 p-3 rounded-lg text-center">
+                        <div className="text-2xl font-bold text-yellow-700">+1,0</div>
+                        <div className="text-sm text-yellow-600">1º lugar (vitória)</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Fórmula de Cálculo</h3>
+                    <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg font-mono text-sm">
+                      <p><strong>Pontuação Total</strong> = (Atletas × 0,5) + (Resultados × 1,0) + Bônus de Pódio</p>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Níveis de Classificação</h3>
+                    <ul className="space-y-2 text-sm">
+                      <li className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-yellow-500"></span>
+                        <strong>Nacional:</strong> Ranking geral de todas as assessorias do Brasil
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-blue-500"></span>
+                        <strong>Estadual:</strong> Ranking por estado (UF)
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <span className="w-3 h-3 rounded-full bg-green-500"></span>
+                        <strong>Cidade:</strong> Ranking por município
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div>
+                    <h3 className="font-semibold text-lg mb-2">Como Subir no Ranking?</h3>
+                    <ol className="list-decimal list-inside space-y-1 text-sm">
+                      <li>Vincule mais atletas à sua assessoria</li>
+                      <li>Incentive seus atletas a participarem de corridas</li>
+                      <li>Submeta os resultados das provas para aprovação</li>
+                      <li>Busque pódios para ganhar bônus extras</li>
+                    </ol>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => setShowComoFuncionaEquipes(false)} className="bg-amber-600 hover:bg-amber-700">
+                    Entendi!
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
+
+            {/* Modal Regulamento - Equipes */}
+            <Dialog open={showRegulamentoEquipes} onOpenChange={setShowRegulamentoEquipes}>
+              <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle className="text-2xl font-bold text-amber-600 flex items-center gap-2">
+                    <FileText className="w-6 h-6" />
+                    Regulamento da Liga Nacional de Assessorias
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 text-slate-700 dark:text-slate-300 text-sm">
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-base mb-2">1. Objetivo</h3>
+                    <p>A Liga Nacional de Assessorias Ranking Run tem como objetivo reconhecer e classificar as melhores assessorias esportivas de corrida de rua do Brasil, incentivando o profissionalismo e o desenvolvimento do esporte.</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">2. Elegibilidade</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Assessorias devem estar cadastradas na plataforma Ranking Run</li>
+                      <li>É necessário ter pelo menos 1 atleta vinculado</li>
+                      <li>A assessoria deve ter um responsável (dono) definido</li>
+                      <li>Atletas só podem estar vinculados a uma assessoria por vez</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">3. Sistema de Pontuação</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li><strong>Atleta vinculado:</strong> +0,5 pontos por atleta ativo</li>
+                      <li><strong>Resultado aprovado:</strong> +1,0 ponto por resultado de prova</li>
+                      <li><strong>Pódio (2º ao 5º lugar):</strong> +0,5 pontos adicionais</li>
+                      <li><strong>Vitória (1º lugar):</strong> +1,0 ponto adicional</li>
+                    </ul>
+                    <p className="mt-2 text-xs text-slate-500">* Apenas resultados aprovados pela administração são contabilizados</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">4. Critérios de Desempate</h3>
+                    <ol className="list-decimal list-inside space-y-1">
+                      <li>Maior número de vitórias (1º lugar)</li>
+                      <li>Maior número de pódios totais</li>
+                      <li>Maior número de resultados aprovados</li>
+                      <li>Maior número de atletas vinculados</li>
+                      <li>Data de cadastro mais antiga</li>
+                    </ol>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">5. Vinculação de Atletas</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>O atleta solicita vinculação através da plataforma</li>
+                      <li>O dono da assessoria aprova ou rejeita a solicitação</li>
+                      <li>Atletas podem solicitar desvinculação a qualquer momento</li>
+                      <li>Resultados anteriores permanecem contabilizados para a assessoria</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">6. Verificação de Assessorias</h3>
+                    <p className="mb-2">Assessorias podem receber o selo de verificação ao cumprir os critérios:</p>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Mínimo de 10 atletas vinculados</li>
+                      <li>Mínimo de 5 resultados aprovados</li>
+                      <li>Dono da assessoria definido</li>
+                    </ul>
+                  </div>
+                  
+                  <div>
+                    <h3 className="font-semibold text-base mb-2">7. Penalidades</h3>
+                    <ul className="list-disc list-inside space-y-1">
+                      <li>Submissão de resultados falsos: exclusão permanente</li>
+                      <li>Comportamento antidesportivo: advertência ou suspensão</li>
+                      <li>Uso de atletas fictícios: desconto de pontos e suspensão</li>
+                    </ul>
+                  </div>
+                  
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg">
+                    <h3 className="font-semibold text-base mb-2">8. Disposições Gerais</h3>
+                    <p>A organização reserva-se o direito de alterar este regulamento a qualquer momento, mediante comunicação prévia às assessorias participantes. Casos omissos serão analisados pela administração.</p>
+                  </div>
+                </div>
+                <DialogFooter>
+                  <Button onClick={() => setShowRegulamentoEquipes(false)} className="bg-amber-600 hover:bg-amber-700">
+                    Fechar
+                  </Button>
+                </DialogFooter>
+              </DialogContent>
+            </Dialog>
 
             {/* Tabs de Período - Nacional / Estadual / Cidade / Histórico */}
             <Card className="overflow-hidden">
