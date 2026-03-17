@@ -102,18 +102,24 @@ const RankingCorridasPage = () => {
   const fetchEstados = async () => {
     try {
       const response = await axios.get(`${API}/ranking-corridas/estados`);
-      setEstados(response.data || []);
+      // A API retorna {estados: [...]} então precisamos acessar response.data.estados
+      const data = response.data;
+      setEstados(Array.isArray(data) ? data : (data.estados || []));
     } catch (error) {
       console.error('Erro ao buscar estados:', error);
+      setEstados([]);
     }
   };
 
   const fetchCidades = async (uf) => {
     try {
       const response = await axios.get(`${API}/ranking-corridas/cidades?estado=${uf}`);
-      setCidades(response.data || []);
+      // A API pode retornar {cidades: [...]} ou apenas [...]
+      const data = response.data;
+      setCidades(Array.isArray(data) ? data : (data.cidades || []));
     } catch (error) {
       console.error('Erro ao buscar cidades:', error);
+      setCidades([]);
     }
   };
 
@@ -493,7 +499,7 @@ const RankingCorridasPage = () => {
                       <SelectValue placeholder="Selecione" />
                     </SelectTrigger>
                     <SelectContent>
-                      {estados.map(uf => (
+                      {Array.isArray(estados) && estados.map(uf => (
                         <SelectItem key={uf} value={uf}>{uf}</SelectItem>
                       ))}
                     </SelectContent>
@@ -508,7 +514,7 @@ const RankingCorridasPage = () => {
                         <SelectValue placeholder="Selecione" />
                       </SelectTrigger>
                       <SelectContent>
-                        {cidades.map(c => (
+                        {Array.isArray(cidades) && cidades.map(c => (
                           <SelectItem key={c} value={c}>{c}</SelectItem>
                         ))}
                       </SelectContent>
