@@ -12,6 +12,7 @@ import PerfilAtletaPage from "@/pages/PerfilAtletaPage.jsx";
 import AssessoriaPage from "@/pages/AssessoriaPage.jsx";
 import DonoAssessoriaDashboard from "@/pages/DonoAssessoriaDashboard.jsx";
 import RankingCorridasPage from "@/pages/RankingCorridasPage.jsx";
+import ComoSerVerificadoPage from "@/pages/ComoSerVerificadoPage.jsx";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
 
@@ -30,6 +31,7 @@ function App() {
             <Route path="/minha-assessoria" element={<DonoAssessoriaDashboard />} />
             <Route path="/ranking-corridas" element={<RankingCorridasPage />} />
             <Route path="/submeter-resultado" element={<SubmeterResultadoPage />} />
+            <Route path="/como-ser-verificado" element={<ComoSerVerificadoPage />} />
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/estrategico" element={<DashboardEstrategico />} />
             <Route path="/perfil" element={<PerfilAtletaPage />} />

@@ -185,10 +185,18 @@ const AssessoriaPage = () => {
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-3 mb-2">
                   <h1 className="text-2xl md:text-4xl font-bold">{assessoria.nome}</h1>
-                  {isVerificada && (
+                  {isVerificada ? (
                     <Badge className="bg-blue-500 text-white border-blue-400 text-sm px-3 py-1 flex items-center gap-1" title="Assessoria Verificada: 10+ atletas, 5+ resultados, dono definido">
                       <BadgeCheck className="w-4 h-4" />
                       Verificada
+                    </Badge>
+                  ) : (
+                    <Badge 
+                      className="bg-white/20 text-white border-white/30 text-sm px-3 py-1 cursor-pointer hover:bg-white/30" 
+                      onClick={() => navigate('/como-ser-verificado')}
+                      title="Clique para saber como ser verificada"
+                    >
+                      Como ser Verificada?
                     </Badge>
                   )}
                   <Badge className="bg-white/20 text-white border-white/30 text-sm px-3 py-1">
