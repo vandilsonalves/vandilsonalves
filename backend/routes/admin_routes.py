@@ -398,6 +398,117 @@ async def get_stats_equipes_estado(admin: dict = Depends(get_admin_user)):
     ]
 
 
+@router.get("/admin/stats/donos-por-estado")
+async def get_stats_donos_por_estado(admin: dict = Depends(get_admin_user)):
+    """Estatísticas de Donos de Assessoria por estado"""
+    pipeline = [
+        {"$match": {"role": "dono_assessoria"}},
+        {"$group": {
+            "_id": "$estado",
+            "total": {"$sum": 1}
+        }},
+        {"$sort": {"total": -1}},
+        {"$limit": 10}
+    ]
+    result = await db.usuarios.aggregate(pipeline).to_list(None)
+    return [{"estado": r["_id"] or "N/A", "total": r["total"]} for r in result]
+
+
+@router.get("/admin/stats/assessorias-verificadas")
+async def get_stats_assessorias_verificadas(admin: dict = Depends(get_admin_user)):
+    """Estatísticas de Assessorias Verificadas vs Não Verificadas"""
+    # Buscar dados do ranking de assessorias (mesma lógica da liga)
+    from routes.assessorias_routes import router as assessorias_router
+    
+    # Buscar equipes com atletas
+    pipeline = [
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$exists": True, "$ne": ""}}},
+        {"$group": {
+            "_id": "$equipe",
+            "total_atletas": {"$sum": 1}
+        }}
+    ]
+    equipes = await db.usuarios.aggregate(pipeline).to_list(None)
+    
+    verificadas = 0
+    nao_verificadas = 0
+    
+    for equipe in equipes:
+        nome = equipe.get("_id")
+        if not nome or nome.lower() in ["individual", "sem equipe"]:
+            continue
+            
+        total_atletas = equipe.get("total_atletas", 0)
+        
+        # Contar resultados aprovados
+        total_resultados = await db.corridas.count_documents({
+            "$or": [
+                {"nome_assessoria": nome},
+                {"equipe": nome}
+            ],
+            "status": "aprovado"
+        })
+        
+        # Buscar se tem dono
+        assessoria_db = await db.assessorias.find_one({"nome": nome}, {"_id": 0, "dono_nome": 1})
+        dono_nome = assessoria_db.get("dono_nome") if assessoria_db else None
+        
+        # Verificar critérios: 10+ atletas, 5+ resultados, dono definido
+        if total_atletas >= 10 and total_resultados >= 5 and dono_nome:
+            verificadas += 1
+        else:
+            nao_verificadas += 1
+    
+    total = verificadas + nao_verificadas
+    return {
+        "verificadas": verificadas,
+        "nao_verificadas": nao_verificadas,
+        "total": total,
+        "percentual_verificadas": round((verificadas / max(total, 1)) * 100, 1)
+    }
+
+
+@router.get("/admin/stats/insignias")
+async def get_stats_insignias(admin: dict = Depends(get_admin_user)):
+    """Estatísticas de Insígnias - quantidade de atletas por número de insígnias"""
+    # Buscar todos os atletas
+    atletas = await db.usuarios.find(
+        {"role": {"$in": ["atleta", "dono_assessoria"]}},
+        {"_id": 0, "id": 1, "insignias": 1}
+    ).to_list(None)
+    
+    # Contar insígnias por atleta
+    insignia_counts = {
+        "0": 0,
+        "1-2": 0,
+        "3-5": 0,
+        "6-10": 0,
+        "10+": 0
+    }
+    
+    for atleta in atletas:
+        num_insignias = len(atleta.get("insignias", []))
+        
+        if num_insignias == 0:
+            insignia_counts["0"] += 1
+        elif num_insignias <= 2:
+            insignia_counts["1-2"] += 1
+        elif num_insignias <= 5:
+            insignia_counts["3-5"] += 1
+        elif num_insignias <= 10:
+            insignia_counts["6-10"] += 1
+        else:
+            insignia_counts["10+"] += 1
+    
+    return [
+        {"faixa": "0 insígnias", "total": insignia_counts["0"]},
+        {"faixa": "1-2 insígnias", "total": insignia_counts["1-2"]},
+        {"faixa": "3-5 insígnias", "total": insignia_counts["3-5"]},
+        {"faixa": "6-10 insígnias", "total": insignia_counts["6-10"]},
+        {"faixa": "10+ insígnias", "total": insignia_counts["10+"]}
+    ]
+
+
 # ==================== GESTÃO DE ATLETAS ====================
 
 @router.get("/admin/atletas")

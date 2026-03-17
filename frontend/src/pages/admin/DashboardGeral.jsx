@@ -1,6 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Trophy, TrendingUp, MapPin, Activity, Target, Award, BarChart3 } from 'lucide-react';
+import { Users, Trophy, TrendingUp, MapPin, Activity, Target, Award, BarChart3, BadgeCheck, Crown, Medal } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   PieChart as RechartsPie, Pie, Cell, AreaChart, Area
@@ -17,6 +17,9 @@ const DashboardGeral = ({
   statsModalidade,
   statsPovao,
   statsEquipes,
+  statsDonosPorEstado,
+  statsAssessoriasVerificadas,
+  statsInsignias,
   loadingStats 
 }) => {
   if (loadingStats) {
@@ -289,6 +292,145 @@ const DashboardGeral = ({
                     {faixa.total}
                   </p>
                   <p className="text-xs text-slate-500">{faixa.faixa}</p>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico 30: Donos de Assessoria por Estado */}
+      {statsDonosPorEstado && statsDonosPorEstado.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Crown className="w-5 h-5 text-amber-500" />
+              Donos de Assessoria por Estado
+              <Badge variant="secondary" className="ml-auto">Top 10</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statsDonosPorEstado} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis type="number" stroke="#9CA3AF" />
+                  <YAxis dataKey="estado" type="category" width={50} tick={{ fontSize: 12, fill: '#9CA3AF' }} />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                    labelStyle={{ color: '#F59E0B' }}
+                  />
+                  <Bar dataKey="total" fill="#F59E0B" radius={[0, 4, 4, 0]} name="Donos" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico 31: Assessorias Verificadas */}
+      {statsAssessoriasVerificadas && (
+        <Card className="bg-gradient-to-br from-blue-900/30 to-indigo-900/30 border-blue-700">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-white">
+              <BadgeCheck className="w-5 h-5 text-blue-400" />
+              Assessorias Verificadas
+              <Badge className="bg-blue-500 ml-auto">
+                {statsAssessoriasVerificadas.percentual_verificadas}% verificadas
+              </Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Gráfico de Pizza */}
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <RechartsPie>
+                    <Pie
+                      data={[
+                        { name: 'Verificadas', value: statsAssessoriasVerificadas.verificadas, fill: '#3B82F6' },
+                        { name: 'Não Verificadas', value: statsAssessoriasVerificadas.nao_verificadas, fill: '#64748B' }
+                      ]}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      dataKey="value"
+                      label={({ name, value }) => `${name}: ${value}`}
+                      labelLine={false}
+                    >
+                      <Cell fill="#3B82F6" />
+                      <Cell fill="#64748B" />
+                    </Pie>
+                    <Tooltip />
+                  </RechartsPie>
+                </ResponsiveContainer>
+              </div>
+              {/* Números */}
+              <div className="flex flex-col justify-center space-y-4">
+                <div className="flex items-center justify-between p-3 bg-blue-500/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <BadgeCheck className="w-5 h-5 text-blue-400" />
+                    <span className="text-slate-300">Verificadas</span>
+                  </div>
+                  <span className="text-2xl font-bold text-blue-400">{statsAssessoriasVerificadas.verificadas}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-slate-500/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <Users className="w-5 h-5 text-slate-400" />
+                    <span className="text-slate-300">Não Verificadas</span>
+                  </div>
+                  <span className="text-2xl font-bold text-slate-400">{statsAssessoriasVerificadas.nao_verificadas}</span>
+                </div>
+                <div className="flex items-center justify-between p-3 bg-emerald-500/20 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <TrendingUp className="w-5 h-5 text-emerald-400" />
+                    <span className="text-slate-300">Total</span>
+                  </div>
+                  <span className="text-2xl font-bold text-emerald-400">{statsAssessoriasVerificadas.total}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Gráfico 32: Insígnias & Conquistas */}
+      {statsInsignias && statsInsignias.length > 0 && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Medal className="w-5 h-5 text-purple-500" />
+              Insígnias & Conquistas
+              <Badge variant="secondary" className="ml-auto">Distribuição</Badge>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={statsInsignias}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                  <XAxis dataKey="faixa" tick={{ fontSize: 11, fill: '#9CA3AF' }} />
+                  <YAxis stroke="#9CA3AF" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
+                    labelStyle={{ color: '#A855F7' }}
+                  />
+                  <Bar dataKey="total" fill="#A855F7" radius={[4, 4, 0, 0]} name="Atletas">
+                    {statsInsignias.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="grid grid-cols-5 gap-2 mt-4">
+              {statsInsignias.map((item, idx) => (
+                <div key={idx} className="text-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                  <p className="text-lg font-bold" style={{ color: COLORS[idx % COLORS.length] }}>
+                    {item.total}
+                  </p>
+                  <p className="text-xs text-slate-500">{item.faixa}</p>
                 </div>
               ))}
             </div>

@@ -104,6 +104,9 @@ const AdminDashboard = () => {
   const [statsModalidade, setStatsModalidade] = useState({ profissional: 0, povao: 0 });
   const [statsEtnia, setStatsEtnia] = useState([]);
   const [statsEquipesPorEstado, setStatsEquipesPorEstado] = useState([]);
+  const [statsDonosPorEstado, setStatsDonosPorEstado] = useState([]);
+  const [statsAssessoriasVerificadas, setStatsAssessoriasVerificadas] = useState(null);
+  const [statsInsignias, setStatsInsignias] = useState([]);
   
   // Modal de visualização de foto do pódio
   const [showFotoModal, setShowFotoModal] = useState(false);
@@ -453,11 +456,14 @@ const AdminDashboard = () => {
         axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/ranking/povao/stats`),
         axios.get(`${API}/admin/stats/etnia`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/equipes-por-estado`, { headers: { Authorization: `Bearer ${token}` } })
+        axios.get(`${API}/admin/stats/equipes-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/stats/donos-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/stats/assessorias-verificadas`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/admin/stats/insignias`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
       // Extrair dados apenas de requisições bem-sucedidas
-      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes, etniaRes, equipesPorEstadoRes] = results;
+      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes, etniaRes, equipesPorEstadoRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = results;
       
       if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
       if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
@@ -467,6 +473,9 @@ const AdminDashboard = () => {
       if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
       if (etniaRes.status === 'fulfilled') setStatsEtnia(etniaRes.value.data);
       if (equipesPorEstadoRes.status === 'fulfilled') setStatsEquipesPorEstado(equipesPorEstadoRes.value.data);
+      if (donosEstadoRes.status === 'fulfilled') setStatsDonosPorEstado(donosEstadoRes.value.data);
+      if (assessoriasVerificadasRes.status === 'fulfilled') setStatsAssessoriasVerificadas(assessoriasVerificadasRes.value.data);
+      if (insigniasRes.status === 'fulfilled') setStatsInsignias(insigniasRes.value.data);
       
       // Calcular estatísticas de equipes a partir dos atletas
       try {
@@ -1382,6 +1391,9 @@ const AdminDashboard = () => {
             statsModalidade={statsModalidade}
             statsPovao={statsPovao}
             statsEquipes={statsEquipes}
+            statsDonosPorEstado={statsDonosPorEstado}
+            statsAssessoriasVerificadas={statsAssessoriasVerificadas}
+            statsInsignias={statsInsignias}
             loadingStats={loadingStats}
           />
         )}
