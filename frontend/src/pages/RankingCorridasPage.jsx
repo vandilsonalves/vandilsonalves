@@ -12,7 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { 
   Trophy, Star, MapPin, Calendar, ExternalLink, Users, Award, 
   RefreshCw, Loader2, Plus, ArrowLeft, Home, LogOut, Filter,
-  BarChart3, TrendingUp, Medal, ClipboardCheck, CheckCircle2, FileText
+  BarChart3, TrendingUp, Medal, ClipboardCheck, CheckCircle2, FileText,
+  HelpCircle
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
@@ -54,6 +55,8 @@ const RankingCorridasPage = () => {
   const [avaliacaoLoading, setAvaliacaoLoading] = useState(false);
   const [termoTexto, setTermoTexto] = useState(null);
   const [showRankingAvaliadores, setShowRankingAvaliadores] = useState(false);
+  const [showComoFunciona, setShowComoFunciona] = useState(false);
+  const [showRegulamento, setShowRegulamento] = useState(false);
   const [avaliacaoData, setAvaliacaoData] = useState({
     organizacao: 0,
     percurso: 0,
@@ -395,8 +398,235 @@ const RankingCorridasPage = () => {
               <span className="flex items-center gap-1">{renderStars(4)} Ótima</span>
               <span className="flex items-center gap-1">{renderStars(5)} Excelente</span>
             </div>
+            {/* Botões Como funciona e Regulamento */}
+            <div className="flex justify-center gap-3 mt-4">
+              <Button 
+                variant="outline"
+                className="bg-yellow-400 hover:bg-yellow-500 text-slate-900 font-semibold border-0"
+                onClick={() => setShowComoFunciona(true)}
+                data-testid="btn-como-funciona-corridas"
+              >
+                <HelpCircle className="w-4 h-4 mr-2" />
+                Como funciona?
+              </Button>
+              <Button 
+                variant="outline"
+                className="bg-blue-500/10 hover:bg-blue-500/20 text-blue-700 font-semibold border-blue-500/30"
+                onClick={() => setShowRegulamento(true)}
+                data-testid="btn-regulamento-corridas"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Regulamento
+              </Button>
+            </div>
           </CardContent>
         </Card>
+
+        {/* Modal Como Funciona - Ranking de Corridas */}
+        <Dialog open={showComoFunciona} onOpenChange={setShowComoFunciona}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                <HelpCircle className="w-6 h-6" />
+                Como funciona o Ranking das Corridas?
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-slate-700 dark:text-slate-300">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h3 className="font-semibold text-lg mb-2 text-blue-700">O que é o Ranking das Corridas?</h3>
+                <p>O Ranking das Corridas é um sistema de <strong>avaliação colaborativa</strong> onde atletas avaliam as corridas de rua que participaram. As notas determinam a posição de cada evento no ranking.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Sistema de Avaliação</h3>
+                <p className="mb-3">Cada corrida é avaliada em <strong>5 critérios</strong>, com notas de 1 a 5 estrelas:</p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🏢</span>
+                      <span className="font-semibold">Organização</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Estrutura, pontualidade, comunicação</p>
+                  </div>
+                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🛣️</span>
+                      <span className="font-semibold">Percurso</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Sinalização, segurança, qualidade</p>
+                  </div>
+                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🎁</span>
+                      <span className="font-semibold">Kit do Atleta</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Camiseta, medalha, brindes</p>
+                  </div>
+                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">💧</span>
+                      <span className="font-semibold">Hidratação</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Postos, disponibilidade, variedade</p>
+                  </div>
+                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg md:col-span-2">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🎉</span>
+                      <span className="font-semibold">Pós-Prova</span>
+                    </div>
+                    <p className="text-xs text-slate-500">Alimentação, área de recuperação, premiação</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Cálculo da Nota Final</h3>
+                <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg font-mono text-sm">
+                  <p><strong>Nota Média</strong> = (Organização + Percurso + Kit + Hidratação + Pós-Prova) ÷ 5</p>
+                </div>
+                <p className="text-sm mt-2 text-slate-500">A nota final é a média de todas as avaliações recebidas pela corrida.</p>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Escala de Classificação</h3>
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center justify-between bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 fill-yellow-400 text-yellow-400" /> 4.5 - 5.0</span>
+                    <Badge className="bg-yellow-500">Excelente</Badge>
+                  </div>
+                  <div className="flex items-center justify-between bg-emerald-100 dark:bg-emerald-900/30 p-2 rounded">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 fill-emerald-400 text-emerald-400" /> 3.5 - 4.4</span>
+                    <Badge className="bg-emerald-500">Ótima</Badge>
+                  </div>
+                  <div className="flex items-center justify-between bg-blue-100 dark:bg-blue-900/30 p-2 rounded">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 fill-blue-400 text-blue-400" /> 2.5 - 3.4</span>
+                    <Badge className="bg-blue-500">Boa</Badge>
+                  </div>
+                  <div className="flex items-center justify-between bg-orange-100 dark:bg-orange-900/30 p-2 rounded">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 fill-orange-400 text-orange-400" /> 1.5 - 2.4</span>
+                    <Badge className="bg-orange-500">Regular</Badge>
+                  </div>
+                  <div className="flex items-center justify-between bg-red-100 dark:bg-red-900/30 p-2 rounded">
+                    <span className="flex items-center gap-2"><Star className="w-4 h-4 fill-red-400 text-red-400" /> 1.0 - 1.4</span>
+                    <Badge className="bg-red-500">Péssima</Badge>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="font-semibold text-lg mb-2">Quem pode avaliar?</h3>
+                <ul className="list-disc list-inside space-y-1 text-sm">
+                  <li>Qualquer atleta cadastrado na plataforma</li>
+                  <li>É necessário marcar "Participei desta corrida"</li>
+                  <li>Cada atleta pode avaliar uma corrida apenas uma vez</li>
+                  <li>Avaliações são públicas e contribuem para o ranking</li>
+                </ul>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowComoFunciona(false)} className="bg-blue-600 hover:bg-blue-700">
+                Entendi!
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal Regulamento - Ranking de Corridas */}
+        <Dialog open={showRegulamento} onOpenChange={setShowRegulamento}>
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl font-bold text-blue-600 flex items-center gap-2">
+                <FileText className="w-6 h-6" />
+                Regulamento do Ranking das Corridas
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 text-slate-700 dark:text-slate-300 text-sm">
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h3 className="font-semibold text-base mb-2">1. Objetivo</h3>
+                <p>O Ranking das Corridas tem como objetivo criar um sistema transparente de avaliação de eventos de corrida de rua, ajudando atletas a escolherem as melhores provas e incentivando organizadores a melhorarem seus eventos.</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">2. Elegibilidade para Avaliação</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>O avaliador deve estar cadastrado na plataforma Ranking Run</li>
+                  <li>O avaliador deve declarar que participou da corrida</li>
+                  <li>É permitida apenas uma avaliação por atleta por corrida</li>
+                  <li>A avaliação deve ser feita de forma honesta e imparcial</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">3. Critérios de Avaliação</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><strong>Organização (1-5):</strong> Estrutura do evento, pontualidade, comunicação, atendimento</li>
+                  <li><strong>Percurso (1-5):</strong> Sinalização, segurança, qualidade do piso, paisagem</li>
+                  <li><strong>Kit do Atleta (1-5):</strong> Qualidade da camiseta, medalha, sacola, brindes</li>
+                  <li><strong>Hidratação (1-5):</strong> Quantidade de postos, disponibilidade, variedade de bebidas</li>
+                  <li><strong>Pós-Prova (1-5):</strong> Alimentação, área de descanso, massagem, premiação</li>
+                </ul>
+                <p className="mt-2 text-xs text-slate-500">* A nota final é a média aritmética dos 5 critérios</p>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">4. Cadastro de Corridas</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Corridas podem ser cadastradas por administradores ou donos de assessoria</li>
+                  <li>Informações obrigatórias: nome, cidade, estado, data</li>
+                  <li>Corridas duplicadas serão removidas</li>
+                  <li>Informações falsas resultarão em exclusão da corrida</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">5. Classificação no Ranking</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li><strong>Nacional:</strong> Todas as corridas do Brasil ordenadas por nota média</li>
+                  <li><strong>Estadual:</strong> Corridas filtradas por estado (UF)</li>
+                  <li><strong>Cidade:</strong> Corridas filtradas por município</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">6. Critérios de Desempate</h3>
+                <ol className="list-decimal list-inside space-y-1">
+                  <li>Maior nota média</li>
+                  <li>Maior número de avaliações</li>
+                  <li>Data mais recente do evento</li>
+                </ol>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">7. Conduta dos Avaliadores</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Avaliações devem refletir a experiência real do atleta</li>
+                  <li>Comentários ofensivos ou difamatórios serão removidos</li>
+                  <li>Avaliações fraudulentas resultarão em banimento</li>
+                  <li>Conflitos de interesse devem ser declarados</li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-semibold text-base mb-2">8. Direitos dos Organizadores</h3>
+                <ul className="list-disc list-inside space-y-1">
+                  <li>Organizadores podem visualizar as avaliações de seus eventos</li>
+                  <li>É possível responder às avaliações de forma educada</li>
+                  <li>Organizadores podem solicitar remoção de avaliações falsas</li>
+                </ul>
+              </div>
+              
+              <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+                <h3 className="font-semibold text-base mb-2">9. Disposições Gerais</h3>
+                <p>A organização reserva-se o direito de remover avaliações ou corridas que violem este regulamento. Casos omissos serão analisados pela equipe do Ranking Run.</p>
+              </div>
+            </div>
+            <DialogFooter>
+              <Button onClick={() => setShowRegulamento(false)} className="bg-blue-600 hover:bg-blue-700">
+                Fechar
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
 
         {/* Stats Cards */}
         {stats && (
