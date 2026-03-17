@@ -67,6 +67,10 @@ const RankingCorridasPage = () => {
     aceito_termo: false
   });
 
+  // Estados para o formulário de cadastro - cidades do IBGE
+  const [cidadesIBGE, setCidadesIBGE] = useState([]);
+  const [loadingCidadesIBGE, setLoadingCidadesIBGE] = useState(false);
+
   useEffect(() => {
     fetchRanking();
     fetchStats();
@@ -80,8 +84,14 @@ const RankingCorridasPage = () => {
       if (tipo === 'estadual' && estado) {
         url += `&estado=${estado}`;
       }
-      if (tipo === 'cidade' && cidade) {
-        url += `&cidade=${encodeURIComponent(cidade)}`;
+      if (tipo === 'cidade') {
+        // Sempre enviar o estado quando estiver na aba cidade
+        if (estado) {
+          url += `&estado=${estado}`;
+        }
+        if (cidade) {
+          url += `&cidade=${encodeURIComponent(cidade)}`;
+        }
       }
       
       const response = await axios.get(url);
@@ -125,6 +135,35 @@ const RankingCorridasPage = () => {
       setCidades([]);
     }
   };
+
+  // Buscar cidades do IBGE para o formulário de cadastro
+  const fetchCidadesIBGE = async (uf) => {
+    if (!uf) return;
+    setLoadingCidadesIBGE(true);
+    try {
+      const response = await axios.get(
+        `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${uf}/municipios`
+      );
+      const cidadesOrdenadas = response.data
+        .map(cidade => cidade.nome)
+        .sort((a, b) => a.localeCompare(b));
+      setCidadesIBGE(cidadesOrdenadas);
+    } catch (error) {
+      console.error('Erro ao buscar cidades do IBGE:', error);
+      setCidadesIBGE([]);
+      toast.error('Erro ao buscar cidades. Tente novamente.');
+    } finally {
+      setLoadingCidadesIBGE(false);
+    }
+  };
+
+  // Quando o estado do formulário mudar, buscar cidades do IBGE
+  useEffect(() => {
+    if (formData.estado) {
+      fetchCidadesIBGE(formData.estado);
+      setFormData(prev => ({ ...prev, cidade: '' })); // Limpar cidade ao mudar estado
+    }
+  }, [formData.estado]);
 
   const handleCadastrarCorrida = async () => {
     if (!formData.nome_corrida || !formData.organizador || !formData.cidade || !formData.estado || !formData.data_corrida) {
@@ -931,9 +970,9 @@ const RankingCorridasPage = () => {
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>Estado *</Label>
-                <Select value={formData.estado} onValueChange={(v) => setFormData({...formData, estado: v})}>
+                <Select value={formData.estado} onValueChange={(v) => setFormData({...formData, estado: v, cidade: ''})}>
                   <SelectTrigger>
-                    <SelectValue placeholder="UF" />
+                    <SelectValue placeholder="Selecione o UF" />
                   </SelectTrigger>
                   <SelectContent>
                     {ESTADOS_BR.map(uf => (
@@ -944,11 +983,23 @@ const RankingCorridasPage = () => {
               </div>
               <div>
                 <Label>Cidade *</Label>
-                <Input
-                  value={formData.cidade}
-                  onChange={(e) => setFormData({...formData, cidade: e.target.value})}
-                  placeholder="Cidade"
-                />
+                <Select 
+                  value={formData.cidade} 
+                  onValueChange={(v) => setFormData({...formData, cidade: v})}
+                  disabled={!formData.estado || loadingCidadesIBGE}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingCidadesIBGE ? "Carregando..." : "Selecione a cidade"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {cidadesIBGE.map(cidade => (
+                      <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!formData.estado && (
+                  <p className="text-xs text-slate-500 mt-1">Selecione o estado primeiro</p>
+                )}
               </div>
             </div>
             <div>

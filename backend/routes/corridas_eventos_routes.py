@@ -158,8 +158,13 @@ async def get_ranking_corridas(
     filtro = {}
     if tipo == "estadual" and estado:
         filtro["estado"] = estado
-    elif tipo == "cidade" and cidade:
-        filtro["cidade"] = cidade
+    elif tipo == "cidade":
+        # Sempre filtra pelo estado quando está na aba cidade
+        if estado:
+            filtro["estado"] = estado
+        # E também pela cidade se especificada
+        if cidade:
+            filtro["cidade"] = cidade
     
     corridas = await db.corridas_eventos.find(filtro, {"_id": 0}).to_list(None)
     
