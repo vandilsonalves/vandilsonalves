@@ -174,6 +174,7 @@ async def get_ranking_assessorias(
             "total_podios": total_podios,
             "dono_nome": dono_nome,
             "dono_id": dono_id,
+            "verificada": bool(dono_nome and equipe["total_atletas"] >= 10 and total_resultados >= 5),
             "atletas": equipe["atletas"][:10],
             "data_mais_antiga": equipe.get("data_mais_antiga", "")
         })

@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Users, Trophy, TrendingUp, MapPin, Award, RefreshCw, Loader2, Eye, CheckCircle,
-  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target
+  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target, BadgeCheck, ShieldCheck
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -59,13 +59,21 @@ const DashboardAssessorias = ({
       
       const data = response.data;
       
+      // Calcular se é verificada
+      const isVerificada = Boolean(
+        data.responsavel_nome && 
+        data.total_atletas >= 10 && 
+        data.total_resultados >= 5
+      );
+      
       // Mapear dados para o formato esperado pelo modal
       setAssessoriaDetalhes({
         ...data,
         dono_nome: data.responsavel_nome || data.dono?.nome || 'Não definido',
         dono_email: data.dono?.email,
         dono_foto: data.dono?.foto_url,
-        posicao: data.posicao_nacional
+        posicao: data.posicao_nacional,
+        verificada: isVerificada
       });
       
       // Preparar lista de membros com marcação do dono
@@ -429,7 +437,16 @@ const DashboardAssessorias = ({
                           {getSeloIcon(eq.selo)} {eq.selo?.toUpperCase()}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 font-medium">{eq.nome}</td>
+                      <td className="py-3 px-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium">{eq.nome}</span>
+                          {eq.verificada && (
+                            <span title="Assessoria Verificada: 10+ atletas, 5+ resultados, dono definido">
+                              <BadgeCheck className="w-5 h-5 text-blue-500" />
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="py-3 px-4">
                         <div className="flex items-center gap-2">
                           <UserCog className="w-4 h-4 text-slate-400" />
@@ -506,6 +523,19 @@ const DashboardAssessorias = ({
                         <span className="text-slate-600">Pontos Total:</span>
                         <span className="font-bold text-amber-600 text-lg">{assessoriaDetalhes.pontos_total}</span>
                       </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-600">Status:</span>
+                        {assessoriaDetalhes.verificada ? (
+                          <Badge className="bg-blue-500 text-white flex items-center gap-1">
+                            <BadgeCheck className="w-4 h-4" />
+                            Verificada
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-slate-500">
+                            Não verificada
+                          </Badge>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -570,6 +600,30 @@ const DashboardAssessorias = ({
                   </CardContent>
                 </Card>
               </div>
+
+              {/* Critérios de Verificação */}
+              <Card className={assessoriaDetalhes.verificada ? 'bg-blue-50 border-blue-200' : 'bg-slate-50'}>
+                <CardContent className="pt-4">
+                  <div className="flex items-center gap-2 mb-3">
+                    <ShieldCheck className={`w-5 h-5 ${assessoriaDetalhes.verificada ? 'text-blue-500' : 'text-slate-400'}`} />
+                    <span className="font-semibold">Critérios para Selo de Verificação</span>
+                  </div>
+                  <div className="grid grid-cols-3 gap-4 text-sm">
+                    <div className={`flex items-center gap-2 ${assessoriaDetalhes.total_atletas >= 10 ? 'text-green-600' : 'text-slate-400'}`}>
+                      {assessoriaDetalhes.total_atletas >= 10 ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      10+ atletas ({assessoriaDetalhes.total_atletas}/10)
+                    </div>
+                    <div className={`flex items-center gap-2 ${assessoriaDetalhes.total_resultados >= 5 ? 'text-green-600' : 'text-slate-400'}`}>
+                      {assessoriaDetalhes.total_resultados >= 5 ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      5+ resultados ({assessoriaDetalhes.total_resultados}/5)
+                    </div>
+                    <div className={`flex items-center gap-2 ${assessoriaDetalhes.dono_nome ? 'text-green-600' : 'text-slate-400'}`}>
+                      {assessoriaDetalhes.dono_nome ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
+                      Dono definido
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
 
               {/* Lista de Membros */}
               {membrosAssessoria.length > 0 && (
