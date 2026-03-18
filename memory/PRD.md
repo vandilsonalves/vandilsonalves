@@ -328,6 +328,12 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - Checkbox "Marcar todas" no cabeçalho da tabela
   - Checkboxes individuais em cada linha de corrida
   - Filtros por Estado (dropdown com 27 UFs) e Cidade (via API do IBGE)
+  - **Filtro por Período/Data** com opções:
+    - Próximos 30 dias
+    - Próximos 90 dias
+    - Últimos 30 dias
+    - Últimos 90 dias
+    - Período personalizado (data início/fim)
   - Botões de ordenação alfabética (A-Z / Z-A)
   - Botão "Excluir Selecionadas" com contador de itens selecionados
   - Botão "Limpar" para resetar filtros e seleção

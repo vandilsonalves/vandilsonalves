@@ -9,7 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   Star, Trophy, MapPin, Plus, Edit, Trash2, Loader2, 
-  Calendar, ExternalLink, BarChart3, Award, TrendingUp,
+  Calendar, CalendarDays, ExternalLink, BarChart3, Award, TrendingUp,
   Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle,
   ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square
 } from 'lucide-react';
@@ -65,6 +65,11 @@ const DashboardCorridas = ({
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroCidade, setFiltroCidade] = useState('');
   const [cidadesFiltro, setCidadesFiltro] = useState([]);
+
+  // Estados para filtro de data
+  const [filtroPeriodo, setFiltroPeriodo] = useState(''); // '', 'proximos30', 'proximos90', 'passados30', 'passados90', 'custom'
+  const [dataInicio, setDataInicio] = useState('');
+  const [dataFim, setDataFim] = useState('');
 
   // Estado para ordenação
   const [ordenacao, setOrdenacao] = useState(''); // '', 'asc', 'desc'
@@ -322,6 +327,54 @@ const DashboardCorridas = ({
       resultado = resultado.filter(c => c.cidade?.toLowerCase().includes(filtroCidade.toLowerCase()));
     }
 
+    // Filtrar por período/data
+    if (filtroPeriodo) {
+      const hoje = new Date();
+      hoje.setHours(0, 0, 0, 0);
+
+      if (filtroPeriodo === 'proximos30') {
+        const limite = new Date(hoje);
+        limite.setDate(limite.getDate() + 30);
+        resultado = resultado.filter(c => {
+          if (!c.data_corrida) return false;
+          const dataCorrida = new Date(c.data_corrida);
+          return dataCorrida >= hoje && dataCorrida <= limite;
+        });
+      } else if (filtroPeriodo === 'proximos90') {
+        const limite = new Date(hoje);
+        limite.setDate(limite.getDate() + 90);
+        resultado = resultado.filter(c => {
+          if (!c.data_corrida) return false;
+          const dataCorrida = new Date(c.data_corrida);
+          return dataCorrida >= hoje && dataCorrida <= limite;
+        });
+      } else if (filtroPeriodo === 'passados30') {
+        const limite = new Date(hoje);
+        limite.setDate(limite.getDate() - 30);
+        resultado = resultado.filter(c => {
+          if (!c.data_corrida) return false;
+          const dataCorrida = new Date(c.data_corrida);
+          return dataCorrida >= limite && dataCorrida < hoje;
+        });
+      } else if (filtroPeriodo === 'passados90') {
+        const limite = new Date(hoje);
+        limite.setDate(limite.getDate() - 90);
+        resultado = resultado.filter(c => {
+          if (!c.data_corrida) return false;
+          const dataCorrida = new Date(c.data_corrida);
+          return dataCorrida >= limite && dataCorrida < hoje;
+        });
+      } else if (filtroPeriodo === 'custom' && (dataInicio || dataFim)) {
+        resultado = resultado.filter(c => {
+          if (!c.data_corrida) return false;
+          const dataCorrida = new Date(c.data_corrida);
+          if (dataInicio && dataCorrida < new Date(dataInicio)) return false;
+          if (dataFim && dataCorrida > new Date(dataFim)) return false;
+          return true;
+        });
+      }
+    }
+
     // Ordenar
     if (ordenacao === 'asc') {
       resultado = [...resultado].sort((a, b) => (a.nome_corrida || '').localeCompare(b.nome_corrida || ''));
@@ -335,6 +388,9 @@ const DashboardCorridas = ({
   const limparFiltros = () => {
     setFiltroEstado('');
     setFiltroCidade('');
+    setFiltroPeriodo('');
+    setDataInicio('');
+    setDataFim('');
     setOrdenacao('');
     setSelectedCorridas([]);
   };
@@ -752,6 +808,53 @@ const DashboardCorridas = ({
                     </Select>
                   </div>
 
+                  {/* Filtro por Período/Data */}
+                  <div className="flex items-center gap-2">
+                    <CalendarDays className="w-4 h-4 text-slate-500" />
+                    <Select value={filtroPeriodo || "__all__"} onValueChange={(v) => { 
+                      setFiltroPeriodo(v === "__all__" ? "" : v);
+                      if (v !== "custom") {
+                        setDataInicio('');
+                        setDataFim('');
+                      }
+                    }}>
+                      <SelectTrigger className="w-[160px]">
+                        <SelectValue placeholder="Período" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Todas as datas</SelectItem>
+                        <SelectItem value="proximos30">Próximos 30 dias</SelectItem>
+                        <SelectItem value="proximos90">Próximos 90 dias</SelectItem>
+                        <SelectItem value="passados30">Últimos 30 dias</SelectItem>
+                        <SelectItem value="passados90">Últimos 90 dias</SelectItem>
+                        <SelectItem value="custom">Período personalizado</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Campos de Data Personalizada */}
+                  {filtroPeriodo === 'custom' && (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="date"
+                        value={dataInicio}
+                        onChange={(e) => setDataInicio(e.target.value)}
+                        className="w-[140px]"
+                        placeholder="Data início"
+                        data-testid="input-data-inicio"
+                      />
+                      <span className="text-slate-400">até</span>
+                      <Input
+                        type="date"
+                        value={dataFim}
+                        onChange={(e) => setDataFim(e.target.value)}
+                        className="w-[140px]"
+                        placeholder="Data fim"
+                        data-testid="input-data-fim"
+                      />
+                    </div>
+                  )}
+
                   {/* Ordenação */}
                   <div className="flex items-center gap-1">
                     <Button
@@ -773,7 +876,7 @@ const DashboardCorridas = ({
                   </div>
 
                   {/* Limpar Filtros */}
-                  {(filtroEstado || filtroCidade || ordenacao) && (
+                  {(filtroEstado || filtroCidade || filtroPeriodo || ordenacao) && (
                     <Button variant="ghost" size="sm" onClick={limparFiltros}>
                       <X className="w-4 h-4 mr-1" />
                       Limpar
