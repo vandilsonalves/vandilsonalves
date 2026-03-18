@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -9,12 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { 
   Star, Trophy, MapPin, Plus, Edit, Trash2, Loader2, 
-  Calendar, ExternalLink, BarChart3, Award, TrendingUp
+  Calendar, ExternalLink, BarChart3, Award, TrendingUp,
+  Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import { toast } from 'sonner';
+
+const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const ESTADOS_BR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
@@ -39,6 +42,18 @@ const DashboardCorridas = ({
   // Estados para cidades do IBGE
   const [cidadesIBGE, setCidadesIBGE] = useState([]);
   const [loadingCidadesIBGE, setLoadingCidadesIBGE] = useState(false);
+
+  // Estados para Scraping
+  const [scrapingUrl, setScrapingUrl] = useState('');
+  const [loadingScraping, setLoadingScraping] = useState(false);
+  const [scrapingResultado, setScrapingResultado] = useState(null);
+  const [showScrapingModal, setShowScrapingModal] = useState(false);
+
+  // Estados para Importação
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importFile, setImportFile] = useState(null);
+  const [loadingImport, setLoadingImport] = useState(false);
+  const fileInputRef = useRef(null);
 
   // Buscar cidades do IBGE quando o estado mudar
   useEffect(() => {
@@ -67,6 +82,137 @@ const DashboardCorridas = ({
 
     fetchCidadesIBGE();
   }, [corridaFormData.estado]);
+
+  // ==================== FUNÇÕES DE SCRAPING ====================
+  
+  const handleScraping = async () => {
+    if (!scrapingUrl.trim()) {
+      toast.error('Digite uma URL válida');
+      return;
+    }
+
+    setLoadingScraping(true);
+    setScrapingResultado(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('url', scrapingUrl);
+
+      const response = await axios.post(`${API}/corridas-eventos/scraping`, formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      setScrapingResultado(response.data);
+      
+      if (response.data.success && response.data.total_encontradas > 0) {
+        toast.success(`${response.data.total_encontradas} corridas encontradas!`);
+        setShowScrapingModal(true);
+      } else {
+        toast.warning(response.data.mensagem || 'Nenhuma corrida encontrada');
+      }
+    } catch (error) {
+      console.error('Erro no scraping:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao fazer varredura');
+    } finally {
+      setLoadingScraping(false);
+    }
+  };
+
+  const handleExportarScraping = async (formato) => {
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('url', scrapingUrl);
+      formData.append('formato', formato);
+
+      const response = await axios.post(`${API}/corridas-eventos/scraping/exportar`, formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        },
+        responseType: 'blob'
+      });
+
+      // Criar download
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = formato === 'excel' ? 'corridas_scraping.xlsx' : 'corridas_scraping.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success(`Arquivo ${formato.toUpperCase()} baixado com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar arquivo');
+    }
+  };
+
+  // ==================== FUNÇÕES DE IMPORTAÇÃO ====================
+
+  const handleImportar = async () => {
+    if (!importFile) {
+      toast.error('Selecione um arquivo');
+      return;
+    }
+
+    setLoadingImport(true);
+
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('arquivo', importFile);
+
+      const response = await axios.post(`${API}/corridas-eventos/importar`, formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      if (response.data.success) {
+        toast.success(response.data.mensagem);
+        setShowImportModal(false);
+        setImportFile(null);
+        if (onRefresh) onRefresh();
+      }
+    } catch (error) {
+      console.error('Erro na importação:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao importar arquivo');
+    } finally {
+      setLoadingImport(false);
+    }
+  };
+
+  const handleDownloadTemplate = async (formato) => {
+    try {
+      const response = await axios.get(`${API}/corridas-eventos/template?formato=${formato}`, {
+        responseType: 'blob'
+      });
+
+      const blob = new Blob([response.data]);
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = formato === 'excel' ? 'template_corridas.xlsx' : 'template_corridas.csv';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+
+      toast.success('Template baixado!');
+    } catch (error) {
+      console.error('Erro ao baixar template:', error);
+      toast.error('Erro ao baixar template');
+    }
+  };
 
   // Dados do dashboard
   const stats = rankingCorridasDashboard || {};
@@ -271,10 +417,50 @@ const DashboardCorridas = ({
               Gerenciar Corridas/Eventos
               <Badge variant="secondary">{corridasEventos?.length || 0} eventos</Badge>
             </CardTitle>
-            <Button onClick={handleOpenAdd} size="sm" className="bg-blue-500 hover:bg-blue-600">
-              <Plus className="w-4 h-4 mr-2" />
-              Nova Corrida
-            </Button>
+            <div className="flex gap-2">
+              <Button onClick={() => setShowImportModal(true)} size="sm" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
+                <Upload className="w-4 h-4 mr-2" />
+                Importar
+              </Button>
+              <Button onClick={handleOpenAdd} size="sm" className="bg-blue-500 hover:bg-blue-600">
+                <Plus className="w-4 h-4 mr-2" />
+                Nova Corrida
+              </Button>
+            </div>
+          </div>
+          
+          {/* Barra de Scraping */}
+          <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center gap-2 mb-3">
+              <Globe className="w-5 h-5 text-purple-600" />
+              <span className="font-semibold text-purple-700 dark:text-purple-300">Varredura Automática de Corridas</span>
+            </div>
+            <div className="flex gap-2">
+              <Input
+                placeholder="Cole a URL do site de corridas (Ticket Sports, Minhas Inscrições, etc.)"
+                value={scrapingUrl}
+                onChange={(e) => setScrapingUrl(e.target.value)}
+                className="flex-1"
+                data-testid="input-scraping-url"
+              />
+              <Button 
+                onClick={handleScraping} 
+                disabled={loadingScraping || !scrapingUrl.trim()}
+                className="bg-purple-600 hover:bg-purple-700"
+                data-testid="btn-scraping"
+              >
+                {loadingScraping ? (
+                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                ) : (
+                  <Search className="w-4 h-4 mr-2" />
+                )}
+                {loadingScraping ? 'Buscando...' : 'Buscar Corridas'}
+              </Button>
+            </div>
+            <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
+              <AlertCircle className="w-3 h-3 inline mr-1" />
+              Sites suportados: Ticket Sports, Minhas Inscrições, e outros sites de eventos esportivos
+            </p>
           </div>
         </CardHeader>
         <CardContent>
@@ -460,6 +646,187 @@ const DashboardCorridas = ({
             </Button>
             <Button onClick={onSaveCorrida} className="bg-blue-500 hover:bg-blue-600">
               {corridaEditando ? 'Salvar' : 'Cadastrar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Resultado do Scraping */}
+      <Dialog open={showScrapingModal} onOpenChange={setShowScrapingModal}>
+        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-purple-600 flex items-center gap-2">
+              <Globe className="w-6 h-6" />
+              Resultado da Varredura
+            </DialogTitle>
+          </DialogHeader>
+          
+          {scrapingResultado && (
+            <div className="space-y-4">
+              {/* Info do scraping */}
+              <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">Fonte: {scrapingResultado.fonte}</p>
+                    <p className="font-semibold text-purple-700 dark:text-purple-300">
+                      {scrapingResultado.total_encontradas} corridas encontradas
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleExportarScraping('csv')}
+                      className="border-green-500 text-green-600"
+                    >
+                      <Download className="w-4 h-4 mr-2" />
+                      CSV
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={() => handleExportarScraping('excel')}
+                      className="border-blue-500 text-blue-600"
+                    >
+                      <FileSpreadsheet className="w-4 h-4 mr-2" />
+                      Excel
+                    </Button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Lista de corridas encontradas */}
+              <div className="border rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-100 dark:bg-slate-800">
+                    <tr>
+                      <th className="text-left p-3 font-semibold">Nome da Corrida</th>
+                      <th className="text-left p-3 font-semibold">Organizador</th>
+                      <th className="text-left p-3 font-semibold">Cidade/UF</th>
+                      <th className="text-left p-3 font-semibold">Data</th>
+                      <th className="text-left p-3 font-semibold">Link</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {scrapingResultado.corridas?.slice(0, 20).map((corrida, idx) => (
+                      <tr key={idx} className="border-t hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                        <td className="p-3 font-medium">{corrida.nome_corrida}</td>
+                        <td className="p-3 text-slate-600">{corrida.organizador}</td>
+                        <td className="p-3">
+                          <Badge variant="outline">{corrida.cidade}/{corrida.estado}</Badge>
+                        </td>
+                        <td className="p-3 text-slate-600">{corrida.data_corrida || '-'}</td>
+                        <td className="p-3">
+                          {corrida.pagina_link && (
+                            <a 
+                              href={corrida.pagina_link} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="text-blue-500 hover:underline flex items-center gap-1"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              Ver
+                            </a>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {scrapingResultado.corridas?.length > 20 && (
+                  <div className="p-3 bg-slate-50 text-center text-sm text-slate-500">
+                    Mostrando 20 de {scrapingResultado.corridas.length} corridas. Exporte para ver todas.
+                  </div>
+                )}
+              </div>
+
+              <p className="text-sm text-slate-500">
+                💡 Exporte os dados e depois importe na plataforma usando o botão "Importar" para adicionar as corridas ao banco de dados.
+              </p>
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowScrapingModal(false)}>
+              Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Importação em Lote */}
+      <Dialog open={showImportModal} onOpenChange={setShowImportModal}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="text-xl font-bold text-green-600 flex items-center gap-2">
+              <Upload className="w-6 h-6" />
+              Importar Corridas em Lote
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <h4 className="font-semibold text-green-700 mb-2">Formato do arquivo:</h4>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">
+                Colunas esperadas: Nome da Corrida, Organizador, Cidade, Estado, Link da Página, Data do Evento, Status
+              </p>
+              <div className="flex gap-2">
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleDownloadTemplate('csv')}
+                  className="border-green-500 text-green-600"
+                >
+                  <Download className="w-4 h-4 mr-2" />
+                  Template CSV
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => handleDownloadTemplate('excel')}
+                  className="border-blue-500 text-blue-600"
+                >
+                  <FileSpreadsheet className="w-4 h-4 mr-2" />
+                  Template Excel
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Selecione o arquivo (CSV ou Excel):</Label>
+              <Input
+                type="file"
+                accept=".csv,.xlsx,.xls"
+                onChange={(e) => setImportFile(e.target.files[0])}
+                ref={fileInputRef}
+                data-testid="input-import-file"
+              />
+              {importFile && (
+                <p className="text-sm text-slate-500">
+                  📄 Arquivo selecionado: {importFile.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => {
+              setShowImportModal(false);
+              setImportFile(null);
+            }}>
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleImportar} 
+              disabled={!importFile || loadingImport}
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {loadingImport ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Upload className="w-4 h-4 mr-2" />
+              )}
+              {loadingImport ? 'Importando...' : 'Importar'}
             </Button>
           </DialogFooter>
         </DialogContent>

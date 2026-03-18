@@ -79,6 +79,54 @@ async def listar_corridas_eventos(
     return corridas
 
 
+@router.get("/corridas-eventos/template")
+async def download_template(formato: str = "csv"):
+    """
+    Baixa um template CSV ou Excel para importação de corridas.
+    """
+    import csv
+    import io
+    import openpyxl
+    from fastapi.responses import StreamingResponse
+    
+    headers_csv = ["Nome da Corrida", "Organizador", "Cidade", "Estado", "Link da Página", "Data do Evento", "Status"]
+    exemplo = ["Maratona de São Paulo", "Yescom", "São Paulo", "SP", "https://example.com", "2026-04-15", "ativa"]
+    
+    if formato == "excel":
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Template Corridas"
+        ws.append(headers_csv)
+        ws.append(exemplo)
+        
+        # Ajustar largura
+        for col in ws.columns:
+            max_length = max(len(str(cell.value)) for cell in col)
+            ws.column_dimensions[col[0].column_letter].width = max_length + 2
+        
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=template_corridas.xlsx"}
+        )
+    else:
+        output = io.StringIO()
+        writer = csv.writer(output)
+        writer.writerow(headers_csv)
+        writer.writerow(exemplo)
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=template_corridas.csv"}
+        )
+
+
 @router.get("/corridas-eventos/{corrida_id}")
 async def get_corrida_evento(corrida_id: str):
     """Retorna detalhes de uma corrida específica"""
@@ -372,3 +420,321 @@ async def recalcular_medias_corrida(corrida_id: str):
         {"id": corrida_id},
         {"$set": medias}
     )
+
+
+
+# ==================== SCRAPING E IMPORTAÇÃO EM LOTE ====================
+
+from fastapi import UploadFile, File
+from fastapi.responses import StreamingResponse
+import csv
+import io
+import openpyxl
+from services.scraping_corridas import fazer_scraping
+
+@router.post("/corridas-eventos/scraping")
+async def scraping_corridas(
+    url: str = Form(...),
+    admin: dict = Depends(get_admin_user)
+):
+    """
+    Faz scraping de um site de corridas e retorna os dados encontrados.
+    Suporta: Ticket Sports, Minhas Inscrições, e sites genéricos.
+    """
+    resultado = fazer_scraping(url)
+    
+    # Log da operação
+    await db.logs_sistema.insert_one({
+        "id": str(uuid.uuid4()),
+        "tipo": "scraping_corridas",
+        "admin_id": admin["id"],
+        "admin_nome": admin.get("nome"),
+        "url": url,
+        "corridas_encontradas": resultado["total_encontradas"],
+        "sucesso": resultado["success"],
+        "data": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return resultado
+
+
+@router.post("/corridas-eventos/scraping/exportar")
+async def exportar_scraping_csv(
+    url: str = Form(...),
+    formato: str = Form("csv"),
+    admin: dict = Depends(get_admin_user)
+):
+    """
+    Faz scraping e retorna arquivo CSV ou Excel para download.
+    """
+    resultado = fazer_scraping(url)
+    
+    if not resultado["success"] or not resultado["corridas"]:
+        raise HTTPException(status_code=400, detail=resultado.get("mensagem", "Nenhuma corrida encontrada"))
+    
+    corridas = resultado["corridas"]
+    
+    if formato == "excel":
+        # Criar arquivo Excel
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Corridas"
+        
+        # Cabeçalho
+        headers = ["Nome da Corrida", "Organizador", "Cidade", "Estado", "Link da Página", "Data do Evento", "Status"]
+        ws.append(headers)
+        
+        # Dados
+        for corrida in corridas:
+            ws.append([
+                corrida.get("nome_corrida", ""),
+                corrida.get("organizador", ""),
+                corrida.get("cidade", ""),
+                corrida.get("estado", ""),
+                corrida.get("pagina_link", ""),
+                corrida.get("data_corrida", ""),
+                corrida.get("status", "ativa")
+            ])
+        
+        # Ajustar largura das colunas
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except Exception:
+                    pass
+            adjusted_width = min(max_length + 2, 50)
+            ws.column_dimensions[column].width = adjusted_width
+        
+        # Salvar em buffer
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=corridas_scraping.xlsx"}
+        )
+    
+    else:
+        # Criar arquivo CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Cabeçalho
+        writer.writerow(["Nome da Corrida", "Organizador", "Cidade", "Estado", "Link da Página", "Data do Evento", "Status"])
+        
+        # Dados
+        for corrida in corridas:
+            writer.writerow([
+                corrida.get("nome_corrida", ""),
+                corrida.get("organizador", ""),
+                corrida.get("cidade", ""),
+                corrida.get("estado", ""),
+                corrida.get("pagina_link", ""),
+                corrida.get("data_corrida", ""),
+                corrida.get("status", "ativa")
+            ])
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            iter([output.getvalue()]),
+            media_type="text/csv",
+            headers={"Content-Disposition": "attachment; filename=corridas_scraping.csv"}
+        )
+
+
+@router.post("/corridas-eventos/importar")
+async def importar_corridas_lote(
+    arquivo: UploadFile = File(...),
+    admin: dict = Depends(get_admin_user)
+):
+    """
+    Importa corridas em lote a partir de arquivo CSV ou Excel.
+    
+    Colunas esperadas:
+    - Nome da Corrida (obrigatório)
+    - Organizador
+    - Cidade
+    - Estado
+    - Link da Página
+    - Data do Evento
+    - Status
+    """
+    
+    if not arquivo.filename:
+        raise HTTPException(status_code=400, detail="Arquivo não fornecido")
+    
+    # Detectar tipo de arquivo
+    filename = arquivo.filename.lower()
+    
+    corridas_importadas = []
+    corridas_duplicadas = []
+    erros = []
+    
+    try:
+        if filename.endswith('.xlsx') or filename.endswith('.xls'):
+            # Processar Excel
+            content = await arquivo.read()
+            wb = openpyxl.load_workbook(io.BytesIO(content))
+            ws = wb.active
+            
+            # Pegar cabeçalhos da primeira linha
+            headers = [str(cell.value).strip().lower() if cell.value else '' for cell in ws[1]]
+            
+            # Mapear colunas
+            col_map = {}
+            for idx, header in enumerate(headers):
+                if 'nome' in header and 'corrida' in header:
+                    col_map['nome_corrida'] = idx
+                elif 'organizador' in header or 'empresa' in header:
+                    col_map['organizador'] = idx
+                elif 'cidade' in header:
+                    col_map['cidade'] = idx
+                elif 'estado' in header or 'uf' in header:
+                    col_map['estado'] = idx
+                elif 'link' in header or 'página' in header or 'pagina' in header:
+                    col_map['pagina_link'] = idx
+                elif 'data' in header:
+                    col_map['data_corrida'] = idx
+                elif 'status' in header:
+                    col_map['status'] = idx
+            
+            # Processar linhas (a partir da linha 2)
+            for row_idx, row in enumerate(ws.iter_rows(min_row=2, values_only=True), start=2):
+                try:
+                    if not row or not any(row):
+                        continue
+                    
+                    nome = str(row[col_map.get('nome_corrida', 0)] or '').strip()
+                    if not nome:
+                        continue
+                    
+                    corrida = {
+                        'nome_corrida': nome,
+                        'organizador': str(row[col_map.get('organizador', 1)] or '').strip() or 'A definir',
+                        'cidade': str(row[col_map.get('cidade', 2)] or '').strip(),
+                        'estado': str(row[col_map.get('estado', 3)] or '').strip().upper()[:2],
+                        'pagina_link': str(row[col_map.get('pagina_link', 4)] or '').strip(),
+                        'data_corrida': str(row[col_map.get('data_corrida', 5)] or '').strip(),
+                        'status': str(row[col_map.get('status', 6)] or 'ativa').strip().lower()
+                    }
+                    
+                    corridas_importadas.append(corrida)
+                    
+                except Exception as e:
+                    erros.append(f"Linha {row_idx}: {str(e)}")
+        
+        elif filename.endswith('.csv'):
+            # Processar CSV
+            content = await arquivo.read()
+            
+            # Tentar decodificar com diferentes encodings
+            for encoding in ['utf-8', 'latin-1', 'cp1252']:
+                try:
+                    text_content = content.decode(encoding)
+                    break
+                except Exception:
+                    continue
+            else:
+                raise HTTPException(status_code=400, detail="Não foi possível ler o arquivo CSV")
+            
+            reader = csv.DictReader(io.StringIO(text_content))
+            
+            for row_idx, row in enumerate(reader, start=2):
+                try:
+                    # Mapear colunas flexivelmente
+                    nome = ''
+                    for key in row.keys():
+                        if 'nome' in key.lower():
+                            nome = row[key].strip()
+                            break
+                    
+                    if not nome:
+                        nome = list(row.values())[0].strip() if row else ''
+                    
+                    if not nome:
+                        continue
+                    
+                    corrida = {
+                        'nome_corrida': nome,
+                        'organizador': next((row[k].strip() for k in row.keys() if 'organizador' in k.lower() or 'empresa' in k.lower()), 'A definir'),
+                        'cidade': next((row[k].strip() for k in row.keys() if 'cidade' in k.lower()), ''),
+                        'estado': next((row[k].strip().upper()[:2] for k in row.keys() if 'estado' in k.lower() or 'uf' in k.lower()), ''),
+                        'pagina_link': next((row[k].strip() for k in row.keys() if 'link' in k.lower() or 'pagina' in k.lower()), ''),
+                        'data_corrida': next((row[k].strip() for k in row.keys() if 'data' in k.lower()), ''),
+                        'status': next((row[k].strip().lower() for k in row.keys() if 'status' in k.lower()), 'ativa')
+                    }
+                    
+                    corridas_importadas.append(corrida)
+                    
+                except Exception as e:
+                    erros.append(f"Linha {row_idx}: {str(e)}")
+        
+        else:
+            raise HTTPException(status_code=400, detail="Formato de arquivo não suportado. Use CSV ou Excel (.xlsx)")
+        
+        # Inserir no banco de dados (evitando duplicatas)
+        inseridas = 0
+        for corrida in corridas_importadas:
+            # Verificar se já existe
+            existente = await db.corridas_eventos.find_one({
+                "nome_corrida": corrida["nome_corrida"],
+                "cidade": corrida["cidade"],
+                "data_corrida": corrida["data_corrida"]
+            })
+            
+            if existente:
+                corridas_duplicadas.append(corrida["nome_corrida"])
+                continue
+            
+            # Inserir nova corrida
+            corrida["id"] = str(uuid.uuid4())
+            corrida["criado_por"] = admin["id"]
+            corrida["criado_em"] = datetime.now(timezone.utc).isoformat()
+            corrida["total_avaliacoes"] = 0
+            corrida["media_geral"] = 0
+            
+            await db.corridas_eventos.insert_one(corrida)
+            inseridas += 1
+        
+        # Invalidar cache
+        try:
+            from services.cache_service import cache_service
+            await cache_service.invalidate_pattern("corridas:*")
+        except Exception:
+            pass
+        
+        # Log da operação
+        await db.logs_sistema.insert_one({
+            "id": str(uuid.uuid4()),
+            "tipo": "importacao_corridas",
+            "admin_id": admin["id"],
+            "admin_nome": admin.get("nome"),
+            "arquivo": arquivo.filename,
+            "total_lidas": len(corridas_importadas),
+            "inseridas": inseridas,
+            "duplicadas": len(corridas_duplicadas),
+            "erros": len(erros),
+            "data": datetime.now(timezone.utc).isoformat()
+        })
+        
+        return {
+            "success": True,
+            "mensagem": f"{inseridas} corridas importadas com sucesso!",
+            "total_lidas": len(corridas_importadas),
+            "inseridas": inseridas,
+            "duplicadas": len(corridas_duplicadas),
+            "nomes_duplicados": corridas_duplicadas[:10],  # Primeiros 10
+            "erros": erros[:10]  # Primeiros 10 erros
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro ao processar arquivo: {str(e)}")
