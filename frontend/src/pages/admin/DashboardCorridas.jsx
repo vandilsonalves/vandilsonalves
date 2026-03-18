@@ -65,6 +65,7 @@ const DashboardCorridas = ({
   const [filtroEstado, setFiltroEstado] = useState('');
   const [filtroCidade, setFiltroCidade] = useState('');
   const [cidadesFiltro, setCidadesFiltro] = useState([]);
+  const [filtroStatus, setFiltroStatus] = useState(''); // '', 'ativa', 'encerrada', 'cancelada'
 
   // Estados para filtro de data
   const [filtroPeriodo, setFiltroPeriodo] = useState(''); // '', 'proximos30', 'proximos90', 'passados30', 'passados90', 'custom'
@@ -327,6 +328,11 @@ const DashboardCorridas = ({
       resultado = resultado.filter(c => c.cidade?.toLowerCase().includes(filtroCidade.toLowerCase()));
     }
 
+    // Filtrar por status
+    if (filtroStatus) {
+      resultado = resultado.filter(c => c.status === filtroStatus);
+    }
+
     // Filtrar por período/data
     if (filtroPeriodo) {
       const hoje = new Date();
@@ -388,6 +394,7 @@ const DashboardCorridas = ({
   const limparFiltros = () => {
     setFiltroEstado('');
     setFiltroCidade('');
+    setFiltroStatus('');
     setFiltroPeriodo('');
     setDataInicio('');
     setDataFim('');
@@ -396,6 +403,83 @@ const DashboardCorridas = ({
   };
 
   const corridasFiltradas = getCorridasFiltradas();
+
+  // ==================== EXPORTAÇÃO DE DADOS ====================
+
+  const exportarDados = (tipoExport) => {
+    let dadosParaExportar = [];
+    let nomeArquivo = '';
+
+    if (tipoExport === 'estado') {
+      // Agrupar por estado
+      const porEstado = {};
+      corridasFiltradas.forEach(c => {
+        const estado = c.estado || 'N/A';
+        if (!porEstado[estado]) porEstado[estado] = [];
+        porEstado[estado].push(c);
+      });
+
+      // Criar CSV com dados por estado
+      const header = ['Estado', 'Nome da Corrida', 'Organizador', 'Cidade', 'Data', 'Status', 'Avaliações', 'Média'];
+      dadosParaExportar = [header.join(';')];
+
+      Object.keys(porEstado).sort().forEach(estado => {
+        porEstado[estado].forEach(c => {
+          dadosParaExportar.push([
+            estado,
+            c.nome_corrida || '',
+            c.organizador || '',
+            c.cidade || '',
+            c.data_corrida || '',
+            c.status || '',
+            c.total_avaliacoes || 0,
+            c.media_nota?.toFixed(1) || '0.0'
+          ].join(';'));
+        });
+      });
+
+      nomeArquivo = `corridas_por_estado_${new Date().toISOString().slice(0,10)}.csv`;
+    } else if (tipoExport === 'data') {
+      // Ordenar por data
+      const ordenadoPorData = [...corridasFiltradas].sort((a, b) => {
+        const dataA = new Date(a.data_corrida || '1900-01-01');
+        const dataB = new Date(b.data_corrida || '1900-01-01');
+        return dataA - dataB;
+      });
+
+      const header = ['Data', 'Nome da Corrida', 'Organizador', 'Cidade', 'Estado', 'Status', 'Avaliações', 'Média'];
+      dadosParaExportar = [header.join(';')];
+
+      ordenadoPorData.forEach(c => {
+        dadosParaExportar.push([
+          c.data_corrida || 'Sem data',
+          c.nome_corrida || '',
+          c.organizador || '',
+          c.cidade || '',
+          c.estado || '',
+          c.status || '',
+          c.total_avaliacoes || 0,
+          c.media_nota?.toFixed(1) || '0.0'
+        ].join(';'));
+      });
+
+      nomeArquivo = `corridas_por_data_${new Date().toISOString().slice(0,10)}.csv`;
+    }
+
+    // Criar e baixar arquivo
+    const csvContent = '\ufeff' + dadosParaExportar.join('\n'); // BOM para UTF-8
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exportado ${corridasFiltradas.length} corridas com sucesso!`);
+  };
 
   // Dados do dashboard
   const stats = rankingCorridasDashboard || {};
@@ -832,6 +916,36 @@ const DashboardCorridas = ({
                     </Select>
                   </div>
 
+                  {/* Filtro por Status */}
+                  <div className="flex items-center gap-2">
+                    <Select value={filtroStatus || "__all__"} onValueChange={(v) => setFiltroStatus(v === "__all__" ? "" : v)}>
+                      <SelectTrigger className="w-[130px]">
+                        <SelectValue placeholder="Status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Todos Status</SelectItem>
+                        <SelectItem value="ativa">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-green-500 rounded-full"></span>
+                            Ativas
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="encerrada">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                            Encerradas
+                          </span>
+                        </SelectItem>
+                        <SelectItem value="cancelada">
+                          <span className="flex items-center gap-2">
+                            <span className="w-2 h-2 bg-red-500 rounded-full"></span>
+                            Canceladas
+                          </span>
+                        </SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
                   {/* Campos de Data Personalizada */}
                   {filtroPeriodo === 'custom' && (
                     <div className="flex items-center gap-2">
@@ -876,7 +990,7 @@ const DashboardCorridas = ({
                   </div>
 
                   {/* Limpar Filtros */}
-                  {(filtroEstado || filtroCidade || filtroPeriodo || ordenacao) && (
+                  {(filtroEstado || filtroCidade || filtroPeriodo || filtroStatus || ordenacao) && (
                     <Button variant="ghost" size="sm" onClick={limparFiltros}>
                       <X className="w-4 h-4 mr-1" />
                       Limpar
@@ -885,6 +999,18 @@ const DashboardCorridas = ({
 
                   {/* Contador de selecionados e botão excluir */}
                   <div className="flex-1 flex justify-end items-center gap-3">
+                    {/* Botão de Exportar */}
+                    <Select onValueChange={(v) => exportarDados(v)}>
+                      <SelectTrigger className="w-[160px]" data-testid="btn-exportar-corridas">
+                        <Download className="w-4 h-4 mr-2" />
+                        <SelectValue placeholder="Exportar Dados" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="estado">Por Estado</SelectItem>
+                        <SelectItem value="data">Por Data</SelectItem>
+                      </SelectContent>
+                    </Select>
+
                     {selectedCorridas.length > 0 && (
                       <>
                         <Badge variant="secondary" className="px-3 py-1">

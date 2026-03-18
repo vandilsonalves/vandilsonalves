@@ -334,9 +334,22 @@ O usuário solicitou a reestruturação do painel de administração e implement
     - Últimos 30 dias
     - Últimos 90 dias
     - Período personalizado (data início/fim)
+  - **Filtro por Status** (Ativas / Encerradas / Canceladas)
   - Botões de ordenação alfabética (A-Z / Z-A)
   - Botão "Excluir Selecionadas" com contador de itens selecionados
+  - **Botão "Exportar Dados"** com opções:
+    - Por Estado (CSV agrupado por UF)
+    - Por Data (CSV ordenado por data da corrida)
   - Botão "Limpar" para resetar filtros e seleção
+
+### Filtros e Exportação de Assessorias (NOVO - 18/Mar/2026)
+- **Funcionalidade implementada** em `/app/frontend/src/pages/admin/DashboardAssessorias.jsx`:
+  - Filtros locais por **Estado** (27 UFs) e **Cidade** (via API do IBGE)
+  - **Botão "Exportar Dados"** com opções:
+    - Por Estado (CSV agrupado por UF)
+    - Por Cidade (CSV agrupado por cidade)
+  - Contador "Mostrando X de Y assessorias"
+  - Botão "Limpar" para resetar filtros
 
 - **Endpoint de backend** em `/app/backend/routes/corridas_eventos_routes.py`:
   - `POST /api/corridas-eventos/excluir-lote` - Aceita IDs separados por vírgula

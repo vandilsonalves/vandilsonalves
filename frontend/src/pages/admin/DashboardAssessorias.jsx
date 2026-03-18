@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Users, Trophy, TrendingUp, MapPin, Award, RefreshCw, Loader2, Eye, CheckCircle,
-  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target, BadgeCheck, ShieldCheck
+  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target, BadgeCheck, ShieldCheck, Filter
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -45,6 +45,63 @@ const DashboardAssessorias = ({
   const [assessoriaDetalhes, setAssessoriaDetalhes] = useState(null);
   const [loadingDetalhes, setLoadingDetalhes] = useState(false);
   const [membrosAssessoria, setMembrosAssessoria] = useState([]);
+
+  // Estados para filtros locais da tabela
+  const [filtroEstadoLocal, setFiltroEstadoLocal] = useState('');
+  const [filtroCidadeLocal, setFiltroCidadeLocal] = useState('');
+  const [cidadesFiltroLocal, setCidadesFiltroLocal] = useState([]);
+
+  // Lista de estados do Brasil
+  const estadosBrasil = [
+    'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 'MT', 'MS', 'MG',
+    'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
+  ];
+
+  // Buscar cidades do IBGE quando mudar o estado do filtro local
+  useEffect(() => {
+    const fetchCidadesIBGE = async () => {
+      if (!filtroEstadoLocal) {
+        setCidadesFiltroLocal([]);
+        setFiltroCidadeLocal('');
+        return;
+      }
+      try {
+        const response = await fetch(
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${filtroEstadoLocal}/municipios`
+        );
+        const data = await response.json();
+        setCidadesFiltroLocal(data.map(c => c.nome).sort());
+      } catch (error) {
+        console.error('Erro ao buscar cidades:', error);
+        setCidadesFiltroLocal([]);
+      }
+    };
+    fetchCidadesIBGE();
+  }, [filtroEstadoLocal]);
+
+  // Filtrar assessorias
+  const getAssessoriasFiltradas = () => {
+    let resultado = ligaRanking || [];
+
+    if (filtroEstadoLocal) {
+      resultado = resultado.filter(a => a.estado === filtroEstadoLocal);
+    }
+
+    if (filtroCidadeLocal) {
+      resultado = resultado.filter(a => 
+        a.cidade?.toLowerCase().includes(filtroCidadeLocal.toLowerCase())
+      );
+    }
+
+    return resultado;
+  };
+
+  const assessoriasFiltradas = getAssessoriasFiltradas();
+
+  const limparFiltrosLocais = () => {
+    setFiltroEstadoLocal('');
+    setFiltroCidadeLocal('');
+  };
 
   // Buscar detalhes completos da assessoria
   const handleViewDetalhes = async (nomeAssessoria) => {
@@ -102,28 +159,86 @@ const DashboardAssessorias = ({
   };
 
   // Exportar lista de assessorias
-  const handleExportAssessorias = () => {
-    const headers = ['Posição', 'Assessoria', 'Dono', 'UF', 'Cidade', 'Atletas', '1º Lugares', 'Resultados', 'Pontos', 'Selo'];
-    const rows = ligaRanking.map((eq, idx) => [
-      eq.posicao || idx + 1,
-      eq.nome,
-      eq.dono_nome || 'N/A',
-      eq.estado,
-      eq.cidade || '',
-      eq.total_atletas,
-      eq.total_primeiros || 0,
-      eq.total_resultados,
-      eq.pontos_total,
-      eq.selo?.toUpperCase() || 'N/A'
-    ]);
-    
-    const csvContent = [headers.join(','), ...rows.map(r => r.map(c => `"${c}"`).join(','))].join('\n');
+  const handleExportAssessorias = (tipoExport) => {
+    let dadosParaExportar = [];
+    let nomeArquivo = '';
+    const dados = assessoriasFiltradas;
+
+    if (tipoExport === 'estado') {
+      // Agrupar por estado
+      const porEstado = {};
+      dados.forEach(eq => {
+        const estado = eq.estado || 'N/A';
+        if (!porEstado[estado]) porEstado[estado] = [];
+        porEstado[estado].push(eq);
+      });
+
+      const header = ['Estado', 'Posição', 'Assessoria', 'Dono', 'Cidade', 'Atletas', '1º Lugares', 'Resultados', 'Pontos', 'Selo'];
+      dadosParaExportar = [header.join(';')];
+
+      Object.keys(porEstado).sort().forEach(estado => {
+        porEstado[estado].forEach((eq, idx) => {
+          dadosParaExportar.push([
+            estado,
+            eq.posicao || idx + 1,
+            eq.nome || '',
+            eq.dono_nome || 'N/A',
+            eq.cidade || '',
+            eq.total_atletas || 0,
+            eq.total_primeiros || 0,
+            eq.total_resultados || 0,
+            eq.pontos_total || 0,
+            eq.selo?.toUpperCase() || 'N/A'
+          ].join(';'));
+        });
+      });
+
+      nomeArquivo = `assessorias_por_estado_${new Date().toISOString().slice(0,10)}.csv`;
+    } else if (tipoExport === 'cidade') {
+      // Agrupar por cidade
+      const porCidade = {};
+      dados.forEach(eq => {
+        const cidade = eq.cidade || 'N/A';
+        if (!porCidade[cidade]) porCidade[cidade] = [];
+        porCidade[cidade].push(eq);
+      });
+
+      const header = ['Cidade', 'Estado', 'Posição', 'Assessoria', 'Dono', 'Atletas', '1º Lugares', 'Resultados', 'Pontos', 'Selo'];
+      dadosParaExportar = [header.join(';')];
+
+      Object.keys(porCidade).sort().forEach(cidade => {
+        porCidade[cidade].forEach((eq, idx) => {
+          dadosParaExportar.push([
+            cidade,
+            eq.estado || '',
+            eq.posicao || idx + 1,
+            eq.nome || '',
+            eq.dono_nome || 'N/A',
+            eq.total_atletas || 0,
+            eq.total_primeiros || 0,
+            eq.total_resultados || 0,
+            eq.pontos_total || 0,
+            eq.selo?.toUpperCase() || 'N/A'
+          ].join(';'));
+        });
+      });
+
+      nomeArquivo = `assessorias_por_cidade_${new Date().toISOString().slice(0,10)}.csv`;
+    }
+
+    // Criar e baixar arquivo
+    const csvContent = '\ufeff' + dadosParaExportar.join('\n'); // BOM para UTF-8
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `assessorias_ranking_${new Date().toISOString().split('T')[0]}.csv`;
+    link.href = url;
+    link.download = nomeArquivo;
+    document.body.appendChild(link);
     link.click();
-    toast.success('Lista de assessorias exportada!');
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    toast.success(`Exportado ${dados.length} assessorias com sucesso!`);
   };
 
   const getSeloIcon = (selo) => {
@@ -387,20 +502,82 @@ const DashboardAssessorias = ({
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-amber-500" />
               Ranking das Assessorias
-              <Badge variant="secondary">{ligaRanking.length} assessorias</Badge>
+              <Badge variant="secondary">{assessoriasFiltradas.length} assessorias</Badge>
             </CardTitle>
-            <Button onClick={handleExportAssessorias} variant="outline" size="sm">
-              <Download className="w-4 h-4 mr-2" />
-              Exportar Lista
-            </Button>
+            <Select onValueChange={(v) => handleExportAssessorias(v)}>
+              <SelectTrigger className="w-[180px]" data-testid="btn-exportar-assessorias">
+                <Download className="w-4 h-4 mr-2" />
+                <SelectValue placeholder="Exportar Dados" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="estado">Por Estado</SelectItem>
+                <SelectItem value="cidade">Por Cidade</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
         </CardHeader>
         <CardContent>
+          {/* Filtros Locais */}
+          <div className="mb-4 p-3 bg-slate-50 dark:bg-slate-800/50 rounded-lg">
+            <div className="flex flex-wrap items-center gap-3">
+              <Filter className="w-4 h-4 text-slate-500" />
+              
+              {/* Filtro Estado */}
+              <div className="flex items-center gap-2">
+                <Select value={filtroEstadoLocal || "__all__"} onValueChange={(v) => {
+                  setFiltroEstadoLocal(v === "__all__" ? "" : v);
+                  setFiltroCidadeLocal('');
+                }}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue placeholder="Estado" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Todos</SelectItem>
+                    {estadosBrasil.map(uf => (
+                      <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Filtro Cidade */}
+              <div className="flex items-center gap-2">
+                <Select 
+                  value={filtroCidadeLocal || "__all__"} 
+                  onValueChange={(v) => setFiltroCidadeLocal(v === "__all__" ? "" : v)}
+                  disabled={!filtroEstadoLocal}
+                >
+                  <SelectTrigger className="w-[160px]">
+                    <SelectValue placeholder={filtroEstadoLocal ? "Cidade" : "Selecione UF"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__all__">Todas</SelectItem>
+                    {cidadesFiltroLocal.map(cidade => (
+                      <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Limpar Filtros */}
+              {(filtroEstadoLocal || filtroCidadeLocal) && (
+                <Button variant="ghost" size="sm" onClick={limparFiltrosLocais}>
+                  <X className="w-4 h-4 mr-1" />
+                  Limpar
+                </Button>
+              )}
+
+              <div className="ml-auto text-xs text-slate-500">
+                Mostrando {assessoriasFiltradas.length} de {ligaRanking.length} assessorias
+              </div>
+            </div>
+          </div>
+
           {loadingLiga ? (
             <div className="flex items-center justify-center py-12">
               <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
             </div>
-          ) : ligaRanking.length === 0 ? (
+          ) : assessoriasFiltradas.length === 0 ? (
             <div className="text-center py-12 text-slate-500">
               <Award className="w-12 h-12 mx-auto mb-4 opacity-30" />
               <p>Nenhuma assessoria encontrada</p>
@@ -423,7 +600,7 @@ const DashboardAssessorias = ({
                   </tr>
                 </thead>
                 <tbody>
-                  {ligaRanking.map((eq, idx) => (
+                  {assessoriasFiltradas.map((eq, idx) => (
                     <tr key={eq.nome} className="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
                       <td className="py-3 px-4">
                         <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full text-sm font-bold ${
