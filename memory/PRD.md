@@ -404,3 +404,27 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - **Modal de Mensagem Individual**: Modal para admin enviar mensagem individual para cada atleta
 - **Modal de Promover Dono**: Modal de confirmação para promover atleta a dono de assessoria
 - **Ranking Estadual (DonoAssessoriaDashboard)**: Corrigido para buscar ranking do estado correto da assessoria, não do usuário
+
+### Melhorias P0 - Notificações, Assessoria e UX (18/Mar/2026)
+- **Botão Atualizar Página**: Adicionado ícone de refresh (RefreshCw) no header ao lado do nome do usuário e sino de notificações
+- **Notificações Aprimoradas**:
+  - Modal de detalhes ao clicar em uma notificação
+  - Suporte a links clicáveis (URLs são convertidas automaticamente)
+  - Indicador de imagem quando notificação contém anexo
+  - Modal para visualização de imagem ampliada
+  - Botão de exclusão de notificação com confirmação
+  - Novo endpoint `DELETE /api/notificacoes/{id}` para excluir notificações
+  - Novo endpoint `GET /api/notificacoes/{id}` para obter detalhes completos
+- **Formulário de Criação de Assessoria**:
+  - Autocomplete de Estado/Cidade via API do IBGE
+  - Dropdown de cidades carrega automaticamente ao selecionar estado
+  - Fallback para input manual se API do IBGE falhar
+  - Modal obrigatório que bloqueia navegação até preenchimento (para novos donos)
+  - Pontuação inicial de 0,5 pontos para novas assessorias
+- **Arquivos modificados**:
+  - `/app/frontend/src/components/NotificacoesBell.jsx` - Componente completo refatorado
+  - `/app/frontend/src/components/CriarAssessoria.jsx` - Com IBGE e modo modal
+  - `/app/frontend/src/pages/RankingPage.js` - Botão refresh no header
+  - `/app/frontend/src/pages/PerfilAtletaPage.jsx` - Modal obrigatório para assessoria
+  - `/app/backend/routes/notificacoes_routes.py` - Endpoints GET/{id} e DELETE/{id}
+  - `/app/backend/routes/atletas_routes.py` - Pontuação inicial 0.5
