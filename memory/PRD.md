@@ -459,3 +459,26 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - `/app/backend/routes/assessorias_routes.py` - Todos os endpoints de solicitações
   - `/app/frontend/src/pages/DonoAssessoriaDashboard.jsx` - Aba de solicitações completa
   - `/app/frontend/src/pages/AssessoriaPage.jsx` - Botão solicitar entrada na página pública
+
+### Melhorias P1 - Foto da Assessoria, Refatoração e Web Scraper (18/Mar/2026)
+- **Foto da Assessoria em vez do Selo**:
+  - Na página da assessoria (AssessoriaPage.jsx), a foto da assessoria é exibida no header se existir
+  - O selo é mantido como badge pequeno no canto inferior direito da foto
+  - Se não houver foto, mantém o ícone do selo como antes
+  - Também atualizado no certificado/selo digital lateral
+- **Correção no Campo de Equipe (Cadastro)**:
+  - Removido `readOnly` do campo quando "Individual" selecionado
+  - Adicionado ícone "X" para limpar a seleção
+  - Adicionado link "Clique aqui para selecionar outra equipe" no alerta
+  - Agora o atleta pode mudar de Individual para outra assessoria durante o cadastro
+- **Web Scraper com Playwright**:
+  - Instalado Playwright + Chromium para scraping de sites com JavaScript
+  - Nova função `fazer_scraping_playwright()` para sites modernos com SPAs
+  - Fallback automático: se scraping normal não encontrar nada, tenta com Playwright
+  - Parâmetro `usar_playwright=true` no endpoint para forçar uso
+  - Extrator genérico de eventos para HTML renderizado por JavaScript
+- **Arquivos modificados**:
+  - `/app/frontend/src/pages/AssessoriaPage.jsx` - Foto no header e selo digital
+  - `/app/frontend/src/pages/CadastroPage.js` - Campo de equipe editável
+  - `/app/backend/services/scraping_corridas.py` - Suporte a Playwright
+  - `/app/backend/routes/corridas_eventos_routes.py` - Parâmetro usar_playwright

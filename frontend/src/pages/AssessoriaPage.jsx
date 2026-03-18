@@ -240,11 +240,34 @@ const AssessoriaPage = () => {
           {/* Hero Section */}
           <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 md:p-8 text-white shadow-xl">
             <div className="flex flex-col md:flex-row md:items-center gap-6">
-              {/* Logo/Avatar da Assessoria */}
+              {/* Logo/Avatar da Assessoria - Prioriza foto se existir */}
               <div className="flex-shrink-0">
-                <div className={`w-24 h-24 md:w-32 md:h-32 rounded-2xl ${getSeloColor(assessoria.selo)} flex items-center justify-center text-6xl shadow-lg border-4 border-white/30`}>
-                  {getSeloIcon(assessoria.selo)}
-                </div>
+                {assessoria.foto_url ? (
+                  <div className="relative">
+                    <img 
+                      src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
+                      alt={`Foto da ${assessoria.nome}`}
+                      className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover shadow-lg border-4 border-white/30"
+                      onError={(e) => {
+                        e.target.style.display = 'none';
+                        e.target.nextSibling.style.display = 'flex';
+                      }}
+                    />
+                    <div 
+                      className={`w-24 h-24 md:w-32 md:h-32 rounded-2xl ${getSeloColor(assessoria.selo)} items-center justify-center text-6xl shadow-lg border-4 border-white/30 hidden`}
+                    >
+                      {getSeloIcon(assessoria.selo)}
+                    </div>
+                    {/* Badge do selo no canto */}
+                    <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${getSeloColor(assessoria.selo)} rounded-full flex items-center justify-center text-2xl shadow-md border-2 border-white`}>
+                      {getSeloIcon(assessoria.selo)}
+                    </div>
+                  </div>
+                ) : (
+                  <div className={`w-24 h-24 md:w-32 md:h-32 rounded-2xl ${getSeloColor(assessoria.selo)} flex items-center justify-center text-6xl shadow-lg border-4 border-white/30`}>
+                    {getSeloIcon(assessoria.selo)}
+                  </div>
+                )}
               </div>
               
               {/* Informações */}
@@ -538,7 +561,21 @@ const AssessoriaPage = () => {
                   ref={certificadoRef}
                   className={`${getSeloColor(assessoria.selo)} text-white p-6 rounded-xl text-center mb-4 shadow-lg`}
                 >
-                  <div className="text-6xl mb-3">{getSeloIcon(assessoria.selo)}</div>
+                  {/* Foto da assessoria ou ícone do selo */}
+                  {assessoria.foto_url ? (
+                    <div className="relative inline-block mb-3">
+                      <img 
+                        src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
+                        alt={assessoria.nome}
+                        className="w-20 h-20 rounded-full object-cover mx-auto border-4 border-white/30"
+                      />
+                      <div className="absolute -bottom-1 -right-1 w-8 h-8 bg-white rounded-full flex items-center justify-center text-xl shadow">
+                        {getSeloIcon(assessoria.selo)}
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="text-6xl mb-3">{getSeloIcon(assessoria.selo)}</div>
+                  )}
                   <h3 className="text-xl font-bold mb-1">{getSeloTitle(assessoria.selo)}</h3>
                   <p className="text-lg font-semibold">{assessoria.nome}</p>
                   <p className="text-sm opacity-80 mt-1">{assessoria.cidade}/{assessoria.estado}</p>

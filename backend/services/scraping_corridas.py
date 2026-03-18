@@ -661,10 +661,14 @@ def detectar_scraper(url: str) -> ScraperBase:
         return ScraperGenerico(url)
 
 
-def fazer_scraping(url: str) -> Dict:
+def fazer_scraping(url: str, usar_playwright: bool = False) -> Dict:
     """
     Função principal que detecta o site e faz o scraping apropriado.
     Retorna um dicionário com status e lista de corridas.
+    
+    Args:
+        url: URL do site de corridas
+        usar_playwright: Se True, usa Playwright para sites com JavaScript pesado
     """
     
     # Validar URL
@@ -679,6 +683,13 @@ def fazer_scraping(url: str) -> Dict:
         }
     
     try:
+        # Se usar_playwright=True, tenta primeiro com Playwright
+        if usar_playwright:
+            resultado = fazer_scraping_playwright(url)
+            if resultado['success'] and resultado['total_encontradas'] > 0:
+                return resultado
+        
+        # Scraping normal com requests/BeautifulSoup
         scraper = detectar_scraper(url)
         corridas = scraper.extrair_corridas()
         
@@ -690,6 +701,12 @@ def fazer_scraping(url: str) -> Dict:
             if chave not in nomes_vistos:
                 nomes_vistos.add(chave)
                 corridas_unicas.append(corrida)
+        
+        # Se não encontrou nada e não tentou Playwright ainda, tenta com Playwright
+        if len(corridas_unicas) == 0 and not usar_playwright:
+            resultado_pw = fazer_scraping_playwright(url)
+            if resultado_pw['success'] and resultado_pw['total_encontradas'] > 0:
+                return resultado_pw
         
         return {
             'success': True,
@@ -727,3 +744,173 @@ def fazer_scraping(url: str) -> Dict:
             'corridas': [],
             'mensagem': f'Erro ao fazer scraping: {str(e)}'
         }
+
+
+def fazer_scraping_playwright(url: str) -> Dict:
+    """
+    Faz scraping usando Playwright para sites que dependem de JavaScript.
+    Útil para sites modernos com SPAs ou renderização dinâmica.
+    """
+    try:
+        from playwright.sync_api import sync_playwright
+        
+        with sync_playwright() as p:
+            browser = p.chromium.launch(headless=True)
+            page = browser.new_page()
+            
+            # Configurar timeouts
+            page.set_default_timeout(30000)
+            
+            # Navegar e aguardar carregamento
+            page.goto(url, wait_until='networkidle')
+            
+            # Aguardar um pouco mais para JavaScript carregar
+            page.wait_for_timeout(2000)
+            
+            # Obter HTML renderizado
+            html_content = page.content()
+            browser.close()
+            
+            # Processar com BeautifulSoup
+            soup = BeautifulSoup(html_content, 'html.parser')
+            
+            # Tentar extrair corridas do HTML renderizado
+            corridas = extrair_corridas_html_generico(soup, url)
+            
+            return {
+                'success': True,
+                'fonte': 'Playwright (JavaScript)',
+                'url': url,
+                'total_encontradas': len(corridas),
+                'corridas': corridas,
+                'mensagem': f'{len(corridas)} corridas encontradas via Playwright'
+            }
+            
+    except ImportError:
+        return {
+            'success': False,
+            'fonte': 'Erro',
+            'url': url,
+            'total_encontradas': 0,
+            'corridas': [],
+            'mensagem': 'Playwright não está instalado. Use: pip install playwright && playwright install chromium'
+        }
+    except Exception as e:
+        return {
+            'success': False,
+            'fonte': 'Erro',
+            'url': url,
+            'total_encontradas': 0,
+            'corridas': [],
+            'mensagem': f'Erro no scraping com Playwright: {str(e)}'
+        }
+
+
+def extrair_corridas_html_generico(soup: BeautifulSoup, url: str) -> List[Dict]:
+    """
+    Extrator genérico de corridas para HTML renderizado por JavaScript.
+    Tenta encontrar padrões comuns de eventos/corridas.
+    """
+    corridas = []
+    
+    # Padrões comuns de containers de eventos
+    event_selectors = [
+        'div[class*="event"]',
+        'div[class*="corrida"]',
+        'div[class*="race"]',
+        'article',
+        'div[class*="card"]',
+        'li[class*="event"]',
+        'div[class*="item"]',
+    ]
+    
+    for selector in event_selectors:
+        elementos = soup.select(selector)
+        for elem in elementos:
+            corrida = extrair_info_evento_generico(elem, url)
+            if corrida and corrida.get('nome_corrida'):
+                corridas.append(corrida)
+    
+    # Remover duplicatas
+    corridas_unicas = []
+    nomes_vistos = set()
+    for corrida in corridas:
+        chave = corrida['nome_corrida'].lower()
+        if chave not in nomes_vistos and len(corrida['nome_corrida']) > 5:
+            nomes_vistos.add(chave)
+            corridas_unicas.append(corrida)
+    
+    return corridas_unicas[:50]  # Limitar a 50 resultados
+
+
+def extrair_info_evento_generico(elem, url: str) -> Dict:
+    """Tenta extrair informações de um elemento HTML genérico"""
+    
+    # Buscar nome do evento
+    nome = ''
+    for tag in ['h1', 'h2', 'h3', 'h4', 'a', 'span[class*="title"]', 'div[class*="title"]']:
+        nome_elem = elem.select_one(tag)
+        if nome_elem and nome_elem.get_text(strip=True):
+            nome = nome_elem.get_text(strip=True)
+            if len(nome) > 5:
+                break
+    
+    if not nome or len(nome) < 5:
+        return None
+    
+    # Buscar data
+    data = ''
+    texto_completo = elem.get_text()
+    
+    # Padrões de data comuns
+    data_patterns = [
+        r'(\d{1,2})[/\-.](\d{1,2})[/\-.](\d{4})',  # DD/MM/YYYY
+        r'(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})',   # DD de MES de YYYY
+        r'(\d{4})[/\-.](\d{1,2})[/\-.](\d{1,2})',   # YYYY-MM-DD
+    ]
+    
+    for pattern in data_patterns:
+        match = re.search(pattern, texto_completo, re.IGNORECASE)
+        if match:
+            groups = match.groups()
+            try:
+                if len(groups[0]) == 4:  # YYYY-MM-DD
+                    data = f"{groups[2]}/{groups[1]}/{groups[0]}"
+                elif groups[1].isalpha():  # DD de MES de YYYY
+                    mes = MESES_PT.get(groups[1].lower(), '01')
+                    data = f"{groups[0].zfill(2)}/{mes}/{groups[2]}"
+                else:  # DD/MM/YYYY
+                    data = f"{groups[0].zfill(2)}/{groups[1].zfill(2)}/{groups[2]}"
+                break
+            except:
+                pass
+    
+    # Buscar cidade/estado
+    cidade = ''
+    estado = ''
+    local_elem = elem.select_one('[class*="local"], [class*="location"], [class*="cidade"]')
+    if local_elem:
+        local_texto = local_elem.get_text(strip=True)
+        estado = extrair_estado_da_cidade(local_texto)
+        cidade = local_texto.split('-')[0].strip() if '-' in local_texto else local_texto
+    
+    # Buscar link
+    link = ''
+    link_elem = elem.select_one('a[href]')
+    if link_elem:
+        href = link_elem.get('href', '')
+        if href.startswith('/'):
+            from urllib.parse import urljoin
+            link = urljoin(url, href)
+        elif href.startswith('http'):
+            link = href
+    
+    return {
+        'nome_corrida': nome[:200],
+        'data_corrida': data,
+        'cidade': cidade[:100] if cidade else '',
+        'estado': estado,
+        'distancias': [],
+        'link_inscricao': link,
+        'fonte': 'Playwright'
+    }

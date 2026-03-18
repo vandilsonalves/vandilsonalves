@@ -476,13 +476,18 @@ from services.scraping_corridas import fazer_scraping
 @router.post("/corridas-eventos/scraping")
 async def scraping_corridas(
     url: str = Form(...),
+    usar_playwright: bool = Form(False),
     admin: dict = Depends(get_admin_user)
 ):
     """
     Faz scraping de um site de corridas e retorna os dados encontrados.
     Suporta: Ticket Sports, Minhas Inscrições, e sites genéricos.
+    
+    Args:
+        url: URL do site de corridas
+        usar_playwright: Se True, força uso de Playwright para sites com JavaScript
     """
-    resultado = fazer_scraping(url)
+    resultado = fazer_scraping(url, usar_playwright=usar_playwright)
     
     # Log da operação
     await db.logs_sistema.insert_one({
@@ -491,6 +496,7 @@ async def scraping_corridas(
         "admin_id": admin["id"],
         "admin_nome": admin.get("nome"),
         "url": url,
+        "usar_playwright": usar_playwright,
         "corridas_encontradas": resultado["total_encontradas"],
         "sucesso": resultado["success"],
         "data": datetime.now(timezone.utc).isoformat()
