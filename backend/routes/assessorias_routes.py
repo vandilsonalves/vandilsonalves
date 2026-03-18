@@ -96,10 +96,11 @@ async def get_ranking_assessorias(
         {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "", None]}}}
     ]
     
+    # Filtrar por estado/cidade APÓS o agrupamento para pegar assessorias desse local
     if tipo == "estadual" and estado:
-        pipeline_equipes[0]["$match"]["estado"] = estado
+        pipeline_equipes.append({"$match": {"estado": estado}})
     elif tipo == "cidade" and cidade:
-        pipeline_equipes[0]["$match"]["cidade"] = cidade
+        pipeline_equipes.append({"$match": {"cidade": cidade}})
     
     equipes_raw = await db.usuarios.aggregate(pipeline_equipes).to_list(None)
     
@@ -361,8 +362,37 @@ async def get_detalhes_assessoria(nome_equipe: str):
     
     atletas_ids = [a["id"] for a in atletas]
     
+    # Buscar dados da assessoria cadastrada
+    assessoria_doc = await db.assessorias.find_one(
+        {"nome": nome_equipe},
+        {"_id": 0}
+    )
+    
+    # Buscar dono da assessoria
+    dono_info = None
+    responsavel_nome = None
+    responsavel_id = None
+    dono_atleta = None
+    
+    if assessoria_doc and assessoria_doc.get("dono_id"):
+        dono = await db.usuarios.find_one(
+            {"id": assessoria_doc["dono_id"]},
+            {"_id": 0, "password_hash": 0}
+        )
+        if dono:
+            dono_info = dono
+            responsavel_nome = dono.get("nome")
+            responsavel_id = dono.get("id")
+            
+            # Se o dono não está na lista de atletas, incluí-lo
+            if dono.get("id") not in atletas_ids:
+                dono_atleta = dono
+                atletas_ids.append(dono.get("id"))
+    
     # Buscar pontos de cada atleta
     atletas_com_pontos = []
+    
+    # Processar atletas normais
     for atleta in atletas:
         ranking_atleta = await db.ranking_anual.find_one(
             {"usuario_id": atleta["id"], "ano": 2025},
@@ -385,7 +415,35 @@ async def get_detalhes_assessoria(nome_equipe: str):
         atletas_com_pontos.append({
             **atleta,
             "pontos": pontos_atleta,
-            "total_corridas": corridas_atleta
+            "total_corridas": corridas_atleta,
+            "is_dono": atleta.get("id") == responsavel_id
+        })
+    
+    # Adicionar o dono se ele não estava na lista de atletas
+    if dono_atleta:
+        ranking_dono = await db.ranking_anual.find_one(
+            {"usuario_id": dono_atleta["id"], "ano": 2025},
+            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+        )
+        ranking_povao_dono = await db.ranking_povao.find_one(
+            {"usuario_id": dono_atleta["id"], "ano": 2025},
+            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+        )
+        
+        pontos_dono = 0
+        corridas_dono = 0
+        if ranking_dono:
+            pontos_dono = ranking_dono.get("pontos_total", 0)
+            corridas_dono = ranking_dono.get("total_corridas", 0)
+        if ranking_povao_dono:
+            pontos_dono = max(pontos_dono, ranking_povao_dono.get("pontos_total", 0))
+            corridas_dono = max(corridas_dono, ranking_povao_dono.get("total_corridas", 0))
+        
+        atletas_com_pontos.append({
+            **dono_atleta,
+            "pontos": pontos_dono,
+            "total_corridas": corridas_dono,
+            "is_dono": True
         })
     
     # Ordenar atletas por pontos (decrescente)
@@ -434,29 +492,14 @@ async def get_detalhes_assessoria(nome_equipe: str):
         else:
             selo = "bronze"
     
-    assessoria_doc = await db.assessorias.find_one(
-        {"nome": nome_equipe},
-        {"_id": 0}
-    )
-    
-    dono_info = None
-    responsavel_nome = None
-    responsavel_id = None
-    if assessoria_doc and assessoria_doc.get("dono_id"):
-        dono = await db.usuarios.find_one(
-            {"id": assessoria_doc["dono_id"]},
-            {"_id": 0, "id": 1, "nome": 1, "foto_url": 1}
-        )
-        if dono:
-            dono_info = dono
-            responsavel_nome = dono.get("nome")
-            responsavel_id = dono.get("id")
+    # Total de atletas inclui o dono se ele for contado
+    total_atletas_count = len(atletas_com_pontos)
     
     return {
         "nome": nome_equipe,
         "estado": estado_equipe,
         "cidade": atletas[0].get("cidade", "") if atletas else "",
-        "total_atletas": len(atletas),
+        "total_atletas": total_atletas_count,
         "pontos_cadastro": pontos_cadastro,
         "pontos_resultados": pontos_resultados,
         "pontos_total": round(pontos_cadastro + pontos_resultados, 1),
@@ -472,5 +515,6 @@ async def get_detalhes_assessoria(nome_equipe: str):
         "responsavel_nome": responsavel_nome,
         "responsavel_id": responsavel_id,
         "mensagem_bio": assessoria_doc.get("mensagem_bio", "") if assessoria_doc else "",
-        "foto_url": assessoria_doc.get("foto_url", "") if assessoria_doc else ""
+        "foto_url": assessoria_doc.get("foto_url", "") if assessoria_doc else "",
+        "whatsapp_link": assessoria_doc.get("whatsapp_link", "") if assessoria_doc else ""
     }

@@ -2834,9 +2834,10 @@ async def get_relatorios_assessoria(nome_equipe: str, current_user: dict = Depen
     """Retorna dados completos para relatórios da assessoria"""
     
     # Verificar permissão
-    if current_user.get("role") not in ["admin", "dono_assessoria"]:
+    if current_user.get("role") not in ["admin", "super_admin", "dono_assessoria"]:
         raise HTTPException(status_code=403, detail="Acesso negado")
     
+    # Dono de assessoria só pode ver sua própria assessoria
     if current_user.get("role") == "dono_assessoria" and current_user.get("equipe") != nome_equipe:
         raise HTTPException(status_code=403, detail="Você só pode ver relatórios da sua assessoria")
     
