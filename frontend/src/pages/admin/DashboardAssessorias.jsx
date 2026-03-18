@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Users, Trophy, TrendingUp, MapPin, Award, RefreshCw, Loader2, Eye, CheckCircle,
-  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target, BadgeCheck, ShieldCheck, Filter
+  Download, Edit, UserCog, Bell, X, Mail, Phone, Calendar, Target, BadgeCheck, ShieldCheck, Filter, FileText
 } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -17,6 +17,8 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -102,6 +104,113 @@ const DashboardAssessorias = ({
     setFiltroEstadoLocal('');
     setFiltroCidadeLocal('');
   };
+
+  // Estados para relatório PDF
+  const reportRef = useRef(null);
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  // Dados para gráficos do relatório
+  const getReportData = () => {
+    const dados = assessoriasFiltradas;
+    
+    // Distribuição por estado
+    const porEstado = {};
+    dados.forEach(a => {
+      const estado = a.estado || 'N/A';
+      porEstado[estado] = (porEstado[estado] || 0) + 1;
+    });
+    const distribuicaoEstado = Object.entries(porEstado)
+      .map(([estado, total]) => ({ estado, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    // Distribuição por selo
+    const porSelo = { ouro: 0, prata: 0, bronze: 0, nenhum: 0 };
+    dados.forEach(a => {
+      const selo = a.selo || 'nenhum';
+      porSelo[selo] = (porSelo[selo] || 0) + 1;
+    });
+    const distribuicaoSelo = [
+      { name: 'Ouro', value: porSelo.ouro, fill: '#F59E0B' },
+      { name: 'Prata', value: porSelo.prata, fill: '#94A3B8' },
+      { name: 'Bronze', value: porSelo.bronze, fill: '#B45309' },
+      { name: 'Sem Selo', value: porSelo.nenhum, fill: '#CBD5E1' }
+    ].filter(s => s.value > 0);
+
+    // Top 10 por pontos
+    const top10 = [...dados]
+      .sort((a, b) => (b.pontos_total || 0) - (a.pontos_total || 0))
+      .slice(0, 10)
+      .map(a => ({
+        nome: a.nome?.substring(0, 15) || 'N/A',
+        pontos: a.pontos_total || 0
+      }));
+
+    // Estatísticas gerais
+    const totalAtletas = dados.reduce((acc, a) => acc + (a.total_atletas || 0), 0);
+    const totalResultados = dados.reduce((acc, a) => acc + (a.total_resultados || 0), 0);
+    const totalPontos = dados.reduce((acc, a) => acc + (a.pontos_total || 0), 0);
+    const verificadas = dados.filter(a => a.verificada).length;
+
+    return {
+      total: dados.length,
+      distribuicaoEstado,
+      distribuicaoSelo,
+      top10,
+      totalAtletas,
+      totalResultados,
+      totalPontos,
+      verificadas
+    };
+  };
+
+  // Gerar PDF do relatório
+  const gerarRelatorioPDF = async () => {
+    setGeneratingPDF(true);
+    toast.info('Gerando relatório PDF...');
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      const element = reportRef.current;
+      if (!element) {
+        toast.error('Erro ao gerar relatório');
+        return;
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`relatorio_assessorias_${new Date().toISOString().slice(0,10)}.pdf`);
+
+      toast.success('Relatório PDF gerado com sucesso!');
+      setShowReportModal(false);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar relatório PDF');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  const reportData = getReportData();
 
   // Buscar detalhes completos da assessoria
   const handleViewDetalhes = async (nomeAssessoria) => {
@@ -504,16 +613,27 @@ const DashboardAssessorias = ({
               Ranking das Assessorias
               <Badge variant="secondary">{assessoriasFiltradas.length} assessorias</Badge>
             </CardTitle>
-            <Select onValueChange={(v) => handleExportAssessorias(v)}>
-              <SelectTrigger className="w-[180px]" data-testid="btn-exportar-assessorias">
-                <Download className="w-4 h-4 mr-2" />
-                <SelectValue placeholder="Exportar Dados" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="estado">Por Estado</SelectItem>
-                <SelectItem value="cidade">Por Cidade</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="flex items-center gap-2">
+              <Select onValueChange={(v) => handleExportAssessorias(v)}>
+                <SelectTrigger className="w-[150px]" data-testid="btn-exportar-assessorias">
+                  <Download className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Exportar CSV" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="estado">Por Estado</SelectItem>
+                  <SelectItem value="cidade">Por Cidade</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => setShowReportModal(true)}
+                data-testid="btn-relatorio-pdf-assessorias"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                Relatório PDF
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
@@ -846,6 +966,163 @@ const DashboardAssessorias = ({
             <Button variant="outline" onClick={() => setShowDetalhesModal(false)}>
               <X className="w-4 h-4 mr-2" />
               Fechar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Relatório Visual */}
+      <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-amber-500" />
+              Relatório Visual - Assessorias
+            </DialogTitle>
+          </DialogHeader>
+
+          <div ref={reportRef} className="bg-white p-6 space-y-6">
+            {/* Cabeçalho do Relatório */}
+            <div className="text-center border-b pb-4">
+              <h1 className="text-2xl font-bold text-slate-800">Ranking Run Pró</h1>
+              <h2 className="text-lg text-slate-600">Relatório de Assessorias</h2>
+              <p className="text-sm text-slate-500">
+                Gerado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}
+              </p>
+            </div>
+
+            {/* Cards de Resumo */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-amber-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-amber-600">{reportData.total}</div>
+                <div className="text-sm text-slate-600">Total de Assessorias</div>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-blue-600">{reportData.totalAtletas}</div>
+                <div className="text-sm text-slate-600">Total de Atletas</div>
+              </div>
+              <div className="bg-emerald-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-emerald-600">{reportData.totalResultados}</div>
+                <div className="text-sm text-slate-600">Total de Resultados</div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-purple-600">{reportData.verificadas}</div>
+                <div className="text-sm text-slate-600">Assessorias Verificadas</div>
+              </div>
+            </div>
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Top 10 por Pontos */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold text-slate-700 mb-3">Top 10 Assessorias por Pontos</h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reportData.top10} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="nome" type="category" width={100} tick={{ fontSize: 10 }} />
+                      <Tooltip />
+                      <Bar dataKey="pontos" fill="#F59E0B" radius={[0, 4, 4, 0]} name="Pontos" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Distribuição por Selo */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold text-slate-700 mb-3">Distribuição por Selo</h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <RechartsPie>
+                      <Pie
+                        data={reportData.distribuicaoSelo}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {reportData.distribuicaoSelo.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </RechartsPie>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Distribuição por Estado */}
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold text-slate-700 mb-3">Assessorias por Estado</h3>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={reportData.distribuicaoEstado}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="estado" tick={{ fontSize: 11 }} />
+                    <YAxis />
+                    <Tooltip />
+                    <Bar dataKey="total" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Assessorias" />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Tabela Resumida */}
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold text-slate-700 mb-3">Top 10 Assessorias</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-amber-50">
+                    <th className="text-left py-2 px-3">Posição</th>
+                    <th className="text-left py-2 px-3">Assessoria</th>
+                    <th className="text-center py-2 px-3">UF</th>
+                    <th className="text-center py-2 px-3">Atletas</th>
+                    <th className="text-center py-2 px-3">Resultados</th>
+                    <th className="text-right py-2 px-3">Pontos</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {assessoriasFiltradas.slice(0, 10).map((eq, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="py-2 px-3 font-medium">{eq.posicao || idx + 1}º</td>
+                      <td className="py-2 px-3">{eq.nome}</td>
+                      <td className="text-center py-2 px-3">{eq.estado}</td>
+                      <td className="text-center py-2 px-3">{eq.total_atletas}</td>
+                      <td className="text-center py-2 px-3">{eq.total_resultados}</td>
+                      <td className="text-right py-2 px-3 font-semibold text-amber-600">{eq.pontos_total}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Rodapé */}
+            <div className="text-center text-xs text-slate-400 pt-4 border-t">
+              Ranking Run Pró - Sistema de Gestão de Assessorias
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReportModal(false)}>
+              Fechar
+            </Button>
+            <Button 
+              onClick={gerarRelatorioPDF} 
+              disabled={generatingPDF}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              {generatingPDF ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {generatingPDF ? 'Gerando...' : 'Baixar PDF'}
             </Button>
           </DialogFooter>
         </DialogContent>

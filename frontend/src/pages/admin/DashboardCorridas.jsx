@@ -11,13 +11,15 @@ import {
   Star, Trophy, MapPin, Plus, Edit, Trash2, Loader2, 
   Calendar, CalendarDays, ExternalLink, BarChart3, Award, TrendingUp,
   Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle,
-  ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square
+  ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square, FileText
 } from 'lucide-react';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
+  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
 } from 'recharts';
 import { toast } from 'sonner';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
@@ -56,6 +58,7 @@ const DashboardCorridas = ({
   const [importFile, setImportFile] = useState(null);
   const [loadingImport, setLoadingImport] = useState(false);
   const fileInputRef = useRef(null);
+  const reportRef = useRef(null);
 
   // Estados para seleção múltipla e exclusão em lote
   const [selectedCorridas, setSelectedCorridas] = useState([]);
@@ -74,6 +77,10 @@ const DashboardCorridas = ({
 
   // Estado para ordenação
   const [ordenacao, setOrdenacao] = useState(''); // '', 'asc', 'desc'
+
+  // Estado para modal de relatório
+  const [showReportModal, setShowReportModal] = useState(false);
+  const [generatingPDF, setGeneratingPDF] = useState(false);
 
   // Buscar cidades do IBGE para o filtro
   useEffect(() => {
@@ -480,6 +487,109 @@ const DashboardCorridas = ({
 
     toast.success(`Exportado ${corridasFiltradas.length} corridas com sucesso!`);
   };
+
+  // Dados para gráficos do relatório
+  const getReportData = () => {
+    const dados = corridasFiltradas;
+    
+    // Distribuição por estado
+    const porEstado = {};
+    dados.forEach(c => {
+      const estado = c.estado || 'N/A';
+      porEstado[estado] = (porEstado[estado] || 0) + 1;
+    });
+    const distribuicaoEstado = Object.entries(porEstado)
+      .map(([estado, total]) => ({ estado, total }))
+      .sort((a, b) => b.total - a.total)
+      .slice(0, 10);
+
+    // Distribuição por status
+    const porStatus = { ativa: 0, encerrada: 0, cancelada: 0 };
+    dados.forEach(c => {
+      const status = c.status || 'ativa';
+      porStatus[status] = (porStatus[status] || 0) + 1;
+    });
+    const distribuicaoStatus = [
+      { name: 'Ativas', value: porStatus.ativa, fill: '#10B981' },
+      { name: 'Encerradas', value: porStatus.encerrada, fill: '#F59E0B' },
+      { name: 'Canceladas', value: porStatus.cancelada, fill: '#EF4444' }
+    ].filter(s => s.value > 0);
+
+    // Evolução mensal (últimos 12 meses)
+    const evolucaoMensal = {};
+    dados.forEach(c => {
+      if (c.data_corrida) {
+        const mes = c.data_corrida.substring(0, 7); // YYYY-MM
+        evolucaoMensal[mes] = (evolucaoMensal[mes] || 0) + 1;
+      }
+    });
+    const evolucao = Object.entries(evolucaoMensal)
+      .map(([mes, total]) => ({ mes: mes.split('-').reverse().join('/'), total }))
+      .sort((a, b) => a.mes.localeCompare(b.mes))
+      .slice(-12);
+
+    // Média de avaliações
+    const avaliacoes = dados.filter(c => c.media_nota);
+    const mediaGeral = avaliacoes.length > 0 
+      ? (avaliacoes.reduce((acc, c) => acc + (c.media_nota || 0), 0) / avaliacoes.length).toFixed(1)
+      : '0.0';
+
+    return {
+      total: dados.length,
+      distribuicaoEstado,
+      distribuicaoStatus,
+      evolucao,
+      mediaGeral,
+      totalAvaliacoes: dados.reduce((acc, c) => acc + (c.total_avaliacoes || 0), 0)
+    };
+  };
+
+  // Gerar PDF do relatório
+  const gerarRelatorioPDF = async () => {
+    setGeneratingPDF(true);
+    toast.info('Gerando relatório PDF...');
+
+    try {
+      await new Promise(resolve => setTimeout(resolve, 500)); // Aguardar renderização
+
+      const element = reportRef.current;
+      if (!element) {
+        toast.error('Erro ao gerar relatório');
+        return;
+      }
+
+      const canvas = await html2canvas(element, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff'
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const imgWidth = canvas.width;
+      const imgHeight = canvas.height;
+      const ratio = Math.min(pdfWidth / imgWidth, pdfHeight / imgHeight);
+      const imgX = (pdfWidth - imgWidth * ratio) / 2;
+      const imgY = 10;
+
+      pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
+      pdf.save(`relatorio_corridas_${new Date().toISOString().slice(0,10)}.pdf`);
+
+      toast.success('Relatório PDF gerado com sucesso!');
+      setShowReportModal(false);
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.error('Erro ao gerar relatório PDF');
+    } finally {
+      setGeneratingPDF(false);
+    }
+  };
+
+  const reportData = getReportData();
 
   // Dados do dashboard
   const stats = rankingCorridasDashboard || {};
@@ -999,17 +1109,28 @@ const DashboardCorridas = ({
 
                   {/* Contador de selecionados e botão excluir */}
                   <div className="flex-1 flex justify-end items-center gap-3">
-                    {/* Botão de Exportar */}
+                    {/* Botão de Exportar CSV */}
                     <Select onValueChange={(v) => exportarDados(v)}>
                       <SelectTrigger className="w-[160px]" data-testid="btn-exportar-corridas">
                         <Download className="w-4 h-4 mr-2" />
-                        <SelectValue placeholder="Exportar Dados" />
+                        <SelectValue placeholder="Exportar CSV" />
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="estado">Por Estado</SelectItem>
                         <SelectItem value="data">Por Data</SelectItem>
                       </SelectContent>
                     </Select>
+
+                    {/* Botão de Relatório PDF */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setShowReportModal(true)}
+                      data-testid="btn-relatorio-pdf-corridas"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Relatório PDF
+                    </Button>
 
                     {selectedCorridas.length > 0 && (
                       <>
@@ -1412,6 +1533,161 @@ const DashboardCorridas = ({
                 <Upload className="w-4 h-4 mr-2" />
               )}
               {loadingImport ? 'Importando...' : 'Importar'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Relatório Visual */}
+      <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="w-5 h-5 text-emerald-500" />
+              Relatório Visual - Corridas
+            </DialogTitle>
+          </DialogHeader>
+
+          <div ref={reportRef} className="bg-white p-6 space-y-6">
+            {/* Cabeçalho do Relatório */}
+            <div className="text-center border-b pb-4">
+              <h1 className="text-2xl font-bold text-slate-800">Ranking Run Pró</h1>
+              <h2 className="text-lg text-slate-600">Relatório de Corridas e Eventos</h2>
+              <p className="text-sm text-slate-500">
+                Gerado em {new Date().toLocaleDateString('pt-BR')} às {new Date().toLocaleTimeString('pt-BR')}
+              </p>
+            </div>
+
+            {/* Cards de Resumo */}
+            <div className="grid grid-cols-4 gap-4">
+              <div className="bg-emerald-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-emerald-600">{reportData.total}</div>
+                <div className="text-sm text-slate-600">Total de Corridas</div>
+              </div>
+              <div className="bg-blue-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-blue-600">{reportData.distribuicaoStatus.find(s => s.name === 'Ativas')?.value || 0}</div>
+                <div className="text-sm text-slate-600">Corridas Ativas</div>
+              </div>
+              <div className="bg-amber-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-amber-600">{reportData.mediaGeral}</div>
+                <div className="text-sm text-slate-600">Média de Avaliação</div>
+              </div>
+              <div className="bg-purple-50 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-purple-600">{reportData.totalAvaliacoes}</div>
+                <div className="text-sm text-slate-600">Total de Avaliações</div>
+              </div>
+            </div>
+
+            {/* Gráficos */}
+            <div className="grid grid-cols-2 gap-6">
+              {/* Distribuição por Estado */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold text-slate-700 mb-3">Top 10 Estados</h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reportData.distribuicaoEstado} layout="vertical">
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis type="number" />
+                      <YAxis dataKey="estado" type="category" width={40} tick={{ fontSize: 11 }} />
+                      <Tooltip />
+                      <Bar dataKey="total" fill="#10B981" radius={[0, 4, 4, 0]} name="Corridas" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Distribuição por Status */}
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold text-slate-700 mb-3">Status das Corridas</h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={reportData.distribuicaoStatus}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={40}
+                        outerRadius={70}
+                        paddingAngle={5}
+                        dataKey="value"
+                        label={({ name, value }) => `${name}: ${value}`}
+                      >
+                        {reportData.distribuicaoStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.fill} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                      <Legend />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+
+            {/* Evolução Temporal */}
+            {reportData.evolucao.length > 0 && (
+              <div className="border rounded-lg p-4">
+                <h3 className="font-semibold text-slate-700 mb-3">Evolução Mensal de Corridas</h3>
+                <div className="h-48">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={reportData.evolucao}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="mes" tick={{ fontSize: 10 }} />
+                      <YAxis />
+                      <Tooltip />
+                      <Bar dataKey="total" fill="#3B82F6" radius={[4, 4, 0, 0]} name="Corridas" />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Tabela Resumida */}
+            <div className="border rounded-lg p-4">
+              <h3 className="font-semibold text-slate-700 mb-3">Resumo por Estado</h3>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b bg-slate-50">
+                    <th className="text-left py-2 px-3">Estado</th>
+                    <th className="text-center py-2 px-3">Corridas</th>
+                    <th className="text-center py-2 px-3">% do Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {reportData.distribuicaoEstado.slice(0, 8).map((item, idx) => (
+                    <tr key={idx} className="border-b">
+                      <td className="py-2 px-3">{item.estado}</td>
+                      <td className="text-center py-2 px-3">{item.total}</td>
+                      <td className="text-center py-2 px-3">
+                        {((item.total / reportData.total) * 100).toFixed(1)}%
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Rodapé */}
+            <div className="text-center text-xs text-slate-400 pt-4 border-t">
+              Ranking Run Pró - Sistema de Gestão de Corridas
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowReportModal(false)}>
+              Fechar
+            </Button>
+            <Button 
+              onClick={gerarRelatorioPDF} 
+              disabled={generatingPDF}
+              className="bg-emerald-600 hover:bg-emerald-700"
+            >
+              {generatingPDF ? (
+                <Loader2 className="w-4 h-4 animate-spin mr-2" />
+              ) : (
+                <Download className="w-4 h-4 mr-2" />
+              )}
+              {generatingPDF ? 'Gerando...' : 'Baixar PDF'}
             </Button>
           </DialogFooter>
         </DialogContent>

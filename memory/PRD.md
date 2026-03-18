@@ -337,17 +337,29 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - **Filtro por Status** (Ativas / Encerradas / Canceladas)
   - Botões de ordenação alfabética (A-Z / Z-A)
   - Botão "Excluir Selecionadas" com contador de itens selecionados
-  - **Botão "Exportar Dados"** com opções:
+  - **Botão "Exportar CSV"** com opções:
     - Por Estado (CSV agrupado por UF)
     - Por Data (CSV ordenado por data da corrida)
+  - **Botão "Relatório PDF"** com gráficos visuais:
+    - Cards de resumo (Total, Ativas, Média, Avaliações)
+    - Gráfico de barras: Top 10 Estados
+    - Gráfico de pizza: Status das Corridas
+    - Gráfico temporal: Evolução Mensal
+    - Tabela resumida por Estado
   - Botão "Limpar" para resetar filtros e seleção
 
 ### Filtros e Exportação de Assessorias (NOVO - 18/Mar/2026)
 - **Funcionalidade implementada** em `/app/frontend/src/pages/admin/DashboardAssessorias.jsx`:
   - Filtros locais por **Estado** (27 UFs) e **Cidade** (via API do IBGE)
-  - **Botão "Exportar Dados"** com opções:
+  - **Botão "Exportar CSV"** com opções:
     - Por Estado (CSV agrupado por UF)
     - Por Cidade (CSV agrupado por cidade)
+  - **Botão "Relatório PDF"** com gráficos visuais:
+    - Cards de resumo (Total, Atletas, Resultados, Verificadas)
+    - Gráfico de barras: Top 10 por Pontos
+    - Gráfico de pizza: Distribuição por Selo
+    - Gráfico de barras: Assessorias por Estado
+    - Tabela resumida Top 10
   - Contador "Mostrando X de Y assessorias"
   - Botão "Limpar" para resetar filtros
 
