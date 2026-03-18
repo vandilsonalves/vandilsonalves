@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +14,7 @@ import {
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { toast } from 'sonner';
 
 const ESTADOS_BR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
@@ -34,6 +36,38 @@ const DashboardCorridas = ({
   onDeleteCorrida,
   onRefresh
 }) => {
+  // Estados para cidades do IBGE
+  const [cidadesIBGE, setCidadesIBGE] = useState([]);
+  const [loadingCidadesIBGE, setLoadingCidadesIBGE] = useState(false);
+
+  // Buscar cidades do IBGE quando o estado mudar
+  useEffect(() => {
+    const fetchCidadesIBGE = async () => {
+      if (!corridaFormData.estado) {
+        setCidadesIBGE([]);
+        return;
+      }
+      setLoadingCidadesIBGE(true);
+      try {
+        const response = await axios.get(
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${corridaFormData.estado}/municipios`
+        );
+        const cidadesOrdenadas = response.data
+          .map(cidade => cidade.nome)
+          .sort((a, b) => a.localeCompare(b));
+        setCidadesIBGE(cidadesOrdenadas);
+      } catch (error) {
+        console.error('Erro ao buscar cidades do IBGE:', error);
+        setCidadesIBGE([]);
+        toast.error('Erro ao buscar cidades. Tente novamente.');
+      } finally {
+        setLoadingCidadesIBGE(false);
+      }
+    };
+
+    fetchCidadesIBGE();
+  }, [corridaFormData.estado]);
+
   // Dados do dashboard
   const stats = rankingCorridasDashboard || {};
   const distribuicaoNotas = stats.distribuicao_notas || [];
@@ -43,6 +77,7 @@ const DashboardCorridas = ({
   // Handlers para modal
   const handleOpenAdd = () => {
     setCorridaEditando(null);
+    setCidadesIBGE([]);
     setCorridaFormData({
       nome_corrida: '',
       organizador: '',
@@ -67,6 +102,15 @@ const DashboardCorridas = ({
       status: corrida.status || 'ativa'
     });
     setShowCorridaModal(true);
+  };
+
+  // Handler para mudança de estado - limpa a cidade
+  const handleEstadoChange = (novoEstado) => {
+    setCorridaFormData({
+      ...corridaFormData,
+      estado: novoEstado,
+      cidade: '' // Limpar cidade ao mudar estado
+    });
   };
 
   return (
@@ -342,10 +386,10 @@ const DashboardCorridas = ({
                 <Label>Estado *</Label>
                 <Select 
                   value={corridaFormData.estado} 
-                  onValueChange={(v) => setCorridaFormData({...corridaFormData, estado: v})}
+                  onValueChange={handleEstadoChange}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="UF" />
+                    <SelectValue placeholder="Selecione o UF" />
                   </SelectTrigger>
                   <SelectContent>
                     {ESTADOS_BR.map(uf => (
@@ -356,11 +400,23 @@ const DashboardCorridas = ({
               </div>
               <div>
                 <Label>Cidade *</Label>
-                <Input
-                  value={corridaFormData.cidade}
-                  onChange={(e) => setCorridaFormData({...corridaFormData, cidade: e.target.value})}
-                  placeholder="Cidade"
-                />
+                <Select 
+                  value={corridaFormData.cidade} 
+                  onValueChange={(v) => setCorridaFormData({...corridaFormData, cidade: v})}
+                  disabled={!corridaFormData.estado || loadingCidadesIBGE}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={loadingCidadesIBGE ? "Carregando..." : "Selecione a cidade"} />
+                  </SelectTrigger>
+                  <SelectContent className="max-h-60">
+                    {cidadesIBGE.map(cidade => (
+                      <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {!corridaFormData.estado && (
+                  <p className="text-xs text-slate-500 mt-1">Selecione o estado primeiro</p>
+                )}
               </div>
             </div>
             <div className="grid grid-cols-2 gap-4">
