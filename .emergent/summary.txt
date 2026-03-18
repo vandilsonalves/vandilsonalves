@@ -1,0 +1,190 @@
+<analysis>**original_problem_statement:**
+O usuário solicitou uma série de melhorias e novas funcionalidades, incluindo:
+1.  **Melhorias no Painel Admin:** Aprimoramentos no painel de administração, como filtros, colunas e modais de detalhes.
+2.  **Selo de Verificação:** Criação de um sistema de Selo de Verificação para assessorias.
+3.  **Página Explicativa e Progresso:** Uma página Como ser Verificado e um card de progresso para donos de assessoria.
+4.  **Novos Gráficos e Correção de Bugs:** Adição de novos gráficos de dados e correção de um bug () no ranking.
+5.  **Destaques e Melhorias no Ranking:** Criação de uma seção de destaques no Ranking do Povão e melhorias em formulários de submissão.
+6.  **Gerenciamento de Assessorias e Segurança:** Implementar uma lógica para exclusão de assessorias e criar um sistema de senha de emergência (master password) para acesso de suporte pelo Super Admin.
+7.  **Melhorias de UX nos Rankings:** Adicionar modais de Como funciona e Regulamento às páginas de Ranking de Equipes e Ranking das Corridas.
+8.  **Formulário de Corrida Inteligente:** Fazer com que os campos Estado e Cidade no cadastro de corridas sejam preenchidos automaticamente via API do IBGE e corrigir um bug no filtro de corridas por estado.
+9.  **Sistema de Scraping de Corridas:** Implementar uma ferramenta no painel do admin para extrair dados de corridas de URLs de sites de eventos, gerar um arquivo CSV/Excel e permitir a importação em lote para a plataforma.
+10. **Gerenciamento de Corridas em Lote:** Na aba Corridas do admin, adicionar um checkbox Marcar todas, filtros por Estado/Cidade e um botão para ordenar a lista de corridas em ordem alfabética (A-Z / Z-A) para facilitar a exclusão em massa e a organização.
+
+**User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
+
+**what currently exists?**
+Uma aplicação full-stack (React + FastAPI + MongoDB) para uma comunidade de corrida. As funcionalidades existentes incluem perfis de atletas, sistema de assessorias, gamificação e um painel de administração. Nesta sessão, foram implementados:
+*   Um sistema de **exclusão de assessorias** que migra os atletas para Individual.
+*   Um sistema de **senha de emergência** para o Super Admin, com limite de uso e logs.
+*   **Modais de Como funciona e Regulamento** nas páginas de Ranking de Equipes e de Corridas.
+*   **Autocomplete de UF/Cidade via API do IBGE** e correção de um bug no filtro de corridas.
+*   Um sistema de **web scraping** para extrair dados de corridas de URLs e importá-los em lote via CSV.
+*   O frontend foi corrigido para reconhecer o .
+
+**Last working item**:
+*   **Last item agent was working:** O agente estava implementando a última solicitação do usuário: adicionar funcionalidades de gerenciamento em lote na aba Corridas do painel do Admin (). Isso inclui um checkbox Marcar todas para seleção múltipla, filtros por Estado/Cidade e um botão para ordenação alfabética.
+*   **Status:** IN PROGRESS
+*   **Agent Testing Done:** N
+*   **Which testing method agent to use?** . Primeiro, usar  para testar o novo endpoint de backend . Depois, usar a ferramenta de  para verificar visualmente os novos filtros, o botão de ordenação e os checkboxes na tabela de corridas do painel de administração.
+*   **User Testing Done:** N
+
+**All Pending/In progress Issue list**:
+*   **Issue 1:** Concluir a implementação do gerenciamento em lote na aba Corridas do Admin (PRIORIDADE: P0)
+    *   **Attempted fixes:** O agente criou o endpoint de backend para exclusão em lote () em  e começou a modificar o arquivo do frontend  para adicionar os novos estados e a lógica da interface.
+    *   **Next debug checklist:**
+        1.  No frontend (), finalizar a implementação da UI: adicionar os filtros de Estado/Cidade, o botão de ordenação (A-Z/Z-A) e o botão para deletar os itens selecionados.
+        2.  Implementar a lógica de estado () para controlar os itens selecionados, os filtros e a ordem de sorteio.
+        3.  Aplicar a lógica de filtragem e ordenação à lista de corridas exibida.
+        4.  Adicionar um checkbox na header da tabela (Marcar todas) e em cada linha para seleção.
+        5.  Testar o endpoint  para garantir que ele deleta múltiplos eventos corretamente.
+    *   **Why fix this issue and what will be achieved with the fix?** Para atender à solicitação do usuário de facilitar a gestão de corridas, permitindo exclusão em massa e melhor organização dos dados.
+    *   **Status:** IN PROGRESS
+    *   **Is recurring issue?** N
+    *   **Should Test frontend/backend/both after fix?** both
+    *   **Blocked on other issue:** Não.
+
+**In progress Task List**:
+Nenhum além do item pendente acima.
+
+**Upcoming and Future Tasks**
+*   **Upcoming Tasks:**
+    *   **Melhorar Web Scraper (P1):** O scraper atual não funciona bem com sites que usam JavaScript intensivamente (SPAs). A próxima etapa é refatorá-lo para usar uma ferramenta mais robusta como Selenium ou Playwright.
+    *   **Refatoração do Backend (P1):** Concluir a migração de rotas do arquivo monolítico  para módulos específicos.
+    *   **Metas Pessoais (P1):** Permitir que atletas definam e acompanhem metas pessoais.
+    *   **Sistema de Streaks (P1):** Recompensar atletas por consistência nas corridas.
+
+*   **Future Tasks:**
+    *   **Fase 2 (Alto Impacto):** Sistema de Rivais, Feed Social, Desafios Mensais.
+    *   **Fase 3 (Médio Impacto):** Gráficos de Evolução, Sistema de Níveis/XP, Lembretes Inteligentes.
+    *   **Fase 4 (Diferencial):** Previsão de Ranking com IA, Certificados Digitais.
+    *   **Configuração de Produção:** Configurar a variável  para produção.
+    *   **Verificar domínio no Resend (P3):** Lembrar o usuário sobre a configuração do domínio para envio de emails em produção.
+
+**Completed work in this session**
+- **Sistema de Gerenciamento e Segurança:**
+    - Implementada a exclusão de assessorias, com migração automática de atletas para Individual ().
+    - Criado um sistema de **Senha de Emergência** para o Super Admin, com geração, limite de uso, reset e logs.
+- **Melhorias de UI/UX:**
+    - Adicionados modais de **Como funciona e Regulamento** às páginas de Ranking de Equipes e Ranking das Corridas.
+    - Implementado **autocomplete de UF/Cidade via API do IBGE** nos formulários de cadastro de corrida ( e ).
+- **Web Scraping de Corridas:**
+    - Criada ferramenta no painel admin para **raspar dados de corridas a partir de uma URL** e permitir o download dos resultados.
+    - Implementada funcionalidade de **importação de corridas em lote** via upload de arquivo CSV.
+- **Correções:**
+    - Corrigido um bug no backend () onde o filtro de corridas por cidade não respeitava o estado selecionado.
+    - Ajustado o frontend (, ) para reconhecer o  e exibir corretamente o painel de admin.
+
+**Earlier issues found/mentioned but not fixed**
+*   **Issue 1:** Funções da API do Instagram (, ) em  estão vazias e não foram implementadas.
+    *   **Debug checklist:** Verificar  e o endpoint .
+    *   **Why to solve this issue and what will be achieved with this?** Remover código morto durante a futura refatoração do .
+    *   **Should Test frontend/backend/both after fix:** backend
+    *   **Is recurring issue?** N
+
+**Known issue recurrence from previous fork**
+*   **Issue:** O serviço do Redis para de funcionar periodicamente no ambiente de preview, causando lentidão ou falhas na aplicação.
+*   **Recurrence count:** Alta (ocorreu várias vezes).
+*   **Status:** RECURRING. É um problema ambiental. A solução temporária continua sendo Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  libjemalloc2 liblzf1 redis-tools
+Suggested packages:
+  ruby-redis
+The following NEW packages will be installed:
+  libjemalloc2 liblzf1 redis-server redis-tools
+0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.
+Need to get 1198 kB of archives.
+After this operation, 7125 kB of additional disk space will be used.
+Do you want to continue? [Y/n] Abort..
+
+**Code Architecture**
+
+
+**Key Technical Concepts**
+*   **Web Scraping:** Utilização de  e  para extrair dados de HTML.
+*   **Processamento de Arquivos:** Geração e parsing de arquivos CSV para importação/exportação em lote.
+*   **API Externa:** Integração com a API pública do IBGE para obter listas de estados e cidades.
+*   **Controle de Acesso:** Expansão do controle de acesso baseado em roles para diferenciar  de .
+
+**key DB schema**
+*   **usuarios:** Adicionados os campos  (hash),  (contador) e  (array de logs) para o sistema de senha de emergência.
+
+**All files of reference**
+*   : Arquivo principal para a tarefa atual e várias outras já concluídas.
+*   : Contém o endpoint de backend para a tarefa atual.
+*   : Contém a lógica de web scraping.
+*   : Arquivo modificado para autocomplete e modais.
+*   : Contém a lógica de autenticação que foi corrigida.
+
+**Areas that need refactoring**:
+*   : A refatoração para modularizar todas as rotas precisa ser concluída.
+*   : O serviço de scraping precisa ser aprimorado com ferramentas como Selenium/Playwright para lidar com sites modernos baseados em JavaScript.
+
+**key api endpoints**
+*   : (NOVO) Realiza o scraping de uma URL para encontrar corridas.
+*   : (NOVO) Importa corridas a partir de um arquivo CSV.
+*   : (NOVO) Deleta uma lista de corridas por seus IDs.
+*   : (NOVO) Realiza login em uma conta de atleta usando a senha de emergência.
+*   : (NOVO) Gera uma nova senha de emergência para um usuário.
+*   : (NOVO) Deleta uma assessoria e migra seus membros.
+*   : (CORRIGIDO) Lógica de filtro por estado/cidade foi corrigida.
+
+**Critical Info for New Agent**
+*   **Prioridade Máxima:** Finalizar a implementação dos filtros, ordenação e ações em lote na página de gerenciamento de corridas do admin ().
+*   **Problema do Redis:** É um problema recorrente do ambiente. Se a aplicação estiver lenta, reinicie o Redis com o comando Reading package lists...
+Building dependency tree...
+Reading state information...
+The following additional packages will be installed:
+  libjemalloc2 liblzf1 redis-tools
+Suggested packages:
+  ruby-redis
+The following NEW packages will be installed:
+  libjemalloc2 liblzf1 redis-server redis-tools
+0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.
+Need to get 1198 kB of archives.
+After this operation, 7125 kB of additional disk space will be used.
+Do you want to continue? [Y/n] Abort..
+*   **Limitações do Scraper:** O scraper atual falha em sites modernos que renderizam conteúdo com JavaScript. O usuário está ciente, mas espera uma melhoria futura, que exigirá uma ferramenta mais poderosa como Selenium.
+
+**documents and test reports created in this job**
+*    foi atualizado.
+
+**Last 10 User Messages and any pending HUMAN messages**
+1.  **user (Chat 497):** Pediu para adicionar seleção em lote, filtros e ordenação na aba Corridas do Admin. (IN PROGRESS)
+2.  **user (Chat 450):** Reportou que o scraper estava falhando na maioria dos sites e pediu um botão de download para os resultados. (COMPLETED)
+3.  **user (Chat 430):** Reportou um erro de token inválido no painel de admin. (COMPLETED - Aconselhado a fazer logout/login).
+4.  **user (Chat 426):** Pediu para atualizar o Redis. (COMPLETED)
+5.  **user (Chat 413):** Concordou com o plano de melhorar os scrapers. (N/A)
+6.  **user (Chat 318):** Pediu a implementação do sistema de scraping e importação em lote. (COMPLETED)
+7.  **user (Chat 295):** Apontou que o autocomplete de cidade não estava funcionando no modal de Nova Corrida do Admin. (COMPLETED)
+8.  **user (Chat 291):** Pediu para atualizar o Redis. (COMPLETED)
+9.  **user (Chat 287):** Pediu para atualizar a plataforma. (COMPLETED)
+10. **user (Chat 285):** Fez uma pergunta detalhada sobre a viabilidade de um sistema avançado de scraping com IA. (COMPLETED - Agente deu uma análise detalhada).
+
+**Project Health Check:**
+*   **Working:** A aplicação está funcional com várias novas funcionalidades adicionadas.
+*   **Broken:** Nenhum componente crítico está quebrado.
+*   **In Progress:** A funcionalidade de gerenciamento em lote de corridas no painel do admin está em desenvolvimento.
+
+**3rd Party Integrations**
+*   **Resend:** Para envio de emails.
+*   **Redis:** Para cache (instável no ambiente de preview).
+*   **Celery:** Para tarefas assíncronas.
+*   **Recharts:** Para gráficos.
+*   **BeautifulSoup, requests, lxml:** (NOVO) Para web scraping.
+*   **API do IBGE:** (NOVO) Para dados de localização (estados e cidades).
+
+**Testing status**
+*   **Testing agent used after significant changes:** NO
+*   **Troubleshoot agent used after agent stuck in loop:** NO
+*   **Test files created:** Nenhum.
+*   **Known regressions:** Nenhuma.
+
+**Credentials to test flow:**
+*   **Super Admin:**  / 
+*   **Senha de Emergência (pode mudar no próximo fork):** 
+
+**What agent forgot to execute**
+O agente estava no meio da implementação da última tarefa solicitada pelo usuário (filtros, ordenação e ações em lote na página de corridas do admin). O backend foi parcialmente criado, mas o frontend ainda estava sendo desenvolvido. O teste da nova funcionalidade não foi realizado.</analysis>

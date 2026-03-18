@@ -28,7 +28,7 @@ async def criar_corrida_evento(
 ):
     """Cadastra uma nova corrida de rua (Admin ou Dono de Assessoria)"""
     
-    if current_user.get("role") not in ["admin", "dono_assessoria"]:
+    if current_user.get("role") not in ["admin", "super_admin", "dono_assessoria"]:
         raise HTTPException(status_code=403, detail="Apenas Admin ou Dono de Assessoria podem cadastrar corridas")
     
     corrida = {
@@ -152,7 +152,7 @@ async def atualizar_corrida_evento(
 ):
     """Atualiza uma corrida existente"""
     
-    if current_user.get("role") not in ["admin", "dono_assessoria"]:
+    if current_user.get("role") not in ["admin", "super_admin", "dono_assessoria"]:
         raise HTTPException(status_code=403, detail="Sem permissão")
     
     update_data = {}
@@ -187,6 +187,45 @@ async def deletar_corrida_evento(corrida_id: str, admin: dict = Depends(get_admi
     await invalidate_on_corrida_change()
     
     return {"message": "Corrida excluída com sucesso!"}
+
+
+@router.post("/corridas-eventos/excluir-lote")
+async def excluir_corridas_lote(
+    ids: str = Form(...),
+    admin: dict = Depends(get_admin_user)
+):
+    """Exclui múltiplas corridas de uma vez (apenas Admin)"""
+    
+    # Converter string para lista
+    id_list = [i.strip() for i in ids.split(',') if i.strip()]
+    
+    if not id_list:
+        raise HTTPException(status_code=400, detail="Nenhuma corrida selecionada")
+    
+    total_excluidas = 0
+    for corrida_id in id_list:
+        result = await db.corridas_eventos.delete_one({"id": corrida_id})
+        if result.deleted_count > 0:
+            await db.avaliacoes_corridas.delete_many({"corrida_id": corrida_id})
+            total_excluidas += 1
+    
+    await invalidate_on_corrida_change()
+    
+    # Log da operação
+    await db.logs_sistema.insert_one({
+        "id": str(uuid.uuid4()),
+        "tipo": "exclusao_corridas_lote",
+        "admin_id": admin["id"],
+        "admin_nome": admin.get("nome"),
+        "total_excluidas": total_excluidas,
+        "ids": id_list,
+        "data": datetime.now(timezone.utc).isoformat()
+    })
+    
+    return {
+        "message": f"{total_excluidas} corrida(s) excluída(s) com sucesso!",
+        "total_excluidas": total_excluidas
+    }
 
 
 # ==================== RANKING DE CORRIDAS ====================
@@ -275,18 +314,20 @@ async def get_stats_ranking_corridas():
     total_avaliacoes = await db.avaliacoes_corridas.count_documents({})
     total_avaliadores = len(await db.avaliacoes_corridas.distinct("usuario_id"))
     
-    # Melhor avaliada
+    # Melhor avaliada - exclude _id from projection
     pipeline = [
         {"$match": {"total_avaliacoes": {"$gte": 3}}},
         {"$sort": {"media_geral": -1}},
-        {"$limit": 1}
+        {"$limit": 1},
+        {"$project": {"_id": 0}}
     ]
     melhor = await db.corridas_eventos.aggregate(pipeline).to_list(1)
     
-    # Mais avaliada
+    # Mais avaliada - exclude _id from projection
     pipeline_mais = [
         {"$sort": {"total_avaliacoes": -1}},
-        {"$limit": 1}
+        {"$limit": 1},
+        {"$project": {"_id": 0}}
     ]
     mais_avaliada = await db.corridas_eventos.aggregate(pipeline_mais).to_list(1)
     

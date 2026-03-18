@@ -1,0 +1,125 @@
+{
+  "summary": "Iteration 37: Batch Management Features for Admin Corridas Dashboard - All features tested and working. Fixed 3 bugs: 1) super_admin role not allowed to create corridas, 2) batch delete endpoint not parsing comma-separated IDs, 3) SelectItem empty value causing React crash.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "DashboardCorridas.jsx - React hydration warning",
+        "issues": [
+          "Console shows hydration error: '<tr> cannot be a child of <span>'. This is a React SSR/hydration warning likely caused by the Emergent editor wrapper, not affecting functionality."
+        ],
+        "priority": "LOW"
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter37_batch_corridas.py",
+    "/app/test_reports/pytest/pytest_iter37_batch_corridas.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend: Fixed super_admin role check in corridas_eventos_routes.py lines 31 and 155",
+    "Backend: Fixed batch delete endpoint to accept comma-separated string instead of List[str]",
+    "Backend: Fixed _id exclusion in ranking-corridas/stats aggregation pipeline",
+    "Frontend: Fixed SelectItem empty value bug using '__all__' sentinel value"
+  ],
+  "updated_files": [
+    "/app/backend/routes/corridas_eventos_routes.py",
+    "/app/frontend/src/pages/admin/DashboardCorridas.jsx",
+    "/app/backend/tests/test_iter37_batch_corridas.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (All batch management features working)"
+  },
+  "test_credentials": {
+    "admin_user": {
+      "email": "admin@rankingrun.com",
+      "password": "admin123",
+      "role": "super_admin"
+    }
+  },
+  "seed_data_creation": "Created and cleaned up TEST_ prefixed corridas during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Batch management features fully implemented and tested. SelectItem value='__all__' used as sentinel for 'Todos/Todas' options since empty string is not allowed.",
+  "verified_features": {
+    "checkbox_select_all": {
+      "status": "WORKING",
+      "details": "data-testid='checkbox-select-all' in table header, selects all filtered corridas"
+    },
+    "checkbox_individual": {
+      "status": "WORKING",
+      "details": "data-testid='checkbox-corrida-{id}' on each row, toggles individual selection"
+    },
+    "filter_by_estado": {
+      "status": "WORKING",
+      "details": "Estado dropdown with all 27 Brazilian states, filters table and updates count"
+    },
+    "filter_by_cidade": {
+      "status": "WORKING",
+      "details": "Cidade dropdown populated from IBGE API after estado selection"
+    },
+    "sorting_az_za": {
+      "status": "WORKING",
+      "details": "Two sort buttons (ArrowUpAZ/ArrowDownAZ icons) for alphabetical sorting"
+    },
+    "batch_delete_button": {
+      "status": "WORKING",
+      "details": "Red 'Excluir Selecionadas' button appears when items selected, with confirmation dialog"
+    },
+    "selection_badge": {
+      "status": "WORKING",
+      "details": "Badge shows 'X selecionada(s)' count when items selected"
+    },
+    "clear_filters_button": {
+      "status": "WORKING",
+      "details": "'Limpar' button visible when filters are active"
+    },
+    "batch_delete_api": {
+      "status": "WORKING",
+      "details": "POST /api/corridas-eventos/excluir-lote accepts comma-separated IDs and deletes successfully"
+    }
+  },
+  "endpoints_tested": {
+    "POST /api/auth/login": "200 OK - Admin authentication",
+    "GET /api/corridas-eventos": "200 OK - List corridas with filters",
+    "GET /api/corridas-eventos?estado=SP": "200 OK - Filter by estado",
+    "GET /api/corridas-eventos?cidade=X": "200 OK - Filter by cidade",
+    "POST /api/corridas-eventos": "200 OK - Create corrida (super_admin fixed)",
+    "POST /api/corridas-eventos/excluir-lote": "200 OK - Batch delete (ids parsing fixed)",
+    "GET /api/corridas-eventos/template?formato=csv": "200 OK - CSV template download",
+    "GET /api/corridas-eventos/template?formato=excel": "200 OK - Excel template download",
+    "GET /api/ranking-corridas": "200 OK - Ranking endpoint",
+    "GET /api/ranking-corridas/stats": "200 OK - Stats endpoint (_id excluded)",
+    "GET /api/ranking-corridas/estados": "200 OK - List estados",
+    "GET /api/ranking-corridas/cidades": "200 OK - List cidades"
+  },
+  "bugs_fixed": [
+    {
+      "issue": "super_admin role not allowed to create corridas",
+      "file": "/app/backend/routes/corridas_eventos_routes.py",
+      "fix": "Added 'super_admin' to allowed roles list in lines 31 and 155"
+    },
+    {
+      "issue": "Batch delete endpoint not parsing comma-separated IDs",
+      "file": "/app/backend/routes/corridas_eventos_routes.py",
+      "fix": "Changed parameter type from List[str] to str and split by comma"
+    },
+    {
+      "issue": "MongoDB _id appearing in ranking-corridas/stats response",
+      "file": "/app/backend/routes/corridas_eventos_routes.py",
+      "fix": "Added $project: {_id: 0} to aggregation pipelines"
+    },
+    {
+      "issue": "SelectItem with empty value causing React crash",
+      "file": "/app/frontend/src/pages/admin/DashboardCorridas.jsx",
+      "fix": "Changed value='' to value='__all__' with conversion logic"
+    }
+  ]
+}

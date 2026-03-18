@@ -10,8 +10,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { 
   Star, Trophy, MapPin, Plus, Edit, Trash2, Loader2, 
   Calendar, ExternalLink, BarChart3, Award, TrendingUp,
-  Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle
+  Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle,
+  ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square
 } from 'lucide-react';
+import { Checkbox } from '@/components/ui/checkbox';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
@@ -54,6 +56,42 @@ const DashboardCorridas = ({
   const [importFile, setImportFile] = useState(null);
   const [loadingImport, setLoadingImport] = useState(false);
   const fileInputRef = useRef(null);
+
+  // Estados para seleção múltipla e exclusão em lote
+  const [selectedCorridas, setSelectedCorridas] = useState([]);
+  const [loadingExcluirLote, setLoadingExcluirLote] = useState(false);
+
+  // Estados para filtros
+  const [filtroEstado, setFiltroEstado] = useState('');
+  const [filtroCidade, setFiltroCidade] = useState('');
+  const [cidadesFiltro, setCidadesFiltro] = useState([]);
+
+  // Estado para ordenação
+  const [ordenacao, setOrdenacao] = useState(''); // '', 'asc', 'desc'
+
+  // Buscar cidades do IBGE para o filtro
+  useEffect(() => {
+    const fetchCidadesFiltro = async () => {
+      if (!filtroEstado) {
+        setCidadesFiltro([]);
+        setFiltroCidade('');
+        return;
+      }
+      try {
+        const response = await axios.get(
+          `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${filtroEstado}/municipios`
+        );
+        const cidadesOrdenadas = response.data
+          .map(cidade => cidade.nome)
+          .sort((a, b) => a.localeCompare(b));
+        setCidadesFiltro(cidadesOrdenadas);
+      } catch (error) {
+        console.error('Erro ao buscar cidades:', error);
+        setCidadesFiltro([]);
+      }
+    };
+    fetchCidadesFiltro();
+  }, [filtroEstado]);
 
   // Buscar cidades do IBGE quando o estado mudar
   useEffect(() => {
@@ -213,6 +251,95 @@ const DashboardCorridas = ({
       toast.error('Erro ao baixar template');
     }
   };
+
+  // ==================== SELEÇÃO E EXCLUSÃO EM LOTE ====================
+
+  const handleSelectCorrida = (corridaId) => {
+    setSelectedCorridas(prev => {
+      if (prev.includes(corridaId)) {
+        return prev.filter(id => id !== corridaId);
+      } else {
+        return [...prev, corridaId];
+      }
+    });
+  };
+
+  const handleSelectAll = () => {
+    const corridasFiltradas = getCorridasFiltradas();
+    if (selectedCorridas.length === corridasFiltradas.length) {
+      setSelectedCorridas([]);
+    } else {
+      setSelectedCorridas(corridasFiltradas.map(c => c.id));
+    }
+  };
+
+  const handleExcluirLote = async () => {
+    if (selectedCorridas.length === 0) {
+      toast.error('Selecione ao menos uma corrida');
+      return;
+    }
+
+    if (!window.confirm(`Deseja excluir ${selectedCorridas.length} corrida(s)?`)) {
+      return;
+    }
+
+    setLoadingExcluirLote(true);
+    try {
+      const token = localStorage.getItem('token');
+      const formData = new FormData();
+      formData.append('ids', selectedCorridas.join(','));
+
+      const response = await axios.post(`${API}/corridas-eventos/excluir-lote`, formData, {
+        headers: { 
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
+      toast.success(response.data.message);
+      setSelectedCorridas([]);
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      console.error('Erro ao excluir:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao excluir corridas');
+    } finally {
+      setLoadingExcluirLote(false);
+    }
+  };
+
+  // ==================== FILTROS E ORDENAÇÃO ====================
+
+  const getCorridasFiltradas = () => {
+    let resultado = corridasEventos || [];
+
+    // Filtrar por estado
+    if (filtroEstado) {
+      resultado = resultado.filter(c => c.estado === filtroEstado);
+    }
+
+    // Filtrar por cidade
+    if (filtroCidade) {
+      resultado = resultado.filter(c => c.cidade?.toLowerCase().includes(filtroCidade.toLowerCase()));
+    }
+
+    // Ordenar
+    if (ordenacao === 'asc') {
+      resultado = [...resultado].sort((a, b) => (a.nome_corrida || '').localeCompare(b.nome_corrida || ''));
+    } else if (ordenacao === 'desc') {
+      resultado = [...resultado].sort((a, b) => (b.nome_corrida || '').localeCompare(a.nome_corrida || ''));
+    }
+
+    return resultado;
+  };
+
+  const limparFiltros = () => {
+    setFiltroEstado('');
+    setFiltroCidade('');
+    setOrdenacao('');
+    setSelectedCorridas([]);
+  };
+
+  const corridasFiltradas = getCorridasFiltradas();
 
   // Dados do dashboard
   const stats = rankingCorridasDashboard || {};
@@ -586,70 +713,187 @@ const DashboardCorridas = ({
               <p>Nenhuma corrida cadastrada</p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-slate-50 dark:bg-slate-800">
-                    <th className="text-left py-3 px-4 font-semibold">Corrida</th>
-                    <th className="text-left py-3 px-4 font-semibold">Organizador</th>
-                    <th className="text-left py-3 px-4 font-semibold">Local</th>
-                    <th className="text-center py-3 px-4 font-semibold">Avaliações</th>
-                    <th className="text-center py-3 px-4 font-semibold">Média</th>
-                    <th className="text-center py-3 px-4 font-semibold">Status</th>
-                    <th className="text-center py-3 px-4 font-semibold">Ações</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {corridasEventos.map((corrida) => (
-                    <tr key={corrida.id} className="border-b hover:bg-slate-50 dark:hover:bg-slate-800">
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium">{corrida.nome_corrida}</span>
-                          {corrida.pagina_link && (
-                            <a href={corrida.pagina_link} target="_blank" rel="noopener noreferrer">
-                              <ExternalLink className="w-3 h-3 text-slate-400" />
-                            </a>
+            <>
+              {/* Barra de Filtros e Ações em Lote */}
+              <div className="mb-4 p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Filtro por Estado */}
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-slate-500" />
+                    <Select value={filtroEstado || "__all__"} onValueChange={(v) => { setFiltroEstado(v === "__all__" ? "" : v); setFiltroCidade(''); }}>
+                      <SelectTrigger className="w-[120px]">
+                        <SelectValue placeholder="Estado" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__all__">Todos</SelectItem>
+                        {ESTADOS_BR.map(uf => (
+                          <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Filtro por Cidade */}
+                  <div>
+                    <Select 
+                      value={filtroCidade || "__all__"} 
+                      onValueChange={(v) => setFiltroCidade(v === "__all__" ? "" : v)}
+                      disabled={!filtroEstado}
+                    >
+                      <SelectTrigger className="w-[180px]">
+                        <SelectValue placeholder={filtroEstado ? "Cidade" : "Selecione UF"} />
+                      </SelectTrigger>
+                      <SelectContent className="max-h-60">
+                        <SelectItem value="__all__">Todas</SelectItem>
+                        {cidadesFiltro.map(cidade => (
+                          <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Ordenação */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant={ordenacao === 'asc' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setOrdenacao(ordenacao === 'asc' ? '' : 'asc')}
+                      className={ordenacao === 'asc' ? 'bg-blue-500' : ''}
+                    >
+                      <ArrowUpAZ className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant={ordenacao === 'desc' ? 'default' : 'outline'}
+                      size="sm"
+                      onClick={() => setOrdenacao(ordenacao === 'desc' ? '' : 'desc')}
+                      className={ordenacao === 'desc' ? 'bg-blue-500' : ''}
+                    >
+                      <ArrowDownAZ className="w-4 h-4" />
+                    </Button>
+                  </div>
+
+                  {/* Limpar Filtros */}
+                  {(filtroEstado || filtroCidade || ordenacao) && (
+                    <Button variant="ghost" size="sm" onClick={limparFiltros}>
+                      <X className="w-4 h-4 mr-1" />
+                      Limpar
+                    </Button>
+                  )}
+
+                  {/* Contador de selecionados e botão excluir */}
+                  <div className="flex-1 flex justify-end items-center gap-3">
+                    {selectedCorridas.length > 0 && (
+                      <>
+                        <Badge variant="secondary" className="px-3 py-1">
+                          {selectedCorridas.length} selecionada(s)
+                        </Badge>
+                        <Button 
+                          variant="destructive" 
+                          size="sm"
+                          onClick={handleExcluirLote}
+                          disabled={loadingExcluirLote}
+                        >
+                          {loadingExcluirLote ? (
+                            <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                          ) : (
+                            <Trash2 className="w-4 h-4 mr-2" />
                           )}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">{corrida.organizador}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-1">
-                          <MapPin className="w-3 h-3 text-slate-400" />
-                          {corrida.cidade}/{corrida.estado}
-                        </div>
-                      </td>
-                      <td className="py-3 px-4 text-center">{corrida.total_avaliacoes || 0}</td>
-                      <td className="py-3 px-4 text-center">
-                        <Badge className="bg-amber-100 text-amber-800">
-                          {(corrida.media_geral || 0).toFixed(1)} ⭐
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <Badge className={corrida.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}>
-                          {corrida.status}
-                        </Badge>
-                      </td>
-                      <td className="py-3 px-4 text-center">
-                        <div className="flex items-center justify-center gap-1">
-                          <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(corrida)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            onClick={() => onDeleteCorrida(corrida.id)}
-                            className="text-red-500 hover:text-red-700"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
+                          Excluir Selecionadas
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                </div>
+
+                {/* Info de resultados */}
+                <div className="mt-2 text-xs text-slate-500">
+                  Mostrando {corridasFiltradas.length} de {corridasEventos.length} corridas
+                </div>
+              </div>
+
+              {/* Tabela */}
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-slate-50 dark:bg-slate-800">
+                      <th className="py-3 px-2 w-10">
+                        <Checkbox
+                          checked={corridasFiltradas.length > 0 && selectedCorridas.length === corridasFiltradas.length}
+                          onCheckedChange={handleSelectAll}
+                          data-testid="checkbox-select-all"
+                        />
+                      </th>
+                      <th className="text-left py-3 px-4 font-semibold">Corrida</th>
+                      <th className="text-left py-3 px-4 font-semibold">Organizador</th>
+                      <th className="text-left py-3 px-4 font-semibold">Local</th>
+                      <th className="text-center py-3 px-4 font-semibold">Avaliações</th>
+                      <th className="text-center py-3 px-4 font-semibold">Média</th>
+                      <th className="text-center py-3 px-4 font-semibold">Status</th>
+                      <th className="text-center py-3 px-4 font-semibold">Ações</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {corridasFiltradas.map((corrida) => (
+                      <tr 
+                        key={corrida.id} 
+                        className={`border-b hover:bg-slate-50 dark:hover:bg-slate-800 ${selectedCorridas.includes(corrida.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                      >
+                        <td className="py-3 px-2">
+                          <Checkbox
+                            checked={selectedCorridas.includes(corrida.id)}
+                            onCheckedChange={() => handleSelectCorrida(corrida.id)}
+                            data-testid={`checkbox-corrida-${corrida.id}`}
+                          />
+                        </td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-2">
+                            <span className="font-medium">{corrida.nome_corrida}</span>
+                            {corrida.pagina_link && (
+                              <a href={corrida.pagina_link} target="_blank" rel="noopener noreferrer">
+                                <ExternalLink className="w-3 h-3 text-slate-400" />
+                              </a>
+                            )}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4">{corrida.organizador}</td>
+                        <td className="py-3 px-4">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            {corrida.cidade}/{corrida.estado}
+                          </div>
+                        </td>
+                        <td className="py-3 px-4 text-center">{corrida.total_avaliacoes || 0}</td>
+                        <td className="py-3 px-4 text-center">
+                          <Badge className="bg-amber-100 text-amber-800">
+                            {(corrida.media_geral || 0).toFixed(1)} ⭐
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <Badge className={corrida.status === 'ativa' ? 'bg-green-100 text-green-800' : 'bg-slate-100 text-slate-800'}>
+                            {corrida.status}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-4 text-center">
+                          <div className="flex items-center justify-center gap-1">
+                            <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(corrida)}>
+                              <Edit className="w-4 h-4" />
+                            </Button>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              onClick={() => onDeleteCorrida(corrida.id)}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>
