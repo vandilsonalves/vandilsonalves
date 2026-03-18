@@ -305,6 +305,13 @@ const CadastroPage = () => {
     setShowEquipeDropdown(false);
   };
 
+  // Função para limpar a seleção de equipe
+  const handleLimparEquipe = () => {
+    setFormData(prev => ({ ...prev, equipe: '' }));
+    setEquipeSearchTerm('');
+    setShowEquipeDropdown(true);
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-950 dark:to-green-950 py-8 px-4">
       <div className="container mx-auto max-w-2xl">
@@ -368,14 +375,30 @@ const CadastroPage = () => {
                       onChange={(e) => {
                         setEquipeSearchTerm(e.target.value);
                         setShowEquipeDropdown(true);
-                        // NÃO permite escrever livremente - só selecionar do dropdown
+                        // Se estiver editando, limpa a seleção atual
+                        if (formData.equipe) {
+                          setFormData(prev => ({ ...prev, equipe: '' }));
+                        }
                       }}
                       onFocus={() => setShowEquipeDropdown(true)}
-                      placeholder="Selecione sua equipe..."
-                      readOnly={formData.equipe === 'Individual'}
+                      placeholder="Selecione ou busque sua equipe..."
                       data-testid="input-equipe"
                     />
-                    <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    {formData.equipe ? (
+                      <button
+                        type="button"
+                        onClick={handleLimparEquipe}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-red-500 transition-colors"
+                        title="Limpar seleção"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18"></line>
+                          <line x1="6" y1="6" x2="18" y2="18"></line>
+                        </svg>
+                      </button>
+                    ) : (
+                      <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    )}
                   </div>
                   
                   {/* Dropdown de equipes - APENAS cadastradas + INDIVIDUAL */}
@@ -423,7 +446,7 @@ const CadastroPage = () => {
                     <div className="mt-2 p-3 bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-300 rounded-lg">
                       <div className="flex items-start gap-2">
                         <span className="text-amber-600 text-lg">⚠️</span>
-                        <div>
+                        <div className="flex-1">
                           <p className="text-sm font-semibold text-amber-800 dark:text-amber-200">
                             Não encontrou sua equipe? É normal!
                           </p>
@@ -431,6 +454,13 @@ const CadastroPage = () => {
                             Fale com o <strong>Dono(a) da sua Assessoria/Equipe</strong> para fazer o cadastro. 
                             Assim que ele(a) fizer, você já poderá alterar no seu <strong>Perfil</strong>.
                           </p>
+                          <button
+                            type="button"
+                            onClick={handleLimparEquipe}
+                            className="mt-2 text-xs text-blue-600 hover:text-blue-800 underline"
+                          >
+                            Clique aqui para selecionar outra equipe
+                          </button>
                         </div>
                       </div>
                     </div>
