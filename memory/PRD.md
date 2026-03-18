@@ -436,6 +436,14 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - Lista de solicitações com avatar, nome, cidade/estado, data e mensagem do atleta
   - Botões de "Aprovar" e "Reprovar" com feedback via toast
   - Estado vazio quando não há solicitações
+- **Botão "Solicitar Entrada" na Página da Assessoria**:
+  - Botão azul "Solicitar Entrada na Equipe" visível para atletas sem equipe
+  - Modal com campo de mensagem opcional para apresentação
+  - Verificação automática de solicitação pendente
+  - Mensagem "aguardando aprovação" quando já tem solicitação
+  - Mensagem informativa para quem já tem equipe
+  - Link "Faça login" para usuários não autenticados
+  - Integração com WhatsApp quando configurado pelo dono
 - **Endpoints de Backend**:
   - `POST /api/assessorias/solicitar-entrada` - Atleta sem equipe solicita entrada
   - `GET /api/assessorias/solicitacoes-pendentes` - Lista solicitações pendentes para o dono
@@ -450,3 +458,4 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - **Arquivos modificados**:
   - `/app/backend/routes/assessorias_routes.py` - Todos os endpoints de solicitações
   - `/app/frontend/src/pages/DonoAssessoriaDashboard.jsx` - Aba de solicitações completa
+  - `/app/frontend/src/pages/AssessoriaPage.jsx` - Botão solicitar entrada na página pública
