@@ -1,123 +1,268 @@
 """
-Serviço de Scraping de Corridas
-Extrai dados de corridas de sites específicos como Ticket Sports, Minhas Inscrições, etc.
+Serviço de Scraping de Corridas - Versão Melhorada
+Extrai dados de corridas de sites específicos como Ticket Sports, Minhas Inscrições, Webrun, etc.
 """
 
 import requests
 from bs4 import BeautifulSoup
 import re
 from datetime import datetime
-from typing import List, Dict, Optional
+from typing import List, Dict
 import json
 
-# Headers para simular navegador
+# Headers para simular navegador real
 HEADERS = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
     'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
     'Accept-Language': 'pt-BR,pt;q=0.9,en-US;q=0.8,en;q=0.7',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
 }
 
-# Mapeamento de estados por cidade conhecida
+# Mapeamento completo de estados brasileiros
+ESTADOS_BR = {
+    'AC': 'Acre', 'AL': 'Alagoas', 'AP': 'Amapá', 'AM': 'Amazonas',
+    'BA': 'Bahia', 'CE': 'Ceará', 'DF': 'Distrito Federal', 'ES': 'Espírito Santo',
+    'GO': 'Goiás', 'MA': 'Maranhão', 'MT': 'Mato Grosso', 'MS': 'Mato Grosso do Sul',
+    'MG': 'Minas Gerais', 'PA': 'Pará', 'PB': 'Paraíba', 'PR': 'Paraná',
+    'PE': 'Pernambuco', 'PI': 'Piauí', 'RJ': 'Rio de Janeiro', 'RN': 'Rio Grande do Norte',
+    'RS': 'Rio Grande do Sul', 'RO': 'Rondônia', 'RR': 'Roraima', 'SC': 'Santa Catarina',
+    'SP': 'São Paulo', 'SE': 'Sergipe', 'TO': 'Tocantins'
+}
+
+# Mapeamento de capitais e cidades importantes para UF
 CIDADES_ESTADOS = {
-    'são paulo': 'SP', 'rio de janeiro': 'RJ', 'belo horizonte': 'MG',
-    'salvador': 'BA', 'fortaleza': 'CE', 'brasília': 'DF', 'curitiba': 'PR',
-    'manaus': 'AM', 'recife': 'PE', 'porto alegre': 'RS', 'goiânia': 'GO',
-    'belém': 'PA', 'guarulhos': 'SP', 'campinas': 'SP', 'são luís': 'MA',
-    'maceió': 'AL', 'natal': 'RN', 'campo grande': 'MS', 'teresina': 'PI',
-    'joão pessoa': 'PB', 'aracaju': 'SE', 'cuiabá': 'MT', 'florianópolis': 'SC',
-    'vitória': 'ES', 'porto velho': 'RO', 'macapá': 'AP', 'boa vista': 'RR',
-    'rio branco': 'AC', 'palmas': 'TO'
+    # Capitais
+    'rio branco': 'AC', 'maceió': 'AL', 'macapá': 'AP', 'manaus': 'AM',
+    'salvador': 'BA', 'fortaleza': 'CE', 'brasília': 'DF', 'vitória': 'ES',
+    'goiânia': 'GO', 'são luís': 'MA', 'cuiabá': 'MT', 'campo grande': 'MS',
+    'belo horizonte': 'MG', 'belém': 'PA', 'joão pessoa': 'PB', 'curitiba': 'PR',
+    'recife': 'PE', 'teresina': 'PI', 'rio de janeiro': 'RJ', 'natal': 'RN',
+    'porto alegre': 'RS', 'porto velho': 'RO', 'boa vista': 'RR', 'florianópolis': 'SC',
+    'são paulo': 'SP', 'aracaju': 'SE', 'palmas': 'TO',
+    # Outras cidades importantes
+    'guarulhos': 'SP', 'campinas': 'SP', 'santos': 'SP', 'sorocaba': 'SP',
+    'ribeirão preto': 'SP', 'são bernardo': 'SP', 'santo andré': 'SP',
+    'niterói': 'RJ', 'petrópolis': 'RJ', 'búzios': 'RJ', 'angra dos reis': 'RJ',
+    'contagem': 'MG', 'uberlândia': 'MG', 'juiz de fora': 'MG', 'ouro preto': 'MG',
+    'feira de santana': 'BA', 'porto seguro': 'BA', 'ilhéus': 'BA', 'caetité': 'BA',
+    'joinville': 'SC', 'blumenau': 'SC', 'balneário camboriú': 'SC',
+    'londrina': 'PR', 'maringá': 'PR', 'foz do iguaçu': 'PR',
+    'caxias do sul': 'RS', 'pelotas': 'RS', 'gramado': 'RS',
+    'olinda': 'PE', 'caruaru': 'PE', 'petrolina': 'PE',
+    'caucaia': 'CE', 'juazeiro do norte': 'CE',
+    'aparecida de goiânia': 'GO', 'anápolis': 'GO',
+    'vila velha': 'ES', 'serra': 'ES', 'cariacica': 'ES',
+}
+
+# Meses em português
+MESES_PT = {
+    'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
+    'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
+    'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12',
+    'jan': '01', 'fev': '02', 'mar': '03', 'abr': '04',
+    'mai': '05', 'jun': '06', 'jul': '07', 'ago': '08',
+    'set': '09', 'out': '10', 'nov': '11', 'dez': '12'
 }
 
 
-def extrair_estado_da_cidade(cidade: str) -> str:
-    """Tenta extrair o estado a partir do nome da cidade"""
-    cidade_lower = cidade.lower().strip()
+def extrair_estado_da_cidade(texto: str) -> str:
+    """Tenta extrair o estado (UF) a partir do texto"""
+    if not texto:
+        return ''
     
-    # Verificar se já tem UF no nome (ex: "São Paulo - SP" ou "São Paulo/SP")
-    match = re.search(r'[-/]\s*([A-Z]{2})\s*$', cidade)
+    texto_clean = texto.strip()
+    
+    # Padrão 1: "Cidade - UF" ou "Cidade/UF" ou "Cidade, UF"
+    match = re.search(r'[-/,]\s*([A-Z]{2})\s*$', texto_clean)
     if match:
-        return match.group(1)
+        uf = match.group(1)
+        if uf in ESTADOS_BR:
+            return uf
     
-    # Procurar na lista de cidades conhecidas
-    for cidade_conhecida, uf in CIDADES_ESTADOS.items():
-        if cidade_conhecida in cidade_lower:
+    # Padrão 2: UF entre parênteses "(UF)"
+    match = re.search(r'\(([A-Z]{2})\)', texto_clean)
+    if match:
+        uf = match.group(1)
+        if uf in ESTADOS_BR:
+            return uf
+    
+    # Padrão 3: Buscar cidade conhecida
+    texto_lower = texto_clean.lower()
+    for cidade, uf in CIDADES_ESTADOS.items():
+        if cidade in texto_lower:
+            return uf
+    
+    # Padrão 4: Buscar nome do estado por extenso
+    for uf, nome in ESTADOS_BR.items():
+        if nome.lower() in texto_lower:
             return uf
     
     return ''
 
 
-def limpar_texto(texto: str) -> str:
-    """Remove espaços extras e caracteres especiais"""
+def extrair_cidade(texto: str) -> str:
+    """Extrai apenas o nome da cidade, removendo UF e outros sufixos"""
     if not texto:
         return ''
-    return ' '.join(texto.split()).strip()
+    
+    # Remover UF e separadores
+    cidade = re.sub(r'\s*[-/,]\s*[A-Z]{2}\s*$', '', texto.strip())
+    cidade = re.sub(r'\s*\([A-Z]{2}\)\s*$', '', cidade)
+    cidade = re.sub(r'\s*-\s*Brasil\s*$', '', cidade, flags=re.IGNORECASE)
+    
+    return cidade.strip()
+
+
+def limpar_texto(texto: str) -> str:
+    """Remove espaços extras, quebras de linha e caracteres especiais"""
+    if not texto:
+        return ''
+    # Normalizar espaços e quebras de linha
+    texto = re.sub(r'\s+', ' ', texto)
+    return texto.strip()
 
 
 def extrair_data(texto: str) -> str:
-    """Tenta extrair data de um texto no formato YYYY-MM-DD"""
+    """Tenta extrair data de um texto e retorna no formato YYYY-MM-DD"""
     if not texto:
         return ''
     
-    # Padrões de data comuns
-    padroes = [
-        r'(\d{2})/(\d{2})/(\d{4})',  # DD/MM/YYYY
-        r'(\d{2})-(\d{2})-(\d{4})',  # DD-MM-YYYY
-        r'(\d{4})-(\d{2})-(\d{2})',  # YYYY-MM-DD
-        r'(\d{1,2})\s+de\s+(\w+)\s+de\s+(\d{4})',  # D de Mês de YYYY
-    ]
+    texto_lower = texto.lower().strip()
     
-    meses = {
-        'janeiro': '01', 'fevereiro': '02', 'março': '03', 'abril': '04',
-        'maio': '05', 'junho': '06', 'julho': '07', 'agosto': '08',
-        'setembro': '09', 'outubro': '10', 'novembro': '11', 'dezembro': '12'
-    }
+    # Padrão 1: DD/MM/YYYY ou DD-MM-YYYY
+    match = re.search(r'(\d{1,2})[/-](\d{1,2})[/-](\d{4})', texto)
+    if match:
+        dia, mes, ano = match.groups()
+        return f"{ano}-{mes.zfill(2)}-{dia.zfill(2)}"
     
-    for padrao in padroes[:3]:
-        match = re.search(padrao, texto)
-        if match:
-            grupos = match.groups()
-            if len(grupos[0]) == 4:  # YYYY-MM-DD
-                return f"{grupos[0]}-{grupos[1]}-{grupos[2]}"
-            else:  # DD/MM/YYYY ou DD-MM-YYYY
-                return f"{grupos[2]}-{grupos[1]}-{grupos[0]}"
+    # Padrão 2: YYYY-MM-DD (ISO)
+    match = re.search(r'(\d{4})-(\d{2})-(\d{2})', texto)
+    if match:
+        return match.group(0)
     
-    # Padrão com mês por extenso
-    match = re.search(padroes[3], texto.lower())
+    # Padrão 3: "DD de Mês de YYYY" ou "DD Mês YYYY"
+    match = re.search(r'(\d{1,2})\s*(?:de\s+)?(\w+)\s*(?:de\s+)?(\d{4})', texto_lower)
     if match:
         dia, mes_nome, ano = match.groups()
-        mes = meses.get(mes_nome, '01')
-        return f"{ano}-{mes}-{dia.zfill(2)}"
+        mes = MESES_PT.get(mes_nome[:3], '')
+        if mes:
+            return f"{ano}-{mes}-{dia.zfill(2)}"
+    
+    # Padrão 4: "Mês DD, YYYY" (formato americano)
+    match = re.search(r'(\w+)\s+(\d{1,2}),?\s*(\d{4})', texto_lower)
+    if match:
+        mes_nome, dia, ano = match.groups()
+        mes = MESES_PT.get(mes_nome[:3], '')
+        if mes:
+            return f"{ano}-{mes}-{dia.zfill(2)}"
     
     return ''
 
 
-class ScraperCorridas:
-    """Classe base para scraping de corridas"""
+def eh_corrida_valida(nome: str) -> bool:
+    """Verifica se o nome parece ser de uma corrida de rua"""
+    if not nome or len(nome) < 5:
+        return False
+    
+    nome_lower = nome.lower()
+    
+    # Palavras-chave que indicam corrida
+    palavras_positivas = [
+        'corrida', 'maratona', 'meia maratona', 'meia-maratona',
+        'run', 'running', 'marathon', 'half marathon',
+        '5k', '10k', '21k', '42k', '5km', '10km', '21km', '42km',
+        'trail', 'trilha', 'circuito', 'volta', 'travessia',
+        'night run', 'color run', 'track', 'race', 'prova',
+        'desafio', 'challenge', 'km', 'quilômetros'
+    ]
+    
+    # Palavras que indicam que NÃO é corrida
+    palavras_negativas = [
+        'ciclismo', 'bike', 'bicicleta', 'mtb', 'pedal',
+        'natação', 'swim', 'aquathlon', 'triathlon',
+        'futebol', 'vôlei', 'basquete', 'tênis',
+        'workshop', 'curso', 'palestra', 'congresso',
+        'show', 'festa', 'balada', 'carnaval'
+    ]
+    
+    # Verificar palavras negativas primeiro
+    for palavra in palavras_negativas:
+        if palavra in nome_lower:
+            return False
+    
+    # Verificar palavras positivas
+    for palavra in palavras_positivas:
+        if palavra in nome_lower:
+            return True
+    
+    return False
+
+
+class ScraperBase:
+    """Classe base para scrapers"""
     
     def __init__(self, url: str):
         self.url = url
         self.soup = None
-        self.corridas = []
+        self.fonte = "Genérico"
         
     def fetch_page(self) -> bool:
         """Busca a página e cria o objeto BeautifulSoup"""
         try:
-            response = requests.get(self.url, headers=HEADERS, timeout=30)
+            response = requests.get(self.url, headers=HEADERS, timeout=30, verify=True)
             response.raise_for_status()
             self.soup = BeautifulSoup(response.content, 'lxml')
             return True
-        except Exception as e:
-            print(f"Erro ao buscar página: {e}")
+        except requests.exceptions.SSLError:
+            # Tentar sem verificação SSL
+            try:
+                response = requests.get(self.url, headers=HEADERS, timeout=30, verify=False)
+                response.raise_for_status()
+                self.soup = BeautifulSoup(response.content, 'lxml')
+                return True
+            except Exception:
+                return False
+        except Exception:
             return False
     
     def extrair_corridas(self) -> List[Dict]:
         """Método a ser implementado pelas subclasses"""
         raise NotImplementedError
+    
+    def criar_corrida(self, nome: str, organizador: str, cidade: str, estado: str, 
+                      link: str, data: str) -> Dict:
+        """Cria um dicionário de corrida padronizado"""
+        
+        # Limpar e validar dados
+        nome = limpar_texto(nome)[:200]
+        organizador = limpar_texto(organizador)[:100] or self.fonte
+        cidade = extrair_cidade(cidade)[:100]
+        estado = estado or extrair_estado_da_cidade(cidade)
+        
+        # Garantir que link é absoluto
+        if link and not link.startswith('http'):
+            base_url = '/'.join(self.url.split('/')[:3])
+            link = base_url + (link if link.startswith('/') else '/' + link)
+        
+        return {
+            'nome_corrida': nome,
+            'organizador': organizador,
+            'cidade': cidade,
+            'estado': estado.upper()[:2] if estado else '',
+            'pagina_link': link or self.url,
+            'data_corrida': data,
+            'status': 'ativa'
+        }
 
 
-class ScraperTicketSports(ScraperCorridas):
-    """Scraper para Ticket Sports"""
+class ScraperTicketSports(ScraperBase):
+    """Scraper otimizado para Ticket Sports"""
+    
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.fonte = "Ticket Sports"
     
     def extrair_corridas(self) -> List[Dict]:
         if not self.fetch_page():
@@ -125,66 +270,58 @@ class ScraperTicketSports(ScraperCorridas):
         
         corridas = []
         
-        # Ticket Sports usa cards de eventos
-        cards = self.soup.find_all(['div', 'article'], class_=re.compile(r'event|card|item', re.I))
+        # Ticket Sports usa cards com classe específica
+        cards = self.soup.find_all('div', class_=re.compile(r'event|card|item|produto', re.I))
         
         for card in cards:
             try:
-                # Tentar extrair dados
                 nome = ''
                 link = ''
                 cidade = ''
                 data = ''
-                organizador = 'Ticket Sports'
+                organizador = self.fonte
                 
-                # Nome do evento
-                titulo = card.find(['h2', 'h3', 'h4', 'a'], class_=re.compile(r'title|name|heading', re.I))
-                if titulo:
-                    nome = limpar_texto(titulo.get_text())
-                    if titulo.name == 'a' and titulo.get('href'):
-                        link = titulo.get('href')
+                # Buscar título/nome
+                for tag in ['h2', 'h3', 'h4', 'a']:
+                    titulo = card.find(tag, class_=re.compile(r'title|name|nome', re.I))
+                    if titulo:
+                        nome = limpar_texto(titulo.get_text())
+                        if titulo.name == 'a' and titulo.get('href'):
+                            link = titulo.get('href')
+                        break
                 
-                # Link alternativo
-                if not link:
+                if not nome:
                     link_elem = card.find('a', href=True)
                     if link_elem:
+                        nome = limpar_texto(link_elem.get_text())
                         link = link_elem.get('href')
                 
-                # Cidade/Local
-                local = card.find(['span', 'p', 'div'], class_=re.compile(r'location|city|local|place', re.I))
+                # Buscar local/cidade
+                local = card.find(['span', 'p', 'div'], class_=re.compile(r'local|city|cidade|location', re.I))
                 if local:
                     cidade = limpar_texto(local.get_text())
                 
-                # Data
-                data_elem = card.find(['span', 'p', 'div', 'time'], class_=re.compile(r'date|data|when', re.I))
+                # Buscar data
+                data_elem = card.find(['span', 'time', 'p'], class_=re.compile(r'date|data|when', re.I))
                 if data_elem:
                     data = extrair_data(data_elem.get_text())
                 
-                if nome and len(nome) > 3:
-                    # Completar URL se necessário
-                    if link and not link.startswith('http'):
-                        base_url = '/'.join(self.url.split('/')[:3])
-                        link = base_url + link if link.startswith('/') else base_url + '/' + link
+                # Validar e adicionar
+                if nome and eh_corrida_valida(nome):
+                    corridas.append(self.criar_corrida(nome, organizador, cidade, '', link, data))
                     
-                    uf = extrair_estado_da_cidade(cidade)
-                    
-                    corridas.append({
-                        'nome_corrida': nome,
-                        'organizador': organizador,
-                        'cidade': cidade.split('-')[0].split('/')[0].strip() if cidade else '',
-                        'estado': uf,
-                        'pagina_link': link or self.url,
-                        'data_corrida': data,
-                        'status': 'ativa'
-                    })
             except Exception:
                 continue
         
         return corridas
 
 
-class ScraperMinhasInscricoes(ScraperCorridas):
-    """Scraper para Minhas Inscrições"""
+class ScraperMinhasInscricoes(ScraperBase):
+    """Scraper otimizado para Minhas Inscrições"""
+    
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.fonte = "Minhas Inscrições"
     
     def extrair_corridas(self) -> List[Dict]:
         if not self.fetch_page():
@@ -192,8 +329,8 @@ class ScraperMinhasInscricoes(ScraperCorridas):
         
         corridas = []
         
-        # Minhas Inscrições usa estrutura específica
-        cards = self.soup.find_all(['div', 'li'], class_=re.compile(r'evento|event|card', re.I))
+        # Buscar cards de eventos
+        cards = self.soup.find_all(['div', 'article', 'li'], class_=re.compile(r'evento|event|card|item', re.I))
         
         for card in cards:
             try:
@@ -201,47 +338,45 @@ class ScraperMinhasInscricoes(ScraperCorridas):
                 link = ''
                 cidade = ''
                 data = ''
-                organizador = 'Minhas Inscrições'
+                estado = ''
                 
-                # Buscar título
+                # Título
                 titulo = card.find(['h1', 'h2', 'h3', 'h4', 'a'])
                 if titulo:
                     nome = limpar_texto(titulo.get_text())
                     if titulo.get('href'):
                         link = titulo.get('href')
                 
-                # Buscar informações adicionais
-                info = card.find_all(['span', 'p', 'div'])
-                for elem in info:
-                    texto = limpar_texto(elem.get_text())
-                    if any(uf in texto for uf in ['SP', 'RJ', 'MG', 'BA', 'CE', 'PR', 'RS', 'SC']):
-                        cidade = texto
-                    elif re.search(r'\d{2}[/-]\d{2}[/-]\d{4}', texto):
-                        data = extrair_data(texto)
+                # Extrair informações do texto completo
+                texto = limpar_texto(card.get_text())
                 
-                if nome and len(nome) > 3:
+                # Buscar UF no texto
+                match_uf = re.search(r'([A-Za-zÀ-ú\s]+)\s*[-/]\s*([A-Z]{2})', texto)
+                if match_uf:
+                    cidade = match_uf.group(1).strip()
+                    estado = match_uf.group(2)
+                
+                # Buscar data
+                data = extrair_data(texto)
+                
+                if nome and eh_corrida_valida(nome):
                     if link and not link.startswith('http'):
                         link = 'https://www.minhasinscricoes.com.br' + link
                     
-                    uf = extrair_estado_da_cidade(cidade)
+                    corridas.append(self.criar_corrida(nome, self.fonte, cidade, estado, link, data))
                     
-                    corridas.append({
-                        'nome_corrida': nome,
-                        'organizador': organizador,
-                        'cidade': cidade.split('-')[0].split('/')[0].strip() if cidade else '',
-                        'estado': uf,
-                        'pagina_link': link or self.url,
-                        'data_corrida': data,
-                        'status': 'ativa'
-                    })
             except Exception:
                 continue
         
         return corridas
 
 
-class ScraperGenerico(ScraperCorridas):
-    """Scraper genérico para qualquer site"""
+class ScraperWebrun(ScraperBase):
+    """Scraper otimizado para Webrun"""
+    
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.fonte = "Webrun"
     
     def extrair_corridas(self) -> List[Dict]:
         if not self.fetch_page():
@@ -249,86 +384,202 @@ class ScraperGenerico(ScraperCorridas):
         
         corridas = []
         
-        # Tentar encontrar padrões comuns de listagem de eventos
-        # Buscar por cards, lista de eventos, tabelas, etc.
-        containers = self.soup.find_all(['div', 'article', 'li', 'tr'], 
-            class_=re.compile(r'event|corrida|prova|card|item|row', re.I))
+        # Webrun lista eventos em tabelas ou divs
+        eventos = self.soup.find_all(['tr', 'div', 'article'], class_=re.compile(r'event|corrida|prova|calendario', re.I))
         
-        if not containers:
-            # Tentar buscar por links que parecem ser eventos
-            containers = self.soup.find_all('a', href=re.compile(r'event|corrida|prova|inscri', re.I))
+        if not eventos:
+            # Tentar buscar links de eventos
+            eventos = self.soup.find_all('a', href=re.compile(r'evento|corrida|prova', re.I))
         
-        for container in containers[:50]:  # Limitar a 50 para evitar muito processamento
+        for evento in eventos:
             try:
                 nome = ''
                 link = ''
                 cidade = ''
                 data = ''
-                organizador = ''
                 
-                # Extrair nome
-                titulo = container.find(['h1', 'h2', 'h3', 'h4', 'h5', 'strong', 'b'])
+                if evento.name == 'a':
+                    nome = limpar_texto(evento.get_text())
+                    link = evento.get('href', '')
+                else:
+                    titulo = evento.find(['a', 'h2', 'h3', 'td'])
+                    if titulo:
+                        nome = limpar_texto(titulo.get_text())
+                        if titulo.name == 'a':
+                            link = titulo.get('href', '')
+                
+                # Extrair cidade e data do texto
+                texto = limpar_texto(evento.get_text())
+                data = extrair_data(texto)
+                
+                # Buscar cidade
+                for cidade_conhecida, uf in CIDADES_ESTADOS.items():
+                    if cidade_conhecida in texto.lower():
+                        cidade = cidade_conhecida.title()
+                        break
+                
+                if nome and eh_corrida_valida(nome):
+                    if link and not link.startswith('http'):
+                        link = 'https://www.webrun.com.br' + link
+                    
+                    corridas.append(self.criar_corrida(nome, self.fonte, cidade, '', link, data))
+                    
+            except Exception:
+                continue
+        
+        return corridas
+
+
+class ScraperSympla(ScraperBase):
+    """Scraper para Sympla"""
+    
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.fonte = "Sympla"
+    
+    def extrair_corridas(self) -> List[Dict]:
+        if not self.fetch_page():
+            return []
+        
+        corridas = []
+        
+        # Sympla usa cards com estrutura específica
+        cards = self.soup.find_all(['div', 'article'], class_=re.compile(r'event|card|EventCard', re.I))
+        
+        for card in cards:
+            try:
+                nome = ''
+                link = ''
+                cidade = ''
+                data = ''
+                
+                # Título
+                titulo = card.find(['h2', 'h3', 'a'], class_=re.compile(r'title|name', re.I))
                 if titulo:
                     nome = limpar_texto(titulo.get_text())
-                elif container.name == 'a':
-                    nome = limpar_texto(container.get_text())
+                    if titulo.get('href'):
+                        link = titulo.get('href')
                 
-                # Extrair link
+                # Local
+                local = card.find(class_=re.compile(r'location|local|venue', re.I))
+                if local:
+                    cidade = limpar_texto(local.get_text())
+                
+                # Data
+                data_elem = card.find(class_=re.compile(r'date|data', re.I))
+                if data_elem:
+                    data = extrair_data(data_elem.get_text())
+                
+                if nome and eh_corrida_valida(nome):
+                    if link and not link.startswith('http'):
+                        link = 'https://www.sympla.com.br' + link
+                    
+                    corridas.append(self.criar_corrida(nome, self.fonte, cidade, '', link, data))
+                    
+            except Exception:
+                continue
+        
+        return corridas
+
+
+class ScraperGenerico(ScraperBase):
+    """Scraper genérico melhorado para qualquer site"""
+    
+    def __init__(self, url: str):
+        super().__init__(url)
+        self.fonte = "Site Genérico"
+    
+    def extrair_corridas(self) -> List[Dict]:
+        if not self.fetch_page():
+            return []
+        
+        corridas = []
+        nomes_vistos = set()
+        
+        # Estratégia 1: Buscar containers de eventos
+        containers = self.soup.find_all(['div', 'article', 'li', 'tr', 'section'], 
+            class_=re.compile(r'event|corrida|prova|card|item|row|entry|post', re.I))
+        
+        # Estratégia 2: Se não encontrou containers, buscar links
+        if not containers:
+            containers = self.soup.find_all('a', href=re.compile(r'event|corrida|prova|inscri|marathon', re.I))
+        
+        for container in containers[:100]:  # Limitar para evitar muito processamento
+            try:
+                nome = ''
+                link = ''
+                cidade = ''
+                data = ''
+                
+                # Extrair nome
                 if container.name == 'a':
+                    nome = limpar_texto(container.get_text())
                     link = container.get('href', '')
                 else:
-                    link_elem = container.find('a', href=True)
-                    if link_elem:
-                        link = link_elem.get('href', '')
+                    # Buscar título em tags de heading ou links
+                    for tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'a', 'strong', 'b']:
+                        titulo = container.find(tag)
+                        if titulo:
+                            texto_titulo = limpar_texto(titulo.get_text())
+                            if len(texto_titulo) > 5 and eh_corrida_valida(texto_titulo):
+                                nome = texto_titulo
+                                if titulo.name == 'a':
+                                    link = titulo.get('href', '')
+                                break
+                
+                if not nome:
+                    continue
+                
+                # Evitar duplicatas
+                nome_lower = nome.lower()
+                if nome_lower in nomes_vistos:
+                    continue
                 
                 # Extrair texto completo para buscar cidade e data
-                texto_completo = limpar_texto(container.get_text())
+                texto = limpar_texto(container.get_text())
                 
-                # Tentar extrair data
-                data = extrair_data(texto_completo)
+                # Buscar data
+                data = extrair_data(texto)
                 
-                # Tentar extrair cidade/estado
-                match_uf = re.search(r'([A-Za-zÀ-ú\s]+)\s*[-/]\s*([A-Z]{2})', texto_completo)
-                if match_uf:
-                    cidade = match_uf.group(1).strip()
-                    estado = match_uf.group(2)
+                # Buscar cidade/estado
+                estado = ''
+                match_local = re.search(r'([A-Za-zÀ-ú\s]+)\s*[-/,]\s*([A-Z]{2})', texto)
+                if match_local:
+                    cidade = match_local.group(1).strip()
+                    estado = match_local.group(2)
                 else:
-                    estado = ''
-                    # Procurar menção de cidade conhecida
+                    # Buscar cidade conhecida
                     for cidade_conhecida, uf in CIDADES_ESTADOS.items():
-                        if cidade_conhecida in texto_completo.lower():
+                        if cidade_conhecida in texto.lower():
                             cidade = cidade_conhecida.title()
                             estado = uf
                             break
                 
-                # Filtrar resultados válidos (nome deve ter mais de 5 caracteres e parecer um evento)
-                palavras_chave = ['corrida', 'maratona', 'meia', 'km', '5k', '10k', '21k', '42k', 'run', 'marathon']
-                if nome and len(nome) > 5 and any(kw in nome.lower() for kw in palavras_chave):
-                    if link and not link.startswith('http'):
-                        base_url = '/'.join(self.url.split('/')[:3])
-                        link = base_url + link if link.startswith('/') else base_url + '/' + link
+                # Validar e adicionar
+                if nome and eh_corrida_valida(nome):
+                    nomes_vistos.add(nome_lower)
+                    corridas.append(self.criar_corrida(nome, '', cidade, estado, link, data))
                     
-                    corridas.append({
-                        'nome_corrida': nome[:200],  # Limitar tamanho
-                        'organizador': organizador or 'A definir',
-                        'cidade': cidade[:100] if cidade else '',
-                        'estado': estado if estado else extrair_estado_da_cidade(cidade),
-                        'pagina_link': link or self.url,
-                        'data_corrida': data,
-                        'status': 'ativa'
-                    })
             except Exception:
                 continue
         
-        # Remover duplicatas por nome
-        corridas_unicas = []
-        nomes_vistos = set()
-        for corrida in corridas:
-            if corrida['nome_corrida'].lower() not in nomes_vistos:
-                nomes_vistos.add(corrida['nome_corrida'].lower())
-                corridas_unicas.append(corrida)
-        
-        return corridas_unicas
+        return corridas
+
+
+def detectar_scraper(url: str) -> ScraperBase:
+    """Detecta o scraper apropriado baseado na URL"""
+    url_lower = url.lower()
+    
+    if 'ticketsports' in url_lower:
+        return ScraperTicketSports(url)
+    elif 'minhasinscricoes' in url_lower:
+        return ScraperMinhasInscricoes(url)
+    elif 'webrun' in url_lower:
+        return ScraperWebrun(url)
+    elif 'sympla' in url_lower:
+        return ScraperSympla(url)
+    else:
+        return ScraperGenerico(url)
 
 
 def fazer_scraping(url: str) -> Dict:
@@ -336,31 +587,58 @@ def fazer_scraping(url: str) -> Dict:
     Função principal que detecta o site e faz o scraping apropriado.
     Retorna um dicionário com status e lista de corridas.
     """
-    url_lower = url.lower()
+    
+    # Validar URL
+    if not url or not url.startswith(('http://', 'https://')):
+        return {
+            'success': False,
+            'fonte': 'Erro',
+            'url': url,
+            'total_encontradas': 0,
+            'corridas': [],
+            'mensagem': 'URL inválida. Use uma URL completa (http:// ou https://)'
+        }
     
     try:
-        # Detectar qual scraper usar
-        if 'ticketsports' in url_lower:
-            scraper = ScraperTicketSports(url)
-            fonte = 'Ticket Sports'
-        elif 'minhasinscricoes' in url_lower:
-            scraper = ScraperMinhasInscricoes(url)
-            fonte = 'Minhas Inscrições'
-        else:
-            scraper = ScraperGenerico(url)
-            fonte = 'Genérico'
-        
+        scraper = detectar_scraper(url)
         corridas = scraper.extrair_corridas()
+        
+        # Remover duplicatas finais
+        corridas_unicas = []
+        nomes_vistos = set()
+        for corrida in corridas:
+            chave = (corrida['nome_corrida'].lower(), corrida['data_corrida'])
+            if chave not in nomes_vistos:
+                nomes_vistos.add(chave)
+                corridas_unicas.append(corrida)
         
         return {
             'success': True,
-            'fonte': fonte,
+            'fonte': scraper.fonte,
             'url': url,
-            'total_encontradas': len(corridas),
-            'corridas': corridas,
-            'mensagem': f'{len(corridas)} corridas encontradas de {fonte}'
+            'total_encontradas': len(corridas_unicas),
+            'corridas': corridas_unicas,
+            'mensagem': f'{len(corridas_unicas)} corridas encontradas de {scraper.fonte}'
         }
     
+    except requests.exceptions.Timeout:
+        return {
+            'success': False,
+            'fonte': 'Erro',
+            'url': url,
+            'total_encontradas': 0,
+            'corridas': [],
+            'mensagem': 'Timeout: O site demorou muito para responder'
+        }
+    except requests.exceptions.ConnectionError:
+        return {
+            'success': False,
+            'fonte': 'Erro',
+            'url': url,
+            'total_encontradas': 0,
+            'corridas': [],
+            'mensagem': 'Erro de conexão: Não foi possível acessar o site'
+        }
     except Exception as e:
         return {
             'success': False,
