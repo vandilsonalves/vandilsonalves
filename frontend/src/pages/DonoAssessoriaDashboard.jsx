@@ -15,7 +15,7 @@ import {
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, Home, Bell, 
   Download, Send, Settings, LogOut, Plus, Eye, BarChart3, Loader2, 
   MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus, PieChart,
-  BadgeCheck, Crown, X, ShieldCheck
+  BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
@@ -44,6 +44,11 @@ const DonoAssessoriaDashboard = () => {
   const [sendingMensagem, setSendingMensagem] = useState(false);
   const [downloadingCertificado, setDownloadingCertificado] = useState(false);
   const certificadoRef = useRef(null);
+  
+  // Estados para solicitações pendentes
+  const [solicitacoesPendentes, setSolicitacoesPendentes] = useState([]);
+  const [totalPendentes, setTotalPendentes] = useState(0);
+  const [processandoSolicitacao, setProcessandoSolicitacao] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'dono_assessoria') {
@@ -51,6 +56,7 @@ const DonoAssessoriaDashboard = () => {
       return;
     }
     fetchDados();
+    fetchSolicitacoesPendentes();
   }, [user]);
 
   const fetchDados = async () => {
@@ -116,6 +122,53 @@ const DonoAssessoriaDashboard = () => {
       toast.error('Erro ao carregar dados da assessoria');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchSolicitacoesPendentes = async () => {
+    try {
+      const response = await axios.get(`${API}/assessorias/solicitacoes-pendentes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setSolicitacoesPendentes(response.data.solicitacoes || []);
+      setTotalPendentes(response.data.total_pendentes || 0);
+    } catch (error) {
+      console.error('Erro ao buscar solicitações:', error);
+    }
+  };
+
+  const handleAprovarSolicitacao = async (solicitacaoId) => {
+    setProcessandoSolicitacao(solicitacaoId);
+    try {
+      const response = await axios.post(
+        `${API}/assessorias/aprovar-solicitacao/${solicitacaoId}`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      fetchSolicitacoesPendentes();
+      fetchDados(); // Atualizar lista de atletas
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao aprovar solicitação');
+    } finally {
+      setProcessandoSolicitacao(null);
+    }
+  };
+
+  const handleReprovarSolicitacao = async (solicitacaoId, motivo = 'Solicitação não aprovada') => {
+    setProcessandoSolicitacao(solicitacaoId);
+    try {
+      const response = await axios.post(
+        `${API}/assessorias/reprovar-solicitacao/${solicitacaoId}`,
+        { motivo },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Solicitação reprovada');
+      fetchSolicitacoesPendentes();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao reprovar solicitação');
+    } finally {
+      setProcessandoSolicitacao(null);
     }
   };
 
@@ -245,6 +298,7 @@ const DonoAssessoriaDashboard = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
+    { id: 'solicitacoes', label: 'Solicitações', icon: UserPlus, badge: totalPendentes },
     { id: 'atletas', label: 'Meus Atletas', icon: Users },
     { id: 'relatorios', label: 'Relatórios', icon: PieChart },
     { id: 'rankings', label: 'Rankings', icon: Trophy },
@@ -271,6 +325,7 @@ const DonoAssessoriaDashboard = () => {
             <button
               key={item.id}
               onClick={() => setActiveTab(item.id)}
+              data-testid={`menu-${item.id}`}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 activeTab === item.id
                   ? 'bg-amber-500 text-white'
@@ -278,7 +333,12 @@ const DonoAssessoriaDashboard = () => {
               }`}
             >
               <item.icon className="w-5 h-5" />
-              <span className="text-sm font-medium">{item.label}</span>
+              <span className="text-sm font-medium flex-1 text-left">{item.label}</span>
+              {item.badge > 0 && (
+                <Badge className="bg-red-500 text-white text-xs px-2 py-0.5 animate-pulse" data-testid="badge-pendentes">
+                  {item.badge}
+                </Badge>
+              )}
             </button>
           ))}
         </nav>
@@ -657,6 +717,127 @@ const DonoAssessoriaDashboard = () => {
                   </ResponsiveContainer>
                 </CardContent>
               </Card>
+            )}
+          </div>
+        )}
+
+        {/* Solicitações Tab */}
+        {activeTab === 'solicitacoes' && (
+          <div className="space-y-6" data-testid="solicitacoes-tab">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <h2 className="text-2xl font-bold text-white">Solicitações de Entrada</h2>
+                {totalPendentes > 0 && (
+                  <Badge className="bg-red-500 text-white px-3 py-1 animate-pulse" data-testid="total-pendentes">
+                    {totalPendentes} pendente{totalPendentes > 1 ? 's' : ''}
+                  </Badge>
+                )}
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={fetchSolicitacoesPendentes}
+                className="border-slate-600"
+              >
+                <Clock className="w-4 h-4 mr-2" />
+                Atualizar
+              </Button>
+            </div>
+
+            {solicitacoesPendentes.length === 0 ? (
+              <Card className="bg-slate-800 border-slate-700">
+                <CardContent className="p-12 text-center">
+                  <UserPlus className="w-16 h-16 mx-auto text-slate-600 mb-4" />
+                  <h3 className="text-xl font-semibold text-white mb-2">Nenhuma solicitação pendente</h3>
+                  <p className="text-slate-400">
+                    Quando atletas solicitarem entrada na sua assessoria, eles aparecerão aqui para aprovação.
+                  </p>
+                </CardContent>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {solicitacoesPendentes.map((solicitacao) => (
+                  <Card key={solicitacao.id} className="bg-slate-800 border-slate-700 hover:border-amber-500/50 transition-colors" data-testid={`solicitacao-${solicitacao.id}`}>
+                    <CardContent className="p-6">
+                      <div className="flex items-start gap-4">
+                        <Avatar className="w-16 h-16">
+                          {solicitacao.atleta_foto ? (
+                            <AvatarImage src={solicitacao.atleta_foto.startsWith('http') ? solicitacao.atleta_foto : `${BACKEND_URL}${solicitacao.atleta_foto}`} />
+                          ) : null}
+                          <AvatarFallback className="bg-amber-500 text-white text-xl">
+                            {solicitacao.atleta_nome?.charAt(0)}
+                          </AvatarFallback>
+                        </Avatar>
+                        
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <h3 className="text-lg font-semibold text-white">{solicitacao.atleta_nome}</h3>
+                            <Badge variant="outline" className="text-xs text-amber-400 border-amber-400/50">
+                              Nova solicitação
+                            </Badge>
+                          </div>
+                          
+                          <div className="flex flex-wrap gap-3 text-sm text-slate-400 mb-3">
+                            <span className="flex items-center gap-1">
+                              <MapPin className="w-4 h-4" />
+                              {solicitacao.atleta_cidade || 'Cidade não informada'}, {solicitacao.atleta_estado || 'UF'}
+                            </span>
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {new Date(solicitacao.data_solicitacao).toLocaleDateString('pt-BR', {
+                                day: '2-digit',
+                                month: '2-digit',
+                                year: 'numeric',
+                                hour: '2-digit',
+                                minute: '2-digit'
+                              })}
+                            </span>
+                          </div>
+                          
+                          {solicitacao.mensagem && (
+                            <div className="bg-slate-700/50 rounded-lg p-3 mb-3">
+                              <p className="text-sm text-slate-300 italic">"{solicitacao.mensagem}"</p>
+                            </div>
+                          )}
+                          
+                          <div className="flex gap-2">
+                            <Button 
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                              onClick={() => handleAprovarSolicitacao(solicitacao.id)}
+                              disabled={processandoSolicitacao === solicitacao.id}
+                              data-testid={`btn-aprovar-${solicitacao.id}`}
+                            >
+                              {processandoSolicitacao === solicitacao.id ? (
+                                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                              ) : (
+                                <UserCheck className="w-4 h-4 mr-2" />
+                              )}
+                              Aprovar
+                            </Button>
+                            <Button 
+                              variant="outline"
+                              className="border-red-500/50 text-red-400 hover:bg-red-500/10"
+                              onClick={() => handleReprovarSolicitacao(solicitacao.id)}
+                              disabled={processandoSolicitacao === solicitacao.id}
+                              data-testid={`btn-reprovar-${solicitacao.id}`}
+                            >
+                              <UserX className="w-4 h-4 mr-2" />
+                              Reprovar
+                            </Button>
+                            <Button 
+                              variant="ghost"
+                              className="text-slate-400 hover:text-white"
+                              onClick={() => navigate(`/atleta/${solicitacao.atleta_id}`)}
+                            >
+                              <Eye className="w-4 h-4 mr-2" />
+                              Ver Perfil
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                ))}
+              </div>
             )}
           </div>
         )}

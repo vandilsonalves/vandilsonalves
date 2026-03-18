@@ -518,3 +518,229 @@ async def get_detalhes_assessoria(nome_equipe: str):
         "foto_url": assessoria_doc.get("foto_url", "") if assessoria_doc else "",
         "whatsapp_link": assessoria_doc.get("whatsapp_link", "") if assessoria_doc else ""
     }
+
+
+# ==================== SISTEMA DE SOLICITAÇÕES DE ENTRADA ====================
+
+from pydantic import BaseModel
+import uuid
+
+class SolicitacaoEntradaRequest(BaseModel):
+    assessoria_nome: str
+    mensagem: str = ""
+
+
+@router.post("/assessorias/solicitar-entrada")
+async def solicitar_entrada_assessoria(
+    dados: SolicitacaoEntradaRequest,
+    current_user: dict = Depends(get_current_user)
+):
+    """Atleta solicita entrada em uma assessoria"""
+    
+    # Verificar se atleta já tem equipe (não individual)
+    equipe_atual = current_user.get("equipe", "")
+    if equipe_atual and equipe_atual.upper() not in ["", "INDIVIDUAL", "SEM EQUIPE"]:
+        raise HTTPException(
+            status_code=400, 
+            detail="Você já pertence a uma equipe. Saia da equipe atual antes de solicitar entrada em outra."
+        )
+    
+    # Verificar se assessoria existe
+    assessoria = await db.assessorias.find_one({"nome": dados.assessoria_nome})
+    if not assessoria:
+        # Verificar se existe como equipe informal
+        equipe_existe = await db.usuarios.find_one({"equipe": dados.assessoria_nome})
+        if not equipe_existe:
+            raise HTTPException(status_code=404, detail="Assessoria não encontrada")
+    
+    # Verificar se já existe solicitação pendente
+    solicitacao_existente = await db.solicitacoes_assessoria.find_one({
+        "atleta_id": current_user["id"],
+        "assessoria_nome": dados.assessoria_nome,
+        "status": "pendente"
+    })
+    
+    if solicitacao_existente:
+        raise HTTPException(status_code=400, detail="Você já tem uma solicitação pendente para esta assessoria")
+    
+    # Criar solicitação
+    solicitacao = {
+        "id": str(uuid.uuid4()),
+        "atleta_id": current_user["id"],
+        "atleta_nome": current_user.get("nome", ""),
+        "atleta_email": current_user.get("email", ""),
+        "atleta_foto": current_user.get("foto_url", ""),
+        "atleta_cidade": current_user.get("cidade", ""),
+        "atleta_estado": current_user.get("estado", ""),
+        "assessoria_nome": dados.assessoria_nome,
+        "mensagem": dados.mensagem,
+        "status": "pendente",
+        "data_solicitacao": datetime.now(timezone.utc).isoformat(),
+        "data_resposta": None,
+        "respondido_por": None
+    }
+    
+    await db.solicitacoes_assessoria.insert_one(solicitacao)
+    
+    # Notificar o dono da assessoria
+    if assessoria and assessoria.get("dono_id"):
+        from routes.notificacoes_routes import criar_notificacao
+        await criar_notificacao(
+            usuario_id=assessoria["dono_id"],
+            tipo="solicitacao_entrada",
+            titulo="📩 Nova solicitação de entrada!",
+            mensagem=f"{current_user.get('nome', 'Um atleta')} quer entrar na sua assessoria.",
+            dados_extras={
+                "solicitacao_id": solicitacao["id"],
+                "atleta_id": current_user["id"],
+                "atleta_nome": current_user.get("nome", "")
+            }
+        )
+    
+    return {
+        "message": "Solicitação enviada com sucesso! Aguarde a aprovação do dono da assessoria.",
+        "solicitacao_id": solicitacao["id"]
+    }
+
+
+@router.get("/assessorias/solicitacoes-pendentes")
+async def get_solicitacoes_pendentes(current_user: dict = Depends(get_current_user)):
+    """Retorna solicitações pendentes para a assessoria do dono logado"""
+    
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos de assessoria podem ver solicitações")
+    
+    equipe = current_user.get("equipe", "")
+    if not equipe:
+        return {"solicitacoes": [], "total_pendentes": 0}
+    
+    solicitacoes = await db.solicitacoes_assessoria.find(
+        {"assessoria_nome": equipe, "status": "pendente"},
+        {"_id": 0}
+    ).sort("data_solicitacao", -1).to_list(100)
+    
+    return {
+        "solicitacoes": solicitacoes,
+        "total_pendentes": len(solicitacoes)
+    }
+
+
+@router.post("/assessorias/aprovar-solicitacao/{solicitacao_id}")
+async def aprovar_solicitacao(solicitacao_id: str, current_user: dict = Depends(get_current_user)):
+    """Dono aprova solicitação de entrada"""
+    
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos de assessoria podem aprovar solicitações")
+    
+    solicitacao = await db.solicitacoes_assessoria.find_one({"id": solicitacao_id})
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    
+    if solicitacao["status"] != "pendente":
+        raise HTTPException(status_code=400, detail="Esta solicitação já foi processada")
+    
+    # Verificar se o dono tem permissão (é da mesma assessoria)
+    if current_user.get("role") == "dono_assessoria":
+        if solicitacao["assessoria_nome"] != current_user.get("equipe"):
+            raise HTTPException(status_code=403, detail="Você não tem permissão para aprovar esta solicitação")
+    
+    # Atualizar equipe do atleta
+    await db.usuarios.update_one(
+        {"id": solicitacao["atleta_id"]},
+        {"$set": {
+            "equipe": solicitacao["assessoria_nome"],
+            "ultima_troca_equipe": datetime.now().isoformat()
+        }}
+    )
+    
+    # Atualizar solicitação
+    await db.solicitacoes_assessoria.update_one(
+        {"id": solicitacao_id},
+        {"$set": {
+            "status": "aprovada",
+            "data_resposta": datetime.now(timezone.utc).isoformat(),
+            "respondido_por": current_user["id"]
+        }}
+    )
+    
+    # Notificar o atleta
+    from routes.notificacoes_routes import criar_notificacao
+    await criar_notificacao(
+        usuario_id=solicitacao["atleta_id"],
+        tipo="aprovacao_entrada",
+        titulo="🎉 Solicitação aprovada!",
+        mensagem=f"Parabéns! Sua solicitação para entrar na {solicitacao['assessoria_nome']} foi aprovada!",
+        dados_extras={"assessoria_nome": solicitacao["assessoria_nome"]}
+    )
+    
+    # Invalidar cache
+    await invalidate_on_liga_change()
+    
+    return {
+        "message": f"{solicitacao['atleta_nome']} foi adicionado(a) à assessoria!",
+        "atleta_nome": solicitacao["atleta_nome"]
+    }
+
+
+@router.post("/assessorias/reprovar-solicitacao/{solicitacao_id}")
+async def reprovar_solicitacao(
+    solicitacao_id: str,
+    dados: dict = None,
+    current_user: dict = Depends(get_current_user)
+):
+    """Dono reprova solicitação de entrada"""
+    
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos de assessoria podem reprovar solicitações")
+    
+    solicitacao = await db.solicitacoes_assessoria.find_one({"id": solicitacao_id})
+    if not solicitacao:
+        raise HTTPException(status_code=404, detail="Solicitação não encontrada")
+    
+    if solicitacao["status"] != "pendente":
+        raise HTTPException(status_code=400, detail="Esta solicitação já foi processada")
+    
+    # Verificar permissão
+    if current_user.get("role") == "dono_assessoria":
+        if solicitacao["assessoria_nome"] != current_user.get("equipe"):
+            raise HTTPException(status_code=403, detail="Você não tem permissão para reprovar esta solicitação")
+    
+    motivo = dados.get("motivo", "Solicitação não aprovada") if dados else "Solicitação não aprovada"
+    
+    # Atualizar solicitação
+    await db.solicitacoes_assessoria.update_one(
+        {"id": solicitacao_id},
+        {"$set": {
+            "status": "reprovada",
+            "motivo_reprovacao": motivo,
+            "data_resposta": datetime.now(timezone.utc).isoformat(),
+            "respondido_por": current_user["id"]
+        }}
+    )
+    
+    # Notificar o atleta
+    from routes.notificacoes_routes import criar_notificacao
+    await criar_notificacao(
+        usuario_id=solicitacao["atleta_id"],
+        tipo="reprovacao_entrada",
+        titulo="Solicitação não aprovada",
+        mensagem=f"Sua solicitação para entrar na {solicitacao['assessoria_nome']} não foi aprovada. Motivo: {motivo}",
+        dados_extras={"assessoria_nome": solicitacao["assessoria_nome"], "motivo": motivo}
+    )
+    
+    return {
+        "message": "Solicitação reprovada",
+        "atleta_nome": solicitacao["atleta_nome"]
+    }
+
+
+@router.get("/assessorias/minhas-solicitacoes")
+async def get_minhas_solicitacoes(current_user: dict = Depends(get_current_user)):
+    """Atleta vê suas solicitações pendentes"""
+    
+    solicitacoes = await db.solicitacoes_assessoria.find(
+        {"atleta_id": current_user["id"]},
+        {"_id": 0}
+    ).sort("data_solicitacao", -1).to_list(20)
+    
+    return {"solicitacoes": solicitacoes}
