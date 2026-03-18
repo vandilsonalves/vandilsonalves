@@ -17,7 +17,8 @@ import {
   Users, AlertCircle, TrendingUp, BarChart3, PieChart, Shield,
   Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
   UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X,
-  Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw, Loader2
+  Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw, Loader2,
+  Crown, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { 
@@ -226,6 +227,14 @@ const AdminDashboard = () => {
   const [showPromoverModal, setShowPromoverModal] = useState(false);
   const [atletaPromover, setAtletaPromover] = useState(null);
   const [promoverLoading, setPromoverLoading] = useState(false);
+
+  // Enviar Mensagem Individual
+  const [showMensagemModal, setShowMensagemModal] = useState(false);
+  const [mensagemAdmin, setMensagemAdmin] = useState('');
+  const [sendingMensagem, setSendingMensagem] = useState(false);
+
+  // Atleta selecionado para ações (promover, mensagem)
+  const [atletaAcao, setAtletaAcao] = useState(null);
 
   // Dashboard Ranking das Corridas (Fase 4)
   const [rankingCorridasDashboard, setRankingCorridasDashboard] = useState(null);
@@ -1047,11 +1056,40 @@ const AdminDashboard = () => {
       });
       setShowPromoverModal(false);
       setAtletaPromover(null);
+      setAtletaAcao(null);
       fetchAtletas();
     } catch (error) {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao promover' });
     } finally {
       setPromoverLoading(false);
+    }
+  };
+
+  // Enviar mensagem individual para atleta
+  const handleEnviarMensagemIndividual = async () => {
+    if (!atletaAcao || !mensagemAdmin.trim()) return;
+    
+    setSendingMensagem(true);
+    try {
+      await axios.post(`${API}/notificacoes/enviar`, {
+        destinatarios: [atletaAcao.id],
+        mensagem: mensagemAdmin,
+        tipo: 'mensagem_admin',
+        titulo: 'Mensagem do Administrador'
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      
+      toast.success('Mensagem Enviada', { 
+        description: `Mensagem enviada para ${atletaAcao.nome}` 
+      });
+      setShowMensagemModal(false);
+      setMensagemAdmin('');
+      setAtletaAcao(null);
+    } catch (error) {
+      toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao enviar mensagem' });
+    } finally {
+      setSendingMensagem(false);
     }
   };
 
@@ -1484,10 +1522,16 @@ const AdminDashboard = () => {
             }}
             onPromoverDono={(atleta) => {
               setAtletaPromover(atleta);
+              setAtletaAcao(atleta);
               setShowPromoverModal(true);
             }}
             onExportAtletas={handleExportAtletas}
             onViewAtleta={(atleta) => navigate(`/atleta/${atleta.id}`)}
+            onEnviarMensagem={(atleta) => {
+              setAtletaAcao(atleta);
+              setMensagemAdmin('');
+              setShowMensagemModal(true);
+            }}
           />
         )}
 
@@ -3514,6 +3558,90 @@ const AdminDashboard = () => {
               </Button>
               <Button onClick={handleSalvarCorrida} className="bg-emerald-500 hover:bg-emerald-600">
                 {corridaEditando ? 'Salvar Alterações' : 'Cadastrar Corrida'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Promover a Dono de Assessoria */}
+        <Dialog open={showPromoverModal} onOpenChange={setShowPromoverModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Crown className="w-5 h-5 text-amber-500" />
+                Promover a Dono de Assessoria
+              </DialogTitle>
+            </DialogHeader>
+            {atletaAcao && (
+              <div className="space-y-4">
+                <p className="text-slate-300">
+                  Deseja promover <span className="font-semibold text-white">{atletaAcao.nome}</span> a Dono de Assessoria?
+                </p>
+                <div className="p-3 bg-slate-800 rounded-lg">
+                  <p className="text-sm text-slate-400">Assessoria: <span className="text-white">{atletaAcao.equipe}</span></p>
+                  <p className="text-sm text-slate-400 mt-1">Email: <span className="text-white">{atletaAcao.email}</span></p>
+                </div>
+                <p className="text-xs text-amber-400">
+                  Ao promover, este atleta terá acesso ao painel de gerenciamento da assessoria.
+                </p>
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowPromoverModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handlePromoverDonoAssessoria} 
+                disabled={promoverLoading}
+                className="bg-amber-500 hover:bg-amber-600"
+              >
+                {promoverLoading ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Promovendo...</>
+                ) : (
+                  <><Crown className="w-4 h-4 mr-2" /> Promover</>
+                )}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modal de Enviar Mensagem Individual */}
+        <Dialog open={showMensagemModal} onOpenChange={setShowMensagemModal}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-blue-500" />
+                Enviar Mensagem
+              </DialogTitle>
+            </DialogHeader>
+            {atletaAcao && (
+              <div className="space-y-4">
+                <p className="text-slate-300">
+                  Enviar mensagem para <span className="font-semibold text-white">{atletaAcao.nome}</span>
+                </p>
+                <Textarea
+                  value={mensagemAdmin}
+                  onChange={(e) => setMensagemAdmin(e.target.value)}
+                  placeholder="Digite sua mensagem..."
+                  rows={4}
+                  className="bg-slate-900 border-slate-600 text-white"
+                />
+              </div>
+            )}
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowMensagemModal(false)}>
+                Cancelar
+              </Button>
+              <Button 
+                onClick={handleEnviarMensagemIndividual}
+                disabled={sendingMensagem || !mensagemAdmin.trim()}
+                className="bg-blue-500 hover:bg-blue-600"
+              >
+                {sendingMensagem ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" /> Enviando...</>
+                ) : (
+                  <><Send className="w-4 h-4 mr-2" /> Enviar</>
+                )}
               </Button>
             </DialogFooter>
           </DialogContent>

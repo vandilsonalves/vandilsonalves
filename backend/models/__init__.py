@@ -70,6 +70,7 @@ class PerfilUpdate(BaseModel):
     # Novos campos
     etnia: Optional[str] = None
     apelido: Optional[str] = None
+    whatsapp_link: Optional[str] = None  # Para donos de assessoria
 
 # Mensagem de Aniversário
 class MensagemAniversario(BaseModel):

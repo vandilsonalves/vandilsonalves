@@ -67,15 +67,29 @@ const DonoAssessoriaDashboard = () => {
       const [assessoriaRes, nacionalRes, estadualRes, mensalRes, anualRes, comparacaoRes] = await Promise.allSettled([
         axios.get(`${API}/liga-assessorias/assessoria/${encodeURIComponent(equipe)}`),
         axios.get(`${API}/liga-assessorias/ranking?tipo=nacional`),
-        axios.get(`${API}/liga-assessorias/ranking?tipo=estadual&estado=${user.estado}`),
+        axios.get(`${API}/liga-assessorias/ranking?tipo=estadual&estado=${user.estado || ''}`),
         axios.get(`${API}/liga-assessorias/ranking?tipo=nacional&mes=${new Date().getMonth() + 1}`),
         axios.get(`${API}/liga-assessorias/ranking?tipo=historico`),
         axios.get(`${API}/liga-assessorias/comparacao-mensal/${encodeURIComponent(equipe)}`)
       ]);
 
       if (assessoriaRes.status === 'fulfilled') {
-        setAssessoria(assessoriaRes.value.data);
-        setAtletas(assessoriaRes.value.data.atletas || []);
+        const assessoriaData = assessoriaRes.value.data;
+        setAssessoria(assessoriaData);
+        setAtletas(assessoriaData.atletas || []);
+        
+        // Se temos o estado da assessoria, buscar ranking estadual correto
+        if (assessoriaData.estado) {
+          try {
+            const estadualCorreto = await axios.get(`${API}/liga-assessorias/ranking?tipo=estadual&estado=${assessoriaData.estado}`);
+            if (estadualCorreto.data?.ranking) {
+              const posicao = estadualCorreto.data.ranking.find(r => r.nome === equipe);
+              setRankingEstadual(posicao ? posicao.posicao : null);
+            }
+          } catch (e) {
+            console.error('Erro ao buscar ranking estadual:', e);
+          }
+        }
       }
       
       // Encontrar posição nos rankings
@@ -87,9 +101,7 @@ const DonoAssessoriaDashboard = () => {
       if (nacionalRes.status === 'fulfilled') {
         setRankingNacional(findPosicao(nacionalRes.value.data.ranking, equipe));
       }
-      if (estadualRes.status === 'fulfilled') {
-        setRankingEstadual(findPosicao(estadualRes.value.data.ranking, equipe));
-      }
+      // Ranking estadual já foi processado acima com o estado correto da assessoria
       if (mensalRes.status === 'fulfilled') {
         setRankingMensal(findPosicao(mensalRes.value.data.ranking, equipe));
       }

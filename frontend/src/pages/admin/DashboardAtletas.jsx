@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Users, Search, Plus, Eye, Edit, Trash2, Download, 
-  ArrowRightLeft, Award, Loader2 
+  ArrowRightLeft, Award, Loader2, MessageSquare, Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -41,7 +41,8 @@ const DashboardAtletas = ({
   onTransferirModalidade,
   onPromoverDono,
   onExportAtletas,
-  onViewAtleta
+  onViewAtleta,
+  onEnviarMensagem
 }) => {
   // Garantir que atletas é sempre um array
   const atletasArray = Array.isArray(atletas) ? atletas : [];
@@ -238,6 +239,18 @@ const DashboardAtletas = ({
                     >
                       <Eye className="w-4 h-4" />
                     </Button>
+                    
+                    {/* Botão Enviar Mensagem */}
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => onEnviarMensagem && onEnviarMensagem(atleta)}
+                      title="Enviar Mensagem"
+                      className="text-blue-500 hover:text-blue-700"
+                    >
+                      <MessageSquare className="w-4 h-4" />
+                    </Button>
+                    
                     <Button
                       variant="ghost"
                       size="sm"
@@ -254,7 +267,7 @@ const DashboardAtletas = ({
                         size="sm"
                         onClick={() => onTransferirModalidade(atleta)}
                         title="Transferir Modalidade"
-                        className="text-blue-500 hover:text-blue-700"
+                        className="text-purple-500 hover:text-purple-700"
                       >
                         <ArrowRightLeft className="w-4 h-4" />
                       </Button>
@@ -269,7 +282,7 @@ const DashboardAtletas = ({
                         title="Promover a Dono de Assessoria"
                         className="text-amber-500 hover:text-amber-700"
                       >
-                        <Award className="w-4 h-4" />
+                        <Crown className="w-4 h-4" />
                       </Button>
                     )}
 

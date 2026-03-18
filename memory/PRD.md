@@ -397,3 +397,10 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - **Bug 3 - Dono na lista de atletas**: Modificado endpoint para incluir o dono na lista de atletas com flag `is_dono: true`.
 - **Campo whatsapp_link**: Adicionado campo na resposta da API para suportar link do WhatsApp.
 - **Permissão super_admin**: Adicionado role `super_admin` aos endpoints de relatórios.
+
+### Melhorias Painel Admin e Perfil (18/Mar/2026)
+- **Campo WhatsApp no Perfil**: Adicionado campo "Link de Mensagem WhatsApp" no Meu Perfil apenas para donos de assessoria
+- **Ícone de Mensagem no Admin**: Adicionado botão de mensagem (azul) na lista de atletas do painel admin
+- **Modal de Mensagem Individual**: Modal para admin enviar mensagem individual para cada atleta
+- **Modal de Promover Dono**: Modal de confirmação para promover atleta a dono de assessoria
+- **Ranking Estadual (DonoAssessoriaDashboard)**: Corrigido para buscar ranking do estado correto da assessoria, não do usuário

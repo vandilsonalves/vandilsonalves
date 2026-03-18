@@ -71,6 +71,10 @@ async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get
         update_data["etnia"] = dados.etnia
     if dados.apelido is not None:
         update_data["apelido"] = dados.apelido
+    if dados.whatsapp_link is not None:
+        # Somente dono de assessoria pode ter whatsapp_link
+        if current_user.get("role") == "dono_assessoria":
+            update_data["whatsapp_link"] = dados.whatsapp_link
     
     if not update_data:
         raise HTTPException(status_code=400, detail="Nenhum dado para atualizar")
