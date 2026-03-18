@@ -323,10 +323,31 @@ O usuário solicitou a reestruturação do painel de administração e implement
 
 ---
 
+### Gerenciamento em Lote de Corridas (NOVO - 18/Mar/2026)
+- **Funcionalidade completa implementada** em `/app/frontend/src/pages/admin/DashboardCorridas.jsx`:
+  - Checkbox "Marcar todas" no cabeçalho da tabela
+  - Checkboxes individuais em cada linha de corrida
+  - Filtros por Estado (dropdown com 27 UFs) e Cidade (via API do IBGE)
+  - Botões de ordenação alfabética (A-Z / Z-A)
+  - Botão "Excluir Selecionadas" com contador de itens selecionados
+  - Botão "Limpar" para resetar filtros e seleção
+
+- **Endpoint de backend** em `/app/backend/routes/corridas_eventos_routes.py`:
+  - `POST /api/corridas-eventos/excluir-lote` - Aceita IDs separados por vírgula
+
+- **Bugs corrigidos durante implementação:**
+  1. Role `super_admin` não permitido para criar corridas (adicionado à lista de roles)
+  2. Endpoint de batch delete não parseava IDs corretamente (corrigido parsing)
+  3. MongoDB `_id` aparecendo nas respostas (adicionado `$project: {_id: 0}`)
+  4. SelectItem com `value=""` causando crash no React (mudado para `value="__all__"`)
+
+---
+
 ## P1 (Próximas Tarefas)
 - Refatoração do Backend (server.py → módulos específicos)
 - Sistema de Metas Pessoais para atletas
 - Sistema de Streaks (consistência)
+- Melhorar Web Scraper com Selenium/Playwright (para sites com JavaScript)
 
 ## P2+ (Tarefas Futuras)
 - Sistema de Rivais, Feed Social, Desafios Mensais
