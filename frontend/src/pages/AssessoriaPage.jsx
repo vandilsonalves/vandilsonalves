@@ -5,15 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 import { 
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, ArrowLeft, Download, 
   Send, Mail, Phone, Loader2, Zap, BarChart3, User, Star, Target, Medal,
-  Calendar, Flag, ExternalLink, Crown, Share2, Camera, X, BadgeCheck
+  Calendar, Flag, ExternalLink, Crown, Share2, Camera, X, BadgeCheck, UserPlus
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import html2canvas from 'html2canvas';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -22,7 +24,7 @@ const API = `${BACKEND_URL}/api`;
 const AssessoriaPage = () => {
   const { nome } = useParams();
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, token } = useAuth();
   const [assessoria, setAssessoria] = useState(null);
   const [loading, setLoading] = useState(true);
   const [downloadingCertificado, setDownloadingCertificado] = useState(false);
@@ -31,8 +33,20 @@ const AssessoriaPage = () => {
   const [fotoModalUrl, setFotoModalUrl] = useState('');
   const certificadoRef = useRef(null);
   
+  // Estados para solicitar entrada
+  const [showSolicitarModal, setShowSolicitarModal] = useState(false);
+  const [mensagemSolicitacao, setMensagemSolicitacao] = useState('');
+  const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false);
+  const [solicitacaoPendente, setSolicitacaoPendente] = useState(false);
+  
   // Verificar se o usuário logado é o dono da assessoria
   const isDono = user && assessoria && assessoria.responsavel_id === user.id;
+  
+  // Verificar se o usuário pode solicitar entrada (logado, atleta, sem equipe)
+  const podeSolicitarEntrada = user && 
+    user.role === 'atleta' && 
+    (!user.equipe || user.equipe.toUpperCase() === 'INDIVIDUAL' || user.equipe.toUpperCase() === 'SEM EQUIPE' || user.equipe === '') &&
+    !isDono;
   
   // Verificar se a assessoria atende os critérios de verificação
   const isVerificada = assessoria && 
@@ -53,6 +67,58 @@ const AssessoriaPage = () => {
     };
     fetchAssessoria();
   }, [nome]);
+
+  // Verificar se já existe solicitação pendente
+  useEffect(() => {
+    const verificarSolicitacaoPendente = async () => {
+      if (user && token && assessoria) {
+        try {
+          const response = await axios.get(`${API}/assessorias/minhas-solicitacoes`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          const pendentes = response.data.solicitacoes?.filter(
+            s => s.assessoria_nome === assessoria.nome && s.status === 'pendente'
+          );
+          setSolicitacaoPendente(pendentes?.length > 0);
+        } catch (error) {
+          console.error('Erro ao verificar solicitações:', error);
+        }
+      }
+    };
+    verificarSolicitacaoPendente();
+  }, [user, token, assessoria]);
+
+  const handleSolicitarEntrada = async () => {
+    if (!token) {
+      toast.error('Você precisa estar logado para solicitar entrada');
+      navigate('/login');
+      return;
+    }
+
+    setEnviandoSolicitacao(true);
+    try {
+      await axios.post(
+        `${API}/assessorias/solicitar-entrada`,
+        {
+          assessoria_nome: assessoria.nome,
+          mensagem: mensagemSolicitacao
+        },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('Solicitação enviada!', {
+        description: 'Aguarde a aprovação do dono da assessoria.'
+      });
+      setShowSolicitarModal(false);
+      setMensagemSolicitacao('');
+      setSolicitacaoPendente(true);
+    } catch (error) {
+      const msg = error.response?.data?.detail || 'Erro ao enviar solicitação';
+      toast.error(msg);
+    } finally {
+      setEnviandoSolicitacao(false);
+    }
+  };
 
   const getSeloIcon = (selo) => {
     switch(selo) {
@@ -520,8 +586,8 @@ const AssessoriaPage = () => {
               </CardContent>
             </Card>
 
-            {/* Botão de Contato */}
-            <Card className="border-emerald-200">
+            {/* Card de Contato / Solicitar Entrada */}
+            <Card className="border-emerald-200 bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20">
               <CardHeader className="pb-2">
                 <CardTitle className="text-lg flex items-center gap-2">
                   <Target className="w-5 h-5 text-emerald-500" />
@@ -529,14 +595,66 @@ const AssessoriaPage = () => {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
-                <p className="text-sm text-slate-600">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
                   Entre em contato com a assessoria para conhecer os planos de treino, 
                   metodologia e comece sua jornada de evolução!
                 </p>
-                <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-md">
-                  <Send className="w-4 h-4 mr-2" />
-                  Quero Treinar com Essa Assessoria
-                </Button>
+                
+                {/* Botão de Solicitar Entrada - apenas para atletas sem equipe */}
+                {podeSolicitarEntrada && !solicitacaoPendente && (
+                  <Button 
+                    className="w-full bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 shadow-md"
+                    onClick={() => setShowSolicitarModal(true)}
+                    data-testid="btn-solicitar-entrada"
+                  >
+                    <UserPlus className="w-4 h-4 mr-2" />
+                    Solicitar Entrada na Equipe
+                  </Button>
+                )}
+                
+                {/* Mensagem de solicitação pendente */}
+                {podeSolicitarEntrada && solicitacaoPendente && (
+                  <div className="bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-lg p-3">
+                    <p className="text-sm text-amber-700 dark:text-amber-300 flex items-center gap-2">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      Sua solicitação está aguardando aprovação.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Mensagem para quem já tem equipe */}
+                {user && user.equipe && user.equipe.toUpperCase() !== 'INDIVIDUAL' && user.equipe !== '' && !isDono && (
+                  <div className="bg-slate-100 dark:bg-slate-800 rounded-lg p-3">
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Você já faz parte da equipe <strong>{user.equipe}</strong>.
+                    </p>
+                  </div>
+                )}
+                
+                {/* Botão de WhatsApp se configurado */}
+                {assessoria.whatsapp_link ? (
+                  <Button 
+                    className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-md"
+                    onClick={() => window.open(assessoria.whatsapp_link, '_blank')}
+                  >
+                    <Send className="w-4 h-4 mr-2" />
+                    Falar pelo WhatsApp
+                  </Button>
+                ) : (
+                  <Button className="w-full bg-gradient-to-r from-emerald-500 to-green-600 hover:from-emerald-600 hover:to-green-700 shadow-md">
+                    <Send className="w-4 h-4 mr-2" />
+                    Quero Treinar com Essa Assessoria
+                  </Button>
+                )}
+                
+                {/* Link para login se não logado */}
+                {!user && (
+                  <p className="text-xs text-slate-500 dark:text-slate-400 text-center">
+                    <button onClick={() => navigate('/login')} className="text-blue-500 hover:underline">
+                      Faça login
+                    </button> para solicitar entrada na equipe
+                  </p>
+                )}
               </CardContent>
             </Card>
 
@@ -586,6 +704,67 @@ const AssessoriaPage = () => {
               className="max-w-full max-h-[70vh] object-contain rounded-lg shadow-xl"
             />
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal de Solicitar Entrada */}
+      <Dialog open={showSolicitarModal} onOpenChange={setShowSolicitarModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <UserPlus className="w-5 h-5 text-blue-500" />
+              Solicitar Entrada na Equipe
+            </DialogTitle>
+            <DialogDescription>
+              Envie uma solicitação para entrar na <strong>{assessoria?.nome}</strong>. O dono da assessoria irá analisar seu pedido.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="mensagem">Mensagem (opcional)</Label>
+              <Textarea
+                id="mensagem"
+                placeholder="Ex: Olá! Sou corredor há 3 anos e gostaria de fazer parte da equipe..."
+                value={mensagemSolicitacao}
+                onChange={(e) => setMensagemSolicitacao(e.target.value)}
+                rows={4}
+                className="resize-none"
+                data-testid="input-mensagem-solicitacao"
+              />
+              <p className="text-xs text-slate-500">
+                Uma breve apresentação pode ajudar o dono a conhecê-lo melhor.
+              </p>
+            </div>
+          </div>
+
+          <DialogFooter className="flex gap-2">
+            <Button 
+              variant="outline" 
+              onClick={() => setShowSolicitarModal(false)}
+              disabled={enviandoSolicitacao}
+            >
+              Cancelar
+            </Button>
+            <Button 
+              onClick={handleSolicitarEntrada}
+              disabled={enviandoSolicitacao}
+              className="bg-blue-600 hover:bg-blue-700"
+              data-testid="btn-confirmar-solicitacao"
+            >
+              {enviandoSolicitacao ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Enviando...
+                </>
+              ) : (
+                <>
+                  <Send className="w-4 h-4 mr-2" />
+                  Enviar Solicitação
+                </>
+              )}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
