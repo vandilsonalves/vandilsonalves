@@ -428,3 +428,25 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - `/app/frontend/src/pages/PerfilAtletaPage.jsx` - Modal obrigatório para assessoria
   - `/app/backend/routes/notificacoes_routes.py` - Endpoints GET/{id} e DELETE/{id}
   - `/app/backend/routes/atletas_routes.py` - Pontuação inicial 0.5
+
+### Sistema de Solicitações de Entrada em Assessorias (18/Mar/2026)
+- **Contador de Pendentes no Painel do Dono**:
+  - Nova aba "Solicitações" no menu lateral do DonoAssessoriaDashboard
+  - Badge animado mostrando quantidade de solicitações pendentes
+  - Lista de solicitações com avatar, nome, cidade/estado, data e mensagem do atleta
+  - Botões de "Aprovar" e "Reprovar" com feedback via toast
+  - Estado vazio quando não há solicitações
+- **Endpoints de Backend**:
+  - `POST /api/assessorias/solicitar-entrada` - Atleta sem equipe solicita entrada
+  - `GET /api/assessorias/solicitacoes-pendentes` - Lista solicitações pendentes para o dono
+  - `POST /api/assessorias/aprovar-solicitacao/{id}` - Aprova e adiciona atleta à equipe
+  - `POST /api/assessorias/reprovar-solicitacao/{id}` - Reprova solicitação com motivo opcional
+  - `GET /api/assessorias/minhas-solicitacoes` - Atleta vê suas solicitações
+- **Lógica de Negócio**:
+  - Atleta só pode solicitar se não tiver equipe
+  - Não permite solicitar se já há solicitação pendente para mesma assessoria
+  - Aprovação atualiza a equipe do atleta e notifica
+  - Reprovação notifica atleta com motivo
+- **Arquivos modificados**:
+  - `/app/backend/routes/assessorias_routes.py` - Todos os endpoints de solicitações
+  - `/app/frontend/src/pages/DonoAssessoriaDashboard.jsx` - Aba de solicitações completa

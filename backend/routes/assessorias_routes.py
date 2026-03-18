@@ -352,13 +352,27 @@ async def get_detalhes_assessoria(nome_equipe: str):
     import urllib.parse
     nome_equipe = urllib.parse.unquote(nome_equipe)
     
+    # Buscar atletas e donos de assessoria com essa equipe
     atletas = await db.usuarios.find(
-        {"role": "atleta", "equipe": nome_equipe},
+        {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": nome_equipe},
         {"_id": 0, "password_hash": 0}
     ).to_list(None)
     
+    # Se não encontrou, verificar se existe a assessoria cadastrada
     if not atletas:
-        raise HTTPException(status_code=404, detail="Assessoria não encontrada")
+        assessoria_doc = await db.assessorias.find_one({"nome": nome_equipe})
+        if assessoria_doc:
+            # Buscar o dono pelo ID
+            if assessoria_doc.get("dono_id"):
+                dono = await db.usuarios.find_one(
+                    {"id": assessoria_doc["dono_id"]},
+                    {"_id": 0, "password_hash": 0}
+                )
+                if dono:
+                    atletas = [dono]
+        
+        if not atletas:
+            raise HTTPException(status_code=404, detail="Assessoria não encontrada")
     
     atletas_ids = [a["id"] for a in atletas]
     
