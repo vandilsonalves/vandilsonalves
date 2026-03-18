@@ -359,6 +359,18 @@ const RankingPage = () => {
                   </span>
                 </div>
                 
+                {/* Botão Atualizar Página */}
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  onClick={() => window.location.reload()} 
+                  title="Atualizar página"
+                  data-testid="btn-refresh"
+                  className="text-slate-600 hover:text-emerald-600 hover:bg-emerald-50"
+                >
+                  <RefreshCw className="w-5 h-5" />
+                </Button>
+                
                 {/* Notificações */}
                 <NotificacoesBell />
                 

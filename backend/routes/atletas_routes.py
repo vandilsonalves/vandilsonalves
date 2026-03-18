@@ -421,7 +421,7 @@ async def criar_assessoria(
     if nome_existe:
         raise HTTPException(status_code=400, detail="Já existe uma assessoria com este nome")
     
-    # Criar assessoria
+    # Criar assessoria com pontuação inicial de 0.5
     assessoria_id = str(uuid.uuid4())
     assessoria_doc = {
         "id": assessoria_id,
@@ -433,6 +433,7 @@ async def criar_assessoria(
         "dono_id": current_user["id"],
         "dono_nome": current_user["nome"],
         "status": "ativa",
+        "pontos": 0.5,  # Pontuação inicial para novas assessorias
         "data_criacao": datetime.now(timezone.utc).isoformat()
     }
     

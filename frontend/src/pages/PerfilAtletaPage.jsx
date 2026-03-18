@@ -548,18 +548,18 @@ const PerfilAtletaPage = () => {
           </Alert>
         )}
 
-        {/* Formulário para Criar Assessoria (Dono Pendente) */}
+        {/* Modal Obrigatório para Criar Assessoria (Dono Pendente) */}
         {isDono && assessoriaPendente && (
-          <div className="mb-6">
-            <CriarAssessoria 
-              token={token} 
-              onSuccess={() => {
-                setAssessoriaPendente(false);
-                fetchAtletaData();
-                toast.success('Sua assessoria foi criada! Acesse "Minha Assessoria" no menu.');
-              }} 
-            />
-          </div>
+          <CriarAssessoria 
+            token={token}
+            isModal={true}
+            forceOpen={true}
+            onSuccess={() => {
+              setAssessoriaPendente(false);
+              fetchAtletaData();
+              toast.success('Sua assessoria foi criada! Acesse "Minha Assessoria" no menu.');
+            }} 
+          />
         )}
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

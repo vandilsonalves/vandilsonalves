@@ -113,6 +113,34 @@ async def marcar_todas_lidas(current_user: dict = Depends(get_current_user)):
     return {"message": "Todas notificações marcadas como lidas"}
 
 
+@router.delete("/notificacoes/{notificacao_id}")
+async def excluir_notificacao(notificacao_id: str, current_user: dict = Depends(get_current_user)):
+    """Exclui uma notificação específica do usuário"""
+    result = await db.notificacoes.delete_one({
+        "id": notificacao_id,
+        "usuario_id": current_user["id"]
+    })
+    
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Notificação não encontrada")
+    
+    return {"message": "Notificação excluída com sucesso"}
+
+
+@router.get("/notificacoes/{notificacao_id}")
+async def get_notificacao_detalhes(notificacao_id: str, current_user: dict = Depends(get_current_user)):
+    """Retorna detalhes completos de uma notificação"""
+    notificacao = await db.notificacoes.find_one(
+        {"id": notificacao_id, "usuario_id": current_user["id"]},
+        {"_id": 0}
+    )
+    
+    if not notificacao:
+        raise HTTPException(status_code=404, detail="Notificação não encontrada")
+    
+    return notificacao
+
+
 # ==================== HELPER FUNCTION ====================
 
 async def criar_notificacao(usuario_id: str, tipo: str, titulo: str, mensagem: str, dados_extras: dict = {}):
