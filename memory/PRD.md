@@ -375,13 +375,25 @@ O usuário solicitou a reestruturação do painel de administração e implement
 ---
 
 ## P1 (Próximas Tarefas)
+- **Foto da Assessoria**: Exibir foto no cabeçalho e perfil da assessoria
+- **Link WhatsApp**: Adicionar campo para configurar link do WhatsApp no botão "Quero Treinar"
+- **Sistema de Aprovação de Membros**: Permitir dono aprovar/reprovar novos membros
 - Refatoração do Backend (server.py → módulos específicos)
 - Sistema de Metas Pessoais para atletas
 - Sistema de Streaks (consistência)
-- Melhorar Web Scraper com Selenium/Playwright (para sites com JavaScript)
+- Melhorar Web Scraper com Selenium/Playwright
 
 ## P2+ (Tarefas Futuras)
 - Sistema de Rivais, Feed Social, Desafios Mensais
 - Gráficos de Evolução, Níveis/XP
 - Previsão de Ranking com IA, Certificados Digitais
 - Configuração de `REDIS_URL` para produção
+
+---
+
+### Correções de Bugs - Painel Assessoria (18/Mar/2026)
+- **Bug 1 - Ranking Estadual**: Corrigido filtro que retornava assessorias de outros estados. Agora filtra após agrupamento no pipeline MongoDB.
+- **Bug 2 - Envio de Mensagens**: Criado endpoint `POST /api/notificacoes/enviar` para dono de assessoria enviar mensagens aos atletas.
+- **Bug 3 - Dono na lista de atletas**: Modificado endpoint para incluir o dono na lista de atletas com flag `is_dono: true`.
+- **Campo whatsapp_link**: Adicionado campo na resposta da API para suportar link do WhatsApp.
+- **Permissão super_admin**: Adicionado role `super_admin` aos endpoints de relatórios.
