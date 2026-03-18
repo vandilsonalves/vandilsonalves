@@ -457,9 +457,121 @@ const DashboardCorridas = ({
                 {loadingScraping ? 'Buscando...' : 'Buscar Corridas'}
               </Button>
             </div>
+            
+            {/* Resultado do Scraping inline */}
+            {scrapingResultado && (
+              <div className="mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border">
+                <div className="flex items-center justify-between mb-3">
+                  <div>
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                      Fonte: {scrapingResultado.fonte}
+                    </p>
+                    <p className={`font-semibold ${scrapingResultado.total_encontradas > 0 ? 'text-green-600' : 'text-amber-600'}`}>
+                      {scrapingResultado.total_encontradas > 0 
+                        ? `${scrapingResultado.total_encontradas} corridas encontradas!`
+                        : 'Nenhuma corrida encontrada neste site'}
+                    </p>
+                  </div>
+                  <div className="flex gap-2">
+                    {scrapingResultado.total_encontradas > 0 ? (
+                      <>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleExportarScraping('csv')}
+                          className="border-green-500 text-green-600 hover:bg-green-50"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Baixar CSV
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleExportarScraping('excel')}
+                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
+                        >
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Baixar Excel
+                        </Button>
+                        <Button 
+                          size="sm"
+                          onClick={() => setShowScrapingModal(true)}
+                          className="bg-purple-600 hover:bg-purple-700"
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </>
+                    ) : (
+                      <div className="flex gap-2 items-center">
+                        <span className="text-sm text-slate-500">Use a importação manual:</span>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDownloadTemplate('csv')}
+                          className="border-green-500 text-green-600"
+                        >
+                          <Download className="w-4 h-4 mr-2" />
+                          Template CSV
+                        </Button>
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleDownloadTemplate('excel')}
+                          className="border-blue-500 text-blue-600"
+                        >
+                          <FileSpreadsheet className="w-4 h-4 mr-2" />
+                          Template Excel
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+                
+                {/* Preview das corridas encontradas */}
+                {scrapingResultado.total_encontradas > 0 && (
+                  <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto">
+                    <table className="w-full text-sm">
+                      <thead className="bg-slate-100 dark:bg-slate-700 sticky top-0">
+                        <tr>
+                          <th className="text-left p-2 font-semibold">Nome</th>
+                          <th className="text-left p-2 font-semibold">Cidade/UF</th>
+                          <th className="text-left p-2 font-semibold">Data</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {scrapingResultado.corridas?.slice(0, 10).map((corrida, idx) => (
+                          <tr key={idx} className="border-t hover:bg-slate-50 dark:hover:bg-slate-800/50">
+                            <td className="p-2">{corrida.nome_corrida?.substring(0, 40)}</td>
+                            <td className="p-2">{corrida.cidade}/{corrida.estado}</td>
+                            <td className="p-2">{corrida.data_corrida || '-'}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {scrapingResultado.corridas?.length > 10 && (
+                      <div className="p-2 bg-slate-50 text-center text-xs text-slate-500">
+                        + {scrapingResultado.corridas.length - 10} corridas. Clique em "Ver Detalhes" para ver todas.
+                      </div>
+                    )}
+                  </div>
+                )}
+                
+                {/* Dica quando não encontra */}
+                {scrapingResultado.total_encontradas === 0 && (
+                  <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-sm">
+                    <p className="font-semibold text-amber-700 mb-1">💡 Dica:</p>
+                    <p className="text-amber-600">
+                      Muitos sites modernos carregam conteúdo via JavaScript, dificultando a varredura automática.
+                      Use a <strong>importação manual</strong>: baixe o template, preencha com as corridas e faça o upload.
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+            
             <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
               <AlertCircle className="w-3 h-3 inline mr-1" />
-              Sites suportados: Ticket Sports, Minhas Inscrições, e outros sites de eventos esportivos
+              Sites suportados: Ticket Sports, Minhas Inscrições, Webrun, Sympla e outros sites de eventos esportivos
             </p>
           </div>
         </CardHeader>

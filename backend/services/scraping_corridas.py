@@ -163,28 +163,51 @@ def extrair_data(texto: str) -> str:
 
 def eh_corrida_valida(nome: str) -> bool:
     """Verifica se o nome parece ser de uma corrida de rua"""
-    if not nome or len(nome) < 5:
+    if not nome or len(nome) < 3:
         return False
     
-    nome_lower = nome.lower()
+    nome_lower = nome.lower().strip()
     
-    # Palavras-chave que indicam corrida
+    # Palavras que DEFINITIVAMENTE não são corridas (navegação, login, etc)
+    palavras_bloqueadas = [
+        'minha conta', 'meu perfil', 'login', 'cadastro', 'cadastre',
+        'senha', 'contato', 'sobre', 'política', 'privacidade', 'termos',
+        'fale conosco', 'quem somos', 'nossa história', 'empresa especializada',
+        'carrinho', 'sacola', 'checkout', 'comprar', 'adicionar',
+        'menu', 'home', 'início', 'voltar', 'ver mais', 'saiba mais',
+        'leia mais', 'clique aqui', 'acesse', 'entre', 'sair',
+        'facebook', 'instagram', 'twitter', 'youtube', 'whatsapp',
+        'todos os direitos', 'copyright', 'desenvolvido por'
+    ]
+    
+    for palavra in palavras_bloqueadas:
+        if palavra in nome_lower:
+            return False
+    
+    # Se for muito curto, provavelmente não é nome de corrida
+    if len(nome_lower) < 8:
+        return False
+    
+    # Palavras-chave que indicam corrida (mais abrangente)
     palavras_positivas = [
         'corrida', 'maratona', 'meia maratona', 'meia-maratona',
         'run', 'running', 'marathon', 'half marathon',
         '5k', '10k', '21k', '42k', '5km', '10km', '21km', '42km',
         'trail', 'trilha', 'circuito', 'volta', 'travessia',
         'night run', 'color run', 'track', 'race', 'prova',
-        'desafio', 'challenge', 'km', 'quilômetros'
+        'desafio', 'challenge', 'km', 'quilômetros', 'quilometros',
+        'rústica', 'rustica', 'cross', 'ultra', 'revezamento',
+        'etapa', 'xcm'
     ]
     
     # Palavras que indicam que NÃO é corrida
     palavras_negativas = [
-        'ciclismo', 'bike', 'bicicleta', 'mtb', 'pedal',
-        'natação', 'swim', 'aquathlon', 'triathlon',
-        'futebol', 'vôlei', 'basquete', 'tênis',
-        'workshop', 'curso', 'palestra', 'congresso',
-        'show', 'festa', 'balada', 'carnaval'
+        'ciclismo', 'bike', 'bicicleta', 'mtb', 'pedal', 'cycling',
+        'natação', 'natacao', 'swim', 'aquathlon', 'triathlon',
+        'futebol', 'vôlei', 'volei', 'basquete', 'tênis', 'tenis',
+        'workshop', 'curso', 'palestra', 'congresso', 'seminário',
+        'show', 'festa', 'balada', 'carnaval', 'réveillon',
+        'yoga', 'pilates', 'crossfit', 'musculação'
     ]
     
     # Verificar palavras negativas primeiro
@@ -196,6 +219,10 @@ def eh_corrida_valida(nome: str) -> bool:
     for palavra in palavras_positivas:
         if palavra in nome_lower:
             return True
+    
+    # Se tiver números seguidos de 'k' ou 'km', provavelmente é corrida
+    if re.search(r'\d+\s*k(?:m)?', nome_lower):
+        return True
     
     return False
 
@@ -496,32 +523,67 @@ class ScraperGenerico(ScraperBase):
         corridas = []
         nomes_vistos = set()
         
-        # Estratégia 1: Buscar containers de eventos
-        containers = self.soup.find_all(['div', 'article', 'li', 'tr', 'section'], 
-            class_=re.compile(r'event|corrida|prova|card|item|row|entry|post', re.I))
+        # Estratégia 1: Buscar todos os links da página
+        todos_links = self.soup.find_all('a', href=True)
         
-        # Estratégia 2: Se não encontrou containers, buscar links
-        if not containers:
-            containers = self.soup.find_all('a', href=re.compile(r'event|corrida|prova|inscri|marathon', re.I))
-        
-        for container in containers[:100]:  # Limitar para evitar muito processamento
+        for link in todos_links:
             try:
+                texto = limpar_texto(link.get_text())
+                href = link.get('href', '')
+                
+                # Pular links muito curtos ou de navegação
+                if len(texto) < 5 or texto.lower() in ['home', 'início', 'voltar', 'ver mais', 'saiba mais']:
+                    continue
+                
+                # Verificar se parece ser uma corrida
+                if eh_corrida_valida(texto):
+                    nome_lower = texto.lower()
+                    if nome_lower not in nomes_vistos:
+                        nomes_vistos.add(nome_lower)
+                        
+                        # Tentar extrair cidade do texto do link ou elementos próximos
+                        cidade = ''
+                        estado = ''
+                        data = ''
+                        
+                        # Buscar elementos irmãos ou pais para informações adicionais
+                        parent = link.parent
+                        if parent:
+                            texto_contexto = limpar_texto(parent.get_text())
+                            data = extrair_data(texto_contexto)
+                            
+                            # Buscar cidade/estado
+                            match_local = re.search(r'([A-Za-zÀ-ú\s]+)\s*[-/,]\s*([A-Z]{2})', texto_contexto)
+                            if match_local:
+                                cidade = match_local.group(1).strip()[:30]
+                                estado = match_local.group(2)
+                            else:
+                                for cidade_conhecida, uf in CIDADES_ESTADOS.items():
+                                    if cidade_conhecida in texto_contexto.lower():
+                                        cidade = cidade_conhecida.title()
+                                        estado = uf
+                                        break
+                        
+                        corridas.append(self.criar_corrida(texto, '', cidade, estado, href, data))
+            except Exception:
+                continue
+        
+        # Estratégia 2: Buscar containers de eventos
+        containers = self.soup.find_all(['div', 'article', 'li', 'tr', 'section'], 
+            class_=re.compile(r'event|corrida|prova|card|item|row|entry|post|produto|calendario', re.I))
+        
+        for container in containers[:100]:
+            try:
+                # Buscar título em tags de heading ou links
                 nome = ''
                 link = ''
-                cidade = ''
-                data = ''
                 
-                # Extrair nome
-                if container.name == 'a':
-                    nome = limpar_texto(container.get_text())
-                    link = container.get('href', '')
-                else:
-                    # Buscar título em tags de heading ou links
-                    for tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'a', 'strong', 'b']:
-                        titulo = container.find(tag)
-                        if titulo:
-                            texto_titulo = limpar_texto(titulo.get_text())
-                            if len(texto_titulo) > 5 and eh_corrida_valida(texto_titulo):
+                for tag in ['h1', 'h2', 'h3', 'h4', 'h5', 'a', 'strong', 'b', 'span']:
+                    titulo = container.find(tag)
+                    if titulo:
+                        texto_titulo = limpar_texto(titulo.get_text())
+                        if len(texto_titulo) > 3 and texto_titulo.lower() not in nomes_vistos:
+                            if eh_corrida_valida(texto_titulo):
                                 nome = texto_titulo
                                 if titulo.name == 'a':
                                     link = titulo.get('href', '')
@@ -530,38 +592,55 @@ class ScraperGenerico(ScraperBase):
                 if not nome:
                     continue
                 
-                # Evitar duplicatas
                 nome_lower = nome.lower()
                 if nome_lower in nomes_vistos:
                     continue
                 
+                nomes_vistos.add(nome_lower)
+                
                 # Extrair texto completo para buscar cidade e data
                 texto = limpar_texto(container.get_text())
-                
-                # Buscar data
                 data = extrair_data(texto)
                 
                 # Buscar cidade/estado
                 estado = ''
+                cidade = ''
                 match_local = re.search(r'([A-Za-zÀ-ú\s]+)\s*[-/,]\s*([A-Z]{2})', texto)
                 if match_local:
                     cidade = match_local.group(1).strip()
                     estado = match_local.group(2)
                 else:
-                    # Buscar cidade conhecida
                     for cidade_conhecida, uf in CIDADES_ESTADOS.items():
                         if cidade_conhecida in texto.lower():
                             cidade = cidade_conhecida.title()
                             estado = uf
                             break
                 
-                # Validar e adicionar
-                if nome and eh_corrida_valida(nome):
-                    nomes_vistos.add(nome_lower)
+                # Verificar novamente se é corrida válida antes de adicionar
+                if eh_corrida_valida(nome):
                     corridas.append(self.criar_corrida(nome, '', cidade, estado, link, data))
                     
             except Exception:
                 continue
+        
+        # Estratégia 3: Buscar texto que parece ser nome de corrida em qualquer lugar
+        texto_completo = self.soup.get_text()
+        
+        # Padrões comuns de nomes de corridas
+        padroes_corrida = [
+            r'(\d+[ªºa]?\s*(?:corrida|maratona|meia|etapa)[^,\n]{5,50})',
+            r'((?:corrida|maratona|meia|circuito|desafio)\s+[^,\n]{5,50})',
+            r'(\w+\s+(?:run|running|race)\s*\d*k?m?)',
+        ]
+        
+        for padrao in padroes_corrida:
+            matches = re.findall(padrao, texto_completo, re.IGNORECASE)
+            for match in matches[:20]:
+                nome = limpar_texto(match)
+                nome_lower = nome.lower()
+                if nome_lower not in nomes_vistos and eh_corrida_valida(nome):
+                    nomes_vistos.add(nome_lower)
+                    corridas.append(self.criar_corrida(nome, '', '', '', '', ''))
         
         return corridas
 
