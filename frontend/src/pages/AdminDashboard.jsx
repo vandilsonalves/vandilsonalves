@@ -72,7 +72,7 @@ const allMenuItems = [
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-  const { user, token, isAdmin, tipoAdmin, isSuperAdmin, temPermissao, adminPermissoes } = useAuth();
+  const { user, token, loading, isAdmin, tipoAdmin, isSuperAdmin, temPermissao, adminPermissoes } = useAuth();
   const [activeMenu, setActiveMenu] = useState('dashboard');
   
   // Filtrar itens do menu baseado nas permissões
@@ -247,13 +247,21 @@ const AdminDashboard = () => {
                  'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
 
   useEffect(() => {
-    if (!token) return; // Aguardar token carregar
+    // Aguardar o carregamento do usuário antes de verificar permissões
+    if (loading) return;
+    
+    if (!token) {
+      navigate('/');
+      return;
+    }
+    
     if (!isAdmin) {
       navigate('/');
       return;
     }
+    
     fetchAllData();
-  }, [isAdmin, token]);
+  }, [isAdmin, token, loading, navigate]);
 
   useEffect(() => {
     if (activeMenu === 'atletas') {
@@ -1311,6 +1319,18 @@ const AdminDashboard = () => {
       { name: 'Feminino', value: stats.total_mulheres || 0, color: '#EC4899' }
     ];
   };
+
+  // Mostrar loading enquanto carrega o usuário
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-100 dark:bg-slate-950">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-emerald-500 mx-auto mb-4" />
+          <p className="text-slate-500">Carregando painel...</p>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAdmin) return null;
 
