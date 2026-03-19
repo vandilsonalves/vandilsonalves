@@ -204,6 +204,29 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
         
         await db.corridas.insert_one(corrida.model_dump())
         
+        # Atualizar pontos_total e total_corridas do usuário
+        await db.usuarios.update_one(
+            {"id": resultado["usuario_id"]},
+            {
+                "$inc": {"pontos_total": pontos, "total_corridas": 1}
+            }
+        )
+        
+        # Atualizar ranking anual
+        await db.ranking_anual.update_one(
+            {"usuario_id": resultado["usuario_id"], "ano": 2025},
+            {
+                "$inc": {"pontos_total": pontos, "total_corridas": 1},
+                "$setOnInsert": {
+                    "usuario_id": resultado["usuario_id"],
+                    "ano": 2025,
+                    "categoria": usuario.get("categoria", "normal"),
+                    "genero": usuario.get("genero", "M")
+                }
+            },
+            upsert=True
+        )
+        
         await db.resultados_pendentes.update_one(
             {"id": resultado_id},
             {"$set": {"status": "aprovado"}}
