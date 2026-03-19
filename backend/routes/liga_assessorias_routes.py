@@ -377,3 +377,166 @@ async def get_graficos_avancados(nome_equipe: str, current_user: dict = Depends(
         "grafico_estados": grafico_estados,
         "estatisticas": estatisticas
     }
+
+
+
+@router.get("/exportar-dados/{nome_equipe}")
+async def exportar_dados_assessoria(
+    nome_equipe: str,
+    formato: str = Query("csv", enum=["csv", "json"]),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Exporta dados da assessoria em CSV ou JSON
+    Inclui: lista de atletas, estatísticas, resultados por mês
+    """
+    from fastapi.responses import StreamingResponse
+    import io
+    import csv
+    import json
+    
+    nome_decoded = urllib.parse.unquote(nome_equipe)
+    
+    # Verificar permissão
+    if current_user.get("role") not in ["admin", "super_admin", "dono_assessoria"]:
+        raise HTTPException(status_code=403, detail="Acesso negado")
+    
+    if current_user.get("role") == "dono_assessoria" and current_user.get("equipe") != nome_decoded:
+        raise HTTPException(status_code=403, detail="Você só pode exportar dados da sua assessoria")
+    
+    # Buscar atletas da equipe
+    atletas = await db.usuarios.find(
+        {"equipe": nome_decoded, "role": "atleta"},
+        {"_id": 0, "id": 1, "nome": 1, "email": 1, "genero": 1, "categoria": 1, 
+         "faixa_etaria": 1, "cidade": 1, "estado": 1, "pontos_total": 1, 
+         "total_corridas": 1, "created_at": 1}
+    ).to_list(None)
+    
+    if not atletas:
+        raise HTTPException(status_code=404, detail="Assessoria não encontrada")
+    
+    atletas_ids = [a["id"] for a in atletas]
+    
+    # Buscar corridas dos atletas
+    corridas = await db.corridas.find(
+        {"usuario_id": {"$in": atletas_ids}},
+        {"_id": 0, "usuario_id": 1, "nome_corrida": 1, "data": 1, "distancia": 1, 
+         "colocacao": 1, "pontos": 1, "modalidade": 1}
+    ).to_list(None)
+    
+    # Mapear nome do atleta para cada corrida
+    atletas_map = {a["id"]: a["nome"] for a in atletas}
+    for c in corridas:
+        c["atleta_nome"] = atletas_map.get(c.get("usuario_id"), "N/A")
+    
+    # Calcular estatísticas
+    total_atletas = len(atletas)
+    total_corridas = len(corridas)
+    total_pontos = sum(a.get("pontos_total", 0) for a in atletas)
+    total_podios = sum(1 for c in corridas if c.get("colocacao", 99) <= 3 and c.get("colocacao", 0) >= 1)
+    total_vitorias = sum(1 for c in corridas if c.get("colocacao") == 1)
+    
+    if formato == "json":
+        dados = {
+            "equipe": nome_decoded,
+            "data_exportacao": datetime.now().isoformat(),
+            "estatisticas": {
+                "total_atletas": total_atletas,
+                "total_corridas": total_corridas,
+                "total_pontos": total_pontos,
+                "total_podios": total_podios,
+                "total_vitorias": total_vitorias,
+                "media_pontos_atleta": round(total_pontos / max(1, total_atletas), 1),
+                "media_corridas_atleta": round(total_corridas / max(1, total_atletas), 1)
+            },
+            "atletas": atletas,
+            "corridas": corridas
+        }
+        
+        return StreamingResponse(
+            io.BytesIO(json.dumps(dados, ensure_ascii=False, indent=2).encode('utf-8')),
+            media_type="application/json",
+            headers={"Content-Disposition": f"attachment; filename=assessoria_{nome_decoded.replace(' ', '_')}.json"}
+        )
+    
+    else:  # CSV
+        output = io.StringIO()
+        
+        # Seção 1: Estatísticas
+        output.write("=== ESTATÍSTICAS DA ASSESSORIA ===\n")
+        output.write(f"Equipe,{nome_decoded}\n")
+        output.write(f"Data Exportação,{datetime.now().strftime('%d/%m/%Y %H:%M')}\n")
+        output.write(f"Total Atletas,{total_atletas}\n")
+        output.write(f"Total Corridas,{total_corridas}\n")
+        output.write(f"Total Pontos,{total_pontos}\n")
+        output.write(f"Total Pódios,{total_podios}\n")
+        output.write(f"Total Vitórias,{total_vitorias}\n")
+        output.write(f"Média Pontos/Atleta,{round(total_pontos / max(1, total_atletas), 1)}\n")
+        output.write(f"Média Corridas/Atleta,{round(total_corridas / max(1, total_atletas), 1)}\n")
+        output.write("\n")
+        
+        # Seção 2: Lista de Atletas
+        output.write("=== LISTA DE ATLETAS ===\n")
+        writer = csv.writer(output)
+        writer.writerow(["Nome", "Email", "Gênero", "Categoria", "Faixa Etária", "Cidade", "Estado", "Pontos", "Corridas", "Data Cadastro"])
+        
+        for a in sorted(atletas, key=lambda x: x.get("pontos_total", 0), reverse=True):
+            writer.writerow([
+                a.get("nome", ""),
+                a.get("email", ""),
+                "Masculino" if a.get("genero") == "M" else "Feminino",
+                a.get("categoria", "").upper(),
+                a.get("faixa_etaria", ""),
+                a.get("cidade", ""),
+                a.get("estado", ""),
+                a.get("pontos_total", 0),
+                a.get("total_corridas", 0),
+                a.get("created_at", "")[:10] if a.get("created_at") else ""
+            ])
+        
+        output.write("\n")
+        
+        # Seção 3: Histórico de Corridas
+        output.write("=== HISTÓRICO DE CORRIDAS ===\n")
+        writer.writerow(["Atleta", "Corrida", "Data", "Distância", "Colocação", "Pontos", "Modalidade"])
+        
+        for c in sorted(corridas, key=lambda x: x.get("data", ""), reverse=True):
+            writer.writerow([
+                c.get("atleta_nome", ""),
+                c.get("nome_corrida", ""),
+                c.get("data", ""),
+                c.get("distancia", ""),
+                c.get("colocacao", ""),
+                c.get("pontos", 0),
+                c.get("modalidade", "")
+            ])
+        
+        output.seek(0)
+        
+        return StreamingResponse(
+            io.BytesIO(output.getvalue().encode('utf-8-sig')),  # utf-8-sig para Excel
+            media_type="text/csv",
+            headers={"Content-Disposition": f"attachment; filename=assessoria_{nome_decoded.replace(' ', '_')}.csv"}
+        )
+
+
+@router.get("/exportar-graficos/{nome_equipe}")
+async def exportar_graficos_assessoria(
+    nome_equipe: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Exporta dados dos gráficos avançados em formato JSON para processamento
+    Pode ser usado para gerar PDF no frontend ou integrar com outras ferramentas
+    """
+    # Reutilizar a função de gráficos avançados
+    graficos = await get_graficos_avancados(nome_equipe, current_user)
+    
+    # Adicionar metadados para exportação
+    graficos["metadados"] = {
+        "data_exportacao": datetime.now().isoformat(),
+        "exportado_por": current_user.get("nome", ""),
+        "formato": "json_graficos"
+    }
+    
+    return graficos

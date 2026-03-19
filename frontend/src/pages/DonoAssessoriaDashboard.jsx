@@ -194,6 +194,62 @@ const DonoAssessoriaDashboard = () => {
     }
   };
 
+  // Funções de exportação de dados
+  const handleExportarDados = async (formato) => {
+    try {
+      const response = await axios.get(
+        `${API}/liga-assessorias/exportar-dados/${encodeURIComponent(user.equipe)}?formato=${formato}`,
+        { 
+          headers: { Authorization: `Bearer ${token}` },
+          responseType: 'blob'
+        }
+      );
+      
+      const blob = new Blob([response.data], { 
+        type: formato === 'csv' ? 'text/csv' : 'application/json'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `assessoria_${user.equipe?.replace(/\s+/g, '_')}.${formato}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      
+      toast.success(`Dados exportados em ${formato.toUpperCase()} com sucesso!`);
+    } catch (error) {
+      console.error('Erro ao exportar:', error);
+      toast.error('Erro ao exportar dados');
+    }
+  };
+
+  const handleExportarGraficos = async () => {
+    try {
+      const response = await axios.get(
+        `${API}/liga-assessorias/exportar-graficos/${encodeURIComponent(user.equipe)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      const blob = new Blob([JSON.stringify(response.data, null, 2)], { 
+        type: 'application/json'
+      });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `graficos_${user.equipe?.replace(/\s+/g, '_')}.json`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      a.remove();
+      
+      toast.success('Dados dos gráficos exportados com sucesso!');
+    } catch (error) {
+      console.error('Erro ao exportar gráficos:', error);
+      toast.error('Erro ao exportar dados dos gráficos');
+    }
+  };
+
   // Funções de upload de foto
   const handleUploadFoto = async (e) => {
     const file = e.target.files?.[0];
@@ -1119,6 +1175,49 @@ const DonoAssessoriaDashboard = () => {
                         <p className="text-xs text-slate-400">Taxa de Pódio</p>
                       </div>
                     </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Botões de Exportação */}
+              {assessoria && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Download className="w-5 h-5 text-blue-500" />
+                      Exportar Dados
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      <Button
+                        variant="outline"
+                        className="border-green-500 text-green-400 hover:bg-green-500/20"
+                        onClick={() => handleExportarDados('csv')}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Exportar CSV
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-blue-500 text-blue-400 hover:bg-blue-500/20"
+                        onClick={() => handleExportarDados('json')}
+                      >
+                        <Download className="w-4 h-4 mr-2" />
+                        Exportar JSON
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-purple-500 text-purple-400 hover:bg-purple-500/20"
+                        onClick={() => handleExportarGraficos()}
+                      >
+                        <BarChart3 className="w-4 h-4 mr-2" />
+                        Exportar Gráficos
+                      </Button>
+                    </div>
+                    <p className="text-xs text-slate-400 mt-3">
+                      CSV: Planilha com atletas e corridas • JSON: Dados estruturados • Gráficos: Dados para visualização
+                    </p>
                   </CardContent>
                 </Card>
               )}
