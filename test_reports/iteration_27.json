@@ -38,7 +38,7 @@
       "email": "TEST_atleta_troca@test.com",
       "password": "test123"
     },
-    "api_url": "https://time-required-fix.preview.emergentagent.com"
+    "api_url": "https://feed-likes-comments.preview.emergentagent.com"
   },
   "seed_data_creation": "Created test athlete TEST_atleta_troca@test.com for team change testing",
   "retest_needed": false,

@@ -12,7 +12,7 @@ import requests
 import os
 from pathlib import Path
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://time-required-fix.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://feed-likes-comments.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 DONO_ASSESSORIA = {

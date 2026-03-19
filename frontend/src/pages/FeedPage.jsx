@@ -1,5 +1,5 @@
 // /app/frontend/src/pages/FeedPage.jsx
-// Feed Social da Plataforma com Reações e Comentários (sem upload de imagem)
+// Feed Social da Plataforma com Reações, Comentários e Posts Automáticos de Conquistas
 
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,9 +9,11 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
 import { 
   Send, Loader2, ArrowLeft, MoreHorizontal,
-  TrendingUp, Clock, Trash2, Users, Smile, MessageCircle
+  TrendingUp, Clock, Trash2, Users, Smile, MessageCircle,
+  Trophy, Medal, PartyPopper, Star, Zap
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -38,7 +40,16 @@ const REACOES = {
   fogo: { emoji: "🔥", nome: "Em chamas" },
   coracao: { emoji: "❤️", nome: "Amei" },
   festa: { emoji: "🎉", nome: "Celebrando" },
-  trofeu: { emoji: "🏆", nome: "Campeão" }
+  trofeu: { emoji: "🏆", nome: "Campeão" },
+  parabens: { emoji: "🎊", nome: "Parabéns" }
+};
+
+// Tipos de posts automáticos
+const TIPOS_POST = {
+  texto: { label: "Texto", cor: "bg-slate-600" },
+  conquista: { label: "Conquista", cor: "bg-purple-600", icone: Trophy },
+  corrida_aprovada: { label: "Resultado", cor: "bg-green-600", icone: Medal },
+  resultado: { label: "Resultado", cor: "bg-blue-600", icone: Zap }
 };
 
 const FeedPage = () => {
@@ -59,6 +70,9 @@ const FeedPage = () => {
   const [comentarioTexto, setComentarioTexto] = useState({});
   const [enviandoComentario, setEnviandoComentario] = useState(null);
   const [showComentarios, setShowComentarios] = useState({});
+  
+  // Parabéns
+  const [enviandoParabens, setEnviandoParabens] = useState(null);
 
   useEffect(() => {
     if (!user) {
@@ -230,6 +244,46 @@ const FeedPage = () => {
     }
   };
 
+  const handleParabens = async (postId) => {
+    setEnviandoParabens(postId);
+    try {
+      await axios.post(
+        `${API}/feed/posts/${postId}/parabens`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      toast.success('🎊 Parabéns enviado!');
+      
+      // Atualizar o post localmente para mostrar a reação
+      setPosts(prev => prev.map(post => {
+        if (post.id === postId) {
+          const novasReacoes = { ...post.reacoes };
+          if (!novasReacoes.parabens) {
+            novasReacoes.parabens = {
+              count: 0,
+              emoji: "🎊",
+              nome: "Parabéns"
+            };
+          }
+          novasReacoes.parabens.count += 1;
+          
+          return {
+            ...post,
+            reacoes: novasReacoes,
+            minha_reacao: "parabens",
+            total_reacoes: (post.total_reacoes || 0) + 1
+          };
+        }
+        return post;
+      }));
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao enviar parabéns');
+    } finally {
+      setEnviandoParabens(null);
+    }
+  };
+
   const formatarData = (dataStr) => {
     if (!dataStr) return '';
     const data = new Date(dataStr);
@@ -286,7 +340,7 @@ const FeedPage = () => {
             data-testid={`reaction-btn-${post.id}`}
           >
             {minhaReacao ? (
-              <span className="text-lg mr-1">{REACOES[minhaReacao].emoji}</span>
+              <span className="text-lg mr-1">{REACOES[minhaReacao]?.emoji || "👏"}</span>
             ) : (
               <Smile className="w-4 h-4 mr-1" />
             )}
@@ -314,6 +368,109 @@ const FeedPage = () => {
           </div>
         </PopoverContent>
       </Popover>
+    );
+  };
+
+  // Componente para exibir conteúdo especial de posts automáticos
+  const PostConteudoEspecial = ({ post }) => {
+    const tipo = post.tipo;
+    const isAutoGerado = post.auto_gerado;
+    
+    // Post de conquista/insígnia
+    if (tipo === 'conquista' && post.conquista_dados) {
+      const { nome, descricao, emoji } = post.conquista_dados;
+      return (
+        <div className="bg-gradient-to-r from-purple-900/50 to-indigo-900/50 rounded-xl p-4 border border-purple-500/30">
+          <div className="flex items-center gap-3 mb-2">
+            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center shadow-lg shadow-purple-500/30">
+              <span className="text-2xl">{emoji || "🏆"}</span>
+            </div>
+            <div>
+              <Badge className="bg-purple-600 text-white mb-1">Nova Conquista!</Badge>
+              <h4 className="font-bold text-white text-lg">{nome}</h4>
+            </div>
+          </div>
+          {descricao && (
+            <p className="text-purple-200 text-sm ml-15">{descricao}</p>
+          )}
+        </div>
+      );
+    }
+    
+    // Post de corrida aprovada
+    if (tipo === 'corrida_aprovada' && post.resultado_dados) {
+      const { nome_corrida, colocacao, pontos, distancia, tempo } = post.resultado_dados;
+      const medalhas = { 1: "🥇", 2: "🥈", 3: "🥉" };
+      const medalha = medalhas[colocacao] || "🏃";
+      
+      return (
+        <div className="bg-gradient-to-r from-green-900/50 to-emerald-900/50 rounded-xl p-4 border border-green-500/30">
+          <div className="flex items-center gap-3 mb-3">
+            <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30">
+              <span className="text-2xl">{medalha}</span>
+            </div>
+            <div>
+              <Badge className="bg-green-600 text-white mb-1">Resultado Aprovado!</Badge>
+              <h4 className="font-bold text-white text-lg">{nome_corrida}</h4>
+            </div>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 ml-15">
+            {colocacao > 0 && (
+              <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                <p className="text-xs text-slate-400">Colocação</p>
+                <p className="text-lg font-bold text-white">{colocacao}º</p>
+              </div>
+            )}
+            <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+              <p className="text-xs text-slate-400">Pontos</p>
+              <p className="text-lg font-bold text-amber-400">+{pontos}</p>
+            </div>
+            {distancia && (
+              <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                <p className="text-xs text-slate-400">Distância</p>
+                <p className="text-lg font-bold text-white">{distancia}</p>
+              </div>
+            )}
+            {tempo && (
+              <div className="bg-slate-800/50 rounded-lg p-2 text-center">
+                <p className="text-xs text-slate-400">Tempo</p>
+                <p className="text-lg font-bold text-white">{tempo}</p>
+              </div>
+            )}
+          </div>
+        </div>
+      );
+    }
+    
+    return null;
+  };
+
+  // Componente botão de Parabéns para posts especiais
+  const BotaoParabens = ({ post }) => {
+    const isConquistaOuResultado = post.tipo === 'conquista' || post.tipo === 'corrida_aprovada';
+    const jaParabenizou = post.minha_reacao === 'parabens';
+    
+    if (!isConquistaOuResultado) return null;
+    
+    return (
+      <Button
+        variant={jaParabenizou ? "default" : "outline"}
+        size="sm"
+        onClick={() => handleParabens(post.id)}
+        disabled={enviandoParabens === post.id || jaParabenizou}
+        className={`${jaParabenizou 
+          ? 'bg-gradient-to-r from-pink-500 to-purple-500 text-white border-0' 
+          : 'border-purple-500/50 text-purple-400 hover:bg-purple-500/20'
+        }`}
+        data-testid={`parabens-btn-${post.id}`}
+      >
+        {enviandoParabens === post.id ? (
+          <Loader2 className="w-4 h-4 animate-spin mr-1" />
+        ) : (
+          <PartyPopper className="w-4 h-4 mr-1" />
+        )}
+        {jaParabenizou ? 'Parabenizado!' : 'Parabéns!'}
+      </Button>
     );
   };
 
@@ -420,7 +577,22 @@ const FeedPage = () => {
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="font-semibold text-white">{post.autor?.nome}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="font-semibold text-white">{post.autor?.nome}</p>
+                            {/* Badge de tipo de post automático */}
+                            {post.auto_gerado && post.tipo === 'conquista' && (
+                              <Badge className="bg-purple-600/80 text-xs py-0">
+                                <Trophy className="w-3 h-3 mr-1" />
+                                Conquista
+                              </Badge>
+                            )}
+                            {post.auto_gerado && post.tipo === 'corrida_aprovada' && (
+                              <Badge className="bg-green-600/80 text-xs py-0">
+                                <Medal className="w-3 h-3 mr-1" />
+                                Resultado
+                              </Badge>
+                            )}
+                          </div>
                           <div className="flex items-center gap-2 text-xs text-slate-400">
                             <Clock className="w-3 h-3" />
                             {formatarData(post.data_criacao)}
@@ -454,8 +626,13 @@ const FeedPage = () => {
                       )}
                     </div>
                     
-                    {/* Conteúdo do Post */}
-                    <p className="text-slate-200 whitespace-pre-wrap">{post.texto}</p>
+                    {/* Conteúdo especial para posts automáticos */}
+                    <PostConteudoEspecial post={post} />
+                    
+                    {/* Texto do post (sempre exibido, mas pode ser o texto automático) */}
+                    {!post.auto_gerado && (
+                      <p className="text-slate-200 whitespace-pre-wrap">{post.texto}</p>
+                    )}
                     
                     {/* Imagens existentes ainda são exibidas */}
                     {post.imagem_url && (
@@ -469,7 +646,7 @@ const FeedPage = () => {
                     {/* Reações Display */}
                     <ReacoesDisplay post={post} />
                     
-                    {/* Ações - Reações e Comentários */}
+                    {/* Ações - Reações, Comentários e Parabéns */}
                     <div className="flex items-center gap-4 pt-2 border-t border-slate-700">
                       <ReacaoButton post={post} />
                       
@@ -483,6 +660,9 @@ const FeedPage = () => {
                         <MessageCircle className="w-4 h-4 mr-1" />
                         {post.total_comentarios || 0}
                       </Button>
+                      
+                      {/* Botão de Parabéns para posts de conquistas/resultados */}
+                      <BotaoParabens post={post} />
                     </div>
                     
                     {/* Seção de Comentários */}

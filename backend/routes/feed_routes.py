@@ -1,5 +1,5 @@
 # /app/backend/routes/feed_routes.py
-# Feed Social da plataforma com sistema de reações
+# Feed Social da plataforma com sistema de reações e posts automáticos de conquistas
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from typing import Optional, List
@@ -25,8 +25,12 @@ REACOES_DISPONIVEIS = {
     "fogo": {"emoji": "🔥", "nome": "Em chamas"},
     "coracao": {"emoji": "❤️", "nome": "Amei"},
     "festa": {"emoji": "🎉", "nome": "Celebrando"},
-    "trofeu": {"emoji": "🏆", "nome": "Campeão"}
+    "trofeu": {"emoji": "🏆", "nome": "Campeão"},
+    "parabens": {"emoji": "🎊", "nome": "Parabéns"}
 }
+
+# Tipos de post
+TIPOS_POST = ["texto", "resultado", "conquista", "corrida_aprovada"]
 
 
 class PostCreate(BaseModel):
@@ -535,3 +539,238 @@ async def get_trending(limite: int = Query(10, ge=1, le=20)):
     posts.sort(key=lambda x: x["engajamento"], reverse=True)
     
     return {"trending": posts[:limite]}
+
+
+# ============================================================
+# POSTS AUTOMÁTICOS DE CONQUISTAS E RESULTADOS
+# ============================================================
+
+async def criar_post_conquista(
+    usuario_id: str,
+    usuario_nome: str,
+    conquista_nome: str,
+    conquista_descricao: str,
+    conquista_emoji: str = "🏆"
+):
+    """
+    Cria um post automático quando o atleta ganha uma conquista/insígnia.
+    Chamado pelo sistema de conquistas.
+    """
+    texto = f"🎉 Acabei de conquistar a insígnia **{conquista_nome}**! {conquista_emoji}\n\n{conquista_descricao}"
+    
+    post = {
+        "id": str(uuid.uuid4()),
+        "autor_id": usuario_id,
+        "autor_nome": usuario_nome,
+        "texto": texto,
+        "tipo": "conquista",
+        "conquista_dados": {
+            "nome": conquista_nome,
+            "descricao": conquista_descricao,
+            "emoji": conquista_emoji
+        },
+        "resultado_dados": None,
+        "imagem_url": None,
+        "status": "ativo",
+        "auto_gerado": True,
+        "data_criacao": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.feed_posts.insert_one(post)
+    
+    # Notificar membros da mesma equipe
+    usuario = await db.usuarios.find_one({"id": usuario_id}, {"_id": 0, "equipe": 1})
+    if usuario and usuario.get("equipe"):
+        colegas = await db.usuarios.find(
+            {"equipe": usuario["equipe"], "id": {"$ne": usuario_id}},
+            {"_id": 0, "id": 1}
+        ).limit(50).to_list(50)
+        
+        for colega in colegas:
+            await criar_notificacao(
+                usuario_id=colega["id"],
+                tipo="conquista_equipe",
+                titulo=f"🏆 {usuario_nome} conquistou {conquista_nome}!",
+                mensagem=f"Um colega da sua equipe acabou de ganhar uma nova insígnia. Parabenize!",
+                dados_extras={"post_id": post["id"], "conquista": conquista_nome}
+            )
+    
+    return post["id"]
+
+
+async def criar_post_corrida_aprovada(
+    usuario_id: str,
+    usuario_nome: str,
+    nome_corrida: str,
+    colocacao: int,
+    pontos: int,
+    distancia: str,
+    tempo: str = None
+):
+    """
+    Cria um post automático quando uma corrida é aprovada.
+    """
+    if colocacao == 1:
+        emoji_coloc = "🥇"
+        texto_coloc = "CAMPEÃO! 1º lugar"
+    elif colocacao == 2:
+        emoji_coloc = "🥈"
+        texto_coloc = "2º lugar no pódio"
+    elif colocacao == 3:
+        emoji_coloc = "🥉"
+        texto_coloc = "3º lugar no pódio"
+    else:
+        emoji_coloc = "🏃"
+        texto_coloc = f"{colocacao}º lugar"
+    
+    texto = f"{emoji_coloc} **{texto_coloc}** na {nome_corrida}!\n\n"
+    texto += f"📏 Distância: {distancia}\n"
+    if tempo:
+        texto += f"⏱️ Tempo: {tempo}\n"
+    texto += f"⭐ +{pontos} pontos no ranking!"
+    
+    post = {
+        "id": str(uuid.uuid4()),
+        "autor_id": usuario_id,
+        "autor_nome": usuario_nome,
+        "texto": texto,
+        "tipo": "corrida_aprovada",
+        "conquista_dados": None,
+        "resultado_dados": {
+            "nome_corrida": nome_corrida,
+            "colocacao": colocacao,
+            "pontos": pontos,
+            "distancia": distancia,
+            "tempo": tempo
+        },
+        "imagem_url": None,
+        "status": "ativo",
+        "auto_gerado": True,
+        "data_criacao": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.feed_posts.insert_one(post)
+    return post["id"]
+
+
+@router.post("/feed/posts/{post_id}/parabens")
+async def dar_parabens(
+    post_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Atalho para dar parabéns em um post de conquista ou resultado.
+    Adiciona reação 'parabens' + comentário automático.
+    """
+    post = await db.feed_posts.find_one({"id": post_id, "status": "ativo"})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post não encontrado")
+    
+    # Adicionar reação de parabéns
+    reacao_existente = await db.feed_reacoes.find_one({
+        "post_id": post_id,
+        "usuario_id": current_user["id"]
+    })
+    
+    if not reacao_existente:
+        reacao = {
+            "id": str(uuid.uuid4()),
+            "post_id": post_id,
+            "usuario_id": current_user["id"],
+            "tipo_reacao": "parabens",
+            "data_criacao": datetime.now(timezone.utc).isoformat()
+        }
+        await db.feed_reacoes.insert_one(reacao)
+    
+    # Notificar autor
+    if post["autor_id"] != current_user["id"]:
+        await criar_notificacao(
+            usuario_id=post["autor_id"],
+            tipo="parabens",
+            titulo=f"🎊 {current_user.get('nome', 'Alguém')} te parabenizou!",
+            mensagem=f"Você recebeu parabéns pela sua conquista!",
+            dados_extras={"post_id": post_id}
+        )
+    
+    return {
+        "message": "Parabéns enviado!",
+        "emoji": "🎊"
+    }
+
+
+@router.get("/feed/equipe")
+async def get_feed_equipe(
+    pagina: int = Query(1, ge=1),
+    limite: int = Query(20, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retorna apenas posts de membros da mesma equipe do usuário.
+    """
+    usuario = await db.usuarios.find_one(
+        {"id": current_user["id"]},
+        {"_id": 0, "equipe": 1}
+    )
+    
+    if not usuario or not usuario.get("equipe"):
+        return {"posts": [], "message": "Você não está em uma equipe"}
+    
+    # Buscar IDs dos membros da equipe
+    membros = await db.usuarios.find(
+        {"equipe": usuario["equipe"]},
+        {"_id": 0, "id": 1}
+    ).to_list(500)
+    
+    membros_ids = [m["id"] for m in membros]
+    
+    skip = (pagina - 1) * limite
+    
+    posts = await db.feed_posts.find(
+        {"autor_id": {"$in": membros_ids}, "status": "ativo"},
+        {"_id": 0}
+    ).sort("data_criacao", -1).skip(skip).limit(limite).to_list(limite)
+    
+    # Enriquecer posts
+    for post in posts:
+        autor = await db.usuarios.find_one(
+            {"id": post["autor_id"]},
+            {"_id": 0, "id": 1, "nome": 1, "foto_url": 1, "equipe": 1}
+        )
+        post["autor"] = autor
+        
+        # Reações
+        pipeline = [
+            {"$match": {"post_id": post["id"]}},
+            {"$group": {"_id": "$tipo_reacao", "count": {"$sum": 1}}}
+        ]
+        reacoes = await db.feed_reacoes.aggregate(pipeline).to_list(None)
+        
+        post["reacoes"] = {}
+        post["total_reacoes"] = 0
+        for r in reacoes:
+            tipo = r["_id"]
+            if tipo in REACOES_DISPONIVEIS:
+                post["reacoes"][tipo] = {
+                    "count": r["count"],
+                    "emoji": REACOES_DISPONIVEIS[tipo]["emoji"]
+                }
+                post["total_reacoes"] += r["count"]
+        
+        # Minha reação
+        minha = await db.feed_reacoes.find_one({
+            "post_id": post["id"],
+            "usuario_id": current_user["id"]
+        })
+        post["minha_reacao"] = minha["tipo_reacao"] if minha else None
+        
+        # Comentários
+        post["total_comentarios"] = await db.feed_comentarios.count_documents({"post_id": post["id"]})
+    
+    total = await db.feed_posts.count_documents({"autor_id": {"$in": membros_ids}, "status": "ativo"})
+    
+    return {
+        "posts": posts,
+        "equipe": usuario["equipe"],
+        "total": total,
+        "pagina": pagina
+    }

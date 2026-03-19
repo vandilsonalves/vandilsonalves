@@ -178,6 +178,21 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             dados_extras={"pontos": pontos_povao, "competicao": nome_competicao, "modalidade": "povao"}
         )
         
+        # Criar post automático no feed (Povão)
+        try:
+            from routes.feed_routes import criar_post_corrida_aprovada
+            await criar_post_corrida_aprovada(
+                usuario_id=resultado["usuario_id"],
+                usuario_nome=usuario.get("nome", "Atleta"),
+                nome_corrida=nome_competicao,
+                colocacao=0,  # Povão não pontua por colocação
+                pontos=pontos_povao,
+                distancia=resultado.get("distancia", "N/A"),
+                tempo=resultado.get("tempo", None)
+            )
+        except Exception as e:
+            print(f"Erro ao criar post automático no feed (Povão): {e}")
+        
         # Enviar email de notificação (Povão)
         try:
             await notificar_resultado_aprovado(
@@ -259,6 +274,21 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
         )
         
         await verificar_conquistas(resultado["usuario_id"])
+        
+        # Criar post automático no feed
+        try:
+            from routes.feed_routes import criar_post_corrida_aprovada
+            await criar_post_corrida_aprovada(
+                usuario_id=resultado["usuario_id"],
+                usuario_nome=usuario.get("nome", "Atleta"),
+                nome_corrida=nome_competicao,
+                colocacao=resultado.get("colocacao", 0),
+                pontos=pontos,
+                distancia=resultado.get("distancia", "N/A"),
+                tempo=resultado.get("tempo", None)
+            )
+        except Exception as e:
+            print(f"Erro ao criar post automático no feed: {e}")
         
         # Enviar email de notificação
         try:

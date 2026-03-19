@@ -109,7 +109,7 @@
 
 ## Credentials
 - **Test User**: admin@runpro.com / admin123
-- **Preview URL**: https://time-required-fix.preview.emergentagent.com
+- **Preview URL**: https://feed-likes-comments.preview.emergentagent.com
 
 ---
 
