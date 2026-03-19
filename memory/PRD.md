@@ -4,7 +4,18 @@
 
 ### ✅ Completed This Session
 
-1. **Exportação de Dados em PDF e Excel (P1)** - NOVO!
+1. **Bug Fix: Campo Tempo Obrigatório para Povão (P0)** - CORRIGIDO!
+   - Problema: Atletas da modalidade "Povão" podiam submeter resultados com tempo zerado
+   - Solução: Campo tempo agora é obrigatório para TODOS (frontend + backend)
+   - Arquivos: `SubmeterResultadoPage.js` (linha 460-467), `resultados_routes.py` (linhas 58-73)
+   - **11/11 testes passando** (`/app/test_reports/iteration_48.json`)
+
+2. **Bug Fix: Validação de 30 Dias (P0)** - CORRIGIDO!
+   - Problema: Atletas conseguiam submeter corridas com mais de 30 dias de antecedência
+   - Solução: Validação no frontend (linhas 120-138) e backend (linhas 35-56)
+   - **Testado e verificado com datas de 31, 45 dias e datas futuras**
+
+3. **Exportação de Dados em PDF e Excel (P1)** - Sessão Anterior
    - Implementado: Exportação em PDF (relatório visual formatado)
    - Implementado: Exportação em Excel (XLSX com 3 abas: Resumo, Atletas, Corridas)
    - Bibliotecas: reportlab (PDF), xlsxwriter (Excel)
@@ -58,6 +69,7 @@
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_48.json` - Bug Tempo Obrigatório + 30 Dias (11/11 passed)
 - `/app/test_reports/iteration_47.json` - Exportação PDF/Excel (14/14 passed)
 - `/app/test_reports/iteration_46.json` - Bug fixes (13/13 passed)
 - `/app/test_reports/iteration_45.json` - Exportação CSV/JSON (23/23 passed)
@@ -81,14 +93,19 @@
     - FotoEquipeTab.jsx
 
 ### Concluído nesta sessão
-- [x] Redis configurado e funcionando
+- [x] Bug Fix: Campo tempo obrigatório para TODOS (incluindo Povão)
+- [x] Bug Fix: Validação de 30 dias para submissão de resultados
+- [x] Redis reinstalado e funcionando
 - [x] REDIS_URL adicionado ao /app/backend/.env
 - [x] Exportação de dados em PDF e Excel implementada
 - [x] Bug da imagem da assessoria corrigido
 
+### P1 - Próxima Tarefa
+- [ ] **Refatoração do RankingPage.js** - O componente possui mais de 2.100 linhas e precisa ser dividido em subcomponentes menores
+
 ### P2 - Backlog
 - [ ] Verificação de domínio no Resend
-- [ ] Continuar refatoração de outros componentes grandes (RankingPage.js)
+- [ ] Continuar refatoração do server.py (ainda com ~1945 linhas)
 
 ---
 
