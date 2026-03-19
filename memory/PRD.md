@@ -4,68 +4,67 @@
 
 ### ✅ Completed This Session
 
-1. **Feed de Atividades Melhorado (P0)** - IMPLEMENTADO!
+1. **Sistema de Notificações Push (P0)** - IMPLEMENTADO!
+   - **WebSocket:** Tentativa de conexão em tempo real (limitado pelo proxy Emergent - erro 403 esperado)
+   - **Polling Fallback:** Atualização automática a cada 10 segundos quando WebSocket não conecta
+   - **Toast Notifications:** Notificações importantes exibem toast na tela
+   - **Som de Notificação:** Beep via Web Audio API (800Hz, 0.15s)
+   - **Indicador Visual:** Ponto verde no sino quando WebSocket está conectado
+   - **Tipos Importantes:** conquista, aprovacao, reprovacao, parabens, mensagem_assessoria, promocao, aniversario
+   - **15/16 testes passando** (`/app/test_reports/iteration_52.json`)
+   
+   **Arquivos modificados:**
+   - `/app/frontend/src/context/AuthContext.js` - WebSocket + polling + toasts
+   - `/app/frontend/src/components/NotificacoesBell.jsx` - Indicador de conexão
+   - `/app/backend/routes/notificacoes_routes.py` - Integração com WebSocket service
+
+2. **Feed de Atividades Melhorado (P0)** - IMPLEMENTADO!
    - **Posts Automáticos:** Criados automaticamente quando corridas são aprovadas ou conquistas desbloqueadas
    - **Reações:** 8 tipos de reações incluindo 'parabéns' (🎊)
    - **Comentários:** Sistema completo de comentários com validação
    - **Botão Parabéns:** Reação rápida para posts de conquistas/resultados
    - **Visual Especial:** Cards diferenciados para posts de conquista (roxo) e resultado (verde)
    - **21/21 testes passando** (`/app/test_reports/iteration_51.json`)
-   
-   **Arquivos modificados:**
-   - `/app/frontend/src/pages/FeedPage.jsx` - UI melhorada com componentes PostConteudoEspecial e BotaoParabens
-   - `/app/backend/routes/admin_routes.py` - Integração com criar_post_corrida_aprovada()
-   - `/app/backend/routes/conquistas_routes.py` - Integração com criar_post_conquista()
 
-### ✅ Completed Previous Session
+### ✅ Completed Previous Sessions
 
-1. **Nova Funcionalidade: Página de Regras + Painel Admin (P1)** - IMPLEMENTADO!
-   - **Página Pública `/regras`:** Exibe todas as regras de pontuação em 3 tabs
-   - **Painel Admin - Configurações:** Nova aba para editar valores de pontuação, prazos e textos
-   - **Endpoints:** GET/PUT `/api/admin/configuracoes`, GET `/api/configuracoes/regras`
-   - **13/13 testes passando** (`/app/test_reports/iteration_50.json`)
-
-2. **CRÍTICO - Correção da Tabela de Pontuação (P0)** - CORRIGIDO!
-   - **Tabela Correta:**
-     - Normal: 1º=10pts, 2º=9pts, 3º=8pts, ... 10º=1pt
-     - PCD/Cadeirante: 1º=10pts, 2º=9pts, 3º=8pts
-     - Povão: 5-9km=5pts, 10-20km=7pts, 21km+=9pts
-   - **26/26 testes passando** (`/app/test_reports/iteration_49.json`)
-
-3. **Bug Fix: Campo Tempo Obrigatório + Validação 30 dias (P0)** - CORRIGIDO!
-   - **11/11 testes passando** (`/app/test_reports/iteration_48.json`)
-
-4. **Notificações por Email** - IMPLEMENTADO!
-   - Atletas recebem e-mails quando seus resultados são aprovados ou rejeitados
-
-5. **Histórico de Submissões** - IMPLEMENTADO!
-   - Nova página `/historico` onde atletas podem ver o status de todas as suas corridas enviadas
+- Sistema de Regras + Painel Admin de Configurações
+- Correção da Tabela de Pontuação (bug crítico 10x)
+- Bug Fix: Campo Tempo Obrigatório + Validação 30 dias
+- Notificações por Email (Resend)
+- Histórico de Submissões
+- Gráficos de Insígnias no Dashboard
 
 ---
 
 ## Key Endpoints
 
-**Feed Social (Atualizado):**
+**Notificações (Atualizado):**
+- `GET /api/notificacoes` - Lista notificações com `notificacoes[]` e `nao_lidas`
+- `POST /api/notificacoes/{id}/ler` - Marca notificação como lida
+- `POST /api/notificacoes/ler-todas` - Marca todas como lidas
+- `GET /api/notificacoes/{id}` - Detalhes da notificação
+- `DELETE /api/notificacoes/{id}` - Exclui notificação
+- `GET /api/notifications/unread-count` - Contador de não lidas
+- `GET /api/notifications/ws-status` - Status do WebSocket
+- `POST /api/notifications/send-test` - Envia notificação de teste
+- `WebSocket /api/ws/notifications?token=...` - Conexão tempo real (proxy 403 em Emergent)
+
+**Feed Social:**
 - `GET /api/feed` - Lista posts com reações, comentários e dados do autor
 - `POST /api/feed/posts` - Cria novo post de texto
 - `POST /api/feed/posts/{post_id}/reagir` - Reações (👏🏃💪🔥❤️🎉🏆🎊)
 - `POST /api/feed/posts/{post_id}/parabens` - Reação rápida de parabéns
 - `POST /api/feed/posts/{post_id}/comentarios` - Adicionar comentário
 - `GET /api/feed/posts/{post_id}/comentarios` - Listar comentários
-- `GET /api/feed/reacoes-disponiveis` - Lista 8 tipos de reações
-
-**Exportação de Dados:**
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=csv` - Planilha simples
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=xlsx` - Excel formatado
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=pdf` - Relatório visual
 
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_52.json` - Sistema de Notificações Push (15/16 passed)
 - `/app/test_reports/iteration_51.json` - Feed de Atividades Melhorado (21/21 passed)
 - `/app/test_reports/iteration_50.json` - Sistema de Configurações e Regras (13/13 passed)
 - `/app/test_reports/iteration_49.json` - Correção Tabela de Pontuação (26/26 passed)
-- `/app/test_reports/iteration_48.json` - Bug Tempo Obrigatório + 30 Dias (11/11 passed)
 
 ---
 
@@ -82,12 +81,17 @@
 - [ ] Verificação de domínio no Resend
 
 ### Concluído nesta sessão
+- [x] Sistema de Notificações Push
+  - [x] WebSocket para tempo real
+  - [x] Polling fallback (10s)
+  - [x] Toast para notificações importantes
+  - [x] Som de notificação
+  - [x] Indicador de conexão no sino
 - [x] Feed de Atividades Melhorado
   - [x] Posts automáticos de conquistas
   - [x] Posts automáticos de resultados aprovados
   - [x] Reação "Parabéns" (🎊)
   - [x] Visual especial para posts automáticos
-  - [x] Botão de reação rápida "Parabéns"
 
 ---
 
@@ -99,8 +103,9 @@
 ---
 
 ## Known Issues
-- **Redis no Supervisor:** Pode mostrar status FATAL no supervisor, mas funciona se `redis-cli ping` retornar PONG (gerenciado pelo sistema operacional)
-- **Instagram Routes:** As rotas em `/app/backend/routes/instagram_routes.py` são apenas stubs (esqueletos de código)
+- **WebSocket 403:** O proxy da plataforma Emergent bloqueia conexões WebSocket. O sistema usa polling como fallback (10s). Isso é esperado e documentado.
+- **Redis no Supervisor:** Pode mostrar status FATAL no supervisor, mas funciona se `redis-cli ping` retornar PONG
+- **Instagram Routes:** As rotas em `/app/backend/routes/instagram_routes.py` são apenas stubs
 
 ---
 
