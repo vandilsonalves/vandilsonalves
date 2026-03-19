@@ -66,13 +66,13 @@
 
 ## Pending Tasks
 
-### P0 - Bug Pendente
-- [ ] Bug da imagem da assessoria quebrada (URL com prefixo incorreto no banco)
-
 ### P1 - Refatoração
-- [ ] Continuar refatoração do server.py (3419 linhas, 45 endpoints)
+- [x] Refatoração do server.py - Reduzido de 3422 para 2958 linhas (464 linhas removidas)
+  - Removidos endpoints duplicados de ranking, regulamento, corridas-eventos
+  - Removido endpoint duplicado promover-dono-assessoria
 
 ### P2 - Backlog
+- [ ] Continuar refatoração do server.py (2958 linhas, ~30 endpoints restantes)
 - [ ] Configuração de REDIS_URL para produção
 - [ ] Verificação de domínio no Resend
 - [ ] Refatoração de componentes grandes do frontend (DonoAssessoriaDashboard.jsx)
