@@ -25,8 +25,9 @@ async def get_assessorias_lista():
     ).to_list(None)
     
     if len(assessorias) == 0:
+        # Fallback: buscar equipes dos usuários (atletas e donos)
         pipeline = [
-            {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe"]}}},
+            {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe"]}}},
             {"$group": {
                 "_id": "$equipe",
                 "cidade": {"$first": "$cidade"},
@@ -79,7 +80,11 @@ async def get_ranking_assessorias(
             filtro_corridas["data"] = {"$gte": inicio_ano}
     
     pipeline_equipes = [
-        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"], "$exists": True}}},
+        # Incluir atletas E donos de assessoria no cálculo (excluir admins)
+        {"$match": {
+            "role": {"$in": ["atleta", "dono_assessoria"]}, 
+            "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"], "$exists": True}
+        }},
         {"$group": {
             "_id": "$equipe",
             "estado": {"$first": "$estado"},
@@ -89,7 +94,8 @@ async def get_ranking_assessorias(
                 "nome": "$nome",
                 "foto_url": "$foto_url",
                 "estado": "$estado",
-                "cidade": "$cidade"
+                "cidade": "$cidade",
+                "role": "$role"
             }},
             "total_atletas": {"$sum": 1},
             "data_mais_antiga": {"$min": "$id"}
