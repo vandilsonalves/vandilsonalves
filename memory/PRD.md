@@ -4,23 +4,21 @@
 
 ### ✅ Completed This Session
 
-1. **CRÍTICO - Correção da Tabela de Pontuação (P0)** - CORRIGIDO!
-   - **Problema:** Tabela de pontuação estava errada (1º lugar = 100pts em vez de 10pts)
-   - **Solução:** Corrigida a função `calcular_pontos_colocacao` em `/app/backend/routes/admin_routes.py`
+1. **Nova Funcionalidade: Página de Regras + Painel Admin (P1)** - IMPLEMENTADO!
+   - **Página Pública `/regras`:** Exibe todas as regras de pontuação em 3 tabs
+   - **Painel Admin - Configurações:** Nova aba para editar valores de pontuação, prazos e textos
+   - **Endpoints:** GET/PUT `/api/admin/configuracoes`, GET `/api/configuracoes/regras`
+   - **13/13 testes passando** (`/app/test_reports/iteration_50.json`)
+
+2. **CRÍTICO - Correção da Tabela de Pontuação (P0)** - CORRIGIDO!
    - **Tabela Correta:**
      - Normal: 1º=10pts, 2º=9pts, 3º=8pts, ... 10º=1pt
      - PCD/Cadeirante: 1º=10pts, 2º=9pts, 3º=8pts
      - Povão: 5-9km=5pts, 10-20km=7pts, 21km+=9pts
-   - **Script executado:** Recalculou 928 corridas e sincronizou 171 usuários
-   - **Exemplo:** TOP RUN passou de 124 para 34 pontos
    - **26/26 testes passando** (`/app/test_reports/iteration_49.json`)
 
-2. **Bug Fix: Campo Tempo Obrigatório para Povão (P0)** - CORRIGIDO!
-   - Campo tempo agora é obrigatório para TODOS (incluindo Povão)
+3. **Bug Fix: Campo Tempo Obrigatório + Validação 30 dias (P0)** - CORRIGIDO!
    - **11/11 testes passando** (`/app/test_reports/iteration_48.json`)
-
-3. **Bug Fix: Validação de 30 Dias (P0)** - CORRIGIDO!
-   - Validação no frontend (linhas 120-138) e backend (linhas 35-56)
 
 ### ✅ Completed Previous Session
 
@@ -69,10 +67,10 @@
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_50.json` - Sistema de Configurações e Regras (13/13 passed)
 - `/app/test_reports/iteration_49.json` - Correção Tabela de Pontuação (26/26 passed)
 - `/app/test_reports/iteration_48.json` - Bug Tempo Obrigatório + 30 Dias (11/11 passed)
 - `/app/test_reports/iteration_47.json` - Exportação PDF/Excel (14/14 passed)
-- `/app/test_reports/iteration_46.json` - Bug fixes (13/13 passed)
 
 ---
 
