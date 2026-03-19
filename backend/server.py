@@ -1033,36 +1033,7 @@ async def get_ranking_nacional(ano: int = Query(2025)):
     
     return response
 
-@api_router.get("/ranking/estados")
-async def get_estados_disponiveis(ano: int = Query(2025)):
-    pipeline = [
-        {"$match": {"ano": ano}},
-        {"$group": {"_id": "$estado"}},
-        {"$sort": {"_id": 1}}
-    ]
-    
-    estados = await db.ranking_anual.aggregate(pipeline).to_list(None)
-    return {"estados": [e["_id"] for e in estados]}
-
-@api_router.get("/ranking/faixas-etarias")
-async def get_faixas_disponiveis():
-    """Lista faixas etárias disponíveis"""
-    return {
-        "faixas": ["0-11", "12-17", "18-29", "30-39", "40-49", "50-59", "60+"]
-    }
-
-@api_router.get("/ranking/equipes")
-async def get_equipes_disponiveis():
-    """Lista equipes disponíveis (nomes únicos)"""
-    pipeline = [
-        {"$match": {"role": "atleta", "equipe": {"$ne": "", "$exists": True}}},
-        {"$group": {"_id": "$equipe"}},
-        {"$sort": {"_id": 1}}
-    ]
-    result = await db.usuarios.aggregate(pipeline).to_list(None)
-    # Retorna array direto para facilitar uso no frontend
-    return [e["_id"] for e in result if e["_id"] and e["_id"].lower() != 'sem equipe']
-
+# [REFATORADO] /ranking/estados, /ranking/faixas-etarias, /ranking/equipes migrados para routes/ranking_routes.py
 # [REFATORADO] /assessorias/lista migrado para routes/assessorias_routes.py
 
 @api_router.get("/")

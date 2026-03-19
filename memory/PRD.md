@@ -67,15 +67,19 @@
 ## Pending Tasks
 
 ### P1 - Refatoração
-- [x] Refatoração do server.py - Reduzido de 3422 para 2958 linhas (464 linhas removidas)
+- [x] Refatoração do server.py - Reduzido de 3422 para 2929 linhas (493 linhas removidas = 14,4% de redução)
   - Removidos endpoints duplicados de ranking, regulamento, corridas-eventos
-  - Removido endpoint duplicado promover-dono-assessoria
+  - Removidos endpoints duplicados: /ranking/estados, /ranking/faixas-etarias, /ranking/equipes
+  - 30 endpoints restantes no server.py
+
+### Concluído
+- [x] REDIS_URL adicionado ao /app/backend/.env para produção
 
 ### P2 - Backlog
-- [ ] Continuar refatoração do server.py (2958 linhas, ~30 endpoints restantes)
-- [ ] Configuração de REDIS_URL para produção
+- [ ] Continuar refatoração do server.py (2929 linhas, 30 endpoints restantes)
 - [ ] Verificação de domínio no Resend
 - [ ] Refatoração de componentes grandes do frontend (DonoAssessoriaDashboard.jsx)
+- [ ] Migrar endpoints de Instagram para routes/instagram_routes.py (~600 linhas)
 
 ---
 
