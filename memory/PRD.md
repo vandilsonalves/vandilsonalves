@@ -4,6 +4,15 @@
 
 ### ✅ Completed This Session
 
+1. **Exportação de Dados em PDF e Excel (P1)** - NOVO!
+   - Implementado: Exportação em PDF (relatório visual formatado)
+   - Implementado: Exportação em Excel (XLSX com 3 abas: Resumo, Atletas, Corridas)
+   - Bibliotecas: reportlab (PDF), xlsxwriter (Excel)
+   - Frontend: 5 botões de exportação (CSV, JSON, Excel, PDF, Gráficos)
+   - **14/14 testes passando** (`/app/test_reports/iteration_47.json`)
+
+### ✅ Completed Previous Session
+
 1. **Bug Fix: Ranking Estadual (P0)**
    - Problema: Mostrava ".0" ou "." em vez da posição real
    - Causa: Estado vinha dos atletas, não do ranking
@@ -22,41 +31,51 @@
    - Removido: Botão de foto na UI
    - **13/13 testes passando**
 
-4. **Refatoração do server.py (Sessão Anterior)**
+4. **Refatoração do server.py**
    - Reduzido de 4347 → 3419 linhas
    - 45 endpoints restantes
-
-5. **Exportação de Dados (Sessão Anterior)**
-   - CSV, JSON e Gráficos funcionando
 
 ---
 
 ## Key Endpoints
 
-**Feed Social (Atualizado):**
+**Exportação de Dados (Atualizado):**
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=csv` - Planilha simples
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=json` - Dados estruturados
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=xlsx` - Excel formatado (NOVO!)
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=pdf` - Relatório visual (NOVO!)
+- `GET /api/liga-assessorias/exportar-graficos/{equipe}` - Dados dos gráficos
+
+**Feed Social:**
 - `POST /api/feed/posts/{post_id}/comentarios` - Adicionar comentário
 - `GET /api/feed/posts/{post_id}/comentarios` - Listar comentários
 - `DELETE /api/feed/comentarios/{id}` - Deletar comentário
 - `POST /api/feed/posts/{post_id}/reagir` - Reações (👏🏃💪🔥❤️🎉🏆)
-- ~~`POST /api/feed/posts/{post_id}/imagem`~~ - REMOVIDO
 
-**Ranking Estadual (Corrigido):**
+**Ranking Estadual:**
 - `GET /api/liga-assessorias/assessoria/{nome}` - Inclui posicao_estadual correta
 
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_47.json` - Exportação PDF/Excel (14/14 passed)
 - `/app/test_reports/iteration_46.json` - Bug fixes (13/13 passed)
-- `/app/test_reports/iteration_45.json` - Exportação (23/23 passed)
+- `/app/test_reports/iteration_45.json` - Exportação CSV/JSON (23/23 passed)
 
 ---
 
 ## Pending Tasks
 
+### P0 - Bug Pendente
+- [ ] Bug da imagem da assessoria quebrada (URL com prefixo incorreto no banco)
+
+### P1 - Refatoração
+- [ ] Continuar refatoração do server.py (3419 linhas, 45 endpoints)
+
 ### P2 - Backlog
-- [ ] Continuar refatoração do server.py (3419 linhas)
 - [ ] Configuração de REDIS_URL para produção
 - [ ] Verificação de domínio no Resend
+- [ ] Refatoração de componentes grandes do frontend (DonoAssessoriaDashboard.jsx)
 
 ---
 
