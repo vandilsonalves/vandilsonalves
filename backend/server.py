@@ -155,7 +155,6 @@ from routes.indicacao_routes import router as indicacao_router
 from routes.rankings_routes import router as rankings_router
 from routes.regulamento_routes import router as regulamento_router
 from routes.autorizacoes_routes import router as autorizacoes_router
-from routes.rivais_routes import router as rivais_router
 from routes.feed_routes import router as feed_router
 from routes.liga_assessorias_routes import router as liga_assessorias_router
 from routes.ranking_corridas_routes import router as ranking_corridas_router
@@ -181,7 +180,6 @@ api_router.include_router(indicacao_router)
 api_router.include_router(rankings_router)
 api_router.include_router(regulamento_router)
 api_router.include_router(autorizacoes_router)
-api_router.include_router(rivais_router)
 api_router.include_router(feed_router)
 api_router.include_router(liga_assessorias_router)
 api_router.include_router(ranking_corridas_router)

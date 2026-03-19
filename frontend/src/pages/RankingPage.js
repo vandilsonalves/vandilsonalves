@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck, MessageSquare, Swords } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck, MessageSquare } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -387,14 +387,10 @@ const RankingPage = () => {
                   </Button>
                 )}
                 
-                {/* Links para Feed e Rivais */}
+                {/* Link para Feed */}
                 <Button onClick={() => navigate('/feed')} variant="ghost" size="sm" className="text-blue-500 hover:text-blue-600" data-testid="btn-feed">
                   <MessageSquare className="w-4 h-4 mr-1" />
                   Feed
-                </Button>
-                <Button onClick={() => navigate('/rivais')} variant="ghost" size="sm" className="text-red-500 hover:text-red-600" data-testid="btn-rivais">
-                  <Swords className="w-4 h-4 mr-1" />
-                  Rivais
                 </Button>
                 
                 {!isAdmin && (

@@ -1,16 +1,17 @@
 // /app/frontend/src/pages/FeedPage.jsx
-// Feed Social da Plataforma com Sistema de Reações
+// Feed Social da Plataforma com Reações e Comentários (sem upload de imagem)
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
 import { 
-  Send, Image, Loader2, ArrowLeft, MoreHorizontal,
-  TrendingUp, Clock, Trash2, X, Users, Smile
+  Send, Loader2, ArrowLeft, MoreHorizontal,
+  TrendingUp, Clock, Trash2, Users, Smile, MessageCircle
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -29,7 +30,7 @@ import { useAuth } from '@/context/AuthContext';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Reações disponíveis (mesmo do backend)
+// Reações disponíveis
 const REACOES = {
   aplausos: { emoji: "👏", nome: "Aplausos" },
   corrida: { emoji: "🏃", nome: "Correndo" },
@@ -53,8 +54,11 @@ const FeedPage = () => {
   // Novo post
   const [novoPost, setNovoPost] = useState('');
   const [enviandoPost, setEnviandoPost] = useState(false);
-  const [imagemPost, setImagemPost] = useState(null);
-  const imagemInputRef = useRef(null);
+  
+  // Comentários
+  const [comentarioTexto, setComentarioTexto] = useState({});
+  const [enviandoComentario, setEnviandoComentario] = useState(null);
+  const [showComentarios, setShowComentarios] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -107,27 +111,14 @@ const FeedPage = () => {
     
     setEnviandoPost(true);
     try {
-      const response = await axios.post(
+      await axios.post(
         `${API}/feed/posts`,
         { texto: novoPost, tipo: 'texto' },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Se tiver imagem, fazer upload
-      if (imagemPost && response.data.post_id) {
-        const formData = new FormData();
-        formData.append('imagem', imagemPost);
-        
-        await axios.post(
-          `${API}/feed/posts/${response.data.post_id}/imagem`,
-          formData,
-          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
-        );
-      }
-      
       toast.success('Post publicado!');
       setNovoPost('');
-      setImagemPost(null);
       fetchFeed();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao publicar post');
@@ -202,6 +193,30 @@ const FeedPage = () => {
     }
   };
 
+  const handleComentar = async (postId) => {
+    const texto = comentarioTexto[postId];
+    if (!texto?.trim()) return;
+    
+    setEnviandoComentario(postId);
+    try {
+      await axios.post(
+        `${API}/feed/posts/${postId}/comentarios`,
+        { texto },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      
+      setComentarioTexto({ ...comentarioTexto, [postId]: '' });
+      toast.success('Comentário adicionado!');
+      
+      // Recarregar feed para atualizar comentários
+      fetchFeed();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao comentar');
+    } finally {
+      setEnviandoComentario(null);
+    }
+  };
+
   const handleDeletarPost = async (postId) => {
     try {
       await axios.delete(`${API}/feed/posts/${postId}`, {
@@ -212,17 +227,6 @@ const FeedPage = () => {
       toast.success('Post deletado');
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao deletar post');
-    }
-  };
-
-  const handleImagemChange = (e) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      if (file.size > 5 * 1024 * 1024) {
-        toast.error('Imagem muito grande. Máximo: 5MB');
-        return;
-      }
-      setImagemPost(file);
     }
   };
 
@@ -286,7 +290,7 @@ const FeedPage = () => {
             ) : (
               <Smile className="w-4 h-4 mr-1" />
             )}
-            {post.total_reacoes || 0} {(post.total_reacoes || 0) === 1 ? 'reação' : 'reações'}
+            {post.total_reacoes || 0}
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700" align="start">
@@ -366,65 +370,25 @@ const FeedPage = () => {
                       data-testid="new-post-input"
                     />
                     
-                    {/* Preview da imagem */}
-                    {imagemPost && (
-                      <div className="relative inline-block">
-                        <img 
-                          src={URL.createObjectURL(imagemPost)} 
-                          alt="Preview" 
-                          className="max-h-32 rounded-lg"
-                        />
-                        <Button
-                          variant="destructive"
-                          size="icon"
-                          className="absolute -top-2 -right-2 h-6 w-6"
-                          onClick={() => setImagemPost(null)}
-                        >
-                          <X className="w-4 h-4" />
-                        </Button>
-                      </div>
-                    )}
-                    
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="file"
-                          ref={imagemInputRef}
-                          onChange={handleImagemChange}
-                          accept="image/*"
-                          className="hidden"
-                        />
-                        <Button 
-                          variant="ghost" 
-                          size="sm"
-                          onClick={() => imagemInputRef.current?.click()}
-                          className="text-slate-400 hover:text-amber-400"
-                        >
-                          <Image className="w-4 h-4 mr-1" />
-                          Foto
-                        </Button>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-400">
-                          {novoPost.length}/1000
-                        </span>
-                        <Button
-                          onClick={handleCriarPost}
-                          disabled={!novoPost.trim() || enviandoPost}
-                          className="bg-amber-500 hover:bg-amber-600 text-black"
-                          data-testid="publish-post-btn"
-                        >
-                          {enviandoPost ? (
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                          ) : (
-                            <>
-                              <Send className="w-4 h-4 mr-1" />
-                              Publicar
-                            </>
-                          )}
-                        </Button>
-                      </div>
+                      <span className="text-xs text-slate-400">
+                        {novoPost.length}/1000
+                      </span>
+                      <Button
+                        onClick={handleCriarPost}
+                        disabled={!novoPost.trim() || enviandoPost}
+                        className="bg-amber-500 hover:bg-amber-600 text-black"
+                        data-testid="publish-post-btn"
+                      >
+                        {enviandoPost ? (
+                          <Loader2 className="w-4 h-4 animate-spin" />
+                        ) : (
+                          <>
+                            <Send className="w-4 h-4 mr-1" />
+                            Publicar
+                          </>
+                        )}
+                      </Button>
                     </div>
                   </div>
                 </div>
@@ -493,6 +457,7 @@ const FeedPage = () => {
                     {/* Conteúdo do Post */}
                     <p className="text-slate-200 whitespace-pre-wrap">{post.texto}</p>
                     
+                    {/* Imagens existentes ainda são exibidas */}
                     {post.imagem_url && (
                       <img 
                         src={`${BACKEND_URL}${post.imagem_url}`} 
@@ -504,10 +469,73 @@ const FeedPage = () => {
                     {/* Reações Display */}
                     <ReacoesDisplay post={post} />
                     
-                    {/* Ações - Sistema de Reações */}
+                    {/* Ações - Reações e Comentários */}
                     <div className="flex items-center gap-4 pt-2 border-t border-slate-700">
                       <ReacaoButton post={post} />
+                      
+                      <Button 
+                        variant="ghost" 
+                        size="sm" 
+                        className="text-slate-400 hover:text-blue-400"
+                        onClick={() => setShowComentarios({ ...showComentarios, [post.id]: !showComentarios[post.id] })}
+                        data-testid={`comment-btn-${post.id}`}
+                      >
+                        <MessageCircle className="w-4 h-4 mr-1" />
+                        {post.total_comentarios || 0}
+                      </Button>
                     </div>
+                    
+                    {/* Seção de Comentários */}
+                    {showComentarios[post.id] && (
+                      <div className="space-y-3 pt-3 border-t border-slate-700">
+                        {/* Preview de comentários */}
+                        {post.comentarios_preview?.map((com) => (
+                          <div key={com.id} className="flex gap-2">
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback className="bg-slate-600 text-white text-xs">
+                                {com.autor?.nome?.charAt(0)}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div className="bg-slate-700 rounded-lg px-3 py-2 flex-1">
+                              <p className="text-sm text-white font-medium">{com.autor?.nome}</p>
+                              <p className="text-sm text-slate-300">{com.texto}</p>
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Input de novo comentário */}
+                        <div className="flex gap-2">
+                          <Avatar className="w-8 h-8">
+                            <AvatarFallback className="bg-amber-500 text-white text-xs">
+                              {user?.nome?.charAt(0)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div className="flex-1 flex gap-2">
+                            <Input
+                              placeholder="Escreva um comentário..."
+                              value={comentarioTexto[post.id] || ''}
+                              onChange={(e) => setComentarioTexto({ ...comentarioTexto, [post.id]: e.target.value })}
+                              onKeyDown={(e) => e.key === 'Enter' && handleComentar(post.id)}
+                              className="bg-slate-700 border-slate-600 text-sm"
+                              maxLength={500}
+                              data-testid={`comment-input-${post.id}`}
+                            />
+                            <Button 
+                              size="sm"
+                              onClick={() => handleComentar(post.id)}
+                              disabled={!comentarioTexto[post.id]?.trim() || enviandoComentario === post.id}
+                              data-testid={`send-comment-${post.id}`}
+                            >
+                              {enviandoComentario === post.id ? (
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                              ) : (
+                                <Send className="w-4 h-4" />
+                              )}
+                            </Button>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               ))
@@ -555,7 +583,6 @@ const FeedPage = () => {
                         <p className="text-sm text-white font-medium truncate">{post.autor?.nome}</p>
                         <p className="text-xs text-slate-400 truncate">{post.texto}</p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                          {/* Mostrar as top 3 reações */}
                           {post.reacoes && Object.entries(post.reacoes)
                             .sort((a, b) => b[1].count - a[1].count)
                             .slice(0, 3)
@@ -566,9 +593,6 @@ const FeedPage = () => {
                               </span>
                             ))
                           }
-                          {(!post.reacoes || Object.keys(post.reacoes).length === 0) && (
-                            <span>{post.total_reacoes || 0} reações</span>
-                          )}
                         </div>
                       </div>
                     </div>

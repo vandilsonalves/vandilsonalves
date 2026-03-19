@@ -480,22 +480,35 @@ async def get_detalhes_assessoria(nome_equipe: str):
         elif 2 <= c.get("colocacao", 0) <= 5:
             pontos_resultados += 0.5
     
-    # Buscar posição no ranking NACIONAL
+    # Buscar posição no ranking NACIONAL primeiro para obter o estado
     ranking_nacional = await get_ranking_assessorias(tipo="nacional")
-    posicao_nacional = next(
-        (eq["posicao"] for eq in ranking_nacional.get("ranking", []) if eq["nome"] == nome_equipe),
-        None
-    )
+    posicao_nacional = None
+    estado_do_ranking = None
+    
+    for eq in ranking_nacional.get("ranking", []):
+        if eq["nome"] == nome_equipe:
+            posicao_nacional = eq["posicao"]
+            estado_do_ranking = eq.get("estado", "")
+            break
+    
+    # Determinar estado da equipe (prioridade: ranking -> dono -> atletas)
+    # O ranking é a fonte de verdade para o estado da equipe
+    estado_equipe = ""
+    if estado_do_ranking:
+        estado_equipe = estado_do_ranking
+    elif dono_info and dono_info.get("estado"):
+        estado_equipe = dono_info.get("estado", "")
+    elif atletas:
+        estado_equipe = atletas[0].get("estado", "")
     
     # Buscar posição no ranking ESTADUAL
-    estado_equipe = atletas[0].get("estado", "") if atletas else ""
     posicao_estadual = None
     if estado_equipe:
         ranking_estadual = await get_ranking_assessorias(tipo="estadual", estado=estado_equipe)
-        posicao_estadual = next(
-            (eq["posicao"] for eq in ranking_estadual.get("ranking", []) if eq["nome"] == nome_equipe),
-            None
-        )
+        for eq in ranking_estadual.get("ranking", []):
+            if eq["nome"] == nome_equipe:
+                posicao_estadual = eq["posicao"]
+                break
     
     # Determinar selo baseado na posição
     selo = "participante"
@@ -507,13 +520,20 @@ async def get_detalhes_assessoria(nome_equipe: str):
         else:
             selo = "bronze"
     
+    # Determinar cidade
+    cidade_equipe = ""
+    if atletas:
+        cidade_equipe = atletas[0].get("cidade", "")
+    if not cidade_equipe and dono_info:
+        cidade_equipe = dono_info.get("cidade", "")
+    
     # Total de atletas inclui o dono se ele for contado
     total_atletas_count = len(atletas_com_pontos)
     
     return {
         "nome": nome_equipe,
         "estado": estado_equipe,
-        "cidade": atletas[0].get("cidade", "") if atletas else "",
+        "cidade": cidade_equipe,
         "total_atletas": total_atletas_count,
         "pontos_cadastro": pontos_cadastro,
         "pontos_resultados": pontos_resultados,

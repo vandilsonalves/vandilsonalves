@@ -1,0 +1,96 @@
+{
+  "summary": "Iteration 46: Backend-only testing of bug fixes - Ranking Estadual fix, Feed Comments, Image Upload removal. All 13 tests PASSED. All features working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter46_bugfixes.py",
+    "/app/test_reports/pytest/pytest_iter46_bugfixes.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✅ Ranking Estadual bug fixed - posicao_estadual now obtained correctly by querying estadual ranking",
+    "✅ Estado is now obtained from ranking (prioridade: ranking -> dono -> atletas)",
+    "✅ Feed Comments system fully implemented (POST/GET/DELETE)",
+    "✅ Comment validation working (empty text rejected, max 500 chars enforced)",
+    "✅ Feed response includes total_comentarios and comentarios_preview (last 3 comments)",
+    "✅ Image upload endpoint removed - returns 404 as expected",
+    "✅ Comment authors enriched with user data (id, nome, foto_url)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter46_bugfixes.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 passed)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@runpro.com",
+      "password": "admin123"
+    },
+    "test_assessoria": "Assessoria CAFAV (ES, posicao_estadual: 1)"
+  },
+  "seed_data_creation": "Test posts created and cleaned up during testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All bug fixes verified: 1) Ranking Estadual bug fixed - posicao_estadual shows correct value (not None or '.0'), 2) Feed Comments fully working (add/list/delete), 3) Image upload endpoint removed (404). Sistema de Rivais was removed by main agent (not tested as per request).",
+  "verified_features": {
+    "ranking_estadual_bug_fix": {
+      "GET /api/liga-assessorias/assessoria/Assessoria%20CAFAV": {
+        "status": "✅ WORKING",
+        "resultado": {
+          "nome": "Assessoria CAFAV",
+          "estado": "ES",
+          "posicao_estadual": 1,
+          "posicao_nacional": 3
+        },
+        "bug_corrigido": "posicao_estadual agora mostra posição correta (era None/.0 antes)"
+      },
+      "GET /api/liga-assessorias/ranking?tipo=estadual&estado=ES": "✅ WORKING - Returns positions correctly"
+    },
+    "feed_comments": {
+      "POST /api/feed/posts/{post_id}/comentarios": "✅ WORKING - Adds comment, validates text (not empty, max 500 chars)",
+      "GET /api/feed/posts/{post_id}/comentarios": "✅ WORKING - Lists comments with author data, pagination",
+      "DELETE /api/feed/comentarios/{comentario_id}": "✅ WORKING - Deletes comment, validates ownership"
+    },
+    "feed_response": {
+      "GET /api/feed": "✅ WORKING - Includes comentarios_preview (last 3) and total_comentarios"
+    },
+    "image_upload_removed": {
+      "POST /api/feed/posts/{post_id}/imagem": "✅ REMOVED - Returns 404 Not Found"
+    }
+  },
+  "endpoints_tested_via_pytest": {
+    "TestAuthentication": {
+      "test_login_success": "PASSED"
+    },
+    "TestRankingEstadualBugFix": {
+      "test_assessoria_posicao_estadual_not_none": "PASSED - posicao_estadual is not None",
+      "test_assessoria_cafav_posicao_estadual_is_1": "PASSED - CAFAV has posicao_estadual=1 in ES",
+      "test_ranking_estadual_endpoint": "PASSED - Ranking estadual returns correct positions"
+    },
+    "TestFeedCommentsEndpoints": {
+      "test_add_comentario": "PASSED - Successfully adds comment",
+      "test_add_comentario_empty_text": "PASSED - Rejects empty text with 400",
+      "test_add_comentario_too_long": "PASSED - Rejects >500 chars with 400",
+      "test_get_comentarios": "PASSED - Returns comments with author data",
+      "test_delete_comentario": "PASSED - Successfully deletes comment",
+      "test_delete_comentario_not_found": "PASSED - Returns 404 for non-existent"
+    },
+    "TestFeedResponseStructure": {
+      "test_feed_includes_comentarios_fields": "PASSED - Has total_comentarios and comentarios_preview"
+    },
+    "TestImageUploadRemoved": {
+      "test_image_upload_endpoint_removed": "PASSED - Returns 404 (endpoint removed)"
+    },
+    "TestCleanup": {
+      "test_cleanup_test_posts": "PASSED - Test data cleaned"
+    }
+  }
+}
