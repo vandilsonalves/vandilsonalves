@@ -7,9 +7,51 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+import { toast } from 'sonner';
 
 const WS_RECONNECT_DELAY = 3000; // 3 segundos
 const WS_PING_INTERVAL = 25000; // 25 segundos
+
+// Tipos de notificações importantes que mostram toast
+const TIPOS_IMPORTANTES = [
+  'conquista', 'resultado_aprovado', 'resultado_reprovado',
+  'aprovacao', 'reprovacao', 'mensagem_assessoria', 
+  'parabens', 'promocao', 'aniversario'
+];
+
+// Ícones por tipo de notificação
+const NOTIFICATION_ICONS = {
+  conquista: '🏆',
+  resultado_aprovado: '✅',
+  aprovacao: '✅',
+  parabens: '🎊',
+  promocao: '🎉',
+  aniversario: '🎂',
+  mensagem_assessoria: '💬',
+  resultado_reprovado: '❌',
+  reprovacao: '❌',
+};
+
+// Tocar som de notificação
+const playNotificationSound = () => {
+  try {
+    const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    const oscillator = audioContext.createOscillator();
+    const gainNode = audioContext.createGain();
+    
+    oscillator.connect(gainNode);
+    gainNode.connect(audioContext.destination);
+    
+    oscillator.frequency.value = 800;
+    oscillator.type = 'sine';
+    gainNode.gain.value = 0.1;
+    
+    oscillator.start();
+    oscillator.stop(audioContext.currentTime + 0.15);
+  } catch (error) {
+    // Ignorar erros de áudio
+  }
+};
 
 export const useWebSocket = (token) => {
   const [isConnected, setIsConnected] = useState(false);
@@ -74,6 +116,34 @@ export const useWebSocket = (token) => {
               const notification = data.notification;
               setNotifications(prev => [notification, ...prev]);
               setUnreadCount(prev => prev + 1);
+              
+              // Mostrar toast para notificações importantes
+              if (notification && TIPOS_IMPORTANTES.includes(notification.type)) {
+                const icon = NOTIFICATION_ICONS[notification.type] || '🔔';
+                const title = notification.title || 'Nova notificação';
+                const message = notification.message || '';
+                
+                // Escolher estilo do toast baseado no tipo
+                if (['conquista', 'resultado_aprovado', 'aprovacao', 'parabens', 'promocao', 'aniversario'].includes(notification.type)) {
+                  toast.success(`${icon} ${title}`, {
+                    description: message,
+                    duration: 6000,
+                  });
+                } else if (['resultado_reprovado', 'reprovacao'].includes(notification.type)) {
+                  toast.error(`${icon} ${title}`, {
+                    description: message,
+                    duration: 6000,
+                  });
+                } else {
+                  toast.info(`${icon} ${title}`, {
+                    description: message,
+                    duration: 5000,
+                  });
+                }
+                
+                // Tocar som
+                playNotificationSound();
+              }
               
               // Disparar evento customizado para outros componentes
               window.dispatchEvent(new CustomEvent('new-notification', { 

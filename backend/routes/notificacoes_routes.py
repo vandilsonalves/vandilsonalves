@@ -144,7 +144,7 @@ async def get_notificacao_detalhes(notificacao_id: str, current_user: dict = Dep
 # ==================== HELPER FUNCTION ====================
 
 async def criar_notificacao(usuario_id: str, tipo: str, titulo: str, mensagem: str, dados_extras: dict = {}):
-    """Helper para criar notificação"""
+    """Helper para criar notificação e enviar via WebSocket"""
     notificacao = Notificacao(
         usuario_id=usuario_id,
         tipo=tipo,
@@ -153,4 +153,19 @@ async def criar_notificacao(usuario_id: str, tipo: str, titulo: str, mensagem: s
         dados_extras=dados_extras
     )
     await db.notificacoes.insert_one(notificacao.model_dump())
+    
+    # Tentar enviar via WebSocket em tempo real
+    try:
+        from services.websocket_service import send_notification
+        await send_notification(
+            user_id=usuario_id,
+            notification_type=tipo,
+            title=titulo,
+            message=mensagem,
+            data=dados_extras
+        )
+    except Exception as e:
+        # Se falhar, não é crítico - o polling vai pegar
+        print(f"⚠️ Não foi possível enviar notificação via WebSocket: {e}")
+    
     return notificacao

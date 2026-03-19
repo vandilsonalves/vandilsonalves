@@ -26,7 +26,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
 const NotificacoesBell = () => {
-  const { notificacoes, naoLidas, marcarLida, marcarTodasLidas, token, fetchNotificacoes } = useAuth();
+  const { notificacoes, naoLidas, marcarLida, marcarTodasLidas, token, fetchNotificacoes, wsConnected } = useAuth();
   const [open, setOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedNotificacao, setSelectedNotificacao] = useState(null);
@@ -142,6 +142,10 @@ const NotificacoesBell = () => {
               >
                 {naoLidas > 9 ? '9+' : naoLidas}
               </Badge>
+            )}
+            {/* Indicador de conexão tempo real */}
+            {wsConnected && (
+              <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full border border-white" title="Notificações em tempo real ativas" />
             )}
           </Button>
         </DropdownMenuTrigger>
