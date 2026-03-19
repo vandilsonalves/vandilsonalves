@@ -68,19 +68,27 @@
 
 ### P1 - Refatoração ✅
 - [x] Refatoração do server.py - **CONCLUÍDA**
-  - Reduzido de 2929 para **1945 linhas** (984 linhas removidas = 33,6% de redução)
-  - Migrados 11 endpoints de Instagram para `routes/instagram_routes.py` (1085 linhas)
-  - 25 endpoints restantes no server.py
+  - Reduzido de 2929 para **1945 linhas** (33,6% de redução)
+  - Migrados 11 endpoints de Instagram para `routes/instagram_routes.py`
+
+- [x] Refatoração do DonoAssessoriaDashboard.jsx - **CONCLUÍDA**
+  - Reduzido de 1877 para **1596 linhas** (15% de redução)
+  - 5 subcomponentes criados em `/components/dono-assessoria/`:
+    - DashboardStats.jsx (RankingCards, MetricasCards)
+    - ExportacaoCard.jsx
+    - SolicitacoesTab.jsx
+    - AtletasTab.jsx
+    - FotoEquipeTab.jsx
 
 ### Concluído nesta sessão
-- [x] REDIS_URL adicionado ao /app/backend/.env para produção
+- [x] Redis configurado e funcionando
+- [x] REDIS_URL adicionado ao /app/backend/.env
 - [x] Exportação de dados em PDF e Excel implementada
 - [x] Bug da imagem da assessoria corrigido
 
 ### P2 - Backlog
 - [ ] Verificação de domínio no Resend
-- [ ] Refatoração de componentes grandes do frontend (DonoAssessoriaDashboard.jsx)
-- [ ] Migrar endpoints restantes do server.py para módulos específicos
+- [ ] Continuar refatoração de outros componentes grandes (RankingPage.js)
 
 ---
 
