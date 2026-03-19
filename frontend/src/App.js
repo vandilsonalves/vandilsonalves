@@ -15,6 +15,8 @@ import RankingCorridasPage from "@/pages/RankingCorridasPage.jsx";
 import ComoSerVerificadoPage from "@/pages/ComoSerVerificadoPage.jsx";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
+import RivaisPage from "@/pages/RivaisPage";
+import FeedPage from "@/pages/FeedPage";
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/admin/estrategico" element={<DashboardEstrategico />} />
             <Route path="/perfil" element={<PerfilAtletaPage />} />
+            <Route path="/rivais" element={<RivaisPage />} />
+            <Route path="/feed" element={<FeedPage />} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />

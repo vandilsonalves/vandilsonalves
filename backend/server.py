@@ -155,6 +155,8 @@ from routes.indicacao_routes import router as indicacao_router
 from routes.rankings_routes import router as rankings_router
 from routes.regulamento_routes import router as regulamento_router
 from routes.autorizacoes_routes import router as autorizacoes_router
+from routes.rivais_routes import router as rivais_router
+from routes.feed_routes import router as feed_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -177,6 +179,8 @@ api_router.include_router(indicacao_router)
 api_router.include_router(rankings_router)
 api_router.include_router(regulamento_router)
 api_router.include_router(autorizacoes_router)
+api_router.include_router(rivais_router)
+api_router.include_router(feed_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:
@@ -1203,7 +1207,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://atleta-portal.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://community-feed-28.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 

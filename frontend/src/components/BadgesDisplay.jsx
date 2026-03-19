@@ -147,7 +147,7 @@ const ShareCard = ({ atletaId, atleta, stats, badges, onClose }) => {
   };
   
   const handleShareWhatsApp = () => {
-    const texto = encodeURIComponent(`🏆 Confira minhas insígnias no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} insígnias\n⭐ ${stats.pontos} pontos\n\nhttps://atleta-portal.preview.emergentagent.com/atleta/${atletaId}`);
+    const texto = encodeURIComponent(`🏆 Confira minhas insígnias no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} insígnias\n⭐ ${stats.pontos} pontos\n\nhttps://community-feed-28.preview.emergentagent.com/atleta/${atletaId}`);
     window.open(`https://wa.me/?text=${texto}`, '_blank');
   };
   

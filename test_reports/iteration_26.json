@@ -37,7 +37,7 @@
       "email": "admin@runpro.com",
       "password": "admin123"
     },
-    "api_url": "https://atleta-portal.preview.emergentagent.com"
+    "api_url": "https://community-feed-28.preview.emergentagent.com"
   },
   "seed_data_creation": "None - used existing test data",
   "retest_needed": false,
