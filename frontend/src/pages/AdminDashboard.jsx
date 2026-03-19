@@ -1455,6 +1455,7 @@ const AdminDashboard = () => {
             statsAssessoriasVerificadas={statsAssessoriasVerificadas}
             statsInsignias={statsInsignias}
             loadingStats={loadingStats}
+            token={token}
           />
         )}
 

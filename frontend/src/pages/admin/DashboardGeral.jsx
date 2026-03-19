@@ -5,6 +5,7 @@ import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   PieChart as RechartsPie, Pie, Cell, AreaChart, Area
 } from 'recharts';
+import InsigniasStatsCard from '@/components/admin/InsigniasStatsCard';
 
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
@@ -20,7 +21,8 @@ const DashboardGeral = ({
   statsDonosPorEstado,
   statsAssessoriasVerificadas,
   statsInsignias,
-  loadingStats 
+  loadingStats,
+  token
 }) => {
   if (loadingStats) {
     return (
@@ -395,58 +397,8 @@ const DashboardGeral = ({
         </Card>
       )}
 
-      {/* Gráfico 32: Insígnias & Conquistas - Por Tipo */}
-      {statsInsignias && statsInsignias.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Medal className="w-5 h-5 text-purple-500" />
-              Insígnias & Conquistas
-              <Badge variant="secondary" className="ml-auto">Por Tipo</Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="h-72">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statsInsignias} layout="vertical" margin={{ left: 100 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis type="number" stroke="#9CA3AF" />
-                  <YAxis 
-                    type="category" 
-                    dataKey="nome" 
-                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
-                    width={100}
-                  />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
-                    labelStyle={{ color: '#A855F7' }}
-                    formatter={(value, name, props) => [
-                      `${value} atletas`,
-                      props.payload.icone + ' ' + props.payload.nome
-                    ]}
-                  />
-                  <Bar dataKey="total" radius={[0, 4, 4, 0]} name="Atletas">
-                    {statsInsignias.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.cor || COLORS[index % COLORS.length]} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4">
-              {statsInsignias.slice(0, 10).map((item, idx) => (
-                <div key={idx} className="text-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <p className="text-2xl">{item.icone}</p>
-                  <p className="text-lg font-bold" style={{ color: item.cor || COLORS[idx % COLORS.length] }}>
-                    {item.total}
-                  </p>
-                  <p className="text-xs text-slate-500 truncate" title={item.nome}>{item.nome}</p>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      {/* Gráfico 32: Insígnias & Conquistas - Visual de Badges */}
+      <InsigniasStatsCard token={token} />
     </div>
   );
 };
