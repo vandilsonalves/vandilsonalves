@@ -37,45 +37,32 @@ def calcular_pontos_colocacao(colocacao: int, categoria: str) -> int:
 def calcular_pontos_povao(distancia: str) -> int:
     """Calcula pontos para o Ranking do Povão baseado na distância
     
-    Regra de Pontuação:
-    - 5-9km: 5 pontos
-    - 10-20km: 10 pontos  
-    - 21km+: pontos = distância em km (arredondado para baixo)
+    Regra de Pontuação (Sistema do Povão):
+    - 5km a 9km = 5 pontos
+    - 10km a 20km = 7 pontos
+    - 21km ou mais = 9 pontos
     
-    Exemplos: 15km = 10pts, 21km = 21pts, 42km = 42pts, 100km = 100pts
+    A pontuação NÃO depende da colocação, apenas da distância percorrida.
     """
-    # Valores padrão conhecidos
-    pontos_padrao = {
-        "5KM": 5,
-        "10KM": 10,
-        "15KM": 10,    # 10-20km = 10 pontos
-        "21KM": 21,
-        "42KM": 42
-    }
-    
-    # Verificar se é um valor padrão
-    distancia_upper = distancia.upper().strip()
-    if distancia_upper in pontos_padrao:
-        return pontos_padrao[distancia_upper]
-    
-    # Tentar extrair valor numérico para distâncias customizadas (ex: "15KM", "7.5KM", "100KM")
+    # Tentar extrair valor numérico
     try:
         # Remove "KM" e espaços
+        distancia_upper = distancia.upper().strip()
         valor_str = distancia_upper.replace("KM", "").replace("K", "").strip()
         valor_km = float(valor_str)
         
-        # Aplicar regras de pontuação
+        # Aplicar regras de pontuação do Povão
         if valor_km < 5:
-            return max(1, int(valor_km))  # Mínimo 1 ponto
+            return 0  # Menos de 5km não pontua
         elif valor_km < 10:
-            return 5  # 5-9km = 5 pontos
+            return 5  # 5km a 9km = 5 pontos
         elif valor_km < 21:
-            return 10  # 10-20km = 10 pontos
+            return 7  # 10km a 20km = 7 pontos
         else:
-            return int(valor_km)  # 21km+ = valor da distância
+            return 9  # 21km ou mais = 9 pontos
             
     except (ValueError, AttributeError):
-        # Se não conseguir processar, retorna pontuação mínima
+        # Se não conseguir processar, retorna 5 (padrão mínimo)
         return 5
 
 
@@ -124,23 +111,47 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
     data_competicao = resultado.get("data_competicao") or resultado.get("data") or ""
     
     if modalidade_usuario == "povao_pace_livre":
-        pontos_povao = calcular_pontos_povao(resultado.get("distancia", 0))
+        pontos_povao = calcular_pontos_povao(resultado.get("distancia", "0"))
+        tempo_resultado = resultado.get("tempo", "00:00:00")
         
         corrida = Corrida(
             usuario_id=resultado["usuario_id"],
             nome=nome_competicao,
-            colocacao=0,
-            tempo="00:00:00",
-            pontos=0,
+            colocacao=resultado.get("colocacao", 0),  # Pode ter colocação, mas não pontua por ela
+            tempo=tempo_resultado,  # Salvar o tempo real
+            pontos=pontos_povao,  # Usar pontos_povao como pontos para somar no total
             pontos_povao=pontos_povao,
             local=f"{cidade_competicao}/{estado_competicao}",
-            distancia=resultado.get("distancia", 0),
+            distancia=resultado.get("distancia", "0"),
             data=data_competicao,
             ano=2025,
             modalidade="povao_pace_livre"
         )
         
         await db.corridas.insert_one(corrida.model_dump())
+        
+        # Atualizar pontos_total e total_corridas do usuário
+        await db.usuarios.update_one(
+            {"id": resultado["usuario_id"]},
+            {
+                "$inc": {"pontos_total": pontos_povao, "total_corridas": 1}
+            }
+        )
+        
+        # Atualizar ranking do Povão
+        await db.ranking_povao.update_one(
+            {"usuario_id": resultado["usuario_id"], "ano": 2025},
+            {
+                "$inc": {"pontos_total": pontos_povao, "total_corridas": 1},
+                "$setOnInsert": {
+                    "usuario_id": resultado["usuario_id"],
+                    "ano": 2025,
+                    "categoria": usuario.get("categoria", "normal"),
+                    "genero": usuario.get("genero", "M")
+                }
+            },
+            upsert=True
+        )
         
         await db.resultados_pendentes.update_one(
             {"id": resultado_id},

@@ -154,17 +154,21 @@ async def get_ranking_assessorias(
         total_resultados = len(corridas)
         
         for corrida in corridas:
-            pontos_resultados += 1.0
-            
-            colocacao = corrida.get("colocacao", 0)
             modalidade = corrida.get("modalidade", "profissional_amador")
+            colocacao = corrida.get("colocacao", 0)
             
-            if modalidade == "profissional_amador" and colocacao > 0:
+            if modalidade == "povao_pace_livre":
+                # Para Povão, usar pontos baseados na distância
+                pontos_corrida = corrida.get("pontos", 0) or corrida.get("pontos_povao", 0)
+                pontos_resultados += pontos_corrida
+            else:
+                # Para Profissional/Amador, usar pontos baseados na colocação
+                pontos_corrida = corrida.get("pontos", 0)
+                pontos_resultados += pontos_corrida
+                
                 if colocacao == 1:
-                    pontos_resultados += 1.0
                     total_primeiros += 1
                 elif 2 <= colocacao <= 5:
-                    pontos_resultados += 0.5
                     total_podios += 1
         
         pontos_total = pontos_cadastro + pontos_resultados
@@ -475,16 +479,28 @@ async def get_detalhes_assessoria(nome_equipe: str):
         {"_id": 0}
     ).to_list(None)
     
-    pontos_cadastro = len(atletas) * 0.5
-    pontos_resultados = len(corridas)
-    total_primeiros = sum(1 for c in corridas if c.get("colocacao") == 1)
-    total_podios = sum(1 for c in corridas if 2 <= c.get("colocacao", 0) <= 5)
+    pontos_cadastro = len(atletas_ids) * 0.5
+    
+    # Calcular pontos de resultados (diferente para Povão e Profissional)
+    pontos_resultados = 0
+    total_primeiros = 0
+    total_podios = 0
     
     for c in corridas:
-        if c.get("colocacao") == 1:
-            pontos_resultados += 1
-        elif 2 <= c.get("colocacao", 0) <= 5:
-            pontos_resultados += 0.5
+        modalidade = c.get("modalidade", "profissional_amador")
+        
+        if modalidade == "povao_pace_livre":
+            # Para Povão, pontos vêm da distância
+            pontos_resultados += c.get("pontos", 0) or c.get("pontos_povao", 0)
+        else:
+            # Para Profissional/Amador, pontos vêm da colocação
+            pontos_resultados += c.get("pontos", 0)
+            
+            colocacao = c.get("colocacao", 0)
+            if colocacao == 1:
+                total_primeiros += 1
+            elif 2 <= colocacao <= 5:
+                total_podios += 1
     
     # Buscar posição no ranking NACIONAL primeiro para obter o estado
     ranking_nacional = await get_ranking_assessorias(tipo="nacional")
