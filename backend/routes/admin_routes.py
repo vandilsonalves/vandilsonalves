@@ -512,14 +512,60 @@ async def get_stats_assessorias_verificadas(admin: dict = Depends(get_admin_user
 
 @router.get("/admin/stats/insignias")
 async def get_stats_insignias(admin: dict = Depends(get_admin_user)):
-    """Estatísticas de Insígnias - quantidade de atletas por número de insígnias"""
+    """Estatísticas de Insígnias - quantidade de atletas por tipo de insígnia"""
+    from services import CONQUISTAS
+    
+    # Definir todas as insígnias possíveis do sistema
+    tipos_insignias = {
+        "elite": {"nome": "Atleta Elite", "icone": "⭐", "cor": "#FFD700", "total": 0},
+        "maratonista": {"nome": "Maratonista", "icone": "🎯", "cor": "#8B5CF6", "total": 0},
+        "primeiro_lugar": {"nome": "Campeão", "icone": "🥇", "cor": "#FFD700", "total": 0},
+        "podio": {"nome": "Pódio", "icone": "🏆", "cor": "#F59E0B", "total": 0},
+        "10_corridas": {"nome": "Veterano", "icone": "🏃", "cor": "#10B981", "total": 0},
+        "12_resultados": {"nome": "Atleta Bronze", "icone": "🥉", "cor": "#CD7F32", "total": 0},
+        "20_resultados": {"nome": "Atleta Prata", "icone": "🥈", "cor": "#C0C0C0", "total": 0},
+        "30_resultados": {"nome": "Atleta Ouro", "icone": "🥇", "cor": "#FFD700", "total": 0},
+        "consistente": {"nome": "Consistente", "icone": "📅", "cor": "#3B82F6", "total": 0},
+        "embaixador": {"nome": "Embaixador Run", "icone": "🎖️", "cor": "#EC4899", "total": 0},
+    }
+    
+    # Buscar conquistas de todos os atletas
+    conquistas = await db.conquistas_atleta.find({}, {"_id": 0, "conquista_codigo": 1}).to_list(None)
+    
+    # Contar por tipo de insígnia
+    for conquista in conquistas:
+        codigo = conquista.get("conquista_codigo", "")
+        if codigo in tipos_insignias:
+            tipos_insignias[codigo]["total"] += 1
+    
+    # Converter para lista e ordenar por total (maior primeiro)
+    resultado = [
+        {
+            "codigo": codigo,
+            "nome": info["nome"],
+            "icone": info["icone"],
+            "cor": info["cor"],
+            "total": info["total"]
+        }
+        for codigo, info in tipos_insignias.items()
+    ]
+    
+    # Ordenar: primeiro os que têm atletas, depois por nome
+    resultado.sort(key=lambda x: (-x["total"], x["nome"]))
+    
+    return resultado
+
+
+@router.get("/admin/stats/insignias-distribuicao")
+async def get_stats_insignias_distribuicao(admin: dict = Depends(get_admin_user)):
+    """Estatísticas de Insígnias - distribuição por quantidade de insígnias por atleta"""
     # Buscar todos os atletas
     atletas = await db.usuarios.find(
         {"role": {"$in": ["atleta", "dono_assessoria"]}},
-        {"_id": 0, "id": 1, "insignias": 1}
+        {"_id": 0, "id": 1}
     ).to_list(None)
     
-    # Contar insígnias por atleta
+    # Buscar conquistas por atleta
     insignia_counts = {
         "0": 0,
         "1-2": 0,
@@ -529,15 +575,16 @@ async def get_stats_insignias(admin: dict = Depends(get_admin_user)):
     }
     
     for atleta in atletas:
-        num_insignias = len(atleta.get("insignias", []))
+        # Contar conquistas do atleta
+        num_conquistas = await db.conquistas_atleta.count_documents({"usuario_id": atleta["id"]})
         
-        if num_insignias == 0:
+        if num_conquistas == 0:
             insignia_counts["0"] += 1
-        elif num_insignias <= 2:
+        elif num_conquistas <= 2:
             insignia_counts["1-2"] += 1
-        elif num_insignias <= 5:
+        elif num_conquistas <= 5:
             insignia_counts["3-5"] += 1
-        elif num_insignias <= 10:
+        elif num_conquistas <= 10:
             insignia_counts["6-10"] += 1
         else:
             insignia_counts["10+"] += 1

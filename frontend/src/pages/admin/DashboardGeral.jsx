@@ -395,42 +395,52 @@ const DashboardGeral = ({
         </Card>
       )}
 
-      {/* Gráfico 32: Insígnias & Conquistas */}
+      {/* Gráfico 32: Insígnias & Conquistas - Por Tipo */}
       {statsInsignias && statsInsignias.length > 0 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Medal className="w-5 h-5 text-purple-500" />
               Insígnias & Conquistas
-              <Badge variant="secondary" className="ml-auto">Distribuição</Badge>
+              <Badge variant="secondary" className="ml-auto">Por Tipo</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="h-64">
+            <div className="h-72">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={statsInsignias}>
+                <BarChart data={statsInsignias} layout="vertical" margin={{ left: 100 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="faixa" tick={{ fontSize: 11, fill: '#9CA3AF' }} />
-                  <YAxis stroke="#9CA3AF" />
+                  <XAxis type="number" stroke="#9CA3AF" />
+                  <YAxis 
+                    type="category" 
+                    dataKey="nome" 
+                    tick={{ fontSize: 11, fill: '#9CA3AF' }}
+                    width={100}
+                  />
                   <Tooltip 
                     contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }}
                     labelStyle={{ color: '#A855F7' }}
+                    formatter={(value, name, props) => [
+                      `${value} atletas`,
+                      props.payload.icone + ' ' + props.payload.nome
+                    ]}
                   />
-                  <Bar dataKey="total" fill="#A855F7" radius={[4, 4, 0, 0]} name="Atletas">
+                  <Bar dataKey="total" radius={[0, 4, 4, 0]} name="Atletas">
                     {statsInsignias.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell key={`cell-${index}`} fill={entry.cor || COLORS[index % COLORS.length]} />
                     ))}
                   </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-            <div className="grid grid-cols-5 gap-2 mt-4">
-              {statsInsignias.map((item, idx) => (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 mt-4">
+              {statsInsignias.slice(0, 10).map((item, idx) => (
                 <div key={idx} className="text-center p-2 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                  <p className="text-lg font-bold" style={{ color: COLORS[idx % COLORS.length] }}>
+                  <p className="text-2xl">{item.icone}</p>
+                  <p className="text-lg font-bold" style={{ color: item.cor || COLORS[idx % COLORS.length] }}>
                     {item.total}
                   </p>
-                  <p className="text-xs text-slate-500">{item.faixa}</p>
+                  <p className="text-xs text-slate-500 truncate" title={item.nome}>{item.nome}</p>
                 </div>
               ))}
             </div>
