@@ -17,6 +17,7 @@ import BirthdayPopup from "@/components/BirthdayPopup";
 import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
 import FeedPage from "@/pages/FeedPage";
 import RegrasPage from "@/pages/RegrasPage";
+import HistoricoSubmissoesPage from "@/pages/HistoricoSubmissoesPage";
 
 function App() {
   return (
@@ -39,6 +40,7 @@ function App() {
             <Route path="/perfil" element={<PerfilAtletaPage />} />
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/regras" element={<RegrasPage />} />
+            <Route path="/historico" element={<HistoricoSubmissoesPage />} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />

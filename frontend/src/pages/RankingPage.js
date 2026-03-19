@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck, MessageSquare } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck, MessageSquare, History } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -397,6 +397,12 @@ const RankingPage = () => {
                 <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras">
                   <HelpCircle className="w-4 h-4 mr-1" />
                   Regras
+                </Button>
+                
+                {/* Link para Histórico de Submissões */}
+                <Button onClick={() => navigate('/historico')} variant="ghost" size="sm" className="text-purple-500 hover:text-purple-700" data-testid="btn-historico">
+                  <History className="w-4 h-4 mr-1" />
+                  Histórico
                 </Button>
                 
                 {!isAdmin && (

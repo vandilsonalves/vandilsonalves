@@ -601,3 +601,286 @@ async def enviar_notificacao_bloqueio(
         html_content=template["html"],
         texto_alternativo=template["texto"]
     )
+
+
+# ==================== NOTIFICAÇÕES PARA ATLETAS ====================
+
+def gerar_email_resultado_aprovado(
+    atleta_nome: str,
+    nome_corrida: str,
+    colocacao: int,
+    pontos: int,
+    data_corrida: str,
+    distancia: str
+) -> dict:
+    """Gera email de notificação quando resultado é aprovado"""
+    
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td style="background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                
+                <!-- Header -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #10B981;">
+                            <h1 style="color: #10B981; margin: 0; font-size: 28px;">
+                                Resultado Aprovado!
+                            </h1>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Content -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                    <tr>
+                        <td>
+                            <p style="font-size: 16px; color: #333; margin: 0 0 15px 0;">
+                                Ola <strong>{atleta_nome}</strong>,
+                            </p>
+                            <p style="color: #666; margin: 0 0 20px 0;">
+                                Parabens! Seu resultado foi aprovado e ja esta valendo no ranking!
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Result Box -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="background: linear-gradient(135deg, #10B981 0%, #059669 100%); border-radius: 12px; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 25px; text-align: center;">
+                            <h2 style="color: white; margin: 0 0 5px 0; font-size: 20px;">{nome_corrida}</h2>
+                            <p style="color: rgba(255,255,255,0.8); margin: 0 0 15px 0; font-size: 14px;">{data_corrida} | {distancia}</p>
+                            
+                            <table width="100%" cellpadding="10" cellspacing="0">
+                                <tr>
+                                    <td style="text-align: center; width: 50%;">
+                                        <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">COLOCACAO</p>
+                                        <p style="color: white; margin: 5px 0 0 0; font-size: 36px; font-weight: bold;">{colocacao}</p>
+                                    </td>
+                                    <td style="text-align: center; width: 50%;">
+                                        <p style="color: rgba(255,255,255,0.8); margin: 0; font-size: 12px;">PONTOS GANHOS</p>
+                                        <p style="color: #FFD700; margin: 5px 0 0 0; font-size: 36px; font-weight: bold;">+{pontos}</p>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Footer -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <tr>
+                        <td style="text-align: center;">
+                            <p style="color: #999; font-size: 12px; margin: 0;">
+                                Continue participando e subindo no ranking!
+                            </p>
+                            <p style="color: #999; font-size: 12px; margin: 10px 0 0 0;">
+                                Ranking Run Pro - O seu ranking de corridas
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+    
+    texto = f"""
+Resultado Aprovado! - Ranking Run
+
+Ola {atleta_nome},
+
+Parabens! Seu resultado foi aprovado e ja esta valendo no ranking!
+
+{nome_corrida}
+{data_corrida} | {distancia}
+
+Colocacao: {colocacao} lugar
+Pontos ganhos: +{pontos}
+
+Continue participando e subindo no ranking!
+
+---
+Ranking Run Pro - O seu ranking de corridas
+"""
+    
+    return {
+        "assunto": f"+{pontos} pontos! Seu resultado em {nome_corrida} foi aprovado",
+        "html": html,
+        "texto": texto
+    }
+
+
+def gerar_email_resultado_rejeitado(
+    atleta_nome: str,
+    nome_corrida: str,
+    motivo: str,
+    data_corrida: str
+) -> dict:
+    """Gera email de notificacao quando resultado e rejeitado"""
+    
+    html = f"""
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td style="background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                
+                <!-- Header -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #F59E0B;">
+                            <h1 style="color: #F59E0B; margin: 0; font-size: 24px;">
+                                Resultado Nao Aprovado
+                            </h1>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Content -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                    <tr>
+                        <td>
+                            <p style="font-size: 16px; color: #333; margin: 0 0 15px 0;">
+                                Ola <strong>{atleta_nome}</strong>,
+                            </p>
+                            <p style="color: #666; margin: 0 0 20px 0;">
+                                Infelizmente seu resultado nao foi aprovado. Mas nao desanime, voce pode enviar novamente!
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Details Box -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="background: #FEF3C7; border: 1px solid #FDE68A; border-radius: 8px; margin: 20px 0;">
+                    <tr>
+                        <td style="padding: 20px;">
+                            <h3 style="color: #92400E; margin: 0 0 10px 0; font-size: 16px;">
+                                Detalhes:
+                            </h3>
+                            <p style="color: #78350F; margin: 0 0 10px 0;">
+                                <strong>Corrida:</strong> {nome_corrida}
+                            </p>
+                            <p style="color: #78350F; margin: 0 0 10px 0;">
+                                <strong>Data:</strong> {data_corrida}
+                            </p>
+                            <p style="color: #78350F; margin: 0;">
+                                <strong>Motivo:</strong> {motivo}
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Tips -->
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="padding: 15px; background: #F0FDF4; border-radius: 8px; border: 1px solid #BBF7D0;">
+                            <h4 style="color: #166534; margin: 0 0 10px 0;">Dicas para aprovacao:</h4>
+                            <ul style="color: #166534; margin: 0; padding-left: 20px; font-size: 14px;">
+                                <li>Envie fotos legiveis da classificacao</li>
+                                <li>Verifique se os dados estao corretos</li>
+                                <li>Envie dentro do prazo de 30 dias</li>
+                            </ul>
+                        </td>
+                    </tr>
+                </table>
+                
+                <!-- Footer -->
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <tr>
+                        <td style="text-align: center;">
+                            <p style="color: #999; font-size: 12px; margin: 0;">
+                                Ranking Run Pro - O seu ranking de corridas
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+    
+    texto = f"""
+Resultado Nao Aprovado - Ranking Run
+
+Ola {atleta_nome},
+
+Infelizmente seu resultado nao foi aprovado.
+
+Corrida: {nome_corrida}
+Data: {data_corrida}
+Motivo: {motivo}
+
+Dicas para aprovacao:
+- Envie fotos legiveis da classificacao
+- Verifique se os dados estao corretos
+- Envie dentro do prazo de 30 dias
+
+Voce pode enviar novamente!
+
+---
+Ranking Run Pro - O seu ranking de corridas
+"""
+    
+    return {
+        "assunto": f"Resultado em {nome_corrida} nao foi aprovado",
+        "html": html,
+        "texto": texto
+    }
+
+
+async def notificar_resultado_aprovado(
+    email: str,
+    atleta_nome: str,
+    nome_corrida: str,
+    colocacao: int,
+    pontos: int,
+    data_corrida: str,
+    distancia: str
+) -> dict:
+    """Envia notificacao quando resultado e aprovado"""
+    template = gerar_email_resultado_aprovado(
+        atleta_nome, nome_corrida, colocacao, pontos, data_corrida, distancia
+    )
+    return await enviar_email(
+        destinatario=email,
+        assunto=template["assunto"],
+        html_content=template["html"],
+        texto_alternativo=template["texto"]
+    )
+
+
+async def notificar_resultado_rejeitado(
+    email: str,
+    atleta_nome: str,
+    nome_corrida: str,
+    motivo: str,
+    data_corrida: str
+) -> dict:
+    """Envia notificacao quando resultado e rejeitado"""
+    template = gerar_email_resultado_rejeitado(
+        atleta_nome, nome_corrida, motivo, data_corrida
+    )
+    return await enviar_email(
+        destinatario=email,
+        assunto=template["assunto"],
+        html_content=template["html"],
+        texto_alternativo=template["texto"]
+    )

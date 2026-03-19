@@ -16,6 +16,7 @@ from routes.auth_routes import get_current_user, get_admin_user
 from routes.notificacoes_routes import criar_notificacao
 from routes.conquistas_routes import verificar_conquistas
 from services.cache_service import invalidate_on_ranking_change
+from services.email_service import notificar_resultado_aprovado, notificar_resultado_rejeitado
 
 router = APIRouter(tags=["Admin"])
 
@@ -177,6 +178,20 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             dados_extras={"pontos": pontos_povao, "competicao": nome_competicao, "modalidade": "povao"}
         )
         
+        # Enviar email de notificação (Povão)
+        try:
+            await notificar_resultado_aprovado(
+                email=usuario.get("email", ""),
+                atleta_nome=usuario.get("nome", "Atleta"),
+                nome_corrida=nome_competicao,
+                colocacao=0,  # Povão não tem colocação
+                pontos=pontos_povao,
+                data_corrida=data_competicao,
+                distancia=resultado.get("distancia", "N/A")
+            )
+        except Exception as e:
+            print(f"Erro ao enviar email de aprovação Povão: {e}")
+        
         return {"message": "Resultado aprovado com sucesso!", "pontos_adicionados": pontos_povao, "modalidade": "povao_pace_livre"}
     
     else:
@@ -245,6 +260,20 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
         
         await verificar_conquistas(resultado["usuario_id"])
         
+        # Enviar email de notificação
+        try:
+            await notificar_resultado_aprovado(
+                email=usuario.get("email", ""),
+                atleta_nome=usuario.get("nome", "Atleta"),
+                nome_corrida=nome_competicao,
+                colocacao=resultado.get("colocacao", 0),
+                pontos=pontos,
+                data_corrida=data_competicao,
+                distancia=resultado.get("distancia", "N/A")
+            )
+        except Exception as e:
+            print(f"Erro ao enviar email de aprovação: {e}")
+        
         return {"message": "Resultado aprovado com sucesso!", "pontos_adicionados": pontos}
 
 
@@ -284,6 +313,20 @@ async def reprovar_resultado(
             "resultado_id": resultado_id
         }
     )
+    
+    # Enviar email de notificação de rejeição
+    try:
+        usuario = await db.usuarios.find_one({"id": resultado["usuario_id"]}, {"_id": 0, "email": 1, "nome": 1})
+        if usuario and usuario.get("email"):
+            await notificar_resultado_rejeitado(
+                email=usuario.get("email", ""),
+                atleta_nome=usuario.get("nome", "Atleta"),
+                nome_corrida=nome_competicao,
+                motivo=motivo,
+                data_corrida=resultado.get("data_competicao", "N/A")
+            )
+    except Exception as e:
+        print(f"Erro ao enviar email de rejeição: {e}")
     
     return {"message": "Resultado reprovado"}
 
