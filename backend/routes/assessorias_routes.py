@@ -551,6 +551,8 @@ async def get_detalhes_assessoria(nome_equipe: str):
         "responsavel_id": responsavel_id,
         "mensagem_bio": assessoria_doc.get("mensagem_bio", "") if assessoria_doc else "",
         "foto_url": assessoria_doc.get("foto_url", "") if assessoria_doc else "",
+        # DEBUG: Log para verificar valor no banco
+        "debug_foto_url": f"DEBUG: assessoria_doc={assessoria_doc.get('foto_url') if assessoria_doc else 'None'}",
         "whatsapp_link": assessoria_doc.get("whatsapp_link", "") if assessoria_doc else ""
     }
 
@@ -833,7 +835,7 @@ async def upload_foto_assessoria(
         f.write(content)
     
     # URL pública do arquivo
-    foto_url = f"/uploads/assessorias/{filename}"
+    foto_url = f"/api/uploads/assessorias/{filename}"
     
     # Atualizar no banco de dados
     # Primeiro, verificar se existe na coleção assessorias
@@ -843,9 +845,10 @@ async def upload_foto_assessoria(
             {"nome": equipe},
             {"$set": {"foto_url": foto_url}}
         )
+        print(f"DEBUG: Assessoria {equipe} atualizada com foto_url: {foto_url}")
     else:
         # Criar registro da assessoria
-        await db.assessorias.insert_one({
+        new_doc = {
             "id": str(uuid.uuid4()),
             "nome": equipe,
             "foto_url": foto_url,
@@ -855,7 +858,9 @@ async def upload_foto_assessoria(
             "estado": current_user.get("estado", ""),
             "status": "ativa",
             "data_criacao": datetime.now(timezone.utc).isoformat()
-        })
+        }
+        result = await db.assessorias.insert_one(new_doc)
+        print(f"DEBUG: Assessoria {equipe} criada com ID: {result.inserted_id}, foto_url: {foto_url}")
     
     # Invalidar cache
     await invalidate_on_liga_change()

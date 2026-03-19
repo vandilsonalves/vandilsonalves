@@ -192,7 +192,7 @@ async def upload_foto_perfil(
     with foto_path.open("wb") as f:
         f.write(await foto.read())
     
-    foto_url = f"/uploads/{foto_filename}"
+    foto_url = f"/api/uploads/{foto_filename}"
     
     await db.usuarios.update_one(
         {"id": current_user["id"]},

@@ -62,7 +62,7 @@
 
 ## Credentials
 - **Test User**: admin@runpro.com / admin123
-- **Preview URL**: https://community-feed-28.preview.emergentagent.com
+- **Preview URL**: https://assess-photo-fix.preview.emergentagent.com
 
 ---
 

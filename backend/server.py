@@ -120,6 +120,9 @@ uploads_path = Path("/app/uploads")
 uploads_path.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
 
+# Também montar em /api/uploads para funcionar com o ingress do Kubernetes
+app.mount("/api/uploads", StaticFiles(directory=str(uploads_path)), name="api_uploads")
+
 
 # ==================== [REFATORADO] AUTH, NOTIFICAÇÕES, CONQUISTAS, ATLETAS, RESULTADOS, RANKING ====================
 # Endpoints migrados para módulos em /app/backend/routes/
@@ -1209,7 +1212,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://community-feed-28.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"https://assess-photo-fix.preview.emergentagent.com/atleta/{atleta_id}"
     }
 
 
