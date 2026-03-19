@@ -23,13 +23,21 @@ router = APIRouter(tags=["Admin"])
 # ==================== HELPERS ====================
 
 def calcular_pontos_colocacao(colocacao: int, categoria: str) -> int:
-    """Calcula pontos baseado na colocação e categoria"""
+    """
+    Calcula pontos baseado na colocação e categoria
+    
+    RANKING PROFISSIONAL/AMADOR:
+    - Normal: 1º lugar = 10pts, 2º = 9pts, ... até 10º = 1pt
+    - PCD/Cadeirante: 1º = 10pts, 2º = 9pts, 3º = 8pts
+    """
     if categoria in ["pcd", "cadeirante"]:
-        pontos_tabela = {1: 100, 2: 90, 3: 80}
+        # PCD/Cadeirante: apenas 1º a 3º lugar pontuam
+        pontos_tabela = {1: 10, 2: 9, 3: 8}
     else:
+        # Normal: 1º a 10º lugar pontuam
         pontos_tabela = {
-            1: 100, 2: 90, 3: 80, 4: 70, 5: 60,
-            6: 50, 7: 40, 8: 30, 9: 20, 10: 10
+            1: 10, 2: 9, 3: 8, 4: 7, 5: 6,
+            6: 5, 7: 4, 8: 3, 9: 2, 10: 1
         }
     return pontos_tabela.get(colocacao, 0)
 

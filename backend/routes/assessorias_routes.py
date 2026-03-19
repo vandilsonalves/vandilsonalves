@@ -417,25 +417,29 @@ async def get_detalhes_assessoria(nome_equipe: str):
     # Buscar pontos de cada atleta
     atletas_com_pontos = []
     
-    # Processar atletas normais
+    # Processar atletas normais - usar pontos_total do usuário diretamente
     for atleta in atletas:
-        ranking_atleta = await db.ranking_anual.find_one(
-            {"usuario_id": atleta["id"], "ano": 2025},
-            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
-        )
-        ranking_povao = await db.ranking_povao.find_one(
-            {"usuario_id": atleta["id"], "ano": 2025},
-            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
-        )
+        # Prioridade: pontos_total do usuário > ranking_anual > ranking_povao
+        pontos_atleta = atleta.get("pontos_total", 0) or 0
+        corridas_atleta = atleta.get("total_corridas", 0) or 0
         
-        pontos_atleta = 0
-        corridas_atleta = 0
-        if ranking_atleta:
-            pontos_atleta = ranking_atleta.get("pontos_total", 0)
-            corridas_atleta = ranking_atleta.get("total_corridas", 0)
-        if ranking_povao:
-            pontos_atleta = max(pontos_atleta, ranking_povao.get("pontos_total", 0))
-            corridas_atleta = max(corridas_atleta, ranking_povao.get("total_corridas", 0))
+        # Se não tiver pontos no usuário, buscar nos rankings como fallback
+        if pontos_atleta == 0:
+            ranking_atleta = await db.ranking_anual.find_one(
+                {"usuario_id": atleta["id"], "ano": 2025},
+                {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+            )
+            ranking_povao = await db.ranking_povao.find_one(
+                {"usuario_id": atleta["id"], "ano": 2025},
+                {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+            )
+            
+            if ranking_atleta:
+                pontos_atleta = ranking_atleta.get("pontos_total", 0)
+                corridas_atleta = ranking_atleta.get("total_corridas", 0)
+            if ranking_povao:
+                pontos_atleta = max(pontos_atleta, ranking_povao.get("pontos_total", 0))
+                corridas_atleta = max(corridas_atleta, ranking_povao.get("total_corridas", 0))
         
         atletas_com_pontos.append({
             **atleta,
@@ -446,23 +450,26 @@ async def get_detalhes_assessoria(nome_equipe: str):
     
     # Adicionar o dono se ele não estava na lista de atletas
     if dono_atleta:
-        ranking_dono = await db.ranking_anual.find_one(
-            {"usuario_id": dono_atleta["id"], "ano": 2025},
-            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
-        )
-        ranking_povao_dono = await db.ranking_povao.find_one(
-            {"usuario_id": dono_atleta["id"], "ano": 2025},
-            {"_id": 0, "pontos_total": 1, "total_corridas": 1}
-        )
+        pontos_dono = dono_atleta.get("pontos_total", 0) or 0
+        corridas_dono = dono_atleta.get("total_corridas", 0) or 0
         
-        pontos_dono = 0
-        corridas_dono = 0
-        if ranking_dono:
-            pontos_dono = ranking_dono.get("pontos_total", 0)
-            corridas_dono = ranking_dono.get("total_corridas", 0)
-        if ranking_povao_dono:
-            pontos_dono = max(pontos_dono, ranking_povao_dono.get("pontos_total", 0))
-            corridas_dono = max(corridas_dono, ranking_povao_dono.get("total_corridas", 0))
+        # Fallback para rankings
+        if pontos_dono == 0:
+            ranking_dono = await db.ranking_anual.find_one(
+                {"usuario_id": dono_atleta["id"], "ano": 2025},
+                {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+            )
+            ranking_povao_dono = await db.ranking_povao.find_one(
+                {"usuario_id": dono_atleta["id"], "ano": 2025},
+                {"_id": 0, "pontos_total": 1, "total_corridas": 1}
+            )
+            
+            if ranking_dono:
+                pontos_dono = ranking_dono.get("pontos_total", 0)
+                corridas_dono = ranking_dono.get("total_corridas", 0)
+            if ranking_povao_dono:
+                pontos_dono = max(pontos_dono, ranking_povao_dono.get("pontos_total", 0))
+                corridas_dono = max(corridas_dono, ranking_povao_dono.get("total_corridas", 0))
         
         atletas_com_pontos.append({
             **dono_atleta,

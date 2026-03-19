@@ -1,0 +1,87 @@
+{
+  "summary": "Iteration 49: Verificação da correção da tabela de pontuação do sistema de ranking. ALL 26 BACKEND TESTS PASSED. A tabela anterior tinha valores 10x maiores (1º=100pts), agora está correta (1º=10pts).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter49_pontuacao_corrigida.py",
+    "/app/test_reports/pytest/pytest_iter49_pontuacao.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✅ VERIFIED: calcular_pontos_colocacao retorna valores corretos (Normal: 1º=10, 2º=9,...,10º=1)",
+    "✅ VERIFIED: PCD/Cadeirante: 1º=10, 2º=9, 3º=8, 4º+=0",
+    "✅ VERIFIED: Povão: 5-9km=5pts, 10-20km=7pts, 21km+=9pts",
+    "✅ VERIFIED: Assessoria TOP RUN agora tem 34 pontos (não 124 como antes)",
+    "✅ VERIFIED: Endpoint /api/liga-assessorias/ranking retorna dados consistentes",
+    "✅ VERIFIED: Atletas mostram pontos_total e total_corridas sincronizados",
+    "✅ VERIFIED: Nenhuma assessoria com pontos inflados (média por corrida ≤ 10)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter49_pontuacao_corrigida.py"
+  ],
+  "success_rate": {
+    "backend": "100% (26/26 passed)",
+    "frontend": "N/A - backend only testing"
+  },
+  "test_credentials": {
+    "note": "No auth required for ranking endpoints"
+  },
+  "seed_data_creation": "None - Used existing data to verify recalculation",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "A grande correção da tabela de pontuação foi verificada. Antes: 1º=100pts. Agora: 1º=10pts. TOP RUN tinha ~124pts, agora tem 34pts. Script de recálculo executado em 928 corridas e 171 usuários. Endpoints testados: /api/liga-assessorias/ranking, /api/liga-assessorias/assessoria/{nome}. Funções testadas: calcular_pontos_colocacao, calcular_pontos_povao.",
+  "verified_scoring_fix": {
+    "tabela_normal": {
+      "1": 10, "2": 9, "3": 8, "4": 7, "5": 6,
+      "6": 5, "7": 4, "8": 3, "9": 2, "10": 1
+    },
+    "tabela_pcd_cadeirante": {
+      "1": 10, "2": 9, "3": 8, "4+": 0
+    },
+    "tabela_povao": {
+      "5-9km": 5, "10-20km": 7, "21km+": 9
+    },
+    "top_run_verification": {
+      "antes_fix": "~124 pontos",
+      "depois_fix": "34 pontos",
+      "breakdown": {
+        "atletas": 2,
+        "pontos_cadastro": 1.0,
+        "pontos_resultados": 33,
+        "total_resultados": 4
+      },
+      "atletas_detail": [
+        {"nome": "Aline Rocha", "pontos": 23, "corridas": 3},
+        {"nome": "Paula Souza", "pontos": 10, "corridas": 1}
+      ]
+    }
+  },
+  "endpoints_tested": {
+    "GET /api/liga-assessorias/ranking": {
+      "status": "PASSED",
+      "verifications": [
+        "Returns expected structure",
+        "Assessorias have correct point fields",
+        "No inflated points (avg ≤ 10 per race)"
+      ]
+    },
+    "GET /api/liga-assessorias/assessoria/{nome}": {
+      "status": "PASSED",
+      "verifications": [
+        "Returns athlete details with points",
+        "Points total is consistent (cadastro + resultados)"
+      ]
+    }
+  },
+  "function_tests": {
+    "calcular_pontos_colocacao": "26 tests PASSED - All placements return correct values",
+    "calcular_pontos_povao": "7 tests PASSED - Distance-based scoring correct"
+  }
+}
