@@ -54,24 +54,54 @@ import {
 import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 
-// Definição dos itens do menu com permissões necessárias
-const allMenuItems = [
-  { id: 'dashboard', label: 'Dashboard Geral', icon: Home, permissoes: [] }, // Todos podem ver
-  { id: 'estrategico', label: '📊 Dashboard Estratégico', icon: BarChart3, permissoes: [], superAdminOnly: true },
-  { id: 'atletas', label: 'Atletas', icon: Users, permissoes: ['visualizar_atletas'] },
-  { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
-  { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
-  { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
-  { id: 'autorizacoes', label: 'Autorizações', icon: Shield, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
-  { id: 'configuracoes', label: 'Configurações', icon: Settings, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
-  { id: 'administradores', label: 'Administradores', icon: Crown, permissoes: ['criar_admins'], superAdminOnly: true },
-  { id: 'monitoramento', label: 'Monitoramento', icon: Activity, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
-  { id: 'regulamento', label: 'Regulamento', icon: FileText, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
-  { id: 'submeter', label: '+ Submeter Resultado', icon: Plus, permissoes: ['aprovar_resultados'] },
-  { id: 'ranking', label: 'Exportar Ranking', icon: FileText, permissoes: ['exportar_dados'], superAdminOnly: true },
-  { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake, permissoes: [] }, // Todos podem ver
-  { id: 'instagram', label: 'Ranking Run Inside', icon: Instagram, permissoes: [], superAdminOnly: true },
+// Definição dos itens do menu organizados em seções
+const menuSections = [
+  {
+    title: null, // Seção principal sem título
+    items: [
+      { id: 'dashboard', label: 'Dashboard Geral', icon: Home, permissoes: [] },
+      { id: 'estrategico', label: 'Dashboard Estratégico', icon: BarChart3, permissoes: [], superAdminOnly: true },
+    ]
+  },
+  {
+    title: 'Gestão',
+    items: [
+      { id: 'atletas', label: 'Atletas', icon: Users, permissoes: ['visualizar_atletas'] },
+      { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
+      { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
+      { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
+    ]
+  },
+  {
+    title: 'Sistema',
+    superAdminOnly: true,
+    items: [
+      { id: 'configuracoes', label: 'Configurações', icon: Settings, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+      { id: 'autorizacoes', label: 'Autorizações', icon: Shield, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+      { id: 'administradores', label: 'Administradores', icon: Crown, permissoes: ['criar_admins'], superAdminOnly: true },
+      { id: 'regulamento', label: 'Regulamento', icon: FileText, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+    ]
+  },
+  {
+    title: 'Ferramentas',
+    items: [
+      { id: 'submeter', label: 'Submeter Resultado', icon: Plus, permissoes: ['aprovar_resultados'] },
+      { id: 'ranking', label: 'Exportar Ranking', icon: FileText, permissoes: ['exportar_dados'], superAdminOnly: true },
+      { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake, permissoes: [] },
+    ]
+  },
+  {
+    title: 'Avançado',
+    superAdminOnly: true,
+    items: [
+      { id: 'monitoramento', label: 'Monitoramento', icon: Activity, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+      { id: 'instagram', label: 'Ranking Run Inside', icon: Instagram, permissoes: [], superAdminOnly: true },
+    ]
+  }
 ];
+
+// Flatten para compatibilidade com código existente
+const allMenuItems = menuSections.flatMap(section => section.items);
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
@@ -1393,28 +1423,55 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        <nav className="p-4 space-y-2">
-          {menuItems.map((item) => {
-            const Icon = item.icon;
+        <nav className="p-4 space-y-1 overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+          {menuSections.map((section, sectionIdx) => {
+            // Filtrar itens da seção baseado nas permissões
+            const sectionItems = section.items.filter(item => {
+              if (isSuperAdmin) return true;
+              if (item.superAdminOnly) return false;
+              if (!item.permissoes || item.permissoes.length === 0) return true;
+              return item.permissoes.some(perm => adminPermissoes.includes(perm));
+            });
+            
+            // Se a seção é superAdminOnly e o usuário não é, pular
+            if (section.superAdminOnly && !isSuperAdmin) return null;
+            
+            // Se não há itens visíveis na seção, pular
+            if (sectionItems.length === 0) return null;
+            
             return (
-              <button
-                key={item.id}
-                onClick={() => setActiveMenu(item.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
-                  activeMenu === item.id 
-                    ? 'bg-emerald-500/20 text-emerald-400 border-l-4 border-emerald-400' 
-                    : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
-                }`}
-                data-testid={`menu-${item.id}`}
-              >
-                <Icon className="w-5 h-5" />
-                <span className="font-medium">{item.label}</span>
-                {item.id === 'pendentes' && pendentes.length > 0 && (
-                  <Badge className="ml-auto bg-red-500 text-white text-xs">
-                    {pendentes.length}
-                  </Badge>
+              <div key={sectionIdx} className={section.title ? 'pt-4' : ''}>
+                {section.title && (
+                  <p className="px-4 py-2 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                    {section.title}
+                  </p>
                 )}
-              </button>
+                <div className="space-y-1">
+                  {sectionItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <button
+                        key={item.id}
+                        onClick={() => setActiveMenu(item.id)}
+                        className={`w-full flex items-center gap-3 px-4 py-2.5 rounded-lg transition-all text-sm ${
+                          activeMenu === item.id 
+                            ? 'bg-emerald-500/20 text-emerald-400 border-l-4 border-emerald-400' 
+                            : 'text-slate-400 hover:bg-slate-700/50 hover:text-white'
+                        }`}
+                        data-testid={`menu-${item.id}`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span className="font-medium">{item.label}</span>
+                        {item.id === 'pendentes' && pendentes.length > 0 && (
+                          <Badge className="ml-auto bg-red-500 text-white text-xs px-1.5 py-0.5 min-w-[20px]">
+                            {pendentes.length}
+                          </Badge>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             );
           })}
         </nav>
