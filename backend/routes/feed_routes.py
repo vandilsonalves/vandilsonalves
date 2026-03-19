@@ -1,5 +1,5 @@
 # /app/backend/routes/feed_routes.py
-# Feed Social da plataforma
+# Feed Social da plataforma (apenas curtidas, sem comentários)
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from typing import Optional, List
@@ -23,10 +23,6 @@ class PostCreate(BaseModel):
     tipo: str = "texto"  # texto, resultado, conquista, foto
     resultado_id: Optional[str] = None
     conquista_id: Optional[str] = None
-
-
-class ComentarioCreate(BaseModel):
-    texto: str
 
 
 @router.get("/feed")
@@ -69,24 +65,6 @@ async def get_feed(
             "usuario_id": current_user["id"]
         })
         post["curtido"] = curtiu is not None
-        
-        # Contagem de comentários
-        post["total_comentarios"] = await db.feed_comentarios.count_documents({"post_id": post["id"]})
-        
-        # Últimos 3 comentários
-        comentarios = await db.feed_comentarios.find(
-            {"post_id": post["id"]},
-            {"_id": 0}
-        ).sort("data_criacao", -1).limit(3).to_list(3)
-        
-        for com in comentarios:
-            com_autor = await db.usuarios.find_one(
-                {"id": com["autor_id"]},
-                {"_id": 0, "id": 1, "nome": 1, "foto_url": 1}
-            )
-            com["autor"] = com_autor
-        
-        post["comentarios_preview"] = list(reversed(comentarios))
     
     # Total de posts
     total = await db.feed_posts.count_documents(filtro)
@@ -115,10 +93,9 @@ async def get_meus_posts(
         {"_id": 0}
     ).sort("data_criacao", -1).skip(skip).limit(limite).to_list(limite)
     
-    # Enriquecer posts
+    # Enriquecer posts (apenas curtidas - comentários removidos)
     for post in posts:
         post["total_curtidas"] = await db.feed_curtidas.count_documents({"post_id": post["id"]})
-        post["total_comentarios"] = await db.feed_comentarios.count_documents({"post_id": post["id"]})
     
     total = await db.feed_posts.count_documents({"autor_id": current_user["id"], "status": "ativo"})
     
@@ -288,103 +265,9 @@ async def curtir_post(post_id: str, current_user: dict = Depends(get_current_use
     return {"message": "Post curtido!", "curtido": True}
 
 
-@router.post("/feed/posts/{post_id}/comentarios")
-async def comentar_post(
-    post_id: str,
-    dados: ComentarioCreate,
-    current_user: dict = Depends(get_current_user)
-):
-    """Adiciona um comentário em um post"""
-    
-    post = await db.feed_posts.find_one({"id": post_id, "status": "ativo"})
-    if not post:
-        raise HTTPException(status_code=404, detail="Post não encontrado")
-    
-    if not dados.texto.strip():
-        raise HTTPException(status_code=400, detail="O comentário não pode estar vazio")
-    
-    if len(dados.texto) > 500:
-        raise HTTPException(status_code=400, detail="O comentário não pode ter mais de 500 caracteres")
-    
-    comentario = {
-        "id": str(uuid.uuid4()),
-        "post_id": post_id,
-        "autor_id": current_user["id"],
-        "autor_nome": current_user.get("nome", ""),
-        "texto": dados.texto.strip(),
-        "data_criacao": datetime.now(timezone.utc).isoformat()
-    }
-    
-    await db.feed_comentarios.insert_one(comentario)
-    
-    # Notificar autor do post (se não for o próprio)
-    if post["autor_id"] != current_user["id"]:
-        await criar_notificacao(
-            usuario_id=post["autor_id"],
-            tipo="comentario",
-            titulo="💬 Novo comentário!",
-            mensagem=f"{current_user.get('nome', 'Alguém')} comentou: \"{dados.texto[:50]}...\"",
-            dados_extras={"post_id": post_id, "comentario_id": comentario["id"]}
-        )
-    
-    return {
-        "message": "Comentário adicionado!",
-        "comentario_id": comentario["id"]
-    }
-
-
-@router.get("/feed/posts/{post_id}/comentarios")
-async def get_comentarios_post(
-    post_id: str,
-    pagina: int = Query(1, ge=1),
-    limite: int = Query(20, ge=1, le=50)
-):
-    """Retorna os comentários de um post"""
-    
-    skip = (pagina - 1) * limite
-    
-    comentarios = await db.feed_comentarios.find(
-        {"post_id": post_id},
-        {"_id": 0}
-    ).sort("data_criacao", 1).skip(skip).limit(limite).to_list(limite)
-    
-    # Enriquecer com dados dos autores
-    for com in comentarios:
-        autor = await db.usuarios.find_one(
-            {"id": com["autor_id"]},
-            {"_id": 0, "id": 1, "nome": 1, "foto_url": 1}
-        )
-        com["autor"] = autor
-    
-    total = await db.feed_comentarios.count_documents({"post_id": post_id})
-    
-    return {
-        "comentarios": comentarios,
-        "total": total
-    }
-
-
-@router.delete("/feed/comentarios/{comentario_id}")
-async def deletar_comentario(comentario_id: str, current_user: dict = Depends(get_current_user)):
-    """Deleta um comentário"""
-    
-    comentario = await db.feed_comentarios.find_one({"id": comentario_id})
-    
-    if not comentario:
-        raise HTTPException(status_code=404, detail="Comentário não encontrado")
-    
-    # Verificar se é o autor do comentário ou admin
-    if comentario["autor_id"] != current_user["id"] and current_user.get("role") not in ["admin", "super_admin"]:
-        raise HTTPException(status_code=403, detail="Sem permissão para deletar este comentário")
-    
-    await db.feed_comentarios.delete_one({"id": comentario_id})
-    
-    return {"message": "Comentário deletado"}
-
-
 @router.get("/feed/trending")
 async def get_trending(limite: int = Query(10, ge=1, le=20)):
-    """Retorna os posts mais populares das últimas 24 horas"""
+    """Retorna os posts mais populares das últimas 24 horas (baseado em curtidas)"""
     
     # Posts das últimas 24 horas
     data_limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
@@ -394,13 +277,11 @@ async def get_trending(limite: int = Query(10, ge=1, le=20)):
         {"_id": 0}
     ).to_list(100)
     
-    # Calcular engajamento
+    # Calcular engajamento (apenas curtidas)
     for post in posts:
         curtidas = await db.feed_curtidas.count_documents({"post_id": post["id"]})
-        comentarios = await db.feed_comentarios.count_documents({"post_id": post["id"]})
-        post["engajamento"] = curtidas * 2 + comentarios * 3  # Comentários valem mais
+        post["engajamento"] = curtidas
         post["total_curtidas"] = curtidas
-        post["total_comentarios"] = comentarios
         
         # Dados do autor
         autor = await db.usuarios.find_one(
@@ -409,7 +290,7 @@ async def get_trending(limite: int = Query(10, ge=1, le=20)):
         )
         post["autor"] = autor
     
-    # Ordenar por engajamento
+    # Ordenar por engajamento (curtidas)
     posts.sort(key=lambda x: x["engajamento"], reverse=True)
     
     return {"trending": posts[:limite]}

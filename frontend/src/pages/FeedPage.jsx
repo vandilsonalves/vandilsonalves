@@ -1,18 +1,16 @@
 // /app/frontend/src/pages/FeedPage.jsx
-// Feed Social da Plataforma
+// Feed Social da Plataforma (apenas curtidas)
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Input } from '@/components/ui/input';
 import { 
-  MessageSquare, Heart, Send, Image, Loader2, ArrowLeft, MoreHorizontal,
-  TrendingUp, Clock, Trophy, Award, Trash2, X
+  Heart, Send, Image, Loader2, ArrowLeft, MoreHorizontal,
+  TrendingUp, Clock, Trophy, Award, Trash2, X, Users
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -41,11 +39,6 @@ const FeedPage = () => {
   const [enviandoPost, setEnviandoPost] = useState(false);
   const [imagemPost, setImagemPost] = useState(null);
   const imagemInputRef = useRef(null);
-  
-  // Comentários
-  const [comentarioTexto, setComentarioTexto] = useState({});
-  const [enviandoComentario, setEnviandoComentario] = useState(null);
-  const [showComentarios, setShowComentarios] = useState({});
 
   useEffect(() => {
     if (!user) {
@@ -151,30 +144,6 @@ const FeedPage = () => {
     }
   };
 
-  const handleComentar = async (postId) => {
-    const texto = comentarioTexto[postId];
-    if (!texto?.trim()) return;
-    
-    setEnviandoComentario(postId);
-    try {
-      await axios.post(
-        `${API}/feed/posts/${postId}/comentarios`,
-        { texto },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      setComentarioTexto({ ...comentarioTexto, [postId]: '' });
-      toast.success('Comentário adicionado!');
-      
-      // Recarregar post específico
-      fetchFeed();
-    } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erro ao comentar');
-    } finally {
-      setEnviandoComentario(null);
-    }
-  };
-
   const handleDeletarPost = async (postId) => {
     if (!window.confirm('Tem certeza que deseja deletar este post?')) return;
     
@@ -223,7 +192,7 @@ const FeedPage = () => {
           </Button>
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <MessageSquare className="w-6 h-6 text-white" />
+              <Users className="w-6 h-6 text-white" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white">Feed Social</h1>
@@ -323,7 +292,7 @@ const FeedPage = () => {
             {posts.length === 0 ? (
               <Card className="bg-slate-800 border-slate-700">
                 <CardContent className="p-12 text-center">
-                  <MessageSquare className="w-16 h-16 mx-auto text-slate-600 mb-4" />
+                  <Users className="w-16 h-16 mx-auto text-slate-600 mb-4" />
                   <h3 className="text-xl font-semibold text-white mb-2">Feed vazio</h3>
                   <p className="text-slate-400">Seja o primeiro a compartilhar algo!</p>
                 </CardContent>
@@ -417,77 +386,19 @@ const FeedPage = () => {
                       </div>
                     )}
                     
-                    {/* Ações */}
+                    {/* Ações - Apenas curtidas */}
                     <div className="flex items-center gap-4 pt-2 border-t border-slate-700">
                       <Button 
                         variant="ghost" 
                         size="sm" 
                         className={`${post.curtido ? 'text-red-400' : 'text-slate-400'} hover:text-red-400`}
                         onClick={() => handleCurtir(post.id)}
+                        data-testid={`like-btn-${post.id}`}
                       >
                         <Heart className={`w-4 h-4 mr-1 ${post.curtido ? 'fill-current' : ''}`} />
-                        {post.total_curtidas}
-                      </Button>
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className="text-slate-400"
-                        onClick={() => setShowComentarios({ ...showComentarios, [post.id]: !showComentarios[post.id] })}
-                      >
-                        <MessageSquare className="w-4 h-4 mr-1" />
-                        {post.total_comentarios}
+                        {post.total_curtidas} {post.total_curtidas === 1 ? 'curtida' : 'curtidas'}
                       </Button>
                     </div>
-                    
-                    {/* Comentários */}
-                    {showComentarios[post.id] && (
-                      <div className="space-y-3 pt-3 border-t border-slate-700">
-                        {/* Preview de comentários */}
-                        {post.comentarios_preview?.map((com) => (
-                          <div key={com.id} className="flex gap-2">
-                            <Avatar className="w-8 h-8">
-                              <AvatarFallback className="bg-slate-600 text-white text-xs">
-                                {com.autor?.nome?.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="bg-slate-700 rounded-lg px-3 py-2 flex-1">
-                              <p className="text-sm text-white font-medium">{com.autor?.nome}</p>
-                              <p className="text-sm text-slate-300">{com.texto}</p>
-                            </div>
-                          </div>
-                        ))}
-                        
-                        {/* Input de novo comentário */}
-                        <div className="flex gap-2">
-                          <Avatar className="w-8 h-8">
-                            <AvatarFallback className="bg-amber-500 text-white text-xs">
-                              {user?.nome?.charAt(0)}
-                            </AvatarFallback>
-                          </Avatar>
-                          <div className="flex-1 flex gap-2">
-                            <Input
-                              placeholder="Escreva um comentário..."
-                              value={comentarioTexto[post.id] || ''}
-                              onChange={(e) => setComentarioTexto({ ...comentarioTexto, [post.id]: e.target.value })}
-                              onKeyDown={(e) => e.key === 'Enter' && handleComentar(post.id)}
-                              className="bg-slate-700 border-slate-600 text-sm"
-                            />
-                            <Button 
-                              size="sm"
-                              onClick={() => handleComentar(post.id)}
-                              disabled={!comentarioTexto[post.id]?.trim() || enviandoComentario === post.id}
-                            >
-                              {enviandoComentario === post.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Send className="w-4 h-4" />
-                              )}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               ))
@@ -525,7 +436,7 @@ const FeedPage = () => {
                   <p className="text-slate-400 text-sm">Nenhum post em alta</p>
                 ) : (
                   trending.map((post) => (
-                    <div key={post.id} className="flex gap-3 p-2 rounded-lg hover:bg-slate-700/50 transition-colors">
+                    <div key={post.id} className="flex gap-3 p-2 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer">
                       <Avatar className="w-8 h-8">
                         <AvatarFallback className="bg-amber-500 text-white text-xs">
                           {post.autor?.nome?.charAt(0)}
@@ -536,10 +447,7 @@ const FeedPage = () => {
                         <p className="text-xs text-slate-400 truncate">{post.texto}</p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
                           <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3" /> {post.total_curtidas}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <MessageSquare className="w-3 h-3" /> {post.total_comentarios}
+                            <Heart className="w-3 h-3 text-red-400" /> {post.total_curtidas}
                           </span>
                         </div>
                       </div>
