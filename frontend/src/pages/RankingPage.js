@@ -393,6 +393,12 @@ const RankingPage = () => {
                   Feed
                 </Button>
                 
+                {/* Link para Regras */}
+                <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras">
+                  <HelpCircle className="w-4 h-4 mr-1" />
+                  Regras
+                </Button>
+                
                 {!isAdmin && (
                   <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
                     <User className="w-4 h-4 mr-2" />
@@ -410,6 +416,11 @@ const RankingPage = () => {
               </>
             ) : (
               <>
+                {/* Link para Regras (visitantes) */}
+                <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras-visitor">
+                  <HelpCircle className="w-4 h-4 mr-1" />
+                  Regras
+                </Button>
                 <Button onClick={() => navigate('/cadastro')} variant="outline">
                   Cadastrar
                 </Button>

@@ -161,6 +161,7 @@ from routes.autorizacoes_routes import router as autorizacoes_router
 from routes.feed_routes import router as feed_router
 from routes.liga_assessorias_routes import router as liga_assessorias_router
 from routes.ranking_corridas_routes import router as ranking_corridas_router
+from routes.configuracoes_routes import router as configuracoes_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -186,6 +187,7 @@ api_router.include_router(autorizacoes_router)
 api_router.include_router(feed_router)
 api_router.include_router(liga_assessorias_router)
 api_router.include_router(ranking_corridas_router)
+api_router.include_router(configuracoes_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:

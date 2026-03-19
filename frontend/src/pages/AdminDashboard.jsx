@@ -52,6 +52,7 @@ import {
   DashboardRBAC
 } from './admin';
 import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
+import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 
 // Definição dos itens do menu com permissões necessárias
 const allMenuItems = [
@@ -62,7 +63,8 @@ const allMenuItems = [
   { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
   { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
   { id: 'autorizacoes', label: 'Autorizações', icon: Shield, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
-  { id: 'administradores', label: 'Administradores', icon: Settings, permissoes: ['criar_admins'], superAdminOnly: true },
+  { id: 'configuracoes', label: 'Configurações', icon: Settings, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+  { id: 'administradores', label: 'Administradores', icon: Crown, permissoes: ['criar_admins'], superAdminOnly: true },
   { id: 'monitoramento', label: 'Monitoramento', icon: Activity, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
   { id: 'regulamento', label: 'Regulamento', icon: FileText, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
   { id: 'submeter', label: '+ Submeter Resultado', icon: Plus, permissoes: ['aprovar_resultados'] },
@@ -2082,6 +2084,11 @@ const AdminDashboard = () => {
         {/* Monitoramento do Sistema */}
         {activeMenu === 'monitoramento' && (
           <DashboardMonitoramento />
+        )}
+
+        {/* Configurações do Sistema */}
+        {activeMenu === 'configuracoes' && (
+          <ConfiguracoesSistemaTab token={token} />
         )}
 
         {/* Regulamento View */}
