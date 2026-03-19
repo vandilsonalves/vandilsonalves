@@ -11,7 +11,7 @@ import uuid
 
 BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', '').rstrip('/')
 if not BASE_URL:
-    BASE_URL = "https://assess-photo-fix.preview.emergentagent.com"
+    BASE_URL = "https://time-required-fix.preview.emergentagent.com"
 
 
 class TestNotificacoesEndpoints:

@@ -94,7 +94,7 @@
 
 ## Credentials
 - **Test User**: admin@runpro.com / admin123
-- **Preview URL**: https://assess-photo-fix.preview.emergentagent.com
+- **Preview URL**: https://time-required-fix.preview.emergentagent.com
 
 ---
 

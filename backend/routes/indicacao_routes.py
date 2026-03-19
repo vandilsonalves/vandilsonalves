@@ -125,7 +125,7 @@ async def get_meu_codigo(current_user: dict = Depends(get_current_user)):
     }) is not None
     
     # Gerar link
-    base_url = "https://assess-photo-fix.preview.emergentagent.com"
+    base_url = "https://time-required-fix.preview.emergentagent.com"
     link = f"{base_url}/cadastro?ref={codigo}"
     
     return {

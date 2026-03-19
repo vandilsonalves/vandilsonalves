@@ -23,16 +23,57 @@ async def submeter_resultado(
     estado_competicao: str = Form(...),
     data_competicao: str = Form(...),
     link_resultado: str = Form(...),
-    tempo: str = Form("00:00:00"),  # Opcional para Povão (default=00:00:00)
+    tempo: str = Form(...),  # Obrigatório para TODOS
     distancia: str = Form(...),
     foto_podio: UploadFile = File(None),
     current_user: dict = Depends(get_current_user)
 ):
     """Atleta submete resultado para aprovação"""
     
-    # Verificar se o atleta está no período de teste (30 dias após cadastro)
-    data_cadastro_str = current_user.get("data_criacao", "")
     hoje = datetime.now()
+    
+    # ==================== VALIDAÇÃO DE DATA DA COMPETIÇÃO (30 DIAS) ====================
+    try:
+        # Tentar parsear a data da competição
+        data_competicao_dt = datetime.strptime(data_competicao, "%Y-%m-%d")
+        dias_desde_competicao = (hoje - data_competicao_dt).days
+        
+        if dias_desde_competicao > 30:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Não é permitido submeter resultados de corridas com mais de 30 dias. A corrida foi há {dias_desde_competicao} dias."
+            )
+        
+        if dias_desde_competicao < 0:
+            raise HTTPException(
+                status_code=400,
+                detail="A data da competição não pode ser uma data futura."
+            )
+    except ValueError:
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de data inválido. Use o formato YYYY-MM-DD."
+        )
+    
+    # ==================== VALIDAÇÃO DE TEMPO ====================
+    # Tempo é obrigatório para TODOS - validar formato HH:MM:SS
+    if not tempo or tempo == "00:00:00":
+        raise HTTPException(
+            status_code=400,
+            detail="O tempo é obrigatório. Informe seu tempo no formato HH:MM:SS."
+        )
+    
+    # Validar formato do tempo
+    import re
+    tempo_pattern = re.compile(r'^\d{2}:\d{2}:\d{2}$')
+    if not tempo_pattern.match(tempo):
+        raise HTTPException(
+            status_code=400,
+            detail="Formato de tempo inválido. Use o formato HH:MM:SS (ex: 01:30:45)."
+        )
+    
+    # ==================== VALIDAÇÃO DE PERÍODO DE TESTE/AUTORIZAÇÃO ====================
+    data_cadastro_str = current_user.get("data_criacao", "")
     
     # Verificar se tem autorização ativa
     autorizacao = await db.autorizacoes.find_one({"atleta_id": current_user["id"], "status": "ativa"}, {"_id": 0})
@@ -113,7 +154,7 @@ async def submeter_resultado(
         estado_competicao=estado_competicao,
         data_competicao=data_competicao,
         link_resultado=link_resultado,
-        tempo=tempo if modalidade_usuario == "profissional_amador" else "00:00:00",
+        tempo=tempo,  # Tempo obrigatório para TODOS
         distancia=distancia,
         foto_podio_url=foto_url,
         status="pendente"

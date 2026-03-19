@@ -117,6 +117,41 @@ const SubmeterResultadoPage = () => {
     e.preventDefault();
     setError('');
     
+    // ==================== VALIDAÇÃO DE DATA (30 DIAS) ====================
+    if (formData.data_competicao) {
+      const dataCompeticao = new Date(formData.data_competicao);
+      const hoje = new Date();
+      const diffTime = hoje - dataCompeticao;
+      const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+      
+      if (diffDays > 30) {
+        setError(`Não é permitido submeter resultados de corridas com mais de 30 dias. A corrida foi há ${diffDays} dias.`);
+        toast.error('Data inválida', { description: `A corrida foi há ${diffDays} dias. O limite é 30 dias.` });
+        return;
+      }
+      
+      if (diffDays < 0) {
+        setError('A data da competição não pode ser uma data futura.');
+        toast.error('Data inválida', { description: 'A data da competição não pode ser uma data futura.' });
+        return;
+      }
+    }
+    
+    // ==================== VALIDAÇÃO DE TEMPO (OBRIGATÓRIO PARA TODOS) ====================
+    if (!formData.tempo || formData.tempo === '00:00:00') {
+      setError('O tempo é obrigatório. Informe seu tempo no formato HH:MM:SS.');
+      toast.error('Tempo obrigatório', { description: 'Informe seu tempo de prova no formato HH:MM:SS' });
+      return;
+    }
+    
+    // Validar formato do tempo
+    const tempoPattern = /^\d{2}:\d{2}:\d{2}$/;
+    if (!tempoPattern.test(formData.tempo)) {
+      setError('Formato de tempo inválido. Use o formato HH:MM:SS (ex: 01:30:45).');
+      toast.error('Formato inválido', { description: 'Use o formato HH:MM:SS (ex: 01:30:45)' });
+      return;
+    }
+    
     // Validar distância customizada se "OUTRA" for selecionado
     if (formData.distancia === 'OUTRA') {
       const distanciaNum = parseFloat(formData.distancia_customizada);
@@ -217,7 +252,7 @@ const SubmeterResultadoPage = () => {
             <p className="text-slate-600 mt-2">
               {isPovao 
                 ? 'Ranking do Povão - Pace Livre (Pontuação por distância)'
-                : 'Preencha os dados da sua corrida (Prazo: 6 dias após o evento)'
+                : 'Preencha os dados da sua corrida (Prazo: até 30 dias após o evento)'
               }
             </p>
             {isPovao && (
@@ -240,13 +275,14 @@ const SubmeterResultadoPage = () => {
                   <AlertDescription>
                     <strong>Ranking do Povão - Pace Livre</strong><br />
                     Você compete pela distância percorrida, não pela colocação!<br />
-                    <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 10pts | 21km+ = distância em pts
+                    <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 10pts | 21km+ = distância em pts<br />
+                    <strong>Prazo:</strong> Você tem até 30 dias após a corrida para submeter o resultado.
                   </AlertDescription>
                 </Alert>
               ) : (
                 <Alert className="bg-amber-50 border-amber-200">
                   <AlertDescription>
-                    <strong>Atenção:</strong> Você tem 6 dias úteis após a competição para enviar o resultado.
+                    <strong>Atenção:</strong> Você tem até 30 dias após a competição para enviar o resultado.
                     <br />
                     <strong>Colocações válidas:</strong> {user?.categoria === 'pcd' || user?.categoria === 'cadeirante' 
                       ? '1º a 3º lugar (PCD/Cadeirante)' 
@@ -416,25 +452,22 @@ const SubmeterResultadoPage = () => {
                   />
                 </div>
 
-                {/* Campo de Tempo - obrigatório para Pro/Amador, opcional para Povão */}
+                {/* Campo de Tempo - obrigatório para TODOS */}
                 <div>
                   <Label>
-                    Seu Tempo (HH:MM:SS) {!isPovao && '*'}
-                    {isPovao && <span className="text-purple-500 text-xs ml-1">(opcional)</span>}
+                    Seu Tempo (HH:MM:SS) *
                   </Label>
                   <Input
                     type="time"
                     step="1"
                     value={formData.tempo}
                     onChange={(e) => handleChange('tempo', e.target.value)}
-                    required={!isPovao}
+                    required
                     data-testid="tempo-input"
                   />
-                  {isPovao && (
-                    <p className="text-xs text-purple-500 mt-1">
-                      Informar seu tempo nos ajuda a conhecer melhor seu desempenho
-                    </p>
-                  )}
+                  <p className="text-xs text-slate-500 mt-1">
+                    Formato: HH:MM:SS (ex: 01:30:45)
+                  </p>
                 </div>
 
                 <div className="md:col-span-2">

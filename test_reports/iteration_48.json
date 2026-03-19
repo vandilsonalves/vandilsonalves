@@ -1,0 +1,92 @@
+{
+  "summary": "Iteration 48: Bug fix verification for 'Submeter Resultado' - Tempo obrigatório e validação de 30 dias. ALL 11 BACKEND TESTS PASSED. Frontend validation verified via Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter48_tempo_data_validation.py",
+    "/app/test_reports/pytest/pytest_iter48_tempo_validation.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✅ Bug Fix 1 VERIFIED: Campo 'tempo' é obrigatório para TODOS (incluindo Povão)",
+    "✅ Bug Fix 2 VERIFIED: Validação de 30 dias bloqueia submissões de corridas antigas",
+    "✅ Backend validation: Retorna 400 quando tempo está vazio ou 00:00:00",
+    "✅ Backend validation: Retorna 400 quando data_competicao > 30 dias",
+    "✅ Backend validation: Retorna 400 para datas futuras",
+    "✅ Frontend: Label 'Seu Tempo (HH:MM:SS) *' mostra asterisco corretamente",
+    "✅ Frontend: Campo tempo tem atributo 'required' ativado",
+    "✅ Frontend: HTML5 validation fires 'Please fill out this field' quando tempo vazio"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter48_tempo_data_validation.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 passed)",
+    "frontend": "100% - Validation working correctly"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@runpro.com",
+      "password": "admin123"
+    }
+  },
+  "seed_data_creation": "None - Used existing admin user for testing",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Bug fixes verified: 1) Tempo field is now required for ALL athletes (including Povão modality), 2) 30-day validation blocks old race submissions. Endpoint: POST /api/resultados/submeter (multipart/form-data). Backend validations at lines 58-73 (tempo) and 35-56 (30 days) in resultados_routes.py. Frontend validations at lines 120-154 in SubmeterResultadoPage.js.",
+  "verified_bug_fixes": {
+    "tempo_obrigatorio": {
+      "issue": "Athletes from 'Povão' modality could submit results with zero time (campo was optional)",
+      "fix_verified": true,
+      "backend_tests": [
+        "test_submit_without_tempo_returns_400 - PASSED",
+        "test_submit_with_empty_tempo_returns_400 - PASSED",
+        "test_submit_with_zero_tempo_returns_400 - PASSED",
+        "test_submit_with_invalid_tempo_format_returns_400 - PASSED"
+      ],
+      "frontend_verification": "Label shows '*', required attribute set, HTML5 validation fires"
+    },
+    "validacao_30_dias": {
+      "issue": "Athletes could submit races older than 30 days",
+      "fix_verified": true,
+      "backend_tests": [
+        "test_submit_race_older_than_30_days_returns_400 - PASSED (45 days ago)",
+        "test_submit_race_exactly_31_days_old_returns_400 - PASSED",
+        "test_submit_future_date_returns_400 - PASSED",
+        "test_submit_race_within_30_days_is_allowed - PASSED (15 days ago)"
+      ]
+    }
+  },
+  "endpoints_tested": {
+    "POST /api/resultados/submeter": {
+      "auth_required": true,
+      "content_type": "multipart/form-data",
+      "validations_working": [
+        "tempo obrigatório (não pode ser vazio ou 00:00:00)",
+        "formato tempo HH:MM:SS",
+        "data_competicao não pode ter mais de 30 dias",
+        "data_competicao não pode ser futura"
+      ]
+    }
+  },
+  "code_review_notes": {
+    "backend_routes/resultados_routes.py": {
+      "tempo_validation_line": "58-73",
+      "30_days_validation_line": "35-56",
+      "status": "Correct implementation"
+    },
+    "frontend_pages/SubmeterResultadoPage.js": {
+      "tempo_validation_line": "140-154",
+      "30_days_validation_line": "120-138",
+      "required_attribute_line": "465",
+      "status": "Correct implementation - required attribute always set"
+    }
+  }
+}
