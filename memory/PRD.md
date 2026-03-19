@@ -482,3 +482,33 @@ O usuário solicitou a reestruturação do painel de administração e implement
   - `/app/frontend/src/pages/CadastroPage.js` - Campo de equipe editável
   - `/app/backend/services/scraping_corridas.py` - Suporte a Playwright
   - `/app/backend/routes/corridas_eventos_routes.py` - Parâmetro usar_playwright
+
+### Upload de Foto e Gráficos para Dono da Assessoria (19/Mar/2026)
+- **Upload de Foto da Assessoria**:
+  - Novo endpoint `POST /api/assessorias/upload-foto` para upload de imagem
+  - Novo endpoint `DELETE /api/assessorias/remover-foto` para remover foto
+  - Validação de tipo de arquivo (JPEG, PNG, WebP, GIF) e tamanho (máx 5MB)
+  - Armazenamento em `/app/uploads/assessorias/`
+  - Nova aba "Foto da Equipe" no menu do DonoAssessoriaDashboard
+  - Interface de upload com drag-and-drop e preview
+  - Preview de como a assessoria aparece com a foto
+- **Novos Gráficos no Painel do Dono**:
+  - Gráfico de Distribuição por Cidade (BarChart horizontal)
+  - Gráfico Top 5 Atletas - Mais Pontos (BarChart)
+  - Card de Conquistas da Equipe (pódios: 1º, 2º, 3º lugares)
+  - Card de Posições nos Rankings (nacional, estadual, mensal)
+- **Arquivos modificados**:
+  - `/app/backend/routes/assessorias_routes.py` - Endpoints de upload/remoção de foto
+  - `/app/frontend/src/pages/DonoAssessoriaDashboard.jsx` - Aba foto + novos gráficos
+
+### Refatoração do Backend - Novos Módulos (19/Mar/2026)
+- **Novos arquivos de rotas criados**:
+  - `/app/backend/routes/rankings_routes.py` - Ranking nacional, estados, faixas, equipes, destaque do mês
+  - `/app/backend/routes/regulamento_routes.py` - Regulamento público e admin, termo de avaliação
+  - `/app/backend/routes/autorizacoes_routes.py` - Autorizações, período de teste, status de acesso
+- **Routers registrados no server.py**:
+  - `rankings_router`, `regulamento_router`, `autorizacoes_router`
+- **Funções migradas do server.py**:
+  - `get_ranking_nacional`, `get_estados_disponiveis`, `get_faixas_disponiveis`, `get_equipes_disponiveis`, `get_destaque_mes`
+  - `get_regulamento`, `atualizar_regulamento`, `get_regulamento_admin`, `get_texto_termo`, `atualizar_termo_avaliacao`
+  - `listar_autorizacoes`, `listar_atletas_periodo_teste`, `criar_autorizacao`, `revogar_autorizacao`, `verificar_status_acesso`
