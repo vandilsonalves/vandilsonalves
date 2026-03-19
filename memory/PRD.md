@@ -4,6 +4,21 @@
 
 ### ✅ Completed This Session
 
+1. **Feed de Atividades Melhorado (P0)** - IMPLEMENTADO!
+   - **Posts Automáticos:** Criados automaticamente quando corridas são aprovadas ou conquistas desbloqueadas
+   - **Reações:** 8 tipos de reações incluindo 'parabéns' (🎊)
+   - **Comentários:** Sistema completo de comentários com validação
+   - **Botão Parabéns:** Reação rápida para posts de conquistas/resultados
+   - **Visual Especial:** Cards diferenciados para posts de conquista (roxo) e resultado (verde)
+   - **21/21 testes passando** (`/app/test_reports/iteration_51.json`)
+   
+   **Arquivos modificados:**
+   - `/app/frontend/src/pages/FeedPage.jsx` - UI melhorada com componentes PostConteudoEspecial e BotaoParabens
+   - `/app/backend/routes/admin_routes.py` - Integração com criar_post_corrida_aprovada()
+   - `/app/backend/routes/conquistas_routes.py` - Integração com criar_post_conquista()
+
+### ✅ Completed Previous Session
+
 1. **Nova Funcionalidade: Página de Regras + Painel Admin (P1)** - IMPLEMENTADO!
    - **Página Pública `/regras`:** Exibe todas as regras de pontuação em 3 tabs
    - **Painel Admin - Configurações:** Nova aba para editar valores de pontuação, prazos e textos
@@ -20,96 +35,72 @@
 3. **Bug Fix: Campo Tempo Obrigatório + Validação 30 dias (P0)** - CORRIGIDO!
    - **11/11 testes passando** (`/app/test_reports/iteration_48.json`)
 
-### ✅ Completed Previous Session
+4. **Notificações por Email** - IMPLEMENTADO!
+   - Atletas recebem e-mails quando seus resultados são aprovados ou rejeitados
 
-1. **Bug Fix: Ranking Estadual (P0)**
-   - Problema: Mostrava ".0" ou "." em vez da posição real
-   - Causa: Estado vinha dos atletas, não do ranking
-   - Solução: Prioridade de estado: ranking > dono > atletas
-   - **Testado: Assessoria CAFAV = ES, posição estadual 1**
-
-2. **Remoção do Sistema de Rivais**
-   - Removido: `/app/frontend/src/pages/RivaisPage.jsx`
-   - Removido: `/app/backend/routes/rivais_routes.py`
-   - Removido: Rota e ícone do menu
-
-3. **Feed Social - Comentários + Sem Upload**
-   - Adicionado: Endpoints de comentários (POST/GET/DELETE)
-   - Adicionado: UI de comentários no frontend
-   - Removido: Endpoint de upload de imagem
-   - Removido: Botão de foto na UI
-   - **13/13 testes passando**
-
-4. **Refatoração do server.py**
-   - Reduzido de 4347 → 3419 linhas
-   - 45 endpoints restantes
+5. **Histórico de Submissões** - IMPLEMENTADO!
+   - Nova página `/historico` onde atletas podem ver o status de todas as suas corridas enviadas
 
 ---
 
 ## Key Endpoints
 
-**Exportação de Dados (Atualizado):**
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=csv` - Planilha simples
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=json` - Dados estruturados
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=xlsx` - Excel formatado (NOVO!)
-- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=pdf` - Relatório visual (NOVO!)
-- `GET /api/liga-assessorias/exportar-graficos/{equipe}` - Dados dos gráficos
-
-**Feed Social:**
+**Feed Social (Atualizado):**
+- `GET /api/feed` - Lista posts com reações, comentários e dados do autor
+- `POST /api/feed/posts` - Cria novo post de texto
+- `POST /api/feed/posts/{post_id}/reagir` - Reações (👏🏃💪🔥❤️🎉🏆🎊)
+- `POST /api/feed/posts/{post_id}/parabens` - Reação rápida de parabéns
 - `POST /api/feed/posts/{post_id}/comentarios` - Adicionar comentário
 - `GET /api/feed/posts/{post_id}/comentarios` - Listar comentários
-- `DELETE /api/feed/comentarios/{id}` - Deletar comentário
-- `POST /api/feed/posts/{post_id}/reagir` - Reações (👏🏃💪🔥❤️🎉🏆)
+- `GET /api/feed/reacoes-disponiveis` - Lista 8 tipos de reações
 
-**Ranking Estadual:**
-- `GET /api/liga-assessorias/assessoria/{nome}` - Inclui posicao_estadual correta
+**Exportação de Dados:**
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=csv` - Planilha simples
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=xlsx` - Excel formatado
+- `GET /api/liga-assessorias/exportar-dados/{equipe}?formato=pdf` - Relatório visual
 
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_51.json` - Feed de Atividades Melhorado (21/21 passed)
 - `/app/test_reports/iteration_50.json` - Sistema de Configurações e Regras (13/13 passed)
 - `/app/test_reports/iteration_49.json` - Correção Tabela de Pontuação (26/26 passed)
 - `/app/test_reports/iteration_48.json` - Bug Tempo Obrigatório + 30 Dias (11/11 passed)
-- `/app/test_reports/iteration_47.json` - Exportação PDF/Excel (14/14 passed)
 
 ---
 
 ## Pending Tasks
 
-### P1 - Refatoração ✅
-- [x] Refatoração do server.py - **CONCLUÍDA**
-  - Reduzido de 2929 para **1945 linhas** (33,6% de redução)
-  - Migrados 11 endpoints de Instagram para `routes/instagram_routes.py`
+### P1 - Próximas Tarefas (Priorizadas pelo Usuário)
+- [ ] **Ranking por Cidade/Bairro** - Nova visão de ranking filtrada por localização para modalidades "Profissional/Amador" e "Povão"
+- [ ] **Integração Strava/Garmin** - Importação automática de corridas (usar integration_playbook_expert_v2)
+- [ ] **App Mobile (PWA)** - Configurar aplicação como Progressive Web App
 
-- [x] Refatoração do DonoAssessoriaDashboard.jsx - **CONCLUÍDA**
-  - Reduzido de 1877 para **1596 linhas** (15% de redução)
-  - 5 subcomponentes criados em `/components/dono-assessoria/`:
-    - DashboardStats.jsx (RankingCards, MetricasCards)
-    - ExportacaoCard.jsx
-    - SolicitacoesTab.jsx
-    - AtletasTab.jsx
-    - FotoEquipeTab.jsx
+### P2 - Backlog/Refatoração
+- [ ] **Refatoração do RankingPage.js** - 2.100+ linhas, precisa ser dividido em componentes menores
+- [ ] **Refatoração do AdminDashboard.jsx** - 3.600+ linhas
+- [ ] Verificação de domínio no Resend
 
 ### Concluído nesta sessão
-- [x] Bug Fix: Campo tempo obrigatório para TODOS (incluindo Povão)
-- [x] Bug Fix: Validação de 30 dias para submissão de resultados
-- [x] Redis reinstalado e funcionando
-- [x] REDIS_URL adicionado ao /app/backend/.env
-- [x] Exportação de dados em PDF e Excel implementada
-- [x] Bug da imagem da assessoria corrigido
-
-### P1 - Próxima Tarefa
-- [ ] **Refatoração do RankingPage.js** - O componente possui mais de 2.100 linhas e precisa ser dividido em subcomponentes menores
-
-### P2 - Backlog
-- [ ] Verificação de domínio no Resend
-- [ ] Continuar refatoração do server.py (ainda com ~1945 linhas)
+- [x] Feed de Atividades Melhorado
+  - [x] Posts automáticos de conquistas
+  - [x] Posts automáticos de resultados aprovados
+  - [x] Reação "Parabéns" (🎊)
+  - [x] Visual especial para posts automáticos
+  - [x] Botão de reação rápida "Parabéns"
 
 ---
 
 ## Credentials
-- **Test User**: admin@runpro.com / admin123
+- **Admin**: admin@runpro.com / admin
+- **Atleta Teste**: aline.rocha@example.com (Aline Rocha, Assessoria TOP RUN)
 - **Preview URL**: https://feed-likes-comments.preview.emergentagent.com
+
+---
+
+## Known Issues
+- **Redis no Supervisor:** Pode mostrar status FATAL no supervisor, mas funciona se `redis-cli ping` retornar PONG (gerenciado pelo sistema operacional)
+- **Instagram Routes:** As rotas em `/app/backend/routes/instagram_routes.py` são apenas stubs (esqueletos de código)
 
 ---
 
