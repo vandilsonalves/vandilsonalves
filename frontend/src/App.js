@@ -19,6 +19,7 @@ import FeedPage from "@/pages/FeedPage";
 import RegrasPage from "@/pages/RegrasPage";
 import HistoricoSubmissoesPage from "@/pages/HistoricoSubmissoesPage";
 import RankingCidadePage from "@/pages/RankingCidadePage";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 function App() {
   return (
@@ -45,6 +46,7 @@ function App() {
             <Route path="/ranking-cidade" element={<RankingCidadePage />} />
           </Routes>
         </BrowserRouter>
+        <PWAInstallPrompt />
         <Toaster position="top-right" />
       </div>
     </AuthProvider>
