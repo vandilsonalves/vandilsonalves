@@ -16,81 +16,48 @@ O usuário solicitou a reestruturação do painel de administração e implement
 - **Atleta Povão (Pace Livre)**: Participa do ranking por distância acumulada
 - **Dono de Assessoria**: Visualiza relatórios da sua equipe
 
-## Core Requirements
-
-### 1. Sistema de Ranking (DONE)
-- Ranking Profissional/Amador por categoria, gênero, faixa etária
-- Ranking Povão (Pace Livre) por distância acumulada
-- Rankings Semanal e Mensal
-- Destaques do mês
-- Exportação CSV/Excel
-
-### 2. Sistema RBAC (DONE)
-- Múltiplos níveis de administradores
-- Permissões granulares por funcionalidade
-- Logs de auditoria de todas as ações
-- Conta de emergência para recuperação
-- 2FA opcional para admins
-
-### 3. Sistema de Monitoramento (DONE)
-- Métricas em tempo real (CPU, memória, requisições)
-- Dashboard visual no frontend
-- Alertas automáticos por email para anomalias
-- Histórico de métricas para análise
-
-### 4. Cache com Redis (DONE)
-- Cache inteligente para endpoints de alto tráfego
-- Invalidação automática por TTL
-- Cache de rankings para melhor performance
-
-### 5. Filas com Celery (DONE)
-- Processamento assíncrono de tarefas pesadas
-- Recálculo de rankings em background
-- Envio de emails em massa
-
-### 6. WebSocket Notifications (DONE)
-- Notificações em tempo real para usuários conectados
-- Alertas para admins sobre eventos do sistema
-- Persistência de notificações no banco
-
 ---
 
-## Implementation Status
+## Implementation Status (19/Mar/2026)
 
-### Completed (19/Mar/2026)
-- [x] Sistema RBAC completo
-- [x] Sistema de Monitoramento de Saúde
-- [x] Cache com Redis integrado
-- [x] Celery para tarefas assíncronas
-- [x] WebSocket para notificações em tempo real
-- [x] Sistema de Aprovação de Membros para Assessorias
-- [x] Upload de Foto da Assessoria
-- [x] Botão "Solicitar Entrada" em assessorias públicas
-- [x] Web Scraper com Playwright para sites JavaScript
-- [x] Gráficos no Dashboard do Dono de Assessoria
-- [x] **Feed Social (apenas curtidas)** - Posts com texto/imagem, curtidas, trending
-- [x] **Refatoração: liga_assessorias_routes.py** - Estados, cidades, comparação mensal
-- [x] **Refatoração: ranking_corridas_routes.py** - Ranking de corridas, avaliações, reputação
+### ✅ Completed This Session
 
-### Feed Social - Funcionalidades (19/Mar/2026)
-- **Criar posts**: Texto (máx 1000 chars) + imagem opcional
-- **Curtidas**: Toggle curtir/descurtir com notificação
-- **Trending**: Posts em alta baseado em curtidas (últimas 24h)
-- **Meus posts**: Listagem de posts do próprio usuário
-- **Deletar post**: Soft delete (autor ou admin)
-- **SEM COMENTÁRIOS**: Funcionalidade removida conforme solicitação do usuário
+1. **Refatoração do server.py (P0)**
+   - Removidos endpoints duplicados de liga-assessorias e ranking-corridas
+   - Reduzido de 4519 para 4347 linhas (-172 linhas)
+   - Reduzido de 63 para 60 endpoints (-3 duplicatas)
 
-### Refatoração do Backend (EM PROGRESSO)
-**Arquivos de rotas criados:**
-- `/app/backend/routes/liga_assessorias_routes.py` - Liga de assessorias
-- `/app/backend/routes/ranking_corridas_routes.py` - Ranking e avaliação de corridas
+2. **Sistema de Reações no Feed Social (P1)**
+   - Substituído sistema de curtidas por 7 tipos de reações:
+     - 👏 Aplausos, 🏃 Correndo, 💪 Força, 🔥 Em chamas
+     - ❤️ Amei, 🎉 Celebrando, 🏆 Campeão
+   - Toggle de reações (adicionar/alterar/remover)
+   - Notificações ao autor do post
+   - UI com popover para seleção de reações
+   - Collection MongoDB: `feed_reacoes`
 
-**Ainda no server.py (para refatorar):**
-- Endpoints de ranking duplicados (precisam ser removidos)
-- Endpoints de admin diversos
-- Funções de Instagram
-- Funções de regulamento
-- Funções de autorizações
+3. **Novos Gráficos no Dashboard do Dono (P1)**
+   - Distribuição por Gênero (PieChart)
+   - Distribuição por Categoria (PieChart)
+   - Distribuição por Faixa Etária (BarChart)
+   - Resultados por Mês - últimos 6 meses (AreaChart)
+   - Distâncias Mais Corridas (BarChart horizontal)
+   - Novos Atletas por Mês (BarChart)
+   - Indicadores de Performance (cards com métricas)
+   - Endpoint: `/api/liga-assessorias/graficos-avancados/{nome_equipe}`
+
+### ✅ Previously Completed
+- Sistema RBAC completo
+- Sistema de Monitoramento de Saúde
+- Cache com Redis integrado
+- Celery para tarefas assíncronas
+- WebSocket para notificações em tempo real
+- Sistema de Aprovação de Membros para Assessorias
+- Upload de Foto da Assessoria
+- Botão "Solicitar Entrada" em assessorias públicas
+- Web Scraper com Playwright
+- Sistema de Badges com 13 tipos
+- Sistema de Indicação de Amigos
 
 ---
 
@@ -100,55 +67,61 @@ O usuário solicitou a reestruturação do painel de administração e implement
 ```
 /app/backend/
 ├── routes/
-│   ├── auth_routes.py         # Autenticação (login, registro, me)
-│   ├── atletas_routes.py      # Perfil, foto, troca equipe
-│   ├── ranking_routes.py      # Rankings (povão, semanal, mensal)
-│   ├── admin_routes.py        # Gestão de atletas, aprovações
-│   ├── assessorias_routes.py  # Assessorias, solicitações, foto
-│   ├── feed_routes.py         # Feed Social (posts, curtidas)
-│   ├── liga_assessorias_routes.py  # Liga de assessorias [NOVO]
-│   ├── ranking_corridas_routes.py  # Ranking de corridas [NOVO]
+│   ├── auth_routes.py           # Autenticação
+│   ├── atletas_routes.py        # Perfil de atletas
+│   ├── ranking_routes.py        # Rankings
+│   ├── admin_routes.py          # Gestão administrativa
+│   ├── assessorias_routes.py    # Assessorias e solicitações
+│   ├── feed_routes.py           # Feed Social com Reações ✅ ATUALIZADO
+│   ├── liga_assessorias_routes.py  # Liga + Gráficos avançados ✅ ATUALIZADO
+│   ├── ranking_corridas_routes.py  # Ranking de corridas ✅ CRIADO
 │   └── ... (outros módulos)
 ├── services/
-│   ├── cache_service.py       # Redis cache
-│   ├── monitoring_service.py  # Métricas
-│   └── scraping_corridas.py   # Scraper com Playwright
-├── models/
-│   ├── __init__.py           # Pydantic models
-│   └── rbac.py               # Models RBAC
-└── server.py                  # FastAPI app + rotas não migradas
+│   ├── cache_service.py
+│   ├── monitoring_service.py
+│   └── scraping_corridas.py
+└── server.py                    # FastAPI app (4347 linhas, 60 endpoints)
 ```
 
 ### Frontend Structure
 ```
 /app/frontend/src/
 ├── pages/
-│   ├── RankingPage.js         # Página principal de ranking
-│   ├── FeedPage.jsx           # Feed Social [ATUALIZADO]
-│   ├── DonoAssessoriaDashboard.jsx  # Dashboard do dono
-│   ├── AssessoriaPage.jsx     # Página pública da assessoria
+│   ├── FeedPage.jsx           # Feed com Sistema de Reações ✅ ATUALIZADO
+│   ├── DonoAssessoriaDashboard.jsx  # +7 novos gráficos ✅ ATUALIZADO
 │   └── ... (outras páginas)
 └── components/
-    ├── ui/                    # Shadcn components
-    └── NotificacoesBell.jsx   # Componente de notificações
+    └── ui/                    # Shadcn components
 ```
 
 ---
 
-## Pending Tasks (P0-P2)
+## Key API Endpoints
+
+### Feed Social (Reações)
+- `GET /api/feed/reacoes-disponiveis` - Lista reações disponíveis
+- `POST /api/feed/posts/{post_id}/reagir` - Adicionar/alterar/remover reação
+- `GET /api/feed/posts/{post_id}/reacoes` - Reações de um post agrupadas
+- `GET /api/feed` - Feed com reações (requer auth)
+- `GET /api/feed/trending` - Posts em alta baseado em reações
+
+### Gráficos Avançados
+- `GET /api/liga-assessorias/graficos-avancados/{nome_equipe}` - Dados para gráficos (requer dono_assessoria ou admin)
+
+---
+
+## Pending Tasks
 
 ### P0 - Crítico
-- [ ] Remover endpoints duplicados do server.py (ranking-corridas, liga-assessorias)
-- [ ] Continuar refatoração do server.py (ainda 4500+ linhas)
+- [ ] Continuar refatoração do server.py (ainda tem 4347 linhas)
 
-### P1 - Alta Prioridade
-- [ ] Implementar Sistema de Rivais (placeholder criado)
-- [ ] Mais gráficos para Dono de Assessoria
-- [ ] Exportação de dados dos gráficos
+### P1 - Descartado pelo Usuário
+- ~~Sistema de Rivais~~
+- ~~Desafios Mensais~~
+- ~~Sistema de Níveis/XP~~
 
-### P2 - Média/Baixa Prioridade
-- [ ] Desafios Mensais
-- [ ] Sistema de Níveis/XP
+### P2 - Backlog
+- [ ] Exportação de dados dos gráficos (CSV/PDF)
 - [ ] Configuração de REDIS_URL para produção
 - [ ] Verificação de domínio no Resend
 - [ ] Refatoração de componentes grandes do frontend
@@ -156,17 +129,18 @@ O usuário solicitou a reestruturação do painel de administração e implement
 ---
 
 ## Known Issues
-- **Redis instável**: Pode precisar reinstalar com `sudo apt-get install --reinstall redis-server && sudo service redis-server start`
+- **Redis instável**: Use `sudo apt-get install --reinstall redis-server && sudo service redis-server start` se necessário
 - **Funções vazias de Instagram**: `buscar_instagram_api_direta` e `buscar_instagram_rapidapi` estão vazias
 
 ---
 
 ## Test Reports
-- `/app/test_reports/iteration_43.json` - Feed Social e módulos refatorados (24/24 testes passando)
+- `/app/test_reports/iteration_43.json` - Feed Social (24/24 passed)
+- `/app/test_reports/iteration_44.json` - Reações + Gráficos (23/23 passed)
 
 ---
 
-## API Credentials
+## Credentials
 - **Test User**: admin@runpro.com / admin123
 - **Preview URL**: https://community-feed-28.preview.emergentagent.com
 
