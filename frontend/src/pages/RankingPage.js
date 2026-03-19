@@ -405,6 +405,12 @@ const RankingPage = () => {
                   Histórico
                 </Button>
                 
+                {/* Link para Ranking por Cidade */}
+                <Button onClick={() => navigate('/ranking-cidade')} variant="ghost" size="sm" className="text-emerald-500 hover:text-emerald-700" data-testid="btn-ranking-cidade">
+                  <MapPin className="w-4 h-4 mr-1" />
+                  Por Cidade
+                </Button>
+                
                 {!isAdmin && (
                   <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
                     <User className="w-4 h-4 mr-2" />

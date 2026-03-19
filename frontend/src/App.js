@@ -18,6 +18,7 @@ import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
 import FeedPage from "@/pages/FeedPage";
 import RegrasPage from "@/pages/RegrasPage";
 import HistoricoSubmissoesPage from "@/pages/HistoricoSubmissoesPage";
+import RankingCidadePage from "@/pages/RankingCidadePage";
 
 function App() {
   return (
@@ -41,6 +42,7 @@ function App() {
             <Route path="/feed" element={<FeedPage />} />
             <Route path="/regras" element={<RegrasPage />} />
             <Route path="/historico" element={<HistoricoSubmissoesPage />} />
+            <Route path="/ranking-cidade" element={<RankingCidadePage />} />
           </Routes>
         </BrowserRouter>
         <Toaster position="top-right" />

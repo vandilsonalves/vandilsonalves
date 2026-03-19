@@ -701,3 +701,162 @@ async def get_equipes():
     
     equipes = await db.usuarios.aggregate(pipeline).to_list(None)
     return {"equipes": [{"nome": e["_id"], "atletas": e["count"]} for e in equipes if e["_id"]]}
+
+
+@router.get("/ranking/cidades")
+@cached(prefix='ranking', ttl_key='cidades')
+async def get_cidades(estado: str = None):
+    """Lista cidades com atletas, opcionalmente filtradas por estado"""
+    query = {"role": {"$in": ["atleta", "dono_assessoria"]}, "cidade": {"$ne": "", "$exists": True}}
+    
+    if estado:
+        query["estado"] = estado
+    
+    pipeline = [
+        {"$match": query},
+        {"$group": {"_id": {"cidade": "$cidade", "estado": "$estado"}, "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}},
+        {"$limit": 200}
+    ]
+    
+    cidades = await db.usuarios.aggregate(pipeline).to_list(None)
+    return {
+        "cidades": [
+            {
+                "nome": c["_id"]["cidade"], 
+                "estado": c["_id"]["estado"],
+                "atletas": c["count"]
+            } 
+            for c in cidades if c["_id"]["cidade"]
+        ]
+    }
+
+
+@router.get("/ranking/por-cidade/{estado}/{cidade}")
+async def get_ranking_por_cidade(
+    estado: str,
+    cidade: str,
+    modalidade: str = "profissional",  # profissional ou povao
+    genero: str = "M",
+    categoria: str = "normal",
+    ano: int = 2025,
+    limit: int = 100
+):
+    """
+    Retorna ranking filtrado por cidade.
+    Modalidades: profissional (por colocação) ou povao (por distância)
+    """
+    # Buscar usuários da cidade
+    usuarios_query = {
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "estado": {"$regex": f"^{estado}$", "$options": "i"},
+        "cidade": {"$regex": f"^{cidade}$", "$options": "i"}
+    }
+    
+    usuarios_cidade = await db.usuarios.find(usuarios_query, {"_id": 0}).to_list(None)
+    usuario_ids = [u["id"] for u in usuarios_cidade]
+    
+    if not usuario_ids:
+        return {"ranking": [], "total": 0, "cidade": cidade, "estado": estado}
+    
+    result = []
+    
+    if modalidade.lower() == "povao":
+        # Ranking do Povão - baseado em resultados de corridas
+        pipeline = [
+            {"$match": {
+                "usuario_id": {"$in": usuario_ids},
+                "ano": ano,
+                "status": "aprovado",
+                "modalidade": "povao"
+            }},
+            {"$group": {
+                "_id": "$usuario_id",
+                "pontos_total": {"$sum": "$pontos"},
+                "total_corridas": {"$sum": 1}
+            }},
+            {"$sort": {"pontos_total": -1, "total_corridas": -1}},
+            {"$limit": limit}
+        ]
+        
+        ranking_data = await db.resultados.aggregate(pipeline).to_list(None)
+        
+        # Enriquecer com dados do usuário
+        for idx, rank in enumerate(ranking_data, 1):
+            usuario = next((u for u in usuarios_cidade if u["id"] == rank["_id"]), None)
+            if usuario:
+                result.append({
+                    "colocacao": idx,
+                    "id": rank["_id"],
+                    "nome": usuario.get("nome", ""),
+                    "foto_url": usuario.get("foto_url", ""),
+                    "equipe": usuario.get("equipe", ""),
+                    "cidade": usuario.get("cidade", ""),
+                    "estado": usuario.get("estado", ""),
+                    "faixa_etaria": usuario.get("faixa_etaria", ""),
+                    "pontos": rank.get("pontos_total", 0),
+                    "total_corridas": rank.get("total_corridas", 0),
+                    "is_elite": rank.get("pontos_total", 0) >= 100
+                })
+    else:
+        # Ranking Profissional/Amador - primeiro tenta ranking_anual, depois usa pontos_total do usuário
+        ranking_query = {
+            "usuario_id": {"$in": usuario_ids},
+            "ano": ano,
+            "genero": genero,
+            "categoria": categoria
+        }
+        
+        ranking_data = await db.ranking_anual.find(
+            ranking_query,
+            {"_id": 0}
+        ).sort([("pontos_total", -1), ("total_corridas", -1)]).limit(limit).to_list(None)
+        
+        if ranking_data:
+            # Usar dados do ranking_anual
+            for idx, rank in enumerate(ranking_data, 1):
+                usuario = next((u for u in usuarios_cidade if u["id"] == rank["usuario_id"]), None)
+                if usuario:
+                    result.append({
+                        "colocacao": idx,
+                        "id": rank["usuario_id"],
+                        "nome": usuario.get("nome", ""),
+                        "foto_url": usuario.get("foto_url", ""),
+                        "equipe": usuario.get("equipe", ""),
+                        "cidade": usuario.get("cidade", ""),
+                        "estado": usuario.get("estado", ""),
+                        "faixa_etaria": usuario.get("faixa_etaria", ""),
+                        "pontos": rank.get("pontos_total", 0),
+                        "total_corridas": rank.get("total_corridas", 0),
+                        "is_elite": rank.get("pontos_total", 0) >= 100
+                    })
+        else:
+            # Fallback: usar pontos_total diretamente do usuário (ordenado por pontos)
+            usuarios_ordenados = sorted(
+                [u for u in usuarios_cidade if u.get("pontos_total", 0) > 0],
+                key=lambda x: (x.get("pontos_total", 0), x.get("total_corridas", 0)),
+                reverse=True
+            )[:limit]
+            
+            for idx, usuario in enumerate(usuarios_ordenados, 1):
+                result.append({
+                    "colocacao": idx,
+                    "id": usuario["id"],
+                    "nome": usuario.get("nome", ""),
+                    "foto_url": usuario.get("foto_url", ""),
+                    "equipe": usuario.get("equipe", ""),
+                    "cidade": usuario.get("cidade", ""),
+                    "estado": usuario.get("estado", ""),
+                    "faixa_etaria": usuario.get("faixa_etaria", ""),
+                    "pontos": usuario.get("pontos_total", 0),
+                    "total_corridas": usuario.get("total_corridas", 0),
+                    "is_elite": usuario.get("pontos_total", 0) >= 100
+                })
+    
+    return {
+        "ranking": result,
+        "total": len(result),
+        "cidade": cidade,
+        "estado": estado,
+        "modalidade": modalidade
+    }
