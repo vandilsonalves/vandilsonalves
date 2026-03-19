@@ -677,7 +677,7 @@ async def get_anos_disponiveis():
 @cached(prefix='ranking', ttl_key='estados')
 async def get_estados():
     """Lista estados com atletas"""
-    estados = await db.usuarios.distinct("estado", {"role": "atleta"})
+    estados = await db.usuarios.distinct("estado", {"role": {"$in": ["atleta", "dono_assessoria"]}})
     return {"estados": sorted([e for e in estados if e])}
 
 
@@ -693,7 +693,7 @@ async def get_faixas_etarias():
 async def get_equipes():
     """Lista equipes/assessorias ativas"""
     pipeline = [
-        {"$match": {"role": "atleta", "equipe": {"$ne": "", "$exists": True}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$ne": "", "$exists": True}}},
         {"$group": {"_id": "$equipe", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 100}

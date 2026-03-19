@@ -17,7 +17,7 @@ router = APIRouter(prefix="/liga-assessorias", tags=["Liga Assessorias"])
 async def get_estados_com_assessorias():
     """Lista estados que têm assessorias cadastradas"""
     pipeline = [
-        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None], "$exists": True}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None], "$exists": True}}},
         {"$group": {"_id": "$estado"}},
         {"$match": {"_id": {"$nin": [None, ""]}}},
         {"$sort": {"_id": 1}}
@@ -29,7 +29,7 @@ async def get_estados_com_assessorias():
 @router.get("/cidades")
 async def get_cidades_com_assessorias(estado: str = None):
     """Lista cidades que têm assessorias cadastradas"""
-    match_filter = {"role": "atleta", "equipe": {"$nin": ["", None], "$exists": True}}
+    match_filter = {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None], "$exists": True}}
     if estado:
         match_filter["estado"] = estado
     
@@ -74,9 +74,9 @@ async def get_comparacao_mensal_assessoria(nome_equipe: str):
     else:
         fim_mes_atual = f"{ano_atual}-{mes_atual + 1:02d}-01"
     
-    # Buscar atletas da equipe
+    # Buscar atletas da equipe (incluindo dono de assessoria)
     atletas = await db.usuarios.find(
-        {"role": "atleta", "equipe": nome_decoded},
+        {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": nome_decoded},
         {"_id": 0, "id": 1, "created_at": 1}
     ).to_list(None)
     
@@ -203,9 +203,9 @@ async def get_graficos_avancados(nome_equipe: str, current_user: dict = Depends(
     if current_user.get("role") == "dono_assessoria" and current_user.get("equipe") != nome_decoded:
         raise HTTPException(status_code=403, detail="Você só pode ver dados da sua assessoria")
     
-    # Buscar atletas da equipe
+    # Buscar atletas da equipe (incluindo dono de assessoria)
     atletas = await db.usuarios.find(
-        {"equipe": nome_decoded, "role": "atleta"},
+        {"equipe": nome_decoded, "role": {"$in": ["atleta", "dono_assessoria"]}},
         {"_id": 0, "id": 1, "nome": 1, "genero": 1, "categoria": 1, "faixa_etaria": 1, 
          "cidade": 1, "estado": 1, "pontos_total": 1, "total_corridas": 1, "created_at": 1}
     ).to_list(None)
@@ -404,9 +404,9 @@ async def exportar_dados_assessoria(
     if current_user.get("role") == "dono_assessoria" and current_user.get("equipe") != nome_decoded:
         raise HTTPException(status_code=403, detail="Você só pode exportar dados da sua assessoria")
     
-    # Buscar atletas da equipe
+    # Buscar atletas da equipe (incluindo dono de assessoria)
     atletas = await db.usuarios.find(
-        {"equipe": nome_decoded, "role": "atleta"},
+        {"equipe": nome_decoded, "role": {"$in": ["atleta", "dono_assessoria"]}},
         {"_id": 0, "id": 1, "nome": 1, "email": 1, "genero": 1, "categoria": 1, 
          "faixa_etaria": 1, "cidade": 1, "estado": 1, "pontos_total": 1, 
          "total_corridas": 1, "created_at": 1}

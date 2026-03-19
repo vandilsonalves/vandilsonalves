@@ -236,7 +236,7 @@ async def get_stats_liga_assessorias():
     """Estatísticas gerais da liga de assessorias"""
     
     pipeline_total = [
-        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"]}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"]}}},
         {"$group": {"_id": "$equipe"}},
         {"$count": "total"}
     ]
@@ -245,14 +245,14 @@ async def get_stats_liga_assessorias():
     total_assessorias = result[0]["total"] if result else 0
     
     total_atletas_vinculados = await db.usuarios.count_documents({
-        "role": "atleta",
+        "role": {"$in": ["atleta", "dono_assessoria"]},
         "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"]}
     })
     
     total_resultados_aprovados = await db.corridas.count_documents({})
     
     pipeline_top = [
-        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe"]}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe"]}}},
         {"$group": {"_id": "$equipe", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 1}
@@ -278,7 +278,7 @@ async def get_evolucao_mensal_equipes(top: int = 5):
     mes_atual = datetime.now().month
     
     pipeline_top_equipes = [
-        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe"]}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe"]}}},
         {"$group": {"_id": "$equipe", "total": {"$sum": 1}}},
         {"$sort": {"total": -1}},
         {"$limit": top}
@@ -314,7 +314,7 @@ async def get_evolucao_mensal_equipes(top: int = 5):
         
         for nome_equipe in equipes_nomes:
             atletas_equipe = await db.usuarios.find(
-                {"role": "atleta", "equipe": nome_equipe},
+                {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": nome_equipe},
                 {"id": 1}
             ).to_list(None)
             atletas_ids = [a["id"] for a in atletas_equipe]

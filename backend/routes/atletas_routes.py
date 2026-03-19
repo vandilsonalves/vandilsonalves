@@ -489,9 +489,9 @@ async def get_minha_assessoria(current_user: dict = Depends(get_current_user)):
             "message": "Você ainda não criou sua assessoria."
         }
     
-    # Buscar atletas da equipe
+    # Buscar atletas da equipe (incluindo dono de assessoria)
     atletas = await db.usuarios.find(
-        {"equipe": assessoria["nome"], "role": "atleta"},
+        {"equipe": assessoria["nome"], "role": {"$in": ["atleta", "dono_assessoria"]}},
         {"_id": 0, "id": 1, "nome": 1, "foto_url": 1, "cidade": 1, "estado": 1}
     ).to_list(100)
     

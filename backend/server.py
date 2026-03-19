@@ -1290,8 +1290,8 @@ async def popular_ranking_dados_teste():
     
     await calcular_ranking()
     
-    # Verificar conquistas para todos os atletas
-    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    # Verificar conquistas para todos os atletas (incluindo donos de assessoria)
+    atletas = await db.usuarios.find({"role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0}).to_list(None)
     for atleta in atletas:
         await verificar_conquistas(atleta["id"])
     
@@ -1365,9 +1365,9 @@ async def enviar_mensagens_aniversario_automatico():
             "Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️"
         )
         
-        # Buscar aniversariantes de hoje
+        # Buscar aniversariantes de hoje (atletas e donos de assessoria)
         hoje = datetime.now()
-        atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+        atletas = await db.usuarios.find({"role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0}).to_list(None)
         
         aniversariantes = []
         for atleta in atletas:
@@ -1457,9 +1457,9 @@ async def get_relatorios_assessoria(nome_equipe: str, current_user: dict = Depen
     if current_user.get("role") == "dono_assessoria" and current_user.get("equipe") != nome_equipe:
         raise HTTPException(status_code=403, detail="Você só pode ver relatórios da sua assessoria")
     
-    # Buscar atletas da equipe
+    # Buscar atletas da equipe (incluindo dono de assessoria)
     atletas = await db.usuarios.find(
-        {"equipe": nome_equipe, "role": "atleta"},
+        {"equipe": nome_equipe, "role": {"$in": ["atleta", "dono_assessoria"]}},
         {"_id": 0, "id": 1, "nome": 1, "genero": 1, "categoria": 1, "estado": 1, "cidade": 1, 
          "pontos_total": 1, "total_corridas": 1, "faixa_etaria": 1, "data_criacao": 1}
     ).to_list(None)
@@ -1669,7 +1669,7 @@ async def listar_atletas_periodo_teste(admin: dict = Depends(get_admin_user)):
     hoje = datetime.now()
     
     atletas = await db.usuarios.find(
-        {"role": "atleta"},
+        {"role": {"$in": ["atleta", "dono_assessoria"]}},
         {"_id": 0, "id": 1, "nome": 1, "email": 1, "equipe": 1, "data_criacao": 1, "categoria": 1, "estado": 1}
     ).to_list(None)
     
@@ -1725,8 +1725,8 @@ async def criar_autorizacao(
 ):
     """Cria autorização de acesso para um atleta"""
     
-    # Verificar se o atleta existe
-    atleta = await db.usuarios.find_one({"id": atleta_id, "role": "atleta"}, {"_id": 0})
+    # Verificar se o atleta existe (pode ser atleta ou dono de assessoria)
+    atleta = await db.usuarios.find_one({"id": atleta_id, "role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0})
     if not atleta:
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
