@@ -1,5 +1,5 @@
 // /app/frontend/src/pages/FeedPage.jsx
-// Feed Social da Plataforma (apenas curtidas)
+// Feed Social da Plataforma com Sistema de Reações
 
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -9,8 +9,8 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
 import { 
-  Heart, Send, Image, Loader2, ArrowLeft, MoreHorizontal,
-  TrendingUp, Clock, Trophy, Award, Trash2, X, Users
+  Send, Image, Loader2, ArrowLeft, MoreHorizontal,
+  TrendingUp, Clock, Trash2, X, Users, Smile
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -18,11 +18,27 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
+
+// Reações disponíveis (mesmo do backend)
+const REACOES = {
+  aplausos: { emoji: "👏", nome: "Aplausos" },
+  corrida: { emoji: "🏃", nome: "Correndo" },
+  forca: { emoji: "💪", nome: "Força" },
+  fogo: { emoji: "🔥", nome: "Em chamas" },
+  coracao: { emoji: "❤️", nome: "Amei" },
+  festa: { emoji: "🎉", nome: "Celebrando" },
+  trofeu: { emoji: "🏆", nome: "Campeão" }
+};
 
 const FeedPage = () => {
   const navigate = useNavigate();
@@ -120,87 +136,214 @@ const FeedPage = () => {
     }
   };
 
-  const handleCurtir = async (postId) => {
+  const handleReagir = async (postId, tipoReacao) => {
     try {
       const response = await axios.post(
-        `${API}/feed/posts/${postId}/curtir`,
-        {},
+        `${API}/feed/posts/${postId}/reagir`,
+        { tipo_reacao: tipoReacao },
         { headers: { Authorization: `Bearer ${token}` } }
       );
       
-      // Atualizar estado local
-      setPosts(posts.map(post => {
+      // Atualizar o post localmente
+      setPosts(prev => prev.map(post => {
         if (post.id === postId) {
+          const novasReacoes = { ...post.reacoes };
+          const minhaReacaoAnterior = post.minha_reacao;
+          
+          // Remover contagem da reação anterior se houver
+          if (minhaReacaoAnterior && novasReacoes[minhaReacaoAnterior]) {
+            novasReacoes[minhaReacaoAnterior] = {
+              ...novasReacoes[minhaReacaoAnterior],
+              count: novasReacoes[minhaReacaoAnterior].count - 1
+            };
+            if (novasReacoes[minhaReacaoAnterior].count <= 0) {
+              delete novasReacoes[minhaReacaoAnterior];
+            }
+          }
+          
+          // Se removeu a reação
+          if (response.data.removida) {
+            return {
+              ...post,
+              reacoes: novasReacoes,
+              minha_reacao: null,
+              total_reacoes: Math.max(0, (post.total_reacoes || 1) - 1)
+            };
+          }
+          
+          // Adicionar nova reação
+          if (!novasReacoes[tipoReacao]) {
+            novasReacoes[tipoReacao] = {
+              count: 0,
+              emoji: REACOES[tipoReacao].emoji,
+              nome: REACOES[tipoReacao].nome
+            };
+          }
+          novasReacoes[tipoReacao] = {
+            ...novasReacoes[tipoReacao],
+            count: novasReacoes[tipoReacao].count + 1
+          };
+          
+          const totalAnterior = post.total_reacoes || 0;
+          const novoTotal = minhaReacaoAnterior ? totalAnterior : totalAnterior + 1;
+          
           return {
             ...post,
-            curtido: response.data.curtido,
-            total_curtidas: post.total_curtidas + (response.data.curtido ? 1 : -1)
+            reacoes: novasReacoes,
+            minha_reacao: tipoReacao,
+            total_reacoes: novoTotal
           };
         }
         return post;
       }));
+      
     } catch (error) {
-      toast.error('Erro ao curtir post');
+      toast.error(error.response?.data?.detail || 'Erro ao reagir');
     }
   };
 
   const handleDeletarPost = async (postId) => {
-    if (!window.confirm('Tem certeza que deseja deletar este post?')) return;
-    
     try {
       await axios.delete(`${API}/feed/posts/${postId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
+      setPosts(prev => prev.filter(p => p.id !== postId));
       toast.success('Post deletado');
-      setPosts(posts.filter(p => p.id !== postId));
     } catch (error) {
-      toast.error('Erro ao deletar post');
+      toast.error(error.response?.data?.detail || 'Erro ao deletar post');
     }
   };
 
-  const formatarData = (data) => {
-    const d = new Date(data);
+  const handleImagemChange = (e) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        toast.error('Imagem muito grande. Máximo: 5MB');
+        return;
+      }
+      setImagemPost(file);
+    }
+  };
+
+  const formatarData = (dataStr) => {
+    if (!dataStr) return '';
+    const data = new Date(dataStr);
     const agora = new Date();
-    const diffMs = agora - d;
-    const diffMins = Math.floor(diffMs / 60000);
-    const diffHoras = Math.floor(diffMs / 3600000);
-    const diffDias = Math.floor(diffMs / 86400000);
+    const diff = agora - data;
     
-    if (diffMins < 1) return 'Agora';
-    if (diffMins < 60) return `${diffMins}min`;
-    if (diffHoras < 24) return `${diffHoras}h`;
-    if (diffDias < 7) return `${diffDias}d`;
-    return d.toLocaleDateString('pt-BR');
+    const minutos = Math.floor(diff / 60000);
+    const horas = Math.floor(diff / 3600000);
+    const dias = Math.floor(diff / 86400000);
+    
+    if (minutos < 1) return 'Agora mesmo';
+    if (minutos < 60) return `${minutos}m`;
+    if (horas < 24) return `${horas}h`;
+    if (dias < 7) return `${dias}d`;
+    
+    return data.toLocaleDateString('pt-BR');
+  };
+
+  // Componente para exibir as reações de um post
+  const ReacoesDisplay = ({ post }) => {
+    const reacoes = post.reacoes || {};
+    const reacoesArray = Object.entries(reacoes).filter(([_, r]) => r.count > 0);
+    
+    if (reacoesArray.length === 0) return null;
+    
+    return (
+      <div className="flex items-center gap-1 flex-wrap">
+        {reacoesArray.map(([tipo, reacao]) => (
+          <span 
+            key={tipo} 
+            className="flex items-center gap-0.5 bg-slate-700/50 rounded-full px-2 py-0.5 text-xs"
+            title={`${reacao.count} ${reacao.nome}`}
+          >
+            <span className="text-sm">{reacao.emoji}</span>
+            <span className="text-slate-300">{reacao.count}</span>
+          </span>
+        ))}
+      </div>
+    );
+  };
+
+  // Componente botão de reação
+  const ReacaoButton = ({ post }) => {
+    const [open, setOpen] = useState(false);
+    const minhaReacao = post.minha_reacao;
+    
+    return (
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            className={`${minhaReacao ? 'text-amber-400' : 'text-slate-400'} hover:text-amber-400 hover:bg-slate-700/50`}
+            data-testid={`reaction-btn-${post.id}`}
+          >
+            {minhaReacao ? (
+              <span className="text-lg mr-1">{REACOES[minhaReacao].emoji}</span>
+            ) : (
+              <Smile className="w-4 h-4 mr-1" />
+            )}
+            {post.total_reacoes || 0} {(post.total_reacoes || 0) === 1 ? 'reação' : 'reações'}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-2 bg-slate-800 border-slate-700" align="start">
+          <div className="flex gap-1">
+            {Object.entries(REACOES).map(([tipo, { emoji, nome }]) => (
+              <Button
+                key={tipo}
+                variant="ghost"
+                size="sm"
+                className={`text-2xl hover:bg-slate-700 p-2 h-auto transition-transform hover:scale-125 ${minhaReacao === tipo ? 'bg-slate-700 ring-2 ring-amber-500' : ''}`}
+                onClick={() => {
+                  handleReagir(post.id, tipo);
+                  setOpen(false);
+                }}
+                title={nome}
+                data-testid={`reaction-${tipo}-${post.id}`}
+              >
+                {emoji}
+              </Button>
+            ))}
+          </div>
+        </PopoverContent>
+      </Popover>
+    );
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
-        <Loader2 className="w-8 h-8 text-amber-500 animate-spin" />
+      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-amber-500" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 p-4 md:p-8">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center gap-4 mb-6">
-          <Button variant="ghost" onClick={() => navigate(-1)} className="text-slate-400">
-            <ArrowLeft className="w-5 h-5" />
-          </Button>
+    <div className="min-h-screen bg-slate-900 text-white" data-testid="feed-page">
+      {/* Header */}
+      <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
-              <Users className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold text-white">Feed Social</h1>
-              <p className="text-slate-400 text-sm">Compartilhe com a comunidade</p>
+            <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+              <ArrowLeft className="w-5 h-5" />
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-xl flex items-center justify-center">
+                <Users className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold">Feed Social</h1>
+                <p className="text-xs text-slate-400">Compartilhe suas conquistas</p>
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
+      <div className="max-w-6xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Feed Principal */}
           <div className="lg:col-span-2 space-y-4">
@@ -209,24 +352,21 @@ const FeedPage = () => {
               <CardContent className="p-4">
                 <div className="flex gap-3">
                   <Avatar className="w-10 h-10">
-                    {user?.foto_url ? (
-                      <AvatarImage src={user.foto_url.startsWith('http') ? user.foto_url : `${BACKEND_URL}${user.foto_url}`} />
-                    ) : null}
                     <AvatarFallback className="bg-amber-500 text-white">
-                      {user?.nome?.charAt(0)}
+                      {user?.nome?.charAt(0) || 'U'}
                     </AvatarFallback>
                   </Avatar>
-                  
                   <div className="flex-1 space-y-3">
                     <Textarea
                       placeholder="O que você quer compartilhar?"
                       value={novoPost}
                       onChange={(e) => setNovoPost(e.target.value)}
-                      rows={3}
-                      className="bg-slate-700 border-slate-600 resize-none"
+                      className="bg-slate-700 border-slate-600 min-h-[80px] resize-none"
                       maxLength={1000}
+                      data-testid="new-post-input"
                     />
                     
+                    {/* Preview da imagem */}
                     {imagemPost && (
                       <div className="relative inline-block">
                         <img 
@@ -235,9 +375,9 @@ const FeedPage = () => {
                           className="max-h-32 rounded-lg"
                         />
                         <Button
-                          size="icon"
                           variant="destructive"
-                          className="absolute -top-2 -right-2 w-6 h-6"
+                          size="icon"
+                          className="absolute -top-2 -right-2 h-6 w-6"
                           onClick={() => setImagemPost(null)}
                         >
                           <X className="w-4 h-4" />
@@ -246,19 +386,19 @@ const FeedPage = () => {
                     )}
                     
                     <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
+                      <div className="flex items-center gap-2">
                         <input
                           type="file"
                           ref={imagemInputRef}
-                          onChange={(e) => setImagemPost(e.target.files?.[0])}
+                          onChange={handleImagemChange}
                           accept="image/*"
                           className="hidden"
                         />
                         <Button 
                           variant="ghost" 
-                          size="sm" 
-                          className="text-slate-400"
+                          size="sm"
                           onClick={() => imagemInputRef.current?.click()}
+                          className="text-slate-400 hover:text-amber-400"
                         >
                           <Image className="w-4 h-4 mr-1" />
                           Foto
@@ -266,11 +406,14 @@ const FeedPage = () => {
                       </div>
                       
                       <div className="flex items-center gap-2">
-                        <span className="text-xs text-slate-500">{novoPost.length}/1000</span>
-                        <Button 
+                        <span className="text-xs text-slate-400">
+                          {novoPost.length}/1000
+                        </span>
+                        <Button
                           onClick={handleCriarPost}
                           disabled={!novoPost.trim() || enviandoPost}
-                          className="bg-amber-500 hover:bg-amber-600"
+                          className="bg-amber-500 hover:bg-amber-600 text-black"
+                          data-testid="publish-post-btn"
                         >
                           {enviandoPost ? (
                             <Loader2 className="w-4 h-4 animate-spin" />
@@ -288,7 +431,7 @@ const FeedPage = () => {
               </CardContent>
             </Card>
 
-            {/* Posts */}
+            {/* Lista de Posts */}
             {posts.length === 0 ? (
               <Card className="bg-slate-800 border-slate-700">
                 <CardContent className="p-12 text-center">
@@ -299,22 +442,21 @@ const FeedPage = () => {
               </Card>
             ) : (
               posts.map((post) => (
-                <Card key={post.id} className="bg-slate-800 border-slate-700">
-                  <CardHeader className="pb-3">
+                <Card key={post.id} className="bg-slate-800 border-slate-700" data-testid={`post-${post.id}`}>
+                  <CardContent className="p-4 space-y-3">
+                    {/* Header do Post */}
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-3">
-                        <Avatar className="w-10 h-10 cursor-pointer" onClick={() => navigate(`/atleta/${post.autor?.id}`)}>
+                        <Avatar className="w-10 h-10">
                           {post.autor?.foto_url ? (
-                            <AvatarImage src={post.autor.foto_url.startsWith('http') ? post.autor.foto_url : `${BACKEND_URL}${post.autor.foto_url}`} />
+                            <AvatarImage src={`${BACKEND_URL}${post.autor.foto_url}`} />
                           ) : null}
                           <AvatarFallback className="bg-amber-500 text-white">
-                            {post.autor?.nome?.charAt(0)}
+                            {post.autor?.nome?.charAt(0) || '?'}
                           </AvatarFallback>
                         </Avatar>
                         <div>
-                          <p className="text-white font-medium hover:underline cursor-pointer" onClick={() => navigate(`/atleta/${post.autor?.id}`)}>
-                            {post.autor?.nome}
-                          </p>
+                          <p className="font-semibold text-white">{post.autor?.nome}</p>
                           <div className="flex items-center gap-2 text-xs text-slate-400">
                             <Clock className="w-3 h-3" />
                             {formatarData(post.data_criacao)}
@@ -347,74 +489,41 @@ const FeedPage = () => {
                         </DropdownMenu>
                       )}
                     </div>
-                  </CardHeader>
-                  
-                  <CardContent className="pt-0 space-y-3">
-                    {/* Texto do post */}
+                    
+                    {/* Conteúdo do Post */}
                     <p className="text-slate-200 whitespace-pre-wrap">{post.texto}</p>
                     
-                    {/* Imagem */}
                     {post.imagem_url && (
                       <img 
-                        src={post.imagem_url.startsWith('http') ? post.imagem_url : `${BACKEND_URL}${post.imagem_url}`}
-                        alt="Post"
+                        src={`${BACKEND_URL}${post.imagem_url}`} 
+                        alt="Post" 
                         className="rounded-lg max-h-96 w-full object-cover"
                       />
                     )}
                     
-                    {/* Dados de resultado */}
-                    {post.tipo === 'resultado' && post.resultado_dados && (
-                      <div className="bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg p-4 border border-amber-500/20">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Trophy className="w-5 h-5 text-amber-500" />
-                          <span className="text-white font-medium">{post.resultado_dados.corrida_nome}</span>
-                        </div>
-                        <div className="text-sm text-slate-300">
-                          <p>Posição: {post.resultado_dados.posicao}º lugar</p>
-                          <p>Tempo: {post.resultado_dados.tempo}</p>
-                        </div>
-                      </div>
-                    )}
+                    {/* Reações Display */}
+                    <ReacoesDisplay post={post} />
                     
-                    {/* Dados de conquista */}
-                    {post.tipo === 'conquista' && post.conquista_dados && (
-                      <div className="bg-gradient-to-r from-purple-500/10 to-pink-500/10 rounded-lg p-4 border border-purple-500/20">
-                        <div className="flex items-center gap-2">
-                          <Award className="w-5 h-5 text-purple-500" />
-                          <span className="text-white font-medium">{post.conquista_dados.nome}</span>
-                        </div>
-                      </div>
-                    )}
-                    
-                    {/* Ações - Apenas curtidas */}
+                    {/* Ações - Sistema de Reações */}
                     <div className="flex items-center gap-4 pt-2 border-t border-slate-700">
-                      <Button 
-                        variant="ghost" 
-                        size="sm" 
-                        className={`${post.curtido ? 'text-red-400' : 'text-slate-400'} hover:text-red-400`}
-                        onClick={() => handleCurtir(post.id)}
-                        data-testid={`like-btn-${post.id}`}
-                      >
-                        <Heart className={`w-4 h-4 mr-1 ${post.curtido ? 'fill-current' : ''}`} />
-                        {post.total_curtidas} {post.total_curtidas === 1 ? 'curtida' : 'curtidas'}
-                      </Button>
+                      <ReacaoButton post={post} />
                     </div>
                   </CardContent>
                 </Card>
               ))
             )}
-
-            {/* Load More */}
+            
+            {/* Carregar Mais */}
             {hasMore && (
-              <div className="text-center">
-                <Button 
-                  variant="outline" 
+              <div className="text-center py-4">
+                <Button
+                  variant="outline"
                   onClick={() => fetchFeed(pagina + 1, true)}
                   disabled={loadingMore}
                   className="border-slate-600"
                 >
                   {loadingMore ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
                   ) : null}
                   Carregar mais
                 </Button>
@@ -424,11 +533,11 @@ const FeedPage = () => {
 
           {/* Sidebar - Trending */}
           <div className="space-y-4">
-            <Card className="bg-slate-800 border-slate-700 sticky top-4">
-              <CardHeader>
-                <div className="flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5 text-amber-500" />
-                  <h3 className="font-semibold text-white">Em Alta</h3>
+            <Card className="bg-slate-800 border-slate-700 sticky top-20">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2 text-amber-400">
+                  <TrendingUp className="w-5 h-5" />
+                  <h3 className="font-semibold">Em Alta</h3>
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
@@ -446,14 +555,49 @@ const FeedPage = () => {
                         <p className="text-sm text-white font-medium truncate">{post.autor?.nome}</p>
                         <p className="text-xs text-slate-400 truncate">{post.texto}</p>
                         <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                          <span className="flex items-center gap-1">
-                            <Heart className="w-3 h-3 text-red-400" /> {post.total_curtidas}
-                          </span>
+                          {/* Mostrar as top 3 reações */}
+                          {post.reacoes && Object.entries(post.reacoes)
+                            .sort((a, b) => b[1].count - a[1].count)
+                            .slice(0, 3)
+                            .map(([tipo, r]) => (
+                              <span key={tipo} className="flex items-center gap-0.5">
+                                <span>{r.emoji}</span>
+                                <span>{r.count}</span>
+                              </span>
+                            ))
+                          }
+                          {(!post.reacoes || Object.keys(post.reacoes).length === 0) && (
+                            <span>{post.total_reacoes || 0} reações</span>
+                          )}
                         </div>
                       </div>
                     </div>
                   ))
                 )}
+              </CardContent>
+            </Card>
+            
+            {/* Reações Disponíveis */}
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-2 text-purple-400">
+                  <Smile className="w-5 h-5" />
+                  <h3 className="font-semibold">Reações</h3>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.entries(REACOES).map(([tipo, { emoji, nome }]) => (
+                    <div 
+                      key={tipo} 
+                      className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
+                      title={nome}
+                    >
+                      <span className="text-2xl">{emoji}</span>
+                      <span className="text-[10px] text-slate-400 mt-1">{nome}</span>
+                    </div>
+                  ))}
+                </div>
               </CardContent>
             </Card>
           </div>

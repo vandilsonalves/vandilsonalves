@@ -1,5 +1,5 @@
 # /app/backend/routes/feed_routes.py
-# Feed Social da plataforma (apenas curtidas, sem comentários)
+# Feed Social da plataforma com sistema de reações
 
 from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
 from typing import Optional, List
@@ -17,12 +17,27 @@ router = APIRouter()
 UPLOAD_DIR = Path("/app/uploads/feed")
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
+# Reações disponíveis
+REACOES_DISPONIVEIS = {
+    "aplausos": {"emoji": "👏", "nome": "Aplausos"},
+    "corrida": {"emoji": "🏃", "nome": "Correndo"},
+    "forca": {"emoji": "💪", "nome": "Força"},
+    "fogo": {"emoji": "🔥", "nome": "Em chamas"},
+    "coracao": {"emoji": "❤️", "nome": "Amei"},
+    "festa": {"emoji": "🎉", "nome": "Celebrando"},
+    "trofeu": {"emoji": "🏆", "nome": "Campeão"}
+}
+
 
 class PostCreate(BaseModel):
     texto: str
     tipo: str = "texto"  # texto, resultado, conquista, foto
     resultado_id: Optional[str] = None
     conquista_id: Optional[str] = None
+
+
+class ReacaoCreate(BaseModel):
+    tipo_reacao: str  # aplausos, corrida, forca, fogo, coracao, festa, trofeu
 
 
 @router.get("/feed")
@@ -47,7 +62,7 @@ async def get_feed(
         {"_id": 0}
     ).sort("data_criacao", -1).skip(skip).limit(limite).to_list(limite)
     
-    # Enriquecer com dados dos autores e contagens
+    # Enriquecer com dados dos autores e reações
     for post in posts:
         # Dados do autor
         autor = await db.usuarios.find_one(
@@ -56,15 +71,32 @@ async def get_feed(
         )
         post["autor"] = autor
         
-        # Contagem de curtidas
-        post["total_curtidas"] = await db.feed_curtidas.count_documents({"post_id": post["id"]})
+        # Buscar todas as reações do post
+        reacoes_pipeline = [
+            {"$match": {"post_id": post["id"]}},
+            {"$group": {"_id": "$tipo_reacao", "count": {"$sum": 1}}}
+        ]
+        reacoes_agrupadas = await db.feed_reacoes.aggregate(reacoes_pipeline).to_list(None)
         
-        # Verificar se o usuário atual curtiu
-        curtiu = await db.feed_curtidas.find_one({
+        # Formatar reações com emojis
+        post["reacoes"] = {}
+        post["total_reacoes"] = 0
+        for r in reacoes_agrupadas:
+            tipo_reacao = r["_id"]
+            if tipo_reacao in REACOES_DISPONIVEIS:
+                post["reacoes"][tipo_reacao] = {
+                    "count": r["count"],
+                    "emoji": REACOES_DISPONIVEIS[tipo_reacao]["emoji"],
+                    "nome": REACOES_DISPONIVEIS[tipo_reacao]["nome"]
+                }
+                post["total_reacoes"] += r["count"]
+        
+        # Verificar qual reação o usuário atual fez (se houver)
+        minha_reacao = await db.feed_reacoes.find_one({
             "post_id": post["id"],
             "usuario_id": current_user["id"]
         })
-        post["curtido"] = curtiu is not None
+        post["minha_reacao"] = minha_reacao["tipo_reacao"] if minha_reacao else None
     
     # Total de posts
     total = await db.feed_posts.count_documents(filtro)
@@ -74,7 +106,8 @@ async def get_feed(
         "pagina": pagina,
         "limite": limite,
         "total": total,
-        "total_paginas": (total + limite - 1) // limite
+        "total_paginas": (total + limite - 1) // limite,
+        "reacoes_disponiveis": REACOES_DISPONIVEIS
     }
 
 
@@ -93,9 +126,24 @@ async def get_meus_posts(
         {"_id": 0}
     ).sort("data_criacao", -1).skip(skip).limit(limite).to_list(limite)
     
-    # Enriquecer posts (apenas curtidas - comentários removidos)
+    # Enriquecer posts com reações
     for post in posts:
-        post["total_curtidas"] = await db.feed_curtidas.count_documents({"post_id": post["id"]})
+        reacoes_pipeline = [
+            {"$match": {"post_id": post["id"]}},
+            {"$group": {"_id": "$tipo_reacao", "count": {"$sum": 1}}}
+        ]
+        reacoes_agrupadas = await db.feed_reacoes.aggregate(reacoes_pipeline).to_list(None)
+        
+        post["reacoes"] = {}
+        post["total_reacoes"] = 0
+        for r in reacoes_agrupadas:
+            tipo_reacao = r["_id"]
+            if tipo_reacao in REACOES_DISPONIVEIS:
+                post["reacoes"][tipo_reacao] = {
+                    "count": r["count"],
+                    "emoji": REACOES_DISPONIVEIS[tipo_reacao]["emoji"]
+                }
+                post["total_reacoes"] += r["count"]
     
     total = await db.feed_posts.count_documents({"autor_id": current_user["id"], "status": "ativo"})
     
@@ -224,50 +272,148 @@ async def deletar_post(post_id: str, current_user: dict = Depends(get_current_us
     return {"message": "Post deletado com sucesso"}
 
 
-@router.post("/feed/posts/{post_id}/curtir")
-async def curtir_post(post_id: str, current_user: dict = Depends(get_current_user)):
-    """Curte um post"""
+@router.get("/feed/reacoes-disponiveis")
+async def get_reacoes_disponiveis():
+    """Retorna as reações disponíveis no sistema"""
+    return {"reacoes": REACOES_DISPONIVEIS}
+
+
+@router.post("/feed/posts/{post_id}/reagir")
+async def reagir_post(
+    post_id: str,
+    dados: ReacaoCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Adiciona ou altera reação a um post"""
+    
+    if dados.tipo_reacao not in REACOES_DISPONIVEIS:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Reação inválida. Opções: {list(REACOES_DISPONIVEIS.keys())}"
+        )
     
     post = await db.feed_posts.find_one({"id": post_id, "status": "ativo"})
     if not post:
         raise HTTPException(status_code=404, detail="Post não encontrado")
     
-    # Verificar se já curtiu
-    curtida_existente = await db.feed_curtidas.find_one({
+    # Verificar se já reagiu
+    reacao_existente = await db.feed_reacoes.find_one({
         "post_id": post_id,
         "usuario_id": current_user["id"]
     })
     
-    if curtida_existente:
-        # Descurtir
-        await db.feed_curtidas.delete_one({"id": curtida_existente["id"]})
-        return {"message": "Curtida removida", "curtido": False}
+    if reacao_existente:
+        # Se for a mesma reação, remover (toggle)
+        if reacao_existente["tipo_reacao"] == dados.tipo_reacao:
+            await db.feed_reacoes.delete_one({"id": reacao_existente["id"]})
+            return {
+                "message": "Reação removida",
+                "reacao": None,
+                "removida": True
+            }
+        else:
+            # Alterar para nova reação
+            await db.feed_reacoes.update_one(
+                {"id": reacao_existente["id"]},
+                {"$set": {
+                    "tipo_reacao": dados.tipo_reacao,
+                    "data_atualizacao": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            return {
+                "message": f"Reação alterada para {REACOES_DISPONIVEIS[dados.tipo_reacao]['emoji']}",
+                "reacao": dados.tipo_reacao,
+                "removida": False
+            }
     
-    # Curtir
-    curtida = {
+    # Nova reação
+    reacao = {
         "id": str(uuid.uuid4()),
         "post_id": post_id,
         "usuario_id": current_user["id"],
+        "tipo_reacao": dados.tipo_reacao,
         "data_criacao": datetime.now(timezone.utc).isoformat()
     }
-    await db.feed_curtidas.insert_one(curtida)
+    await db.feed_reacoes.insert_one(reacao)
     
     # Notificar autor do post (se não for o próprio)
     if post["autor_id"] != current_user["id"]:
+        emoji = REACOES_DISPONIVEIS[dados.tipo_reacao]["emoji"]
+        nome_reacao = REACOES_DISPONIVEIS[dados.tipo_reacao]["nome"]
         await criar_notificacao(
             usuario_id=post["autor_id"],
-            tipo="curtida",
-            titulo="❤️ Novo curtir!",
-            mensagem=f"{current_user.get('nome', 'Alguém')} curtiu seu post.",
-            dados_extras={"post_id": post_id}
+            tipo="reacao",
+            titulo=f"{emoji} Nova reação!",
+            mensagem=f"{current_user.get('nome', 'Alguém')} reagiu com {emoji} ({nome_reacao}) ao seu post.",
+            dados_extras={"post_id": post_id, "tipo_reacao": dados.tipo_reacao}
         )
     
-    return {"message": "Post curtido!", "curtido": True}
+    return {
+        "message": f"Reação {REACOES_DISPONIVEIS[dados.tipo_reacao]['emoji']} adicionada!",
+        "reacao": dados.tipo_reacao,
+        "removida": False
+    }
+
+
+@router.delete("/feed/posts/{post_id}/reagir")
+async def remover_reacao(post_id: str, current_user: dict = Depends(get_current_user)):
+    """Remove a reação do usuário de um post"""
+    
+    reacao = await db.feed_reacoes.find_one({
+        "post_id": post_id,
+        "usuario_id": current_user["id"]
+    })
+    
+    if not reacao:
+        raise HTTPException(status_code=404, detail="Reação não encontrada")
+    
+    await db.feed_reacoes.delete_one({"id": reacao["id"]})
+    
+    return {"message": "Reação removida"}
+
+
+@router.get("/feed/posts/{post_id}/reacoes")
+async def get_reacoes_post(post_id: str):
+    """Retorna todas as reações de um post agrupadas por tipo"""
+    
+    # Buscar reações agrupadas
+    pipeline = [
+        {"$match": {"post_id": post_id}},
+        {"$group": {"_id": "$tipo_reacao", "count": {"$sum": 1}, "usuarios": {"$push": "$usuario_id"}}}
+    ]
+    reacoes_agrupadas = await db.feed_reacoes.aggregate(pipeline).to_list(None)
+    
+    resultado = {}
+    total = 0
+    
+    for r in reacoes_agrupadas:
+        tipo = r["_id"]
+        if tipo in REACOES_DISPONIVEIS:
+            # Buscar nomes dos usuários que reagiram
+            usuarios_info = []
+            for uid in r["usuarios"][:10]:  # Limitar a 10 para performance
+                user = await db.usuarios.find_one({"id": uid}, {"_id": 0, "id": 1, "nome": 1})
+                if user:
+                    usuarios_info.append(user)
+            
+            resultado[tipo] = {
+                "count": r["count"],
+                "emoji": REACOES_DISPONIVEIS[tipo]["emoji"],
+                "nome": REACOES_DISPONIVEIS[tipo]["nome"],
+                "usuarios_preview": usuarios_info
+            }
+            total += r["count"]
+    
+    return {
+        "post_id": post_id,
+        "total_reacoes": total,
+        "reacoes": resultado
+    }
 
 
 @router.get("/feed/trending")
 async def get_trending(limite: int = Query(10, ge=1, le=20)):
-    """Retorna os posts mais populares das últimas 24 horas (baseado em curtidas)"""
+    """Retorna os posts mais populares das últimas 24 horas (baseado em reações)"""
     
     # Posts das últimas 24 horas
     data_limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
@@ -277,11 +423,27 @@ async def get_trending(limite: int = Query(10, ge=1, le=20)):
         {"_id": 0}
     ).to_list(100)
     
-    # Calcular engajamento (apenas curtidas)
+    # Calcular engajamento (baseado em reações)
     for post in posts:
-        curtidas = await db.feed_curtidas.count_documents({"post_id": post["id"]})
-        post["engajamento"] = curtidas
-        post["total_curtidas"] = curtidas
+        total_reacoes = await db.feed_reacoes.count_documents({"post_id": post["id"]})
+        post["engajamento"] = total_reacoes
+        post["total_reacoes"] = total_reacoes
+        
+        # Buscar resumo das reações
+        pipeline = [
+            {"$match": {"post_id": post["id"]}},
+            {"$group": {"_id": "$tipo_reacao", "count": {"$sum": 1}}}
+        ]
+        reacoes_agrupadas = await db.feed_reacoes.aggregate(pipeline).to_list(None)
+        
+        post["reacoes"] = {}
+        for r in reacoes_agrupadas:
+            tipo = r["_id"]
+            if tipo in REACOES_DISPONIVEIS:
+                post["reacoes"][tipo] = {
+                    "count": r["count"],
+                    "emoji": REACOES_DISPONIVEIS[tipo]["emoji"]
+                }
         
         # Dados do autor
         autor = await db.usuarios.find_one(
@@ -290,7 +452,7 @@ async def get_trending(limite: int = Query(10, ge=1, le=20)):
         )
         post["autor"] = autor
     
-    # Ordenar por engajamento (curtidas)
+    # Ordenar por engajamento (reações)
     posts.sort(key=lambda x: x["engajamento"], reverse=True)
     
     return {"trending": posts[:limite]}

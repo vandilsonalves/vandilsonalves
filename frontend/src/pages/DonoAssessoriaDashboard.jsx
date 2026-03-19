@@ -17,7 +17,7 @@ import {
   MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus, PieChart,
   BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock, Upload, Camera, Trash2, Image
 } from 'lucide-react';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
+import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
@@ -53,6 +53,9 @@ const DonoAssessoriaDashboard = () => {
   // Estados para upload de foto
   const [uploadingFoto, setUploadingFoto] = useState(false);
   const fotoInputRef = useRef(null);
+  
+  // Estados para gráficos avançados
+  const [graficosAvancados, setGraficosAvancados] = useState(null);
 
   useEffect(() => {
     if (!user || user.role !== 'dono_assessoria') {
@@ -87,6 +90,9 @@ const DonoAssessoriaDashboard = () => {
         const assessoriaData = assessoriaRes.value.data;
         setAssessoria(assessoriaData);
         setAtletas(assessoriaData.atletas || []);
+        
+        // Buscar gráficos avançados
+        fetchGraficosAvancados(equipe);
         
         // Se temos o estado da assessoria, buscar ranking estadual correto
         if (assessoriaData.estado) {
@@ -126,6 +132,18 @@ const DonoAssessoriaDashboard = () => {
       toast.error('Erro ao carregar dados da assessoria');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchGraficosAvancados = async (equipe) => {
+    try {
+      const response = await axios.get(
+        `${API}/liga-assessorias/graficos-avancados/${encodeURIComponent(equipe)}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      setGraficosAvancados(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar gráficos avançados:', error);
     }
   };
 
@@ -909,6 +927,196 @@ const DonoAssessoriaDashboard = () => {
                       <div className="flex justify-between items-center mt-2">
                         <span className="text-slate-400">Total de Resultados</span>
                         <span className="text-xl font-bold text-white">{assessoria.total_resultados || 0}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* NOVOS GRÁFICOS AVANÇADOS */}
+              
+              {/* Distribuição por Gênero */}
+              {graficosAvancados?.grafico_genero && graficosAvancados.grafico_genero.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Users className="w-5 h-5 text-pink-500" />
+                      Distribuição por Gênero
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RechartsPieChart>
+                        <Pie
+                          data={graficosAvancados.grafico_genero}
+                          cx="50%"
+                          cy="50%"
+                          innerRadius={50}
+                          outerRadius={80}
+                          paddingAngle={5}
+                          dataKey="value"
+                          label={({ name, value }) => `${name}: ${value}`}
+                        >
+                          {graficosAvancados.grafico_genero.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Distribuição por Categoria */}
+              {graficosAvancados?.grafico_categoria && graficosAvancados.grafico_categoria.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Award className="w-5 h-5 text-green-500" />
+                      Distribuição por Categoria
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <RechartsPieChart>
+                        <Pie
+                          data={graficosAvancados.grafico_categoria}
+                          cx="50%"
+                          cy="50%"
+                          outerRadius={80}
+                          dataKey="value"
+                          label={({ name, value }) => `${name}: ${value}`}
+                        >
+                          {graficosAvancados.grafico_categoria.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.fill} />
+                          ))}
+                        </Pie>
+                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                      </RechartsPieChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Distribuição por Faixa Etária */}
+              {graficosAvancados?.grafico_faixa_etaria && graficosAvancados.grafico_faixa_etaria.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Calendar className="w-5 h-5 text-purple-500" />
+                      Distribuição por Faixa Etária
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={graficosAvancados.grafico_faixa_etaria}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="faixa" stroke="#9CA3AF" tick={{ fontSize: 10 }} />
+                        <YAxis stroke="#9CA3AF" />
+                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                        <Bar dataKey="atletas" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Atletas" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Resultados por Mês */}
+              {graficosAvancados?.resultados_por_mes && graficosAvancados.resultados_por_mes.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <BarChart3 className="w-5 h-5 text-cyan-500" />
+                      Resultados por Mês (Últimos 6 meses)
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <AreaChart data={graficosAvancados.resultados_por_mes}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="mes" stroke="#9CA3AF" />
+                        <YAxis stroke="#9CA3AF" />
+                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                        <Area type="monotone" dataKey="resultados" stroke="#06B6D4" fill="#06B6D4" fillOpacity={0.3} name="Resultados" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Distâncias Mais Corridas */}
+              {graficosAvancados?.grafico_distancias && graficosAvancados.grafico_distancias.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-red-500" />
+                      Distâncias Mais Corridas
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={graficosAvancados.grafico_distancias.slice(0, 6)} layout="vertical">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis type="number" stroke="#9CA3AF" />
+                        <YAxis dataKey="distancia" type="category" stroke="#9CA3AF" width={60} tick={{ fontSize: 10 }} />
+                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                        <Bar dataKey="corridas" fill="#EF4444" radius={[0, 4, 4, 0]} name="Corridas" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Evolução de Novos Atletas */}
+              {graficosAvancados?.evolucao_atletas && graficosAvancados.evolucao_atletas.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <UserPlus className="w-5 h-5 text-emerald-500" />
+                      Novos Atletas por Mês
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <ResponsiveContainer width="100%" height={200}>
+                      <BarChart data={graficosAvancados.evolucao_atletas}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                        <XAxis dataKey="mes" stroke="#9CA3AF" />
+                        <YAxis stroke="#9CA3AF" />
+                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                        <Bar dataKey="novos_atletas" fill="#10B981" radius={[4, 4, 0, 0]} name="Novos Atletas" />
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Estatísticas de Performance */}
+              {graficosAvancados?.estatisticas && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-amber-500" />
+                      Indicadores de Performance
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-white">{graficosAvancados.estatisticas.media_pontos_atleta}</p>
+                        <p className="text-xs text-slate-400">Média Pontos/Atleta</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-white">{graficosAvancados.estatisticas.media_corridas_atleta}</p>
+                        <p className="text-xs text-slate-400">Média Corridas/Atleta</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-amber-400">{graficosAvancados.estatisticas.total_vitorias}</p>
+                        <p className="text-xs text-slate-400">Total Vitórias</p>
+                      </div>
+                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                        <p className="text-2xl font-bold text-green-400">{graficosAvancados.estatisticas.taxa_podio}%</p>
+                        <p className="text-xs text-slate-400">Taxa de Pódio</p>
                       </div>
                     </div>
                   </CardContent>
