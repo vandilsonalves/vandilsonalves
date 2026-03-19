@@ -4,6 +4,7 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
+import uuid
 
 from config import db
 from routes.auth_routes import get_current_user, get_admin_user
@@ -758,3 +759,118 @@ async def get_minhas_solicitacoes(current_user: dict = Depends(get_current_user)
     ).sort("data_solicitacao", -1).to_list(20)
     
     return {"solicitacoes": solicitacoes}
+
+
+# ==================== UPLOAD DE FOTO DA ASSESSORIA ====================
+
+from fastapi import UploadFile, File
+import os
+import shutil
+from pathlib import Path
+
+UPLOAD_DIR = Path("/app/uploads/assessorias")
+UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
+
+
+@router.post("/assessorias/upload-foto")
+async def upload_foto_assessoria(
+    foto: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Faz upload da foto da assessoria.
+    Apenas o dono da assessoria pode fazer upload.
+    """
+    
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos de assessoria podem fazer upload de foto")
+    
+    equipe = current_user.get("equipe", "")
+    if not equipe:
+        raise HTTPException(status_code=400, detail="Você não tem uma assessoria cadastrada")
+    
+    # Validar tipo de arquivo
+    allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif"]
+    if foto.content_type not in allowed_types:
+        raise HTTPException(
+            status_code=400, 
+            detail=f"Tipo de arquivo não permitido. Use: JPEG, PNG, WebP ou GIF"
+        )
+    
+    # Validar tamanho (max 5MB)
+    max_size = 5 * 1024 * 1024  # 5MB
+    content = await foto.read()
+    if len(content) > max_size:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande. Máximo: 5MB")
+    
+    # Gerar nome único para o arquivo
+    ext = foto.filename.split('.')[-1] if '.' in foto.filename else 'jpg'
+    filename = f"{equipe.replace(' ', '_').lower()}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
+    filepath = UPLOAD_DIR / filename
+    
+    # Salvar arquivo
+    with open(filepath, "wb") as f:
+        f.write(content)
+    
+    # URL pública do arquivo
+    foto_url = f"/uploads/assessorias/{filename}"
+    
+    # Atualizar no banco de dados
+    # Primeiro, verificar se existe na coleção assessorias
+    assessoria = await db.assessorias.find_one({"nome": equipe})
+    if assessoria:
+        await db.assessorias.update_one(
+            {"nome": equipe},
+            {"$set": {"foto_url": foto_url}}
+        )
+    else:
+        # Criar registro da assessoria
+        await db.assessorias.insert_one({
+            "id": str(uuid.uuid4()),
+            "nome": equipe,
+            "foto_url": foto_url,
+            "dono_id": current_user["id"],
+            "dono_nome": current_user.get("nome", ""),
+            "cidade": current_user.get("cidade", ""),
+            "estado": current_user.get("estado", ""),
+            "status": "ativa",
+            "data_criacao": datetime.now(timezone.utc).isoformat()
+        })
+    
+    # Invalidar cache
+    await invalidate_on_liga_change()
+    
+    return {
+        "message": "Foto da assessoria atualizada com sucesso!",
+        "foto_url": foto_url
+    }
+
+
+@router.delete("/assessorias/remover-foto")
+async def remover_foto_assessoria(current_user: dict = Depends(get_current_user)):
+    """Remove a foto da assessoria"""
+    
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos de assessoria podem remover a foto")
+    
+    equipe = current_user.get("equipe", "")
+    if not equipe:
+        raise HTTPException(status_code=400, detail="Você não tem uma assessoria cadastrada")
+    
+    # Buscar assessoria
+    assessoria = await db.assessorias.find_one({"nome": equipe})
+    if assessoria and assessoria.get("foto_url"):
+        # Tentar remover arquivo físico
+        foto_path = Path(f"/app{assessoria['foto_url']}")
+        if foto_path.exists():
+            foto_path.unlink()
+        
+        # Atualizar banco
+        await db.assessorias.update_one(
+            {"nome": equipe},
+            {"$set": {"foto_url": ""}}
+        )
+    
+    await invalidate_on_liga_change()
+    
+    return {"message": "Foto removida com sucesso"}

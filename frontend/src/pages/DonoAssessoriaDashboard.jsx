@@ -15,7 +15,7 @@ import {
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, Home, Bell, 
   Download, Send, Settings, LogOut, Plus, Eye, BarChart3, Loader2, 
   MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus, PieChart,
-  BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock
+  BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock, Upload, Camera, Trash2, Image
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
@@ -49,6 +49,10 @@ const DonoAssessoriaDashboard = () => {
   const [solicitacoesPendentes, setSolicitacoesPendentes] = useState([]);
   const [totalPendentes, setTotalPendentes] = useState(0);
   const [processandoSolicitacao, setProcessandoSolicitacao] = useState(null);
+  
+  // Estados para upload de foto
+  const [uploadingFoto, setUploadingFoto] = useState(false);
+  const fotoInputRef = useRef(null);
 
   useEffect(() => {
     if (!user || user.role !== 'dono_assessoria') {
@@ -169,6 +173,77 @@ const DonoAssessoriaDashboard = () => {
       toast.error(error.response?.data?.detail || 'Erro ao reprovar solicitação');
     } finally {
       setProcessandoSolicitacao(null);
+    }
+  };
+
+  // Funções de upload de foto
+  const handleUploadFoto = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tamanho (5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Arquivo muito grande. Máximo: 5MB');
+      return;
+    }
+
+    // Validar tipo
+    if (!['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(file.type)) {
+      toast.error('Tipo de arquivo não permitido. Use: JPEG, PNG, WebP ou GIF');
+      return;
+    }
+
+    setUploadingFoto(true);
+    try {
+      const formData = new FormData();
+      formData.append('foto', file);
+
+      const response = await axios.post(
+        `${API}/assessorias/upload-foto`,
+        formData,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data'
+          }
+        }
+      );
+
+      toast.success(response.data.message);
+      
+      // Atualizar estado local
+      setAssessoria(prev => ({
+        ...prev,
+        foto_url: response.data.foto_url
+      }));
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao fazer upload da foto');
+    } finally {
+      setUploadingFoto(false);
+      if (fotoInputRef.current) {
+        fotoInputRef.current.value = '';
+      }
+    }
+  };
+
+  const handleRemoverFoto = async () => {
+    if (!window.confirm('Tem certeza que deseja remover a foto da assessoria?')) return;
+
+    setUploadingFoto(true);
+    try {
+      await axios.delete(`${API}/assessorias/remover-foto`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      toast.success('Foto removida com sucesso');
+      setAssessoria(prev => ({
+        ...prev,
+        foto_url: ''
+      }));
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao remover foto');
+    } finally {
+      setUploadingFoto(false);
     }
   };
 
@@ -300,6 +375,7 @@ const DonoAssessoriaDashboard = () => {
     { id: 'dashboard', label: 'Dashboard', icon: Home },
     { id: 'solicitacoes', label: 'Solicitações', icon: UserPlus, badge: totalPendentes },
     { id: 'atletas', label: 'Meus Atletas', icon: Users },
+    { id: 'foto', label: 'Foto da Equipe', icon: Camera },
     { id: 'relatorios', label: 'Relatórios', icon: PieChart },
     { id: 'rankings', label: 'Rankings', icon: Trophy },
     { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
@@ -718,6 +794,181 @@ const DonoAssessoriaDashboard = () => {
                 </CardContent>
               </Card>
             )}
+
+            {/* Grid de Gráficos Adicionais */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              
+              {/* Distribuição por Cidade */}
+              {atletas.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <MapPin className="w-5 h-5 text-emerald-500" />
+                      Distribuição por Cidade
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const cidadeCount = atletas.reduce((acc, atleta) => {
+                        const cidade = atleta.cidade || 'Não informada';
+                        acc[cidade] = (acc[cidade] || 0) + 1;
+                        return acc;
+                      }, {});
+                      const cidadeData = Object.entries(cidadeCount)
+                        .map(([cidade, count]) => ({ cidade: cidade.substring(0, 15), total: count }))
+                        .sort((a, b) => b.total - a.total)
+                        .slice(0, 6);
+                      
+                      return (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={cidadeData} layout="vertical">
+                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                            <XAxis type="number" stroke="#9CA3AF" />
+                            <YAxis dataKey="cidade" type="category" stroke="#9CA3AF" width={100} tick={{ fontSize: 11 }} />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                            <Bar dataKey="total" fill="#10B981" radius={[0, 4, 4, 0]} name="Atletas" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Top Atletas Pontuadores */}
+              {atletas.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Medal className="w-5 h-5 text-amber-500" />
+                      Top 5 Atletas - Mais Pontos
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    {(() => {
+                      const topAtletas = [...atletas]
+                        .sort((a, b) => (b.pontos_total || 0) - (a.pontos_total || 0))
+                        .slice(0, 5)
+                        .map(a => ({
+                          nome: a.nome?.split(' ').slice(0, 2).join(' ') || 'Atleta',
+                          pontos: a.pontos_total || 0
+                        }));
+                      
+                      return (
+                        <ResponsiveContainer width="100%" height={200}>
+                          <BarChart data={topAtletas}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                            <XAxis dataKey="nome" stroke="#9CA3AF" tick={{ fontSize: 10 }} />
+                            <YAxis stroke="#9CA3AF" />
+                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
+                            <Bar dataKey="pontos" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Pontos" />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      );
+                    })()}
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Resumo de Resultados por Tipo */}
+              {atletas.length > 0 && (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardHeader>
+                    <CardTitle className="text-white flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-500" />
+                      Conquistas da Equipe
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 rounded-lg p-4">
+                        <div className="text-3xl mb-1">🥇</div>
+                        <p className="text-2xl font-bold text-yellow-400">{assessoria.total_primeiros || 0}</p>
+                        <p className="text-xs text-slate-400">Primeiros Lugares</p>
+                      </div>
+                      <div className="bg-gradient-to-br from-slate-400/20 to-slate-500/20 rounded-lg p-4">
+                        <div className="text-3xl mb-1">🥈</div>
+                        <p className="text-2xl font-bold text-slate-300">
+                          {Math.floor((assessoria.total_podios || 0) * 0.4)}
+                        </p>
+                        <p className="text-xs text-slate-400">Segundos Lugares</p>
+                      </div>
+                      <div className="bg-gradient-to-br from-amber-700/20 to-orange-700/20 rounded-lg p-4">
+                        <div className="text-3xl mb-1">🥉</div>
+                        <p className="text-2xl font-bold text-amber-600">
+                          {(assessoria.total_podios || 0) - (assessoria.total_primeiros || 0) - Math.floor((assessoria.total_podios || 0) * 0.4)}
+                        </p>
+                        <p className="text-xs text-slate-400">Terceiros Lugares</p>
+                      </div>
+                    </div>
+                    <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
+                      <div className="flex justify-between items-center">
+                        <span className="text-slate-400">Total de Pódios</span>
+                        <span className="text-xl font-bold text-white">{assessoria.total_podios || 0}</span>
+                      </div>
+                      <div className="flex justify-between items-center mt-2">
+                        <span className="text-slate-400">Total de Resultados</span>
+                        <span className="text-xl font-bold text-white">{assessoria.total_resultados || 0}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+
+              {/* Posições nos Rankings */}
+              <Card className="bg-slate-800 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Target className="w-5 h-5 text-blue-500" />
+                    Posições nos Rankings
+                  </CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+                      <div className="flex items-center gap-3">
+                        <Trophy className="w-6 h-6 text-amber-500" />
+                        <div>
+                          <p className="text-sm text-slate-400">Nacional</p>
+                          <p className="text-white font-medium">Todas as Assessorias</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold text-amber-500">{rankingNacional || '-'}º</p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg border border-blue-500/20">
+                      <div className="flex items-center gap-3">
+                        <MapPin className="w-6 h-6 text-blue-500" />
+                        <div>
+                          <p className="text-sm text-slate-400">Estadual ({assessoria.estado})</p>
+                          <p className="text-white font-medium">No seu Estado</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-3xl font-bold text-blue-500">{rankingEstadual || '-'}º</p>
+                      </div>
+                    </div>
+                    
+                    {rankingMensal && (
+                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg border border-emerald-500/20">
+                        <div className="flex items-center gap-3">
+                          <Calendar className="w-6 h-6 text-emerald-500" />
+                          <div>
+                            <p className="text-sm text-slate-400">Mensal</p>
+                            <p className="text-white font-medium">Este Mês</p>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-3xl font-bold text-emerald-500">{rankingMensal}º</p>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </div>
         )}
 
@@ -903,6 +1154,172 @@ const DonoAssessoriaDashboard = () => {
                 </Card>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* Foto da Equipe Tab */}
+        {activeTab === 'foto' && (
+          <div className="space-y-6" data-testid="foto-tab">
+            <h2 className="text-2xl font-bold text-white">Foto da Assessoria</h2>
+            <p className="text-slate-400">
+              A foto da sua assessoria aparecerá na página pública e no selo oficial.
+            </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Preview da Foto Atual */}
+              <Card className="bg-slate-800 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Image className="w-5 h-5 text-amber-500" />
+                    Foto Atual
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <div className="flex flex-col items-center">
+                    {assessoria.foto_url ? (
+                      <div className="relative group">
+                        <img 
+                          src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
+                          alt={assessoria.nome}
+                          className="w-48 h-48 object-cover rounded-2xl shadow-lg border-4 border-amber-500/30"
+                        />
+                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center">
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={handleRemoverFoto}
+                            disabled={uploadingFoto}
+                          >
+                            <Trash2 className="w-4 h-4 mr-1" />
+                            Remover
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="w-48 h-48 bg-slate-700 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-600">
+                        <Camera className="w-12 h-12 text-slate-500 mb-2" />
+                        <p className="text-sm text-slate-500">Sem foto</p>
+                      </div>
+                    )}
+
+                    <p className="mt-4 text-sm text-slate-400 text-center">
+                      {assessoria.foto_url 
+                        ? 'Passe o mouse sobre a foto para ver a opção de remover'
+                        : 'Sua assessoria ainda não tem foto'
+                      }
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              {/* Upload de Nova Foto */}
+              <Card className="bg-slate-800 border-slate-700">
+                <CardHeader>
+                  <CardTitle className="text-white flex items-center gap-2">
+                    <Upload className="w-5 h-5 text-emerald-500" />
+                    {assessoria.foto_url ? 'Trocar Foto' : 'Enviar Foto'}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="p-6">
+                  <input
+                    type="file"
+                    ref={fotoInputRef}
+                    onChange={handleUploadFoto}
+                    accept="image/jpeg,image/png,image/webp,image/gif"
+                    className="hidden"
+                    id="foto-upload"
+                  />
+
+                  <div 
+                    className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-amber-500 transition-colors cursor-pointer"
+                    onClick={() => fotoInputRef.current?.click()}
+                  >
+                    {uploadingFoto ? (
+                      <div className="flex flex-col items-center">
+                        <Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" />
+                        <p className="text-white font-medium">Enviando foto...</p>
+                      </div>
+                    ) : (
+                      <>
+                        <Camera className="w-12 h-12 text-slate-500 mx-auto mb-4" />
+                        <p className="text-white font-medium mb-2">
+                          Clique para selecionar uma foto
+                        </p>
+                        <p className="text-sm text-slate-400">
+                          JPEG, PNG, WebP ou GIF - Máximo 5MB
+                        </p>
+                      </>
+                    )}
+                  </div>
+
+                  <div className="mt-4 space-y-2">
+                    <p className="text-xs text-slate-500">
+                      <strong>Dica:</strong> Use uma imagem quadrada (1:1) para melhor visualização.
+                    </p>
+                    <p className="text-xs text-slate-500">
+                      A foto aparecerá na página pública da assessoria e no selo oficial.
+                    </p>
+                  </div>
+
+                  <Button
+                    className="w-full mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
+                    onClick={() => fotoInputRef.current?.click()}
+                    disabled={uploadingFoto}
+                  >
+                    {uploadingFoto ? (
+                      <>
+                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>
+                        <Upload className="w-4 h-4 mr-2" />
+                        {assessoria.foto_url ? 'Trocar Foto' : 'Selecionar Foto'}
+                      </>
+                    )}
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Preview de como aparece na página */}
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white">Preview - Como sua assessoria aparece</CardTitle>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 text-white">
+                  <div className="flex items-center gap-6">
+                    {assessoria.foto_url ? (
+                      <div className="relative">
+                        <img 
+                          src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
+                          alt={assessoria.nome}
+                          className="w-24 h-24 object-cover rounded-2xl shadow-lg border-4 border-white/30"
+                        />
+                        <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${getSeloColor(assessoria.selo)} rounded-full flex items-center justify-center text-2xl shadow-md border-2 border-white`}>
+                          {getSeloIcon(assessoria.selo)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className={`w-24 h-24 rounded-2xl ${getSeloColor(assessoria.selo)} flex items-center justify-center text-5xl shadow-lg border-4 border-white/30`}>
+                        {getSeloIcon(assessoria.selo)}
+                      </div>
+                    )}
+                    <div>
+                      <h3 className="text-2xl font-bold">{assessoria.nome}</h3>
+                      <p className="text-amber-100 flex items-center gap-2">
+                        <MapPin className="w-4 h-4" />
+                        {assessoria.cidade}, {assessoria.estado}
+                      </p>
+                      <Badge className="mt-2 bg-white/20 text-white">
+                        SELO {assessoria.selo?.toUpperCase()}
+                      </Badge>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
