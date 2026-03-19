@@ -1,0 +1,98 @@
+{
+  "summary": "Iteration 47: Backend testing of NEW export formats XLSX (Excel) and PDF. All 14 tests PASSED. Both new export formats working correctly alongside existing CSV and JSON.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/liga-assessorias/exportar-dados/{nome_equipe}?formato=xml", "issue": "Invalid format parameter defaults to CSV instead of returning 422 validation error - acceptable behavior"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter47_xlsx_pdf_export.py",
+    "/app/test_reports/pytest/pytest_iter47_xlsx_pdf_export.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✅ XLSX Export (Excel) - Working correctly, returns valid ZIP/XLSX file with proper headers",
+    "✅ PDF Export - Working correctly, returns valid PDF file with %PDF header and %%EOF marker",
+    "✅ CSV Export - Regression test passed, still working",
+    "✅ JSON Export - Regression test passed, still working",
+    "✅ Authentication enforced on all export endpoints",
+    "✅ 404 returned correctly for non-existent assessoria on all formats",
+    "✅ Proper Content-Disposition headers with correct file extensions",
+    "✅ File sizes are reasonable (all > 1KB, < 1MB)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter47_xlsx_pdf_export.py"
+  ],
+  "success_rate": {
+    "backend": "100% (14/14 passed)"
+  },
+  "test_credentials": {
+    "admin": {
+      "email": "admin@runpro.com",
+      "password": "admin123"
+    },
+    "test_assessoria": "Assessoria CAFAV (17 atletas)"
+  },
+  "seed_data_creation": "None - used existing Assessoria CAFAV data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "All export formats verified: CSV, JSON, XLSX (Excel), PDF. Endpoint: GET /api/liga-assessorias/exportar-dados/{nome_equipe}?formato=[csv|json|xlsx|pdf]. Frontend has 5 export buttons in DonoAssessoriaDashboard.jsx (CSV, JSON, Excel, PDF, Gráficos).",
+  "verified_features": {
+    "xlsx_export": {
+      "endpoint": "GET /api/liga-assessorias/exportar-dados/{nome_equipe}?formato=xlsx",
+      "status": "✅ WORKING",
+      "content_type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      "file_validation": "Valid ZIP/XLSX structure with [Content_Types].xml"
+    },
+    "pdf_export": {
+      "endpoint": "GET /api/liga-assessorias/exportar-dados/{nome_equipe}?formato=pdf",
+      "status": "✅ WORKING",
+      "content_type": "application/pdf",
+      "file_validation": "Valid PDF with %PDF header and %%EOF marker"
+    },
+    "csv_export": {
+      "endpoint": "GET /api/liga-assessorias/exportar-dados/{nome_equipe}?formato=csv",
+      "status": "✅ WORKING (regression test passed)"
+    },
+    "json_export": {
+      "endpoint": "GET /api/liga-assessorias/exportar-dados/{nome_equipe}?formato=json",
+      "status": "✅ WORKING (regression test passed)"
+    }
+  },
+  "endpoints_tested_via_pytest": {
+    "TestAuthentication": {
+      "test_login_success": "PASSED"
+    },
+    "TestExcelXLSXExport": {
+      "test_export_xlsx_requires_auth": "PASSED - Returns 401/403 without auth",
+      "test_export_xlsx_with_auth": "PASSED - Returns valid XLSX file",
+      "test_export_xlsx_file_structure": "PASSED - Valid ZIP with [Content_Types].xml",
+      "test_export_xlsx_assessoria_not_found": "PASSED - Returns 404"
+    },
+    "TestPDFExport": {
+      "test_export_pdf_requires_auth": "PASSED - Returns 401/403 without auth",
+      "test_export_pdf_with_auth": "PASSED - Returns valid PDF file",
+      "test_export_pdf_valid_structure": "PASSED - Has %PDF header and %%EOF",
+      "test_export_pdf_assessoria_not_found": "PASSED - Returns 404"
+    },
+    "TestCSVRegressionExport": {
+      "test_export_csv_still_works": "PASSED - CSV format unchanged"
+    },
+    "TestJSONRegressionExport": {
+      "test_export_json_still_works": "PASSED - JSON format unchanged"
+    },
+    "TestAllFormatsComparison": {
+      "test_all_formats_same_assessoria_data": "PASSED - All 4 formats work",
+      "test_file_sizes_are_reasonable": "PASSED - All files > 1KB, < 1MB"
+    },
+    "TestInvalidFormat": {
+      "test_invalid_format_returns_422_or_csv_default": "PASSED - Defaults to CSV"
+    }
+  }
+}

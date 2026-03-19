@@ -383,11 +383,11 @@ async def get_graficos_avancados(nome_equipe: str, current_user: dict = Depends(
 @router.get("/exportar-dados/{nome_equipe}")
 async def exportar_dados_assessoria(
     nome_equipe: str,
-    formato: str = Query("csv", enum=["csv", "json"]),
+    formato: str = Query("csv", enum=["csv", "json", "xlsx", "pdf"]),
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Exporta dados da assessoria em CSV ou JSON
+    Exporta dados da assessoria em CSV, JSON, Excel (XLSX) ou PDF
     Inclui: lista de atletas, estatísticas, resultados por mês
     """
     from fastapi.responses import StreamingResponse
@@ -436,19 +436,21 @@ async def exportar_dados_assessoria(
     total_podios = sum(1 for c in corridas if c.get("colocacao", 99) <= 3 and c.get("colocacao", 0) >= 1)
     total_vitorias = sum(1 for c in corridas if c.get("colocacao") == 1)
     
+    estatisticas = {
+        "total_atletas": total_atletas,
+        "total_corridas": total_corridas,
+        "total_pontos": total_pontos,
+        "total_podios": total_podios,
+        "total_vitorias": total_vitorias,
+        "media_pontos_atleta": round(total_pontos / max(1, total_atletas), 1),
+        "media_corridas_atleta": round(total_corridas / max(1, total_atletas), 1)
+    }
+    
     if formato == "json":
         dados = {
             "equipe": nome_decoded,
             "data_exportacao": datetime.now().isoformat(),
-            "estatisticas": {
-                "total_atletas": total_atletas,
-                "total_corridas": total_corridas,
-                "total_pontos": total_pontos,
-                "total_podios": total_podios,
-                "total_vitorias": total_vitorias,
-                "media_pontos_atleta": round(total_pontos / max(1, total_atletas), 1),
-                "media_corridas_atleta": round(total_corridas / max(1, total_atletas), 1)
-            },
+            "estatisticas": estatisticas,
             "atletas": atletas,
             "corridas": corridas
         }
@@ -457,6 +459,243 @@ async def exportar_dados_assessoria(
             io.BytesIO(json.dumps(dados, ensure_ascii=False, indent=2).encode('utf-8')),
             media_type="application/json",
             headers={"Content-Disposition": f"attachment; filename=assessoria_{nome_decoded.replace(' ', '_')}.json"}
+        )
+    
+    elif formato == "xlsx":
+        # Exportar para Excel usando xlsxwriter
+        import xlsxwriter
+        
+        output = io.BytesIO()
+        workbook = xlsxwriter.Workbook(output, {'in_memory': True})
+        
+        # Formatos
+        title_format = workbook.add_format({
+            'bold': True, 'font_size': 16, 'font_color': '#1F2937', 
+            'align': 'center', 'valign': 'vcenter'
+        })
+        header_format = workbook.add_format({
+            'bold': True, 'font_size': 11, 'font_color': 'white', 
+            'bg_color': '#F59E0B', 'border': 1, 'align': 'center'
+        })
+        cell_format = workbook.add_format({
+            'font_size': 10, 'border': 1, 'align': 'left'
+        })
+        number_format = workbook.add_format({
+            'font_size': 10, 'border': 1, 'align': 'center', 'num_format': '#,##0'
+        })
+        stat_label_format = workbook.add_format({
+            'bold': True, 'font_size': 11, 'bg_color': '#E5E7EB', 'border': 1
+        })
+        stat_value_format = workbook.add_format({
+            'font_size': 11, 'border': 1, 'num_format': '#,##0'
+        })
+        
+        # === ABA 1: Resumo ===
+        ws_resumo = workbook.add_worksheet('Resumo')
+        ws_resumo.set_column('A:A', 25)
+        ws_resumo.set_column('B:B', 20)
+        
+        ws_resumo.merge_range('A1:B1', f'Relatório - {nome_decoded}', title_format)
+        ws_resumo.write('A3', 'Data de Exportação:', stat_label_format)
+        ws_resumo.write('B3', datetime.now().strftime('%d/%m/%Y %H:%M'), cell_format)
+        
+        ws_resumo.write('A5', 'Total de Atletas:', stat_label_format)
+        ws_resumo.write('B5', total_atletas, stat_value_format)
+        ws_resumo.write('A6', 'Total de Corridas:', stat_label_format)
+        ws_resumo.write('B6', total_corridas, stat_value_format)
+        ws_resumo.write('A7', 'Total de Pontos:', stat_label_format)
+        ws_resumo.write('B7', total_pontos, stat_value_format)
+        ws_resumo.write('A8', 'Total de Pódios:', stat_label_format)
+        ws_resumo.write('B8', total_podios, stat_value_format)
+        ws_resumo.write('A9', 'Total de Vitórias:', stat_label_format)
+        ws_resumo.write('B9', total_vitorias, stat_value_format)
+        ws_resumo.write('A10', 'Média Pontos/Atleta:', stat_label_format)
+        ws_resumo.write('B10', estatisticas["media_pontos_atleta"], stat_value_format)
+        ws_resumo.write('A11', 'Média Corridas/Atleta:', stat_label_format)
+        ws_resumo.write('B11', estatisticas["media_corridas_atleta"], stat_value_format)
+        
+        # === ABA 2: Atletas ===
+        ws_atletas = workbook.add_worksheet('Atletas')
+        headers_atletas = ['Nome', 'Email', 'Gênero', 'Categoria', 'Faixa Etária', 'Cidade', 'Estado', 'Pontos', 'Corridas', 'Data Cadastro']
+        col_widths = [30, 35, 12, 12, 15, 20, 8, 10, 10, 15]
+        
+        for col, (header, width) in enumerate(zip(headers_atletas, col_widths)):
+            ws_atletas.set_column(col, col, width)
+            ws_atletas.write(0, col, header, header_format)
+        
+        for row, a in enumerate(sorted(atletas, key=lambda x: x.get("pontos_total", 0), reverse=True), 1):
+            ws_atletas.write(row, 0, a.get("nome", ""), cell_format)
+            ws_atletas.write(row, 1, a.get("email", ""), cell_format)
+            ws_atletas.write(row, 2, "Masculino" if a.get("genero") == "M" else "Feminino", cell_format)
+            ws_atletas.write(row, 3, (a.get("categoria") or "").upper(), cell_format)
+            ws_atletas.write(row, 4, a.get("faixa_etaria", ""), cell_format)
+            ws_atletas.write(row, 5, a.get("cidade", ""), cell_format)
+            ws_atletas.write(row, 6, a.get("estado", ""), cell_format)
+            ws_atletas.write(row, 7, a.get("pontos_total", 0), number_format)
+            ws_atletas.write(row, 8, a.get("total_corridas", 0), number_format)
+            ws_atletas.write(row, 9, (a.get("created_at", "") or "")[:10], cell_format)
+        
+        # === ABA 3: Corridas ===
+        ws_corridas = workbook.add_worksheet('Corridas')
+        headers_corridas = ['Atleta', 'Corrida', 'Data', 'Distância', 'Colocação', 'Pontos', 'Modalidade']
+        col_widths_c = [25, 40, 12, 12, 12, 10, 20]
+        
+        for col, (header, width) in enumerate(zip(headers_corridas, col_widths_c)):
+            ws_corridas.set_column(col, col, width)
+            ws_corridas.write(0, col, header, header_format)
+        
+        for row, c in enumerate(sorted(corridas, key=lambda x: x.get("data", ""), reverse=True), 1):
+            ws_corridas.write(row, 0, c.get("atleta_nome", ""), cell_format)
+            ws_corridas.write(row, 1, c.get("nome_corrida", ""), cell_format)
+            ws_corridas.write(row, 2, c.get("data", ""), cell_format)
+            ws_corridas.write(row, 3, c.get("distancia", ""), cell_format)
+            ws_corridas.write(row, 4, c.get("colocacao", ""), number_format)
+            ws_corridas.write(row, 5, c.get("pontos", 0), number_format)
+            ws_corridas.write(row, 6, c.get("modalidade", ""), cell_format)
+        
+        workbook.close()
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=assessoria_{nome_decoded.replace(' ', '_')}.xlsx"}
+        )
+    
+    elif formato == "pdf":
+        # Exportar para PDF usando reportlab
+        from reportlab.lib.pagesizes import A4, landscape
+        from reportlab.lib import colors
+        from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+        from reportlab.lib.units import cm
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.enums import TA_CENTER, TA_LEFT
+        
+        output = io.BytesIO()
+        doc = SimpleDocTemplate(output, pagesize=landscape(A4), 
+                               rightMargin=1*cm, leftMargin=1*cm,
+                               topMargin=1*cm, bottomMargin=1*cm)
+        
+        styles = getSampleStyleSheet()
+        title_style = ParagraphStyle(
+            'CustomTitle', parent=styles['Heading1'],
+            fontSize=18, alignment=TA_CENTER, spaceAfter=20,
+            textColor=colors.HexColor('#1F2937')
+        )
+        subtitle_style = ParagraphStyle(
+            'CustomSubtitle', parent=styles['Heading2'],
+            fontSize=14, alignment=TA_LEFT, spaceAfter=10, spaceBefore=15,
+            textColor=colors.HexColor('#F59E0B')
+        )
+        
+        elements = []
+        
+        # Título
+        elements.append(Paragraph(f"Relatório da Assessoria: {nome_decoded}", title_style))
+        elements.append(Paragraph(f"Gerado em: {datetime.now().strftime('%d/%m/%Y às %H:%M')}", styles['Normal']))
+        elements.append(Spacer(1, 20))
+        
+        # Estatísticas
+        elements.append(Paragraph("Estatísticas Gerais", subtitle_style))
+        stats_data = [
+            ['Métrica', 'Valor'],
+            ['Total de Atletas', str(total_atletas)],
+            ['Total de Corridas', str(total_corridas)],
+            ['Total de Pontos', str(total_pontos)],
+            ['Total de Pódios', str(total_podios)],
+            ['Total de Vitórias', str(total_vitorias)],
+            ['Média Pontos/Atleta', str(estatisticas["media_pontos_atleta"])],
+            ['Média Corridas/Atleta', str(estatisticas["media_corridas_atleta"])],
+        ]
+        
+        stats_table = Table(stats_data, colWidths=[200, 100])
+        stats_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F59E0B')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 11),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 10),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.HexColor('#F9FAFB')),
+            ('GRID', (0, 0), (-1, -1), 1, colors.HexColor('#D1D5DB')),
+            ('FONTSIZE', (0, 1), (-1, -1), 10),
+        ]))
+        elements.append(stats_table)
+        elements.append(Spacer(1, 20))
+        
+        # Top 20 Atletas
+        elements.append(Paragraph("Top 20 Atletas por Pontuação", subtitle_style))
+        atletas_sorted = sorted(atletas, key=lambda x: x.get("pontos_total", 0), reverse=True)[:20]
+        atletas_data = [['Pos', 'Nome', 'Cidade/UF', 'Pontos', 'Corridas']]
+        for i, a in enumerate(atletas_sorted, 1):
+            atletas_data.append([
+                str(i),
+                (a.get("nome", ""))[:30],
+                f"{(a.get('cidade', '') or '')[:15]}/{a.get('estado', '')}",
+                str(a.get("pontos_total", 0)),
+                str(a.get("total_corridas", 0))
+            ])
+        
+        atletas_table = Table(atletas_data, colWidths=[40, 200, 150, 70, 70])
+        atletas_table.setStyle(TableStyle([
+            ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#F59E0B')),
+            ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+            ('ALIGN', (1, 1), (1, -1), 'LEFT'),
+            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+            ('FONTSIZE', (0, 0), (-1, 0), 10),
+            ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+            ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+            ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
+            ('FONTSIZE', (0, 1), (-1, -1), 9),
+            ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F9FAFB')]),
+        ]))
+        elements.append(atletas_table)
+        elements.append(Spacer(1, 20))
+        
+        # Últimas 30 Corridas
+        if corridas:
+            elements.append(Paragraph("Últimas 30 Corridas", subtitle_style))
+            corridas_sorted = sorted(corridas, key=lambda x: x.get("data", ""), reverse=True)[:30]
+            corridas_data = [['Atleta', 'Corrida', 'Data', 'Dist.', 'Pos.', 'Pts']]
+            for c in corridas_sorted:
+                corridas_data.append([
+                    (c.get("atleta_nome", ""))[:20],
+                    (c.get("nome_corrida", ""))[:35],
+                    c.get("data", ""),
+                    c.get("distancia", ""),
+                    str(c.get("colocacao", "")),
+                    str(c.get("pontos", 0))
+                ])
+            
+            corridas_table = Table(corridas_data, colWidths=[120, 220, 70, 50, 40, 40])
+            corridas_table.setStyle(TableStyle([
+                ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3B82F6')),
+                ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+                ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                ('ALIGN', (0, 1), (1, -1), 'LEFT'),
+                ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                ('FONTSIZE', (0, 0), (-1, 0), 9),
+                ('BOTTOMPADDING', (0, 0), (-1, 0), 8),
+                ('BACKGROUND', (0, 1), (-1, -1), colors.white),
+                ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#D1D5DB')),
+                ('FONTSIZE', (0, 1), (-1, -1), 8),
+                ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#F0F9FF')]),
+            ]))
+            elements.append(corridas_table)
+        
+        # Rodapé
+        elements.append(Spacer(1, 30))
+        elements.append(Paragraph("Ranking de Corrida de Rua - ROE-RR", 
+                                  ParagraphStyle('Footer', fontSize=8, alignment=TA_CENTER, textColor=colors.gray)))
+        
+        doc.build(elements)
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/pdf",
+            headers={"Content-Disposition": f"attachment; filename=relatorio_{nome_decoded.replace(' ', '_')}.pdf"}
         )
     
     else:  # CSV

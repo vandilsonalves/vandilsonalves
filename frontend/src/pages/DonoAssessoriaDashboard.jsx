@@ -15,7 +15,8 @@ import {
   Trophy, Users, MapPin, Award, CheckCircle, TrendingUp, Home, Bell, 
   Download, Send, Settings, LogOut, Plus, Eye, BarChart3, Loader2, 
   MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus, PieChart,
-  BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock, Upload, Camera, Trash2, Image
+  BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock, Upload, Camera, Trash2, Image,
+  FileSpreadsheet, FileText
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
@@ -205,19 +206,36 @@ const DonoAssessoriaDashboard = () => {
         }
       );
       
+      // Determinar o tipo MIME correto para cada formato
+      const mimeTypes = {
+        csv: 'text/csv',
+        json: 'application/json',
+        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        pdf: 'application/pdf'
+      };
+      
+      // Determinar a extensão do arquivo
+      const extensoes = {
+        csv: 'csv',
+        json: 'json',
+        xlsx: 'xlsx',
+        pdf: 'pdf'
+      };
+      
       const blob = new Blob([response.data], { 
-        type: formato === 'csv' ? 'text/csv' : 'application/json'
+        type: mimeTypes[formato] || 'application/octet-stream'
       });
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `assessoria_${user.equipe?.replace(/\s+/g, '_')}.${formato}`;
+      a.download = `${formato === 'pdf' ? 'relatorio' : 'assessoria'}_${user.equipe?.replace(/\s+/g, '_')}.${extensoes[formato] || formato}`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
       a.remove();
       
-      toast.success(`Dados exportados em ${formato.toUpperCase()} com sucesso!`);
+      const nomeFormato = formato === 'xlsx' ? 'Excel' : formato.toUpperCase();
+      toast.success(`Dados exportados em ${nomeFormato} com sucesso!`);
     } catch (error) {
       console.error('Erro ao exportar:', error);
       toast.error('Erro ao exportar dados');
@@ -1189,34 +1207,55 @@ const DonoAssessoriaDashboard = () => {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
                       <Button
                         variant="outline"
                         className="border-green-500 text-green-400 hover:bg-green-500/20"
                         onClick={() => handleExportarDados('csv')}
+                        data-testid="export-csv-btn"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Exportar CSV
+                        CSV
                       </Button>
                       <Button
                         variant="outline"
                         className="border-blue-500 text-blue-400 hover:bg-blue-500/20"
                         onClick={() => handleExportarDados('json')}
+                        data-testid="export-json-btn"
                       >
                         <Download className="w-4 h-4 mr-2" />
-                        Exportar JSON
+                        JSON
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-emerald-500 text-emerald-400 hover:bg-emerald-500/20"
+                        onClick={() => handleExportarDados('xlsx')}
+                        data-testid="export-xlsx-btn"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 mr-2" />
+                        Excel
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="border-red-500 text-red-400 hover:bg-red-500/20"
+                        onClick={() => handleExportarDados('pdf')}
+                        data-testid="export-pdf-btn"
+                      >
+                        <FileText className="w-4 h-4 mr-2" />
+                        PDF
                       </Button>
                       <Button
                         variant="outline"
                         className="border-purple-500 text-purple-400 hover:bg-purple-500/20"
                         onClick={() => handleExportarGraficos()}
+                        data-testid="export-graficos-btn"
                       >
                         <BarChart3 className="w-4 h-4 mr-2" />
-                        Exportar Gráficos
+                        Gráficos
                       </Button>
                     </div>
                     <p className="text-xs text-slate-400 mt-3">
-                      CSV: Planilha com atletas e corridas • JSON: Dados estruturados • Gráficos: Dados para visualização
+                      CSV: Planilha simples • JSON: Dados estruturados • Excel: Planilha formatada • PDF: Relatório visual • Gráficos: Dados para visualização
                     </p>
                   </CardContent>
                 </Card>
