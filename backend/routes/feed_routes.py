@@ -406,6 +406,17 @@ async def comentar_post(
 ):
     """Adiciona um comentário em um post"""
     
+    # Verificar se o usuário está bloqueado de comentar
+    usuario_bloqueado = await db.usuarios_bloqueados_feed.find_one({
+        "usuario_id": current_user["id"],
+        "ativo": True
+    })
+    if usuario_bloqueado:
+        raise HTTPException(
+            status_code=403, 
+            detail="Você está bloqueado de comentar no feed. Motivo: " + usuario_bloqueado.get("motivo", "Violação das regras")
+        )
+    
     post = await db.feed_posts.find_one({"id": post_id, "status": "ativo"})
     if not post:
         raise HTTPException(status_code=404, detail="Post não encontrado")
@@ -413,8 +424,8 @@ async def comentar_post(
     if not dados.texto.strip():
         raise HTTPException(status_code=400, detail="O comentário não pode estar vazio")
     
-    if len(dados.texto) > 500:
-        raise HTTPException(status_code=400, detail="O comentário não pode ter mais de 500 caracteres")
+    if len(dados.texto) > 200:
+        raise HTTPException(status_code=400, detail="O comentário não pode ter mais de 200 caracteres")
     
     comentario = {
         "id": str(uuid.uuid4()),
@@ -422,6 +433,7 @@ async def comentar_post(
         "autor_id": current_user["id"],
         "autor_nome": current_user.get("nome", ""),
         "texto": dados.texto.strip(),
+        "fixado": False,
         "data_criacao": datetime.now(timezone.utc).isoformat()
     }
     
@@ -432,7 +444,7 @@ async def comentar_post(
         await criar_notificacao(
             usuario_id=post["autor_id"],
             tipo="comentario",
-            titulo="💬 Novo comentário!",
+            titulo="Novo comentário!",
             mensagem=f"{current_user.get('nome', 'Alguém')} comentou: \"{dados.texto[:50]}...\"",
             dados_extras={"post_id": post_id, "comentario_id": comentario["id"]}
         )
@@ -774,3 +786,198 @@ async def get_feed_equipe(
         "total": total,
         "pagina": pagina
     }
+
+
+
+# ============================================================
+# ADMINISTRAÇÃO DE COMENTÁRIOS
+# ============================================================
+
+class BloqueioUsuarioCreate(BaseModel):
+    usuario_id: str
+    motivo: str = "Violação das regras do feed"
+
+
+@router.post("/feed/admin/comentarios/{comentario_id}/fixar")
+async def fixar_comentario(
+    comentario_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Admin fixa um comentário no topo"""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem fixar comentários")
+    
+    comentario = await db.feed_comentarios.find_one({"id": comentario_id})
+    if not comentario:
+        raise HTTPException(status_code=404, detail="Comentário não encontrado")
+    
+    # Toggle fixar/desfixar
+    novo_status = not comentario.get("fixado", False)
+    
+    await db.feed_comentarios.update_one(
+        {"id": comentario_id},
+        {"$set": {
+            "fixado": novo_status,
+            "fixado_por": current_user["id"] if novo_status else None,
+            "data_fixacao": datetime.now(timezone.utc).isoformat() if novo_status else None
+        }}
+    )
+    
+    return {
+        "message": f"Comentário {'fixado' if novo_status else 'desfixado'} com sucesso",
+        "fixado": novo_status
+    }
+
+
+@router.delete("/feed/admin/comentarios/limpar-todos")
+async def limpar_todos_comentarios(
+    current_user: dict = Depends(get_current_user)
+):
+    """Admin limpa todos os comentários (exceto fixados). Usado pelo job semanal."""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem limpar comentários")
+    
+    # Contar comentários a serem removidos (exceto fixados)
+    total_antes = await db.feed_comentarios.count_documents({"fixado": {"$ne": True}})
+    
+    # Fazer backup antes de excluir
+    comentarios = await db.feed_comentarios.find({"fixado": {"$ne": True}}, {"_id": 0}).to_list(None)
+    
+    if comentarios:
+        await db.feed_comentarios_backup.insert_one({
+            "data_backup": datetime.now(timezone.utc).isoformat(),
+            "executado_por": current_user["id"],
+            "total_comentarios": len(comentarios),
+            "comentarios": comentarios
+        })
+    
+    # Excluir comentários não fixados
+    resultado = await db.feed_comentarios.delete_many({"fixado": {"$ne": True}})
+    
+    # Limpar cache do Redis
+    try:
+        from services.cache_service import redis_client
+        if redis_client:
+            keys = redis_client.keys("feed:*")
+            if keys:
+                redis_client.delete(*keys)
+    except Exception as e:
+        print(f"Erro ao limpar cache: {e}")
+    
+    return {
+        "message": f"Limpeza concluída! {resultado.deleted_count} comentários removidos.",
+        "comentarios_removidos": resultado.deleted_count,
+        "comentarios_fixados_preservados": total_antes - resultado.deleted_count if total_antes > resultado.deleted_count else 0
+    }
+
+
+@router.delete("/feed/admin/comentarios/{comentario_id}")
+async def excluir_comentario_admin(
+    comentario_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Admin exclui um comentário"""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem excluir comentários")
+    
+    comentario = await db.feed_comentarios.find_one({"id": comentario_id})
+    if not comentario:
+        raise HTTPException(status_code=404, detail="Comentário não encontrado")
+    
+    # Registrar exclusão para auditoria
+    await db.feed_comentarios_excluidos.insert_one({
+        **comentario,
+        "excluido_por": current_user["id"],
+        "data_exclusao": datetime.now(timezone.utc).isoformat()
+    })
+    
+    # Remover comentário
+    await db.feed_comentarios.delete_one({"id": comentario_id})
+    
+    return {"message": "Comentário excluído com sucesso"}
+
+
+@router.post("/feed/admin/usuarios/bloquear")
+async def bloquear_usuario_feed(
+    dados: BloqueioUsuarioCreate,
+    current_user: dict = Depends(get_current_user)
+):
+    """Admin bloqueia um usuário de comentar no feed"""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem bloquear usuários")
+    
+    usuario = await db.usuarios.find_one({"id": dados.usuario_id})
+    if not usuario:
+        raise HTTPException(status_code=404, detail="Usuário não encontrado")
+    
+    # Verificar se já está bloqueado
+    bloqueio_existente = await db.usuarios_bloqueados_feed.find_one({
+        "usuario_id": dados.usuario_id,
+        "ativo": True
+    })
+    
+    if bloqueio_existente:
+        raise HTTPException(status_code=400, detail="Usuário já está bloqueado")
+    
+    bloqueio = {
+        "id": str(uuid.uuid4()),
+        "usuario_id": dados.usuario_id,
+        "usuario_nome": usuario.get("nome", ""),
+        "motivo": dados.motivo,
+        "bloqueado_por": current_user["id"],
+        "ativo": True,
+        "data_bloqueio": datetime.now(timezone.utc).isoformat()
+    }
+    
+    await db.usuarios_bloqueados_feed.insert_one(bloqueio)
+    
+    return {
+        "message": f"Usuário {usuario.get('nome')} bloqueado de comentar no feed",
+        "bloqueio_id": bloqueio["id"]
+    }
+
+
+@router.post("/feed/admin/usuarios/{usuario_id}/desbloquear")
+async def desbloquear_usuario_feed(
+    usuario_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    """Admin desbloqueia um usuário"""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem desbloquear usuários")
+    
+    resultado = await db.usuarios_bloqueados_feed.update_one(
+        {"usuario_id": usuario_id, "ativo": True},
+        {"$set": {
+            "ativo": False,
+            "desbloqueado_por": current_user["id"],
+            "data_desbloqueio": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    
+    if resultado.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Usuário não está bloqueado")
+    
+    return {"message": "Usuário desbloqueado com sucesso"}
+
+
+@router.get("/feed/admin/usuarios/bloqueados")
+async def listar_usuarios_bloqueados(
+    current_user: dict = Depends(get_current_user)
+):
+    """Lista usuários bloqueados do feed"""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem ver usuários bloqueados")
+    
+    bloqueados = await db.usuarios_bloqueados_feed.find(
+        {"ativo": True},
+        {"_id": 0}
+    ).sort("data_bloqueio", -1).to_list(100)
+    
+    return {"usuarios_bloqueados": bloqueados, "total": len(bloqueados)}

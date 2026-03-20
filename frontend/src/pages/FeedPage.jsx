@@ -302,6 +302,63 @@ const FeedPage = () => {
     return data.toLocaleDateString('pt-BR');
   };
 
+  // Funções de Admin para gerenciar comentários
+  const handleFixarComentario = async (comentarioId) => {
+    try {
+      const response = await axios.post(
+        `${API}/feed/admin/comentarios/${comentarioId}/fixar`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(response.data.message);
+      fetchPosts(); // Recarregar posts para atualizar UI
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao fixar comentário');
+    }
+  };
+
+  const handleExcluirComentario = async (comentarioId, postId) => {
+    if (!confirm('Tem certeza que deseja excluir este comentário?')) return;
+    
+    try {
+      await axios.delete(
+        `${API}/feed/admin/comentarios/${comentarioId}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success('Comentário excluído');
+      
+      // Atualizar localmente
+      setPosts(prev => prev.map(post => {
+        if (post.id === postId) {
+          return {
+            ...post,
+            comentarios_preview: post.comentarios_preview?.filter(c => c.id !== comentarioId),
+            total_comentarios: Math.max(0, (post.total_comentarios || 0) - 1)
+          };
+        }
+        return post;
+      }));
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao excluir comentário');
+    }
+  };
+
+  const handleBloquearUsuario = async (usuarioId, usuarioNome) => {
+    const motivo = prompt(`Motivo para bloquear ${usuarioNome}:`, 'Violação das regras do feed');
+    if (!motivo) return;
+    
+    try {
+      await axios.post(
+        `${API}/feed/admin/usuarios/bloquear`,
+        { usuario_id: usuarioId, motivo },
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      toast.success(`${usuarioNome} foi bloqueado de comentar no feed`);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao bloquear usuário');
+    }
+  };
+
   // Componente para exibir as reações de um post
   const ReacoesDisplay = ({ post }) => {
     const reacoes = post.reacoes || {};
@@ -670,16 +727,54 @@ const FeedPage = () => {
                       <div className="space-y-3 pt-3 border-t border-slate-700">
                         {/* Preview de comentários */}
                         {post.comentarios_preview?.map((com) => (
-                          <div key={com.id} className="flex gap-2">
+                          <div key={com.id} className="flex gap-2 group">
                             <Avatar className="w-8 h-8">
                               <AvatarFallback className="bg-slate-600 text-white text-xs">
                                 {com.autor?.nome?.charAt(0)}
                               </AvatarFallback>
                             </Avatar>
-                            <div className="bg-slate-700 rounded-lg px-3 py-2 flex-1">
-                              <p className="text-sm text-white font-medium">{com.autor?.nome}</p>
+                            <div className={`rounded-lg px-3 py-2 flex-1 ${com.fixado ? 'bg-amber-900/30 border border-amber-500/30' : 'bg-slate-700'}`}>
+                              <div className="flex items-center gap-2">
+                                <p className="text-sm text-white font-medium">{com.autor?.nome}</p>
+                                {com.fixado && (
+                                  <Badge className="bg-amber-500/20 text-amber-400 text-xs py-0">Fixado</Badge>
+                                )}
+                              </div>
                               <p className="text-sm text-slate-300">{com.texto}</p>
                             </div>
+                            {/* Menu de Admin para comentários */}
+                            {user?.role === 'admin' && (
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-slate-400 h-8 w-8">
+                                    <MoreHorizontal className="w-4 h-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end" className="bg-slate-800 border-slate-700">
+                                  <DropdownMenuItem 
+                                    className="text-amber-400 cursor-pointer"
+                                    onClick={() => handleFixarComentario(com.id)}
+                                  >
+                                    <Star className="w-4 h-4 mr-2" />
+                                    {com.fixado ? 'Desfixar' : 'Fixar'}
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    className="text-red-400 cursor-pointer"
+                                    onClick={() => handleExcluirComentario(com.id, post.id)}
+                                  >
+                                    <Trash2 className="w-4 h-4 mr-2" />
+                                    Excluir
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem 
+                                    className="text-orange-400 cursor-pointer"
+                                    onClick={() => handleBloquearUsuario(com.autor_id, com.autor?.nome)}
+                                  >
+                                    <Users className="w-4 h-4 mr-2" />
+                                    Bloquear Usuário
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            )}
                           </div>
                         ))}
                         
@@ -690,28 +785,33 @@ const FeedPage = () => {
                               {user?.nome?.charAt(0)}
                             </AvatarFallback>
                           </Avatar>
-                          <div className="flex-1 flex gap-2">
-                            <Input
-                              placeholder="Escreva um comentário..."
-                              value={comentarioTexto[post.id] || ''}
-                              onChange={(e) => setComentarioTexto({ ...comentarioTexto, [post.id]: e.target.value })}
-                              onKeyDown={(e) => e.key === 'Enter' && handleComentar(post.id)}
-                              className="bg-slate-700 border-slate-600 text-sm"
-                              maxLength={500}
-                              data-testid={`comment-input-${post.id}`}
-                            />
-                            <Button 
-                              size="sm"
-                              onClick={() => handleComentar(post.id)}
-                              disabled={!comentarioTexto[post.id]?.trim() || enviandoComentario === post.id}
-                              data-testid={`send-comment-${post.id}`}
-                            >
-                              {enviandoComentario === post.id ? (
-                                <Loader2 className="w-4 h-4 animate-spin" />
-                              ) : (
-                                <Send className="w-4 h-4" />
-                              )}
-                            </Button>
+                          <div className="flex-1">
+                            <div className="flex gap-2">
+                              <Input
+                                placeholder="Escreva um comentário..."
+                                value={comentarioTexto[post.id] || ''}
+                                onChange={(e) => setComentarioTexto({ ...comentarioTexto, [post.id]: e.target.value })}
+                                onKeyDown={(e) => e.key === 'Enter' && handleComentar(post.id)}
+                                className="bg-slate-700 border-slate-600 text-sm"
+                                maxLength={200}
+                                data-testid={`comment-input-${post.id}`}
+                              />
+                              <Button 
+                                size="sm"
+                                onClick={() => handleComentar(post.id)}
+                                disabled={!comentarioTexto[post.id]?.trim() || enviandoComentario === post.id}
+                                data-testid={`send-comment-${post.id}`}
+                              >
+                                {enviandoComentario === post.id ? (
+                                  <Loader2 className="w-4 h-4 animate-spin" />
+                                ) : (
+                                  <Send className="w-4 h-4" />
+                                )}
+                              </Button>
+                            </div>
+                            <p className="text-xs text-slate-500 mt-1 text-right">
+                              {(comentarioTexto[post.id] || '').length}/200
+                            </p>
                           </div>
                         </div>
                       </div>

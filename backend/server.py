@@ -1917,8 +1917,16 @@ async def startup_event():
         replace_existing=True
     )
     
+    # Agendar limpeza de comentários do feed todo domingo às 23:59:59
+    scheduler.add_job(
+        limpar_comentarios_semanal,
+        CronTrigger(day_of_week='sun', hour=23, minute=59, second=59),
+        id="limpeza_comentarios_semanal",
+        replace_existing=True
+    )
+    
     scheduler.start()
-    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min")
+    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza comentários domingo 23:59")
 
 
 async def check_and_send_alerts():
@@ -1941,6 +1949,63 @@ async def check_and_send_alerts():
                 html_content=html
             )
             logger.warning(f"⚠️ Alerta enviado para {admin['email']}: {[a['type'] for a in alerts]}")
+
+
+async def limpar_comentarios_semanal():
+    """
+    Limpa todos os comentários não fixados do feed.
+    Executado automaticamente todo domingo às 23:59:59.
+    """
+    logger.info("🧹 Iniciando limpeza semanal de comentários do feed...")
+    
+    try:
+        # Contar comentários antes
+        fixados = await db.feed_comentarios.count_documents({"fixado": True})
+        
+        # Fazer backup
+        comentarios = await db.feed_comentarios.find({"fixado": {"$ne": True}}, {"_id": 0}).to_list(None)
+        
+        if comentarios:
+            await db.feed_comentarios_backup.insert_one({
+                "data_backup": datetime.now(timezone.utc).isoformat(),
+                "executado_por": "SISTEMA_AUTOMATICO",
+                "total_comentarios": len(comentarios),
+                "comentarios": comentarios
+            })
+        
+        # Excluir comentários não fixados
+        resultado = await db.feed_comentarios.delete_many({"fixado": {"$ne": True}})
+        
+        # Limpar cache do Redis
+        try:
+            from services.cache_service import redis_client
+            if redis_client:
+                keys = redis_client.keys("feed:*")
+                if keys:
+                    redis_client.delete(*keys)
+                logger.info("🗑️ Cache do feed limpo")
+        except Exception as e:
+            logger.warning(f"Não foi possível limpar cache Redis: {e}")
+        
+        # Registrar log
+        await db.logs_scheduler.insert_one({
+            "tipo": "limpeza_comentarios",
+            "data": datetime.now(timezone.utc).isoformat(),
+            "comentarios_removidos": resultado.deleted_count,
+            "comentarios_fixados_preservados": fixados,
+            "status": "sucesso"
+        })
+        
+        logger.info(f"✅ Limpeza concluída! {resultado.deleted_count} comentários removidos, {fixados} fixados preservados")
+        
+    except Exception as e:
+        logger.error(f"❌ Erro na limpeza semanal de comentários: {e}")
+        await db.logs_scheduler.insert_one({
+            "tipo": "limpeza_comentarios",
+            "data": datetime.now(timezone.utc).isoformat(),
+            "status": "erro",
+            "erro": str(e)
+        })
 
 
 @app.on_event("shutdown")
