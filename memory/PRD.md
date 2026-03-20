@@ -13,6 +13,13 @@
    - Adicionadas opções "PCD" e "Cadeirante" no dropdown de gênero
    - Arquivo: `/app/frontend/src/pages/RankingCidadePage.jsx` (linhas 260-263)
 
+3. **Bug Fix: Ranking da Galera por Cidade não carregava dados** - CORRIGIDO!
+   - Problema: Query buscava em `resultados` com campo `modalidade` inexistente
+   - Solução: Alterado para usar coleção `ranking_povao` corretamente
+   - Arquivo: `/app/backend/routes/ranking_routes.py` (linhas 764-800)
+
+4. **Redis atualizado** - Versão 7.0.15 instalada e funcionando
+
 ### ✅ Completed This Session
 
 1. **Sistema de Gerenciamento de Comentários (P0)** - IMPLEMENTADO!

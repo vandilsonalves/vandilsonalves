@@ -762,32 +762,22 @@ async def get_ranking_por_cidade(
     result = []
     
     if modalidade.lower() == "povao":
-        # Ranking da Galera - baseado em resultados de corridas
-        pipeline = [
-            {"$match": {
-                "usuario_id": {"$in": usuario_ids},
-                "ano": ano,
-                "status": "aprovado",
-                "modalidade": "povao"
-            }},
-            {"$group": {
-                "_id": "$usuario_id",
-                "pontos_total": {"$sum": "$pontos"},
-                "total_corridas": {"$sum": 1}
-            }},
-            {"$sort": {"pontos_total": -1, "total_corridas": -1}},
-            {"$limit": limit}
-        ]
+        # Ranking da Galera - usar coleção ranking_povao
+        # O ranking_povao usa ano 2025 fixo por enquanto
+        ano_povao = 2025  # Dados atuais estão em 2025
         
-        ranking_data = await db.resultados.aggregate(pipeline).to_list(None)
+        ranking_data = await db.ranking_povao.find(
+            {"usuario_id": {"$in": usuario_ids}, "ano": ano_povao},
+            {"_id": 0}
+        ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).limit(limit).to_list(None)
         
         # Enriquecer com dados do usuário
         for idx, rank in enumerate(ranking_data, 1):
-            usuario = next((u for u in usuarios_cidade if u["id"] == rank["_id"]), None)
+            usuario = next((u for u in usuarios_cidade if u["id"] == rank["usuario_id"]), None)
             if usuario:
                 result.append({
                     "colocacao": idx,
-                    "id": rank["_id"],
+                    "id": rank["usuario_id"],
                     "nome": usuario.get("nome", ""),
                     "foto_url": usuario.get("foto_url", ""),
                     "equipe": usuario.get("equipe", ""),
@@ -796,6 +786,7 @@ async def get_ranking_por_cidade(
                     "faixa_etaria": usuario.get("faixa_etaria", ""),
                     "pontos": rank.get("pontos_total", 0),
                     "total_corridas": rank.get("total_corridas", 0),
+                    "distancia_total": rank.get("distancia_acumulada", 0),
                     "is_elite": rank.get("pontos_total", 0) >= 100
                 })
     else:
