@@ -311,7 +311,7 @@ const FeedPage = () => {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       toast.success(response.data.message);
-      fetchPosts(); // Recarregar posts para atualizar UI
+      fetchFeed(); // Recarregar posts para atualizar UI
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao fixar comentário');
     }
@@ -884,7 +884,7 @@ const FeedPage = () => {
                             headers: { Authorization: `Bearer ${token}` }
                           });
                           toast.success('Comentários limpos com sucesso!');
-                          fetchPosts();
+                          fetchFeed();
                         } catch (error) {
                           toast.error(error.response?.data?.detail || 'Erro ao limpar comentários');
                         }
