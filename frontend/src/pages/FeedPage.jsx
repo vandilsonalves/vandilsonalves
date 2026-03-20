@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Send, Loader2, ArrowLeft, MoreHorizontal,
   TrendingUp, Clock, Trash2, Users, Smile, MessageCircle,
-  Trophy, Medal, PartyPopper, Star, Zap
+  Trophy, Medal, PartyPopper, Star, Zap, Shield
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -663,7 +663,7 @@ const FeedPage = () => {
                         </div>
                       </div>
                       
-                      {(post.autor_id === user?.id || user?.role === 'admin') && (
+                      {(post.autor_id === user?.id || isAdmin) && (
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button variant="ghost" size="icon" className="text-slate-400">
@@ -676,8 +676,19 @@ const FeedPage = () => {
                               onClick={() => handleDeletarPost(post.id)}
                             >
                               <Trash2 className="w-4 h-4 mr-2" />
-                              Deletar
+                              Deletar Post
                             </DropdownMenuItem>
+                            {isAdmin && post.total_comentarios > 0 && (
+                              <>
+                                <DropdownMenuItem 
+                                  className="text-amber-400 cursor-pointer"
+                                  onClick={() => setShowComentarios({ ...showComentarios, [post.id]: true })}
+                                >
+                                  <MessageCircle className="w-4 h-4 mr-2" />
+                                  Gerenciar Comentários ({post.total_comentarios})
+                                </DropdownMenuItem>
+                              </>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       )}
@@ -888,6 +899,48 @@ const FeedPage = () => {
                 )}
               </CardContent>
             </Card>
+            
+            {/* Painel de Admin - Gerenciar Comentários */}
+            {isAdmin && (
+              <Card className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 border-amber-500/30">
+                <CardHeader className="pb-2">
+                  <div className="flex items-center gap-2 text-amber-400">
+                    <Shield className="w-5 h-5" />
+                    <h3 className="font-semibold">Admin - Comentários</h3>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  <p className="text-xs text-slate-400">
+                    Clique no ícone de comentários (balãozinho) em qualquer post para ver e gerenciar os comentários.
+                  </p>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full border-amber-500/50 text-amber-400 hover:bg-amber-500/20"
+                    onClick={async () => {
+                      if (confirm('Limpar TODOS os comentários não fixados? Esta ação não pode ser desfeita.')) {
+                        try {
+                          await axios.delete(`${API}/feed/admin/comentarios/limpar-todos`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                          toast.success('Comentários limpos com sucesso!');
+                          fetchPosts();
+                        } catch (error) {
+                          toast.error(error.response?.data?.detail || 'Erro ao limpar comentários');
+                        }
+                      }
+                    }}
+                    data-testid="btn-limpar-comentarios"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Limpar Todos Comentários
+                  </Button>
+                  <p className="text-[10px] text-slate-500 text-center">
+                    Comentários fixados serão preservados
+                  </p>
+                </CardContent>
+              </Card>
+            )}
             
             {/* Reações Disponíveis */}
             <Card className="bg-slate-800 border-slate-700">
