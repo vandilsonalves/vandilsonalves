@@ -579,7 +579,7 @@ const FeedPage = () => {
                       placeholder="O que você quer compartilhar?"
                       value={novoPost}
                       onChange={(e) => setNovoPost(e.target.value)}
-                      className="bg-slate-700 border-slate-600 min-h-[80px] resize-none"
+                      className="bg-slate-700 border-slate-600 min-h-[80px] resize-none text-white font-semibold placeholder:text-slate-400 placeholder:font-normal"
                       maxLength={1000}
                       data-testid="new-post-input"
                     />
@@ -858,51 +858,11 @@ const FeedPage = () => {
             )}
           </div>
 
-          {/* Sidebar - Trending */}
+          {/* Sidebar - Apenas Admin */}
           <div className="space-y-4">
-            <Card className="bg-slate-800 border-slate-700 sticky top-20">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 text-amber-400">
-                  <TrendingUp className="w-5 h-5" />
-                  <h3 className="font-semibold">Em Alta</h3>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {trending.length === 0 ? (
-                  <p className="text-slate-400 text-sm">Nenhum post em alta</p>
-                ) : (
-                  trending.map((post) => (
-                    <div key={post.id} className="flex gap-3 p-2 rounded-lg hover:bg-slate-700/50 transition-colors cursor-pointer">
-                      <Avatar className="w-8 h-8">
-                        <AvatarFallback className="bg-amber-500 text-white text-xs">
-                          {post.autor?.nome?.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-white font-medium truncate">{post.autor?.nome}</p>
-                        <p className="text-xs text-slate-400 truncate">{post.texto}</p>
-                        <div className="flex items-center gap-2 mt-1 text-xs text-slate-500">
-                          {post.reacoes && Object.entries(post.reacoes)
-                            .sort((a, b) => b[1].count - a[1].count)
-                            .slice(0, 3)
-                            .map(([tipo, r]) => (
-                              <span key={tipo} className="flex items-center gap-0.5">
-                                <span>{r.emoji}</span>
-                                <span>{r.count}</span>
-                              </span>
-                            ))
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </CardContent>
-            </Card>
-            
             {/* Painel de Admin - Gerenciar Comentários */}
             {isAdmin && (
-              <Card className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 border-amber-500/30">
+              <Card className="bg-gradient-to-br from-amber-900/30 to-orange-900/30 border-amber-500/30 sticky top-20">
                 <CardHeader className="pb-2">
                   <div className="flex items-center gap-2 text-amber-400">
                     <Shield className="w-5 h-5" />
@@ -941,30 +901,6 @@ const FeedPage = () => {
                 </CardContent>
               </Card>
             )}
-            
-            {/* Reações Disponíveis */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-2 text-purple-400">
-                  <Smile className="w-5 h-5" />
-                  <h3 className="font-semibold">Reações</h3>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-4 gap-2">
-                  {Object.entries(REACOES).map(([tipo, { emoji, nome }]) => (
-                    <div 
-                      key={tipo} 
-                      className="flex flex-col items-center p-2 rounded-lg hover:bg-slate-700/50 transition-colors"
-                      title={nome}
-                    >
-                      <span className="text-2xl">{emoji}</span>
-                      <span className="text-[10px] text-slate-400 mt-1">{nome}</span>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
           </div>
         </div>
       </div>

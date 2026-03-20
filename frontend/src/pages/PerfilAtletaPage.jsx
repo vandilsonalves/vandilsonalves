@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Save, User, Mail, MapPin, Users, Trophy, 
   Facebook, Instagram, Phone, FileText, Camera, Check, Loader2,
-  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff
+  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff, Crop
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -21,6 +21,7 @@ import SelosAtleta from '@/components/SelosAtleta';
 import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
 import IndicarAmigos from '@/components/IndicarAmigos';
 import CriarAssessoria from '@/components/CriarAssessoria';
+import ImageCropModal from '@/components/ImageCropModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -104,6 +105,10 @@ const PerfilAtletaPage = () => {
   const [novaEquipe, setNovaEquipe] = useState('');
   const [equipesDisponiveis, setEquipesDisponiveis] = useState([]);
   const [savingEquipe, setSavingEquipe] = useState(false);
+
+  // Estados para crop de imagem
+  const [showCropModal, setShowCropModal] = useState(false);
+  const [imageToCrop, setImageToCrop] = useState(null);
 
   const ETNIAS = ['Branco', 'Negro', 'Indígena', 'Pardo', 'Amarelo', 'Mulato'];
 
@@ -343,12 +348,26 @@ const PerfilAtletaPage = () => {
       return;
     }
     
+    // Abrir modal de crop ao invés de enviar direto
+    const reader = new FileReader();
+    reader.onload = () => {
+      setImageToCrop(reader.result);
+      setShowCropModal(true);
+    };
+    reader.readAsDataURL(file);
+    
+    // Limpar o input para permitir selecionar a mesma imagem novamente
+    e.target.value = '';
+  };
+
+  const handleCroppedPhoto = async (croppedFile) => {
+    setShowCropModal(false);
     setUploadingPhoto(true);
     setError('');
     
     try {
       const formData = new FormData();
-      formData.append('foto', file);
+      formData.append('foto', croppedFile);
       
       const response = await axios.post(`${API}/atletas/foto`, formData, {
         headers: { 
@@ -1138,6 +1157,15 @@ const PerfilAtletaPage = () => {
           <IndicarAmigos />
         </div>
       </div>
+      
+      {/* Modal de Crop de Imagem */}
+      <ImageCropModal
+        isOpen={showCropModal}
+        onClose={() => setShowCropModal(false)}
+        imageSrc={imageToCrop}
+        onCropComplete={handleCroppedPhoto}
+        aspectRatio={1}
+      />
     </div>
   );
 };
