@@ -1,87 +1,85 @@
 # Ranking Run Pró - PRD (Product Requirements Document)
 
-## Implementation Status (19/Mar/2026)
+## Implementation Status (20/Mar/2026)
 
 ### ✅ Completed This Session
 
-1. **App Mobile (PWA) - P2** - IMPLEMENTADO!
-   - **Manifest.json:** Configurado com nome, ícones (8 tamanhos), shortcuts e tema emerald
-   - **Service Worker:** Estratégias Cache First (estáticos) e Network First (API)
-   - **Página Offline:** Design profissional com botão de retry
-   - **Ícones:** 8 tamanhos (72px a 512px) gerados com design de troféu/corredor
-   - **Meta Tags:** Apple, Android e Windows configurados
-   - **Prompt de Instalação:** Componente que sugere instalação após 5 segundos
-   - **33/33 testes passando** (`/app/test_reports/iteration_54.json`)
+1. **Sistema de Gerenciamento de Comentários (P0)** - IMPLEMENTADO!
+   - **Limite de 200 caracteres** nos comentários (era 500)
+   - **Reset semanal automático:** Todo domingo às 23:59:59 (APScheduler CronTrigger)
+   - **Admin pode fixar comentários:** Badge "Fixado" com destaque visual (amarelo)
+   - **Admin pode excluir comentários:** Com log de auditoria
+   - **Admin pode bloquear usuários:** Usuário bloqueado recebe erro 403 ao tentar comentar
+   - **Backup automático:** Comentários são salvos antes da limpeza
+   - **Comentários fixados são preservados** na limpeza semanal
+   - **17/17 testes passando** (`/app/test_reports/iteration_55.json`)
    
-   **Arquivos criados:**
-   - `/app/frontend/public/manifest.json` - Manifest do PWA
-   - `/app/frontend/public/sw.js` - Service Worker
-   - `/app/frontend/public/offline.html` - Página offline
-   - `/app/frontend/public/icons/` - Ícones em 8 tamanhos
-   - `/app/frontend/src/components/PWAInstallPrompt.jsx` - Prompt de instalação
+   **Endpoints criados:**
+   - `POST /api/feed/admin/comentarios/{id}/fixar` - Fixar/desfixar (toggle)
+   - `DELETE /api/feed/admin/comentarios/{id}` - Excluir comentário
+   - `POST /api/feed/admin/usuarios/bloquear` - Bloquear usuário
+   - `POST /api/feed/admin/usuarios/{id}/desbloquear` - Desbloquear
+   - `GET /api/feed/admin/usuarios/bloqueados` - Listar bloqueados
+   - `DELETE /api/feed/admin/comentarios/limpar-todos` - Limpar todos (manual)
 
-2. **Ranking por Cidade/Bairro (P1)** - IMPLEMENTADO!
-   - Nova página `/ranking-cidade` com filtros por estado/cidade
-   - **16/16 testes passando** (`/app/test_reports/iteration_53.json`)
+2. **Renomeação "Povão" → "Galera"** - IMPLEMENTADO!
+   - Todos os textos visíveis alterados em toda a plataforma
+   - Lógica e cálculos mantidos (apenas nome)
 
-3. **Sistema de Notificações Push (P0)** - IMPLEMENTADO!
-   - WebSocket + Polling fallback
-   - **15/16 testes passando** (`/app/test_reports/iteration_52.json`)
+3. **Ícone PWA atualizado** - IMPLEMENTADO!
+   - Logo personalizado do Ranking Run em todos os tamanhos
 
-4. **Feed de Atividades Melhorado (P0)** - IMPLEMENTADO!
-   - Posts automáticos + Reações + Comentários
-   - **21/21 testes passando** (`/app/test_reports/iteration_51.json`)
+4. **Correção botões Histórico** - IMPLEMENTADO!
+   - Botões "Nova Submissão" agora navegam corretamente
+
+### ✅ Completed Previous Session
+
+- App Mobile (PWA) - 33/33 testes
+- Ranking por Cidade/Bairro - 16/16 testes
+- Sistema de Notificações Push - 15/16 testes
+- Feed de Atividades Melhorado - 21/21 testes
 
 ---
 
-## PWA Features
+## Key Endpoints - Gerenciamento de Comentários
 
-**Instalação:**
-- Android: Prompt automático de instalação
-- iOS: Instruções para "Adicionar à Tela Inicial"
-- Desktop: Ícone de instalação no navegador
+| Endpoint | Método | Descrição |
+|----------|--------|-----------|
+| `/api/feed/posts/{id}/comentarios` | POST | Criar comentário (máx 200 chars) |
+| `/api/feed/admin/comentarios/{id}/fixar` | POST | Fixar/desfixar comentário |
+| `/api/feed/admin/comentarios/{id}` | DELETE | Excluir comentário |
+| `/api/feed/admin/usuarios/bloquear` | POST | Bloquear usuário |
+| `/api/feed/admin/usuarios/{id}/desbloquear` | POST | Desbloquear usuário |
+| `/api/feed/admin/usuarios/bloqueados` | GET | Listar bloqueados |
+| `/api/feed/admin/comentarios/limpar-todos` | DELETE | Limpar todos (preserva fixados) |
 
-**Offline:**
-- Recursos estáticos cacheados (CSS, JS, imagens)
-- Dados de API cacheados com fallback
-- Página offline estilizada quando sem conexão
+---
 
-**Shortcuts:**
-- Ver Ranking (/)
-- Submeter Resultado (/submeter-resultado)
-- Feed Social (/feed)
+## Scheduler Jobs
+
+| Job | Schedule | Função |
+|-----|----------|--------|
+| `limpar_comentarios_semanal` | Domingo 23:59:59 | Limpa comentários não fixados, faz backup, limpa cache Redis |
+| `check_alerts` | A cada 1 minuto | Verifica alertas do sistema |
+| `collect_metrics` | A cada 5 minutos | Coleta métricas de uso |
 
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_55.json` - Gerenciamento Comentários (17/17 passed)
 - `/app/test_reports/iteration_54.json` - PWA (33/33 passed)
 - `/app/test_reports/iteration_53.json` - Ranking por Cidade (16/16 passed)
-- `/app/test_reports/iteration_52.json` - Notificações Push (15/16 passed)
-- `/app/test_reports/iteration_51.json` - Feed Melhorado (21/21 passed)
 
 ---
 
 ## Pending Tasks
 
 ### P1 - Próximas Tarefas
-- [ ] **Integração Strava/Garmin** - Aguardando chaves API do usuário
+- [ ] **Integração Strava/Garmin** - Aguardando chaves API
 
 ### P2 - Backlog/Refatoração
 - [ ] **Refatoração do RankingPage.js** - 2.100+ linhas
 - [ ] **Refatoração do AdminDashboard.jsx** - 3.600+ linhas
-- [ ] Verificação de domínio no Resend
-
-### Concluído nesta sessão
-- [x] App Mobile (PWA)
-  - [x] Manifest.json
-  - [x] Service Worker
-  - [x] Página offline
-  - [x] Ícones (8 tamanhos)
-  - [x] Meta tags
-  - [x] Prompt de instalação
-- [x] Ranking por Cidade/Bairro
-- [x] Sistema de Notificações Push
-- [x] Feed de Atividades Melhorado
 
 ---
 
@@ -91,4 +89,4 @@
 
 ---
 
-*Última atualização: 19/Mar/2026*
+*Última atualização: 20/Mar/2026*
