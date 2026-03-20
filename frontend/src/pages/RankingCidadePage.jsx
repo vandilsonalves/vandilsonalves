@@ -259,6 +259,8 @@ const RankingCidadePage = () => {
                     <SelectContent className="bg-slate-800 border-slate-700">
                       <SelectItem value="M" className="text-white hover:bg-slate-700">Masculino</SelectItem>
                       <SelectItem value="F" className="text-white hover:bg-slate-700">Feminino</SelectItem>
+                      <SelectItem value="pcd" className="text-white hover:bg-slate-700">PCD</SelectItem>
+                      <SelectItem value="cadeirante" className="text-white hover:bg-slate-700">Cadeirante</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

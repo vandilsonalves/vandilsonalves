@@ -85,7 +85,7 @@
 
 ## Credentials
 - **Admin**: admin@runpro.com / admin
-- **Preview URL**: https://feed-likes-comments.preview.emergentagent.com
+- **Preview URL**: https://atleta-cidade-test.preview.emergentagent.com
 
 ---
 

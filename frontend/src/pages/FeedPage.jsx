@@ -751,7 +751,7 @@ const FeedPage = () => {
                                   <Badge className="bg-amber-500/20 text-amber-400 text-xs py-0">Fixado</Badge>
                                 )}
                               </div>
-                              <p className="text-sm text-slate-300">{com.texto}</p>
+                              <p className="text-sm text-slate-300 break-all">{com.texto}</p>
                             </div>
                             {/* Menu de Admin para comentários - sempre visível para admins */}
                             {isAdmin && (
