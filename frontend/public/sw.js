@@ -1,6 +1,6 @@
 // Service Worker para Ranking Run Pró PWA
 // Versão do cache - atualizar quando houver mudanças significativas
-const CACHE_VERSION = 'runpro-v1.0.0';
+const CACHE_VERSION = 'runpro-v1.1.0';
 const STATIC_CACHE = `${CACHE_VERSION}-static`;
 const DYNAMIC_CACHE = `${CACHE_VERSION}-dynamic`;
 const API_CACHE = `${CACHE_VERSION}-api`;
