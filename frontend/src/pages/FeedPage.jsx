@@ -54,7 +54,7 @@ const TIPOS_POST = {
 
 const FeedPage = () => {
   const navigate = useNavigate();
-  const { user, token } = useAuth();
+  const { user, token, isAdmin } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
   const [trending, setTrending] = useState([]);
@@ -742,11 +742,16 @@ const FeedPage = () => {
                               </div>
                               <p className="text-sm text-slate-300">{com.texto}</p>
                             </div>
-                            {/* Menu de Admin para comentários */}
-                            {user?.role === 'admin' && (
+                            {/* Menu de Admin para comentários - sempre visível para admins */}
+                            {isAdmin && (
                               <DropdownMenu>
                                 <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="icon" className="opacity-0 group-hover:opacity-100 text-slate-400 h-8 w-8">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    className="text-amber-400 hover:text-amber-300 hover:bg-amber-500/20 h-8 w-8"
+                                    data-testid={`admin-comment-menu-${com.id}`}
+                                  >
                                     <MoreHorizontal className="w-4 h-4" />
                                   </Button>
                                 </DropdownMenuTrigger>
@@ -754,6 +759,7 @@ const FeedPage = () => {
                                   <DropdownMenuItem 
                                     className="text-amber-400 cursor-pointer"
                                     onClick={() => handleFixarComentario(com.id)}
+                                    data-testid={`fixar-comment-${com.id}`}
                                   >
                                     <Star className="w-4 h-4 mr-2" />
                                     {com.fixado ? 'Desfixar' : 'Fixar'}
@@ -761,6 +767,7 @@ const FeedPage = () => {
                                   <DropdownMenuItem 
                                     className="text-red-400 cursor-pointer"
                                     onClick={() => handleExcluirComentario(com.id, post.id)}
+                                    data-testid={`excluir-comment-${com.id}`}
                                   >
                                     <Trash2 className="w-4 h-4 mr-2" />
                                     Excluir
@@ -768,6 +775,7 @@ const FeedPage = () => {
                                   <DropdownMenuItem 
                                     className="text-orange-400 cursor-pointer"
                                     onClick={() => handleBloquearUsuario(com.autor_id, com.autor?.nome)}
+                                    data-testid={`bloquear-user-${com.id}`}
                                   >
                                     <Users className="w-4 h-4 mr-2" />
                                     Bloquear Usuário

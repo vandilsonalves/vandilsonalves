@@ -113,7 +113,7 @@ async def get_feed(
         comentarios = await db.feed_comentarios.find(
             {"post_id": post["id"]},
             {"_id": 0}
-        ).sort("data_criacao", -1).limit(3).to_list(3)
+        ).sort([("fixado", -1), ("data_criacao", -1)]).limit(3).to_list(3)
         
         for com in comentarios:
             com_autor = await db.usuarios.find_one(
@@ -121,8 +121,13 @@ async def get_feed(
                 {"_id": 0, "id": 1, "nome": 1, "foto_url": 1}
             )
             com["autor"] = com_autor
+            # Garantir que o campo fixado existe
+            if "fixado" not in com:
+                com["fixado"] = False
         
-        post["comentarios_preview"] = list(reversed(comentarios))
+        # Ordenar: fixados primeiro, depois por data
+        comentarios_ordenados = sorted(comentarios, key=lambda x: (not x.get("fixado", False), x.get("data_criacao", "")))
+        post["comentarios_preview"] = comentarios_ordenados
     
     # Total de posts
     total = await db.feed_posts.count_documents(filtro)
