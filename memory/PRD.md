@@ -2,6 +2,17 @@
 
 ## Implementation Status (20/Mar/2026)
 
+### ✅ Bug Fixes (Completed Now)
+
+1. **Bug Fix: Texto longo sem espaços no Feed** - CORRIGIDO!
+   - Adicionado CSS `break-all` no texto dos comentários
+   - Arquivo: `/app/frontend/src/pages/FeedPage.jsx` (linha 754)
+   - Previne que textos como "jjjjjjjjjjjjj..." quebrem o layout
+
+2. **Bug Fix: Filtro de Gênero incompleto no Ranking por Cidade** - CORRIGIDO!
+   - Adicionadas opções "PCD" e "Cadeirante" no dropdown de gênero
+   - Arquivo: `/app/frontend/src/pages/RankingCidadePage.jsx` (linhas 260-263)
+
 ### ✅ Completed This Session
 
 1. **Sistema de Gerenciamento de Comentários (P0)** - IMPLEMENTADO!
@@ -66,6 +77,7 @@
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_56.json` - Bug Fixes CSS e Filtro Gênero (VERIFIED)
 - `/app/test_reports/iteration_55.json` - Gerenciamento Comentários (17/17 passed)
 - `/app/test_reports/iteration_54.json` - PWA (33/33 passed)
 - `/app/test_reports/iteration_53.json` - Ranking por Cidade (16/16 passed)
