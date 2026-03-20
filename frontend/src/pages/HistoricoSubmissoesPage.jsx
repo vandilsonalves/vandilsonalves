@@ -123,7 +123,7 @@ const HistoricoSubmissoesPage = () => {
                 Acompanhe o status de todas as suas submissões de resultados
               </p>
             </div>
-            <Button onClick={() => navigate('/submeter')} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600 hover:bg-emerald-700" data-testid="btn-nova-submissao">
               <Upload className="w-4 h-4 mr-2" />
               Nova Submissão
             </Button>
@@ -231,7 +231,7 @@ const HistoricoSubmissoesPage = () => {
               <div className="text-center py-12">
                 <Upload className="w-12 h-12 mx-auto text-slate-300 mb-4" />
                 <p className="text-slate-500">Nenhuma submissão encontrada</p>
-                <Button onClick={() => navigate('/submeter')} className="mt-4">
+                <Button onClick={() => navigate('/submeter-resultado')} className="mt-4" data-testid="btn-submeter-primeiro">
                   Submeter Primeiro Resultado
                 </Button>
               </div>
@@ -409,7 +409,8 @@ const HistoricoSubmissoesPage = () => {
                 {selectedSubmissao.status === 'reprovado' && (
                   <Button 
                     className="w-full bg-emerald-600 hover:bg-emerald-700"
-                    onClick={() => { setShowModal(false); navigate('/submeter'); }}
+                    onClick={() => { setShowModal(false); navigate('/submeter-resultado'); }}
+                    data-testid="btn-submeter-novamente"
                   >
                     Submeter Novamente
                   </Button>
