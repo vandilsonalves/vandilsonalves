@@ -29,7 +29,7 @@ const RankingPage = () => {
   const [loading, setLoading] = useState(false);
   const [showDestaques, setShowDestaques] = useState(true);
   
-  // Ranking do Povão
+  // Ranking da Galera
   const [tipoRanking, setTipoRanking] = useState('profissional'); // 'profissional', 'povao' ou 'equipes'
   const [generoPovao, setGeneroPovao] = useState('M');
   const [rankingPovao, setRankingPovao] = useState([]);
@@ -88,7 +88,7 @@ const RankingPage = () => {
   const [filtroEquipe, setFiltroEquipe] = useState('');
   const [filtroCidade, setFiltroCidade] = useState('');
   
-  // Filtros do Povão
+  // Filtros da Galera
   const [filtroNomePovao, setFiltroNomePovao] = useState('');
   const [filtroColocacaoPovao, setFiltroColocacaoPovao] = useState('');
   const [filtroUFPovao, setFiltroUFPovao] = useState('');
@@ -144,7 +144,7 @@ const RankingPage = () => {
     }
   }, [categoriaAtual, filtroFaixa, filtroEquipe, filtroCidade, tipoRanking]);
 
-  // Buscar ranking do Povão
+  // Buscar ranking da Galera
   useEffect(() => {
     const fetchRankingPovao = async () => {
       setLoadingPovao(true);
@@ -156,7 +156,7 @@ const RankingPage = () => {
         setRankingPovao(rankingRes.data.ranking || []);
         setPovaoStats(statsRes.data);
       } catch (error) {
-        console.error('Erro ao buscar ranking Povão:', error);
+        console.error('Erro ao buscar ranking Galera:', error);
         setRankingPovao([]);
       } finally {
         setLoadingPovao(false);
@@ -169,7 +169,7 @@ const RankingPage = () => {
     }
   }, [tipoRanking, generoPovao]);
 
-  // Buscar destaques do Povão (semanal, mensal, destaque do mês)
+  // Buscar destaques da Galera (semanal, mensal, destaque do mês)
   const fetchPovaoDestaques = async () => {
     try {
       const [semanalRes, mensalRes, destaqueRes] = await Promise.all([
@@ -181,7 +181,7 @@ const RankingPage = () => {
       setPovaoRankingMensal(mensalRes.data);
       setPovaoDestaqueMes(destaqueRes.data);
     } catch (error) {
-      console.error('Erro ao buscar destaques do Povão:', error);
+      console.error('Erro ao buscar destaques da Galera:', error);
     }
   };
 
@@ -194,7 +194,7 @@ const RankingPage = () => {
     return nomeMatch && colocacaoMatch && ufMatch;
   });
 
-  // Aplicar filtros locais para o Povão
+  // Aplicar filtros locais para a Galera
   const rankingPovaoFiltrado = rankingPovao.filter(atleta => {
     const nomeMatch = atleta.nome.toLowerCase().includes(filtroNomePovao.toLowerCase());
     const colocacaoMatch = filtroColocacaoPovao === '' || atleta.colocacao === parseInt(filtroColocacaoPovao);
@@ -468,7 +468,7 @@ const RankingPage = () => {
                 </div>
               </button>
               
-              {/* Opção Povão */}
+              {/* Opção Galera */}
               <button 
                 className={`py-4 px-4 flex items-center justify-center gap-2 transition-all ${
                   tipoRanking === 'povao' 
@@ -480,7 +480,7 @@ const RankingPage = () => {
               >
                 <Users className="w-5 h-5" />
                 <div className="text-left">
-                  <p className="font-semibold text-sm">Ranking do Povão</p>
+                  <p className="font-semibold text-sm">Ranking da Galera</p>
                   <p className={`text-xs ${tipoRanking === 'povao' ? 'text-purple-100' : 'text-slate-400'}`}>
                     Pace Livre - Pontuação por distância
                   </p>
@@ -784,10 +784,10 @@ const RankingPage = () => {
           </>
         )}
 
-        {/* Ranking do Povão */}
+        {/* Ranking da Galera */}
         {tipoRanking === 'povao' && (
           <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-            {/* Sidebar de Filtros - Povão */}
+            {/* Sidebar de Filtros - Galera */}
             <Card className="lg:col-span-1 h-fit border-purple-200 dark:border-purple-800 shadow-lg">
               <CardHeader>
                 <CardTitle className="text-lg flex items-center gap-2 text-purple-700">
@@ -959,19 +959,19 @@ const RankingPage = () => {
               </CardContent>
             </Card>
 
-            {/* Modal Como Funciona - Povão */}
+            {/* Modal Como Funciona - Galera */}
             <Dialog open={showComoFuncionaPovao} onOpenChange={setShowComoFuncionaPovao}>
               <DialogContent className="max-w-2xl">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-purple-600 flex items-center gap-2">
                     <HelpCircle className="w-6 h-6" />
-                    Como funciona o Ranking do Povão?
+                    Como funciona o Ranking da Galera?
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 text-slate-700 dark:text-slate-300">
                   <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                    <h3 className="font-semibold text-lg mb-2 text-purple-700">O que é o Ranking do Povão?</h3>
-                    <p>O Ranking do Povão é uma modalidade especial que valoriza a <strong>participação</strong> acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!</p>
+                    <h3 className="font-semibold text-lg mb-2 text-purple-700">O que é o Ranking da Galera?</h3>
+                    <p>O Ranking da Galera é uma modalidade especial que valoriza a <strong>participação</strong> acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!</p>
                   </div>
                   
                   <div>
@@ -1019,19 +1019,19 @@ const RankingPage = () => {
               </DialogContent>
             </Dialog>
 
-            {/* Modal Regulamento - Povão */}
+            {/* Modal Regulamento - Galera */}
             <Dialog open={showRegulamentoPovao} onOpenChange={setShowRegulamentoPovao}>
               <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle className="text-2xl font-bold text-purple-600 flex items-center gap-2">
                     <FileText className="w-6 h-6" />
-                    Regulamento do Ranking do Povão
+                    Regulamento do Ranking da Galera
                   </DialogTitle>
                 </DialogHeader>
                 <div className="space-y-4 text-slate-700 dark:text-slate-300 text-sm">
                   <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
                     <h3 className="font-semibold text-base mb-2">1. Objetivo</h3>
-                    <p>O Ranking do Povão tem como objetivo incentivar a prática da corrida de rua, valorizando a participação e a constância dos atletas amadores.</p>
+                    <p>O Ranking da Galera tem como objetivo incentivar a prática da corrida de rua, valorizando a participação e a constância dos atletas amadores.</p>
                   </div>
                   
                   <div>
@@ -1089,16 +1089,16 @@ const RankingPage = () => {
               </DialogContent>
             </Dialog>
 
-            {/* Conteúdo Principal - Povão */}
+            {/* Conteúdo Principal - Galera */}
             <div className="lg:col-span-3 space-y-6">
-              {/* Stats do Povão */}
+              {/* Stats da Galera */}
               {povaoStats && (
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-900/30 dark:to-purple-800/30 border-0 shadow-lg">
                     <CardContent className="pt-6 text-center">
                       <Users className="w-8 h-8 mx-auto mb-2 text-purple-600" />
                       <div className="text-3xl font-bold text-purple-700">{povaoStats.total_atletas || 0}</div>
-                      <div className="text-sm text-purple-600">Atletas Povão</div>
+                      <div className="text-sm text-purple-600">Atletas Galera</div>
                     </CardContent>
                   </Card>
                   <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-900/30 dark:to-blue-800/30 border-0 shadow-lg">
@@ -1125,7 +1125,7 @@ const RankingPage = () => {
                 </div>
               )}
 
-              {/* Seção de Destaques do Povão */}
+              {/* Seção de Destaques da Galera */}
               {showDestaquePovao && (
                 <div className="space-y-4">
                   {/* Seletor de Período */}
@@ -1134,7 +1134,7 @@ const RankingPage = () => {
                       <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex items-center gap-2">
                           <Flame className="w-5 h-5 text-purple-600" />
-                          <span className="font-semibold text-purple-700">Destaques do Povão</span>
+                          <span className="font-semibold text-purple-700">Destaques da Galera</span>
                         </div>
                         <div className="flex gap-2">
                           <Button
@@ -1315,7 +1315,7 @@ const RankingPage = () => {
                   <div className="flex items-start gap-3">
                     <HelpCircle className="w-5 h-5 text-purple-600 mt-0.5" />
                     <div className="text-sm text-purple-800 dark:text-purple-200">
-                      <p className="font-semibold mb-1">Sistema de Pontuação do Povão</p>
+                      <p className="font-semibold mb-1">Sistema de Pontuação da Galera</p>
                       <p>A pontuação é baseada apenas na distância percorrida, não importa a colocação:</p>
                       <div className="flex flex-wrap gap-2 mt-2">
                         <Badge className="bg-purple-200 text-purple-800 border-0">5km a 9km = 5 pontos</Badge>
@@ -1328,12 +1328,12 @@ const RankingPage = () => {
                 </CardContent>
               </Card>
 
-              {/* Tabela do Ranking Povão */}
+              {/* Tabela do Ranking Galera */}
               <Card className="border-purple-200 dark:border-purple-800 shadow-lg">
                 <CardHeader>
                   <CardTitle className="text-xl flex items-center gap-2">
                     <Users className="w-5 h-5 text-purple-500" />
-                    Ranking do Povão - {generoPovao === 'M' ? 'Masculino' : 'Feminino'}
+                    Ranking da Galera - {generoPovao === 'M' ? 'Masculino' : 'Feminino'}
                     <span className="ml-2 text-sm font-normal text-slate-600 dark:text-slate-400">
                       ({rankingPovaoFiltrado.length} atletas)
                     </span>
@@ -1342,7 +1342,7 @@ const RankingPage = () => {
                 <CardContent>
                 {loadingPovao ? (
                   <div className="text-center py-12 text-slate-600 dark:text-slate-400">
-                    Carregando ranking do Povão...
+                    Carregando ranking da Galera...
                   </div>
                 ) : rankingPovaoFiltrado.length === 0 ? (
                   <div className="text-center py-12 text-slate-500">

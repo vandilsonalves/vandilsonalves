@@ -104,7 +104,7 @@ const DashboardAtletas = ({
 
   const getModalidadeBadge = (a) => {
     if (a.modalidade_usuario === 'povao_pace_livre') {
-      return <Badge className="bg-purple-500 text-white text-xs">Povão</Badge>;
+      return <Badge className="bg-purple-500 text-white text-xs">Galera</Badge>;
     }
     return <Badge className="bg-green-500 text-white text-xs">Pro/Amador</Badge>;
   };
@@ -169,7 +169,7 @@ const DashboardAtletas = ({
               <SelectContent>
                 <SelectItem value="all">Todas Modalidades</SelectItem>
                 <SelectItem value="profissional_amador">Pro/Amador</SelectItem>
-                <SelectItem value="povao_pace_livre">Povão</SelectItem>
+                <SelectItem value="povao_pace_livre">Galera</SelectItem>
               </SelectContent>
             </Select>
 

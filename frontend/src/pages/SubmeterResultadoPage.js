@@ -52,7 +52,7 @@ const SubmeterResultadoPage = () => {
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
   
-  // Verificar se usuário é da modalidade Povão
+  // Verificar se usuário é da modalidade Galera
   const isPovao = user?.modalidade_usuario === 'povao_pace_livre';
   
   const [formData, setFormData] = useState({
@@ -251,7 +251,7 @@ const SubmeterResultadoPage = () => {
             </CardTitle>
             <p className="text-slate-600 mt-2">
               {isPovao 
-                ? 'Ranking do Povão - Pace Livre (Pontuação por distância)'
+                ? 'Ranking da Galera - Pace Livre (Pontuação por distância)'
                 : 'Preencha os dados da sua corrida (Prazo: até 30 dias após o evento)'
               }
             </p>
@@ -273,7 +273,7 @@ const SubmeterResultadoPage = () => {
               {isPovao ? (
                 <Alert className="bg-purple-50 border-purple-200">
                   <AlertDescription>
-                    <strong>Ranking do Povão - Pace Livre</strong><br />
+                    <strong>Ranking da Galera - Pace Livre</strong><br />
                     Você compete pela distância percorrida, não pela colocação!<br />
                     <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 10pts | 21km+ = distância em pts<br />
                     <strong>Prazo:</strong> Você tem até 30 dias após a corrida para submeter o resultado.
@@ -302,7 +302,7 @@ const SubmeterResultadoPage = () => {
                   />
                 </div>
 
-                {/* Campo de Colocação - oculto para Povão */}
+                {/* Campo de Colocação - oculto para Galera */}
                 {!isPovao && (
                   <div>
                     <Label>Sua Colocação *</Label>

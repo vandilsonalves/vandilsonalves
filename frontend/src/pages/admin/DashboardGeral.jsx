@@ -46,7 +46,7 @@ const DashboardGeral = ({
   // Preparar dados para gráficos
   const modalidadeData = [
     { name: 'Profissional/Amador', value: statsModalidade?.profissional || 0 },
-    { name: 'Povão (Pace Livre)', value: statsModalidade?.povao || 0 }
+    { name: 'Galera (Pace Livre)', value: statsModalidade?.povao || 0 }
   ];
 
   const categoriaData = statsCategorias ? [
@@ -220,20 +220,20 @@ const DashboardGeral = ({
         </Card>
       </div>
 
-      {/* Ranking do Povão Stats */}
+      {/* Ranking da Galera Stats */}
       {statsPovao && (
         <Card className="bg-gradient-to-r from-purple-50 to-indigo-50 dark:from-purple-900/20 dark:to-indigo-900/20">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-5 h-5 text-purple-500" />
-              Ranking do Povão - Estatísticas
+              Ranking da Galera - Estatísticas
             </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               <div className="text-center p-4 bg-white dark:bg-slate-800 rounded-lg">
                 <p className="text-2xl font-bold text-purple-600">{statsPovao.total_atletas || 0}</p>
-                <p className="text-sm text-slate-500">Atletas Povão</p>
+                <p className="text-sm text-slate-500">Atletas Galera</p>
               </div>
               <div className="text-center p-4 bg-white dark:bg-slate-800 rounded-lg">
                 <p className="text-2xl font-bold text-blue-600">{statsPovao.total_provas || 0}</p>

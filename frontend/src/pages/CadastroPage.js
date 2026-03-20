@@ -214,7 +214,7 @@ const CadastroPage = () => {
     fetchCidadesAssessoria();
   }, [assessoriaData.estado_assessoria]);
   
-  // Verificar se pode usar modalidade Povão (PCD e Cadeirante não podem)
+  // Verificar se pode usar modalidade Galera (PCD e Cadeirante não podem)
   const podeSelecionarPovao = formData.categoria === 'normal' || formData.categoria === '';
 
   // Filtrar equipes pela busca (agora são objetos com nome, cidade, estado)
@@ -756,7 +756,7 @@ const CadastroPage = () => {
                       </div>
                     </div>
 
-                    {/* Opção Povão - Pace Livre */}
+                    {/* Opção Galera - Pace Livre */}
                     <div 
                       className={`relative border-2 rounded-xl p-4 transition-all ${
                         !podeSelecionarPovao 
@@ -780,7 +780,7 @@ const CadastroPage = () => {
                         </div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-slate-800 dark:text-slate-200">
-                            Ranking do Povão - Pace Livre
+                            Ranking da Galera - Pace Livre
                           </h4>
                           <p className="text-sm text-slate-500 mt-1">
                             Pontuação baseada apenas na distância percorrida

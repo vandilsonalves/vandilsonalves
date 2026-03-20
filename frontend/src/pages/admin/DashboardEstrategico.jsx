@@ -288,7 +288,7 @@ const DashboardEstrategico = () => {
               color="success"
             />
             <StatCard
-              title="Novos Povão"
+              title="Novos Galera"
               value={visaoGeral?.novos_povao || 0}
               icon={Users}
               subtitle="Este mês"
@@ -319,7 +319,7 @@ const DashboardEstrategico = () => {
               subtitle="Prof/Amador"
             />
             <StatCard
-              title="Pace Médio Povão"
+              title="Pace Médio Galera"
               value={visaoGeral?.pace_medio_povao || 'N/A'}
               icon={Clock}
               subtitle="Pace Livre"

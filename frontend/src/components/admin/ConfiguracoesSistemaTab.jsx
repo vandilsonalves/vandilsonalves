@@ -156,7 +156,7 @@ const ConfiguracoesSistemaTab = ({ token }) => {
           </TabsTrigger>
           <TabsTrigger value="povao">
             <Users className="w-4 h-4 mr-2" />
-            <span className="hidden sm:inline">Povão</span>
+            <span className="hidden sm:inline">Galera</span>
           </TabsTrigger>
           <TabsTrigger value="equipes">
             <Target className="w-4 h-4 mr-2" />
@@ -244,7 +244,7 @@ const ConfiguracoesSistemaTab = ({ token }) => {
           </Card>
         </TabsContent>
 
-        {/* Tab Povão */}
+        {/* Tab Galera */}
         <TabsContent value="povao" className="space-y-6">
           <Card>
             <CardHeader>

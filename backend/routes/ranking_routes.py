@@ -23,7 +23,7 @@ router = APIRouter(tags=["Ranking"])
 @router.get("/ranking/povao")
 @cached(prefix='ranking', ttl_key='ranking_povao')
 async def get_ranking_povao(genero: str = "M"):
-    """Retorna o ranking do Povão - Pace Livre"""
+    """Retorna o ranking da Galera - Pace Livre"""
     ranking_list = await db.ranking_povao.find(
         {"ano": 2025, "genero": genero},
         {"_id": 0}
@@ -58,7 +58,7 @@ async def get_ranking_povao(genero: str = "M"):
 @router.get("/ranking/povao/stats")
 @cached(prefix='ranking', ttl_key='stats')
 async def get_povao_stats():
-    """Retorna estatísticas do ranking do Povão"""
+    """Retorna estatísticas do ranking da Galera"""
     total_atletas_m = await db.ranking_povao.count_documents({"ano": 2025, "genero": "M"})
     total_atletas_f = await db.ranking_povao.count_documents({"ano": 2025, "genero": "F"})
     
@@ -85,7 +85,7 @@ async def get_povao_stats():
 
 @router.get("/ranking/povao/semanal")
 async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10):
-    """Retorna o Top 10 do Povão da última semana"""
+    """Retorna o Top 10 da Galera da última semana"""
     from datetime import datetime, timedelta
     
     hoje = datetime.now()
@@ -140,7 +140,7 @@ async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10):
 
 @router.get("/ranking/povao/mensal")
 async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10):
-    """Retorna o Top 10 do Povão do mês atual"""
+    """Retorna o Top 10 da Galera do mês atual"""
     from datetime import datetime
     
     hoje = datetime.now()
@@ -197,7 +197,7 @@ async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10):
 
 @router.get("/ranking/povao/destaque-mes")
 async def get_povao_destaque_mes():
-    """Retorna os destaques do mês do Povão"""
+    """Retorna os destaques do mês da Galera"""
     from datetime import datetime
     
     hoje = datetime.now()
@@ -762,7 +762,7 @@ async def get_ranking_por_cidade(
     result = []
     
     if modalidade.lower() == "povao":
-        # Ranking do Povão - baseado em resultados de corridas
+        # Ranking da Galera - baseado em resultados de corridas
         pipeline = [
             {"$match": {
                 "usuario_id": {"$in": usuario_ids},

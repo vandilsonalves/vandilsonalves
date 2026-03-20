@@ -44,9 +44,9 @@ def calcular_pontos_colocacao(colocacao: int, categoria: str) -> int:
 
 
 def calcular_pontos_povao(distancia: str) -> int:
-    """Calcula pontos para o Ranking do Povão baseado na distância
+    """Calcula pontos para o Ranking da Galera baseado na distância
     
-    Regra de Pontuação (Sistema do Povão):
+    Regra de Pontuação (Sistema da Galera):
     - 5km a 9km = 5 pontos
     - 10km a 20km = 7 pontos
     - 21km ou mais = 9 pontos
@@ -147,7 +147,7 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             }
         )
         
-        # Atualizar ranking do Povão
+        # Atualizar ranking da Galera
         await db.ranking_povao.update_one(
             {"usuario_id": resultado["usuario_id"], "ano": 2025},
             {
@@ -174,7 +174,7 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             usuario_id=resultado["usuario_id"],
             tipo="aprovacao",
             titulo="Resultado aprovado!",
-            mensagem=f"Seu resultado na {nome_competicao} foi aprovado! Você ganhou {pontos_povao} pontos no Ranking do Povão.",
+            mensagem=f"Seu resultado na {nome_competicao} foi aprovado! Você ganhou {pontos_povao} pontos no Ranking da Galera.",
             dados_extras={"pontos": pontos_povao, "competicao": nome_competicao, "modalidade": "povao"}
         )
         
@@ -857,7 +857,7 @@ async def exportar_atletas(
             atleta.get("genero", ""),
             atleta.get("categoria", ""),
             atleta.get("faixa_etaria", ""),
-            "Povão" if atleta.get("modalidade_usuario") == "povao_pace_livre" else "Pro/Amador",
+            "Galera" if atleta.get("modalidade_usuario") == "povao_pace_livre" else "Pro/Amador",
             "Ativo" if atleta.get("is_active", True) else "Inativo"
         ])
     
@@ -907,7 +907,7 @@ async def transferir_modalidade(
     if atleta.get("categoria") in ["pcd", "cadeirante"] and nova_modalidade == "povao_pace_livre":
         raise HTTPException(
             status_code=400,
-            detail="Atletas PCD e Cadeirantes não podem participar do Ranking do Povão"
+            detail="Atletas PCD e Cadeirantes não podem participar do Ranking da Galera"
         )
     
     # Atualizar modalidade
@@ -939,7 +939,7 @@ async def transferir_modalidade(
         usuario_id=atleta_id,
         tipo="sistema",
         titulo="Modalidade Alterada",
-        mensagem=f"Sua modalidade foi alterada para {'Ranking do Povão - Pace Livre' if nova_modalidade == 'povao_pace_livre' else 'Profissional/Amador'}.",
+        mensagem=f"Sua modalidade foi alterada para {'Ranking da Galera - Pace Livre' if nova_modalidade == 'povao_pace_livre' else 'Profissional/Amador'}.",
         dados_extras={"nova_modalidade": nova_modalidade}
     )
     

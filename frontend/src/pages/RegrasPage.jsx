@@ -72,8 +72,8 @@ const RegrasPage = () => {
             </TabsTrigger>
             <TabsTrigger value="povao" className="flex items-center gap-2" data-testid="tab-povao">
               <Users className="w-4 h-4" />
-              <span className="hidden sm:inline">Ranking do Povão</span>
-              <span className="sm:hidden">Povão</span>
+              <span className="hidden sm:inline">Ranking da Galera</span>
+              <span className="sm:hidden">Galera</span>
             </TabsTrigger>
             <TabsTrigger value="equipes" className="flex items-center gap-2" data-testid="tab-equipes">
               <Target className="w-4 h-4" />
@@ -200,7 +200,7 @@ const RegrasPage = () => {
             </div>
           </TabsContent>
 
-          {/* Tab Povão */}
+          {/* Tab Galera */}
           <TabsContent value="povao">
             <div className="space-y-6">
               <Card className="border-purple-200 bg-gradient-to-br from-purple-50 to-white">
@@ -252,7 +252,7 @@ const RegrasPage = () => {
                       Todos Ganham Pontos!
                     </h3>
                     <p className="text-purple-600">
-                      No Ranking do Povão, não importa sua colocação. 
+                      No Ranking da Galera, não importa sua colocação. 
                       O importante é participar e completar a prova!
                     </p>
                   </div>

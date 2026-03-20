@@ -241,7 +241,7 @@ const RankingCidadePage = () => {
                     <SelectItem value="povao" className="text-white hover:bg-slate-700">
                       <div className="flex items-center gap-2">
                         <Users className="h-4 w-4 text-green-400" />
-                        Povão
+                        Galera
                       </div>
                     </SelectItem>
                   </SelectContent>
@@ -319,7 +319,7 @@ const RankingCidadePage = () => {
             <CardHeader>
               <CardTitle className="text-white flex items-center gap-2">
                 <Trophy className="h-5 w-5 text-amber-400" />
-                Ranking de {stats.cidade} - {modalidade === 'povao' ? 'Povão' : 'Profissional/Amador'}
+                Ranking de {stats.cidade} - {modalidade === 'povao' ? 'Galera' : 'Profissional/Amador'}
               </CardTitle>
             </CardHeader>
             <CardContent>

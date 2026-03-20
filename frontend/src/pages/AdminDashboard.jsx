@@ -1278,7 +1278,7 @@ const AdminDashboard = () => {
       );
       
       const { stats } = response.data;
-      const modalidadeNova = stats.modalidade_nova === 'povao_pace_livre' ? 'Ranking do Povão' : 'Ranking Profissional/Amador';
+      const modalidadeNova = stats.modalidade_nova === 'povao_pace_livre' ? 'Ranking da Galera' : 'Ranking Profissional/Amador';
       
       toast.success('Transferência Concluída!', {
         description: `${atletaTransferindo.nome} transferido para ${modalidadeNova}. Pontos: ${stats.pontos_antigos} → ${stats.pontos_novos}`
@@ -3437,7 +3437,7 @@ const AdminDashboard = () => {
                   }`}>
                     <p className="text-xs font-medium">Atual</p>
                     <p className="font-semibold">
-                      {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? 'Ranking do Povão' : 'Profissional/Amador'}
+                      {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? 'Ranking da Galera' : 'Profissional/Amador'}
                     </p>
                   </div>
                   
@@ -3450,7 +3450,7 @@ const AdminDashboard = () => {
                   }`}>
                     <p className="text-xs font-medium">Nova</p>
                     <p className="font-semibold">
-                      {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? 'Profissional/Amador' : 'Ranking do Povão'}
+                      {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? 'Profissional/Amador' : 'Ranking da Galera'}
                     </p>
                   </div>
                 </div>
@@ -3473,13 +3473,13 @@ const AdminDashboard = () => {
                   }`}>
                     {atletaTransferindo.modalidade_usuario === 'povao_pace_livre' ? (
                       <>
-                        <strong>Povão → Profissional/Amador:</strong><br />
+                        <strong>Galera → Profissional/Amador:</strong><br />
                         Os pontos serão recalculados baseados na <strong>colocação</strong> de cada corrida.
                         Se a colocação original não pontuava (acima de 10º lugar), a corrida terá 0 pontos.
                       </>
                     ) : (
                       <>
-                        <strong>Profissional/Amador → Povão:</strong><br />
+                        <strong>Profissional/Amador → Galera:</strong><br />
                         Os pontos serão recalculados baseados na <strong>distância</strong> de cada corrida:
                         <ul className="list-disc list-inside mt-1 text-sm">
                           <li>5km a 9km = 5 pontos</li>

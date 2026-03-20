@@ -104,7 +104,7 @@ const DashboardResultados = ({
                         {resultado.modalidade_usuario === 'povao_pace_livre' ? (
                           <Badge className="bg-purple-500 text-white text-xs flex items-center gap-1">
                             <Users className="w-3 h-3" />
-                            Povão
+                            Galera
                           </Badge>
                         ) : (
                           <Badge className="bg-emerald-500 text-white text-xs flex items-center gap-1">
