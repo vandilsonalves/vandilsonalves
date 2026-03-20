@@ -445,8 +445,8 @@ const RankingPage = () => {
           </div>
         </div>
 
-        {/* Seletor de Tipo de Ranking */}
-        <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden">
+        {/* Seletor de Tipo de Ranking - Fixo no topo ao rolar */}
+        <Card className="mb-6 border-slate-200 dark:border-slate-800 shadow-lg overflow-hidden sticky top-0 z-50 bg-white dark:bg-slate-900">
           <CardContent className="p-0">
             <div className="grid grid-cols-2 md:grid-cols-4">
               {/* Opção Profissional/Amador */}
