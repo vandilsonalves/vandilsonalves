@@ -170,6 +170,8 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
           placeholder="Ex: Team Running Pro, Assessoria XYZ"
           className="border-2 border-slate-200 focus:border-amber-500"
           data-testid="input-nome-assessoria"
+          autoFocus
+          autoComplete="off"
         />
         <p className="text-xs text-slate-500">
           Este será o nome oficial da sua equipe nos rankings
@@ -256,6 +258,7 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
           rows={3}
           className="border-2 border-slate-200 focus:border-amber-500"
           data-testid="input-bio-assessoria"
+          autoComplete="off"
         />
       </div>
 
@@ -301,6 +304,7 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
           className="sm:max-w-lg overflow-y-auto max-h-[90vh]" 
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
+          onOpenAutoFocus={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 -m-6 mb-4 p-6 rounded-t-lg text-white">
