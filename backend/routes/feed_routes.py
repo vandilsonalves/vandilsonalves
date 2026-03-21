@@ -878,6 +878,52 @@ async def limpar_todos_comentarios(
     }
 
 
+@router.delete("/feed/admin/posts/limpar-todos")
+async def limpar_todos_posts(
+    current_user: dict = Depends(get_current_user)
+):
+    """Admin limpa todos os posts do feed."""
+    
+    if current_user.get("role") not in ["admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas administradores podem limpar posts")
+    
+    # Contar posts a serem removidos
+    total_posts = await db.feed_posts.count_documents({})
+    
+    # Fazer backup antes de excluir
+    posts = await db.feed_posts.find({}, {"_id": 0}).to_list(None)
+    
+    if posts:
+        await db.feed_posts_backup.insert_one({
+            "data_backup": datetime.now(timezone.utc).isoformat(),
+            "executado_por": current_user["id"],
+            "total_posts": len(posts),
+            "posts": posts
+        })
+    
+    # Excluir todos os posts
+    resultado = await db.feed_posts.delete_many({})
+    
+    # Excluir também reações e comentários relacionados
+    await db.feed_reacoes.delete_many({})
+    await db.feed_comentarios.delete_many({})
+    
+    # Limpar cache do Redis
+    try:
+        from services.cache_service import redis_client
+        if redis_client:
+            keys = redis_client.keys("feed:*")
+            if keys:
+                redis_client.delete(*keys)
+    except Exception as e:
+        print(f"Erro ao limpar cache: {e}")
+    
+    return {
+        "message": f"Limpeza concluída! {resultado.deleted_count} posts removidos.",
+        "posts_removidos": resultado.deleted_count
+    }
+
+
 @router.delete("/feed/admin/comentarios/{comentario_id}")
 async def excluir_comentario_admin(
     comentario_id: str,

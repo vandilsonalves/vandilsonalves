@@ -871,8 +871,34 @@ const FeedPage = () => {
                 </CardHeader>
                 <CardContent className="space-y-3">
                   <p className="text-xs text-slate-400">
-                    Clique no ícone de comentários (balãozinho) em qualquer post para ver e gerenciar os comentários.
+                    Gerencie posts e comentários do feed.
                   </p>
+                  
+                  {/* Botão Limpar Posts */}
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="w-full border-red-500/50 text-red-400 hover:bg-red-500/20"
+                    onClick={async () => {
+                      if (confirm('⚠️ ATENÇÃO: Limpar TODOS os posts do feed? Esta ação não pode ser desfeita!')) {
+                        try {
+                          const response = await axios.delete(`${API}/feed/admin/posts/limpar-todos`, {
+                            headers: { Authorization: `Bearer ${token}` }
+                          });
+                          toast.success(response.data.message || 'Posts limpos com sucesso!');
+                          fetchFeed();
+                        } catch (error) {
+                          toast.error(error.response?.data?.detail || 'Erro ao limpar posts');
+                        }
+                      }
+                    }}
+                    data-testid="btn-limpar-posts"
+                  >
+                    <Trash2 className="w-4 h-4 mr-2" />
+                    Limpar Todos Posts
+                  </Button>
+                  
+                  {/* Botão Limpar Comentários */}
                   <Button 
                     variant="outline" 
                     size="sm"
