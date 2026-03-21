@@ -1,10 +1,10 @@
 // /app/frontend/src/components/CriarAssessoria.jsx
 // Componente para donos de assessoria criarem sua equipe
-// Inclui autocomplete de Estado/Cidade via API do IBGE
+// Usando Portal isolado para evitar problemas de foco
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, memo } from 'react';
+import { createPortal } from 'react-dom';
 import axios from 'axios';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -12,15 +12,9 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+import { Card, CardContent } from '@/components/ui/card';
 import { 
-  Building2, MapPin, Users, Save, Loader2, Trophy, Sparkles, CheckCircle, AlertCircle
+  Building2, MapPin, Users, Save, Loader2, Trophy, Sparkles, CheckCircle, AlertCircle, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -57,19 +51,18 @@ const ESTADOS_BR = [
   { sigla: 'TO', nome: 'Tocantins' }
 ];
 
-const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false }) => {
-  // Usar refs para evitar re-renders ao digitar
-  const nomeRef = useRef(null);
-  const bioRef = useRef(null);
-  
+// Formulário isolado com memo para evitar re-renders
+const AssessoriaForm = memo(({ token, onSuccess }) => {
+  const [nome, setNome] = useState('');
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
+  const [mensagemBio, setMensagemBio] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  
-  // Estados para cidades do IBGE
   const [cidades, setCidades] = useState([]);
   const [loadingCidades, setLoadingCidades] = useState(false);
+  
+  const nomeInputRef = useRef(null);
 
   // Buscar cidades quando estado muda
   useEffect(() => {
@@ -104,9 +97,6 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    
-    const nome = nomeRef.current?.value || '';
-    const mensagemBio = bioRef.current?.value || '';
     
     if (!nome.trim()) {
       setError('O nome da assessoria é obrigatório');
@@ -150,8 +140,13 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
     }
   };
 
-  const FormContent = () => (
-    <form onSubmit={handleSubmit} className="space-y-5">
+  // Evitar que eventos de teclado vazem para fora
+  const handleKeyDown = (e) => {
+    e.stopPropagation();
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5" onKeyDown={handleKeyDown}>
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="w-4 h-4" />
@@ -161,18 +156,24 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
 
       {/* Nome da Assessoria */}
       <div className="space-y-2">
-        <Label htmlFor="nome" className="flex items-center gap-2 text-base font-semibold">
+        <Label htmlFor="nome-assessoria" className="flex items-center gap-2 text-base font-semibold">
           <Building2 className="w-5 h-5 text-amber-600" />
           Nome da Assessoria/Equipe *
         </Label>
-        <Input
-          id="nome"
-          ref={nomeRef}
-          defaultValue=""
+        <input
+          ref={nomeInputRef}
+          id="nome-assessoria"
+          type="text"
+          value={nome}
+          onChange={(e) => setNome(e.target.value)}
+          onFocus={(e) => e.target.select()}
           placeholder="Ex: Team Running Pro, Assessoria XYZ"
-          className="border-2 border-slate-200 focus:border-amber-500"
+          className="flex h-10 w-full rounded-md border-2 border-slate-200 bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           data-testid="input-nome-assessoria"
           autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="off"
+          spellCheck="false"
         />
         <p className="text-xs text-slate-500">
           Este será o nome oficial da sua equipe nos rankings
@@ -189,11 +190,9 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
           <SelectTrigger className="border-2 border-slate-200 focus:border-amber-500" data-testid="select-estado-assessoria">
             <SelectValue placeholder="Selecione o estado" />
           </SelectTrigger>
-          <SelectContent>
-            {ESTADOS_BR.map(uf => (
-              <SelectItem key={uf.sigla} value={uf.sigla}>
-                {uf.sigla} - {uf.nome}
-              </SelectItem>
+          <SelectContent className="max-h-60">
+            {ESTADOS_BR.map(e => (
+              <SelectItem key={e.sigla} value={e.sigla}>{e.sigla} - {e.nome}</SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -252,19 +251,22 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
 
       {/* Bio/Mensagem */}
       <div className="space-y-2">
-        <Label htmlFor="bio" className="flex items-center gap-2 font-semibold">
+        <Label htmlFor="bio-assessoria" className="flex items-center gap-2 font-semibold">
           <Users className="w-4 h-4 text-amber-600" />
           Mensagem/Bio (opcional)
         </Label>
-        <Textarea
-          id="bio"
-          ref={bioRef}
-          defaultValue=""
+        <textarea
+          id="bio-assessoria"
+          value={mensagemBio}
+          onChange={(e) => setMensagemBio(e.target.value)}
+          onFocus={(e) => e.target.select()}
           placeholder="Escreva uma mensagem de apresentação da sua assessoria..."
           rows={3}
-          className="border-2 border-slate-200 focus:border-amber-500"
+          className="flex min-h-[80px] w-full rounded-md border-2 border-slate-200 bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
           data-testid="input-bio-assessoria"
           autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
         />
       </div>
 
@@ -286,7 +288,7 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
         {saving ? (
           <>
             <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-            Criando Assessoria...
+            Criando sua assessoria...
           </>
         ) : (
           <>
@@ -301,40 +303,44 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
       </p>
     </form>
   );
+});
 
-  // Renderizar como Modal obrigatório
-  if (isModal) {
-    return (
-      <Dialog open={forceOpen} onOpenChange={() => {}}>
-        <DialogContent 
-          className="sm:max-w-lg overflow-y-auto max-h-[90vh]" 
-          onPointerDownOutside={(e) => e.preventDefault()}
-          onEscapeKeyDown={(e) => e.preventDefault()}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          onCloseAutoFocus={(e) => e.preventDefault()}
-          onInteractOutside={(e) => e.preventDefault()}
+AssessoriaForm.displayName = 'AssessoriaForm';
+
+// Modal usando Portal para isolamento completo
+const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false }) => {
+  
+  // Modal usando Portal
+  if (isModal && forceOpen) {
+    return createPortal(
+      <div 
+        className="fixed inset-0 z-[9999] flex items-center justify-center"
+        style={{ backgroundColor: 'rgba(0, 0, 0, 0.8)' }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div 
+          className="relative bg-white rounded-lg shadow-2xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto"
+          onClick={(e) => e.stopPropagation()}
         >
-          <DialogHeader>
-            <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 -m-6 mb-4 p-6 rounded-t-lg text-white">
-              <div className="flex items-center gap-3 mb-2">
-                <div className="bg-white/20 rounded-full p-3">
-                  <Trophy className="w-8 h-8" />
-                </div>
-                <div>
-                  <DialogTitle className="text-2xl font-bold text-white">Parabéns!</DialogTitle>
-                  <DialogDescription className="text-amber-100">
-                    Você foi promovido a Dono de Assessoria!
-                  </DialogDescription>
-                </div>
+          {/* Header */}
+          <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 p-6 text-white rounded-t-lg">
+            <div className="flex items-center gap-3 mb-2">
+              <div className="bg-white/20 rounded-full p-3">
+                <Trophy className="w-8 h-8" />
               </div>
-              <Badge className="bg-white/20 text-white mt-2">
-                <Sparkles className="w-4 h-4 mr-1" />
-                Complete seu cadastro para ativar sua equipe
-              </Badge>
+              <div>
+                <h2 className="text-2xl font-bold">Parabéns!</h2>
+                <p className="text-amber-100">Você foi promovido a Dono de Assessoria!</p>
+              </div>
             </div>
-          </DialogHeader>
+            <Badge className="bg-white/20 text-white mt-2">
+              <Sparkles className="w-4 h-4 mr-1" />
+              Complete seu cadastro para ativar sua equipe
+            </Badge>
+          </div>
           
-          <div className="px-1">
+          {/* Content */}
+          <div className="p-6">
             <Alert className="mb-4 bg-blue-50 border-blue-200">
               <AlertCircle className="w-4 h-4 text-blue-600" />
               <AlertDescription className="text-blue-800">
@@ -342,10 +348,11 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
               </AlertDescription>
             </Alert>
             
-            <FormContent />
+            <AssessoriaForm token={token} onSuccess={onSuccess} />
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      </div>,
+      document.body
     );
   }
 
@@ -370,10 +377,10 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
       </div>
 
       <CardContent className="p-6">
-        <FormContent />
+        <AssessoriaForm token={token} onSuccess={onSuccess} />
       </CardContent>
     </Card>
   );
 };
 
-export default CriarAssessoria;
+export default memo(CriarAssessoria);
