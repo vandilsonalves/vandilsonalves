@@ -167,7 +167,6 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
           placeholder="Ex: Team Running Pro, Assessoria XYZ"
           className="border-2 border-slate-200 focus:border-amber-500"
           data-testid="input-nome-assessoria"
-          autoFocus
           autoComplete="off"
         />
         <p className="text-xs text-slate-500">
@@ -307,6 +306,8 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
           onPointerDownOutside={(e) => e.preventDefault()}
           onEscapeKeyDown={(e) => e.preventDefault()}
           onOpenAutoFocus={(e) => e.preventDefault()}
+          onCloseAutoFocus={(e) => e.preventDefault()}
+          onInteractOutside={(e) => e.preventDefault()}
         >
           <DialogHeader>
             <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 -m-6 mb-4 p-6 rounded-t-lg text-white">
