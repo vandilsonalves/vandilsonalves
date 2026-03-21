@@ -2,7 +2,7 @@
 // Componente para donos de assessoria criarem sua equipe
 // Inclui autocomplete de Estado/Cidade via API do IBGE
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -58,10 +58,12 @@ const ESTADOS_BR = [
 ];
 
 const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false }) => {
-  const [nome, setNome] = useState('');
+  // Usar refs para evitar re-renders ao digitar
+  const nomeRef = useRef(null);
+  const bioRef = useRef(null);
+  
   const [cidade, setCidade] = useState('');
   const [estado, setEstado] = useState('');
-  const [mensagemBio, setMensagemBio] = useState('');
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   
@@ -102,6 +104,9 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+    
+    const nome = nomeRef.current?.value || '';
+    const mensagemBio = bioRef.current?.value || '';
     
     if (!nome.trim()) {
       setError('O nome da assessoria é obrigatório');
@@ -162,8 +167,8 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
         </Label>
         <Input
           id="nome"
-          value={nome}
-          onChange={(e) => setNome(e.target.value)}
+          ref={nomeRef}
+          defaultValue=""
           placeholder="Ex: Team Running Pro, Assessoria XYZ"
           className="border-2 border-slate-200 focus:border-amber-500"
           data-testid="input-nome-assessoria"
@@ -253,8 +258,8 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
         </Label>
         <Textarea
           id="bio"
-          value={mensagemBio}
-          onChange={(e) => setMensagemBio(e.target.value)}
+          ref={bioRef}
+          defaultValue=""
           placeholder="Escreva uma mensagem de apresentação da sua assessoria..."
           rows={3}
           className="border-2 border-slate-200 focus:border-amber-500"
