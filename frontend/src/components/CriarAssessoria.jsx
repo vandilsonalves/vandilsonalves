@@ -68,7 +68,6 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
   // Estados para cidades do IBGE
   const [cidades, setCidades] = useState([]);
   const [loadingCidades, setLoadingCidades] = useState(false);
-  const [cidadeInputMode, setCidadeInputMode] = useState('select'); // 'select' ou 'input'
 
   // Buscar cidades quando estado muda
   useEffect(() => {
@@ -91,12 +90,10 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
         .map(c => c.nome)
         .sort((a, b) => a.localeCompare(b, 'pt-BR'));
       setCidades(cidadesOrdenadas);
-      setCidadeInputMode('select');
     } catch (error) {
       console.error('Erro ao buscar cidades:', error);
-      // Fallback para input manual
-      setCidadeInputMode('input');
-      toast.error('Erro ao carregar cidades. Digite manualmente.');
+      setCidades([]);
+      toast.error('Erro ao carregar cidades. Tente novamente.');
     } finally {
       setLoadingCidades(false);
     }
@@ -210,37 +207,42 @@ const CriarAssessoria = ({ token, onSuccess, isModal = false, forceOpen = false 
             <Loader2 className="w-4 h-4 animate-spin text-amber-600" />
             <span className="text-sm text-slate-600">Carregando cidades...</span>
           </div>
-        ) : cidadeInputMode === 'select' && cidades.length > 0 ? (
-          <Select value={cidade} onValueChange={setCidade} disabled={!estado}>
-            <SelectTrigger className="border-2 border-slate-200 focus:border-amber-500" data-testid="select-cidade-assessoria">
-              <SelectValue placeholder={estado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
-            </SelectTrigger>
-            <SelectContent className="max-h-60">
-              {cidades.map(c => (
-                <SelectItem key={c} value={c}>{c}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+        ) : cidades.length > 0 ? (
+          <>
+            <Select value={cidade} onValueChange={setCidade} disabled={!estado}>
+              <SelectTrigger className="border-2 border-slate-200 focus:border-amber-500" data-testid="select-cidade-assessoria">
+                <SelectValue placeholder={estado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
+              </SelectTrigger>
+              <SelectContent className="max-h-60">
+                {cidades.map(c => (
+                  <SelectItem key={c} value={c}>{c}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-slate-500">
+              {cidades.length} cidades disponíveis
+            </p>
+          </>
+        ) : estado ? (
+          <div className="p-3 bg-amber-50 border border-amber-200 rounded-md">
+            <p className="text-sm text-amber-700">
+              Erro ao carregar cidades. Tente selecionar o estado novamente.
+            </p>
+            <Button 
+              type="button" 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+              onClick={() => fetchCidades(estado)}
+            >
+              <Loader2 className="w-3 h-3 mr-1" />
+              Tentar novamente
+            </Button>
+          </div>
         ) : (
-          <Input
-            id="cidade"
-            value={cidade}
-            onChange={(e) => setCidade(e.target.value)}
-            placeholder={estado ? "Digite o nome da cidade" : "Selecione o estado primeiro"}
-            disabled={!estado}
-            className="border-2 border-slate-200 focus:border-amber-500"
-            data-testid="input-cidade-assessoria"
-          />
-        )}
-        
-        {cidadeInputMode === 'select' && cidades.length > 0 && (
-          <button
-            type="button"
-            onClick={() => setCidadeInputMode('input')}
-            className="text-xs text-blue-500 hover:underline"
-          >
-            Cidade não encontrada? Digite manualmente
-          </button>
+          <div className="p-3 bg-slate-100 rounded-md">
+            <p className="text-sm text-slate-500">Selecione o estado primeiro</p>
+          </div>
         )}
       </div>
 
