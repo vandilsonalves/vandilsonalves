@@ -9,7 +9,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
@@ -186,16 +185,18 @@ const AssessoriaForm = memo(({ token, onSuccess }) => {
           <MapPin className="w-4 h-4 text-amber-600" />
           Estado *
         </Label>
-        <Select value={estado} onValueChange={setEstado}>
-          <SelectTrigger className="border-2 border-slate-200 focus:border-amber-500" data-testid="select-estado-assessoria">
-            <SelectValue placeholder="Selecione o estado" />
-          </SelectTrigger>
-          <SelectContent className="max-h-60">
-            {ESTADOS_BR.map(e => (
-              <SelectItem key={e.sigla} value={e.sigla}>{e.sigla} - {e.nome}</SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <select
+          id="estado"
+          value={estado}
+          onChange={(e) => setEstado(e.target.value)}
+          className="flex h-10 w-full rounded-md border-2 border-slate-200 bg-white px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+          data-testid="select-estado-assessoria"
+        >
+          <option value="">Selecione o estado</option>
+          {ESTADOS_BR.map(e => (
+            <option key={e.sigla} value={e.sigla}>{e.sigla} - {e.nome}</option>
+          ))}
+        </select>
       </div>
 
       {/* Cidade */}
@@ -212,16 +213,19 @@ const AssessoriaForm = memo(({ token, onSuccess }) => {
           </div>
         ) : cidades.length > 0 ? (
           <>
-            <Select value={cidade} onValueChange={setCidade} disabled={!estado}>
-              <SelectTrigger className="border-2 border-slate-200 focus:border-amber-500" data-testid="select-cidade-assessoria">
-                <SelectValue placeholder={estado ? "Selecione a cidade" : "Selecione o estado primeiro"} />
-              </SelectTrigger>
-              <SelectContent className="max-h-60">
-                {cidades.map(c => (
-                  <SelectItem key={c} value={c}>{c}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <select
+              id="cidade"
+              value={cidade}
+              onChange={(e) => setCidade(e.target.value)}
+              disabled={!estado}
+              className="flex h-10 w-full rounded-md border-2 border-slate-200 bg-white px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              data-testid="select-cidade-assessoria"
+            >
+              <option value="">{estado ? "Selecione a cidade" : "Selecione o estado primeiro"}</option>
+              {cidades.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
             <p className="text-xs text-slate-500">
               {cidades.length} cidades disponíveis
             </p>
