@@ -272,6 +272,75 @@ async def strava_stats(current_user: dict = Depends(get_current_user)):
     }
 
 
+@router.get("/strava/sync-status")
+async def strava_sync_scheduler_status():
+    """
+    Retorna o status do scheduler de sincronização automática.
+    """
+    # Importar scheduler do server.py
+    try:
+        from server import scheduler as main_scheduler
+        
+        jobs = []
+        for job in main_scheduler.get_jobs():
+            if 'strava' in job.id.lower():
+                jobs.append({
+                    "id": job.id,
+                    "name": job.name,
+                    "next_run": str(job.next_run_time) if job.next_run_time else None
+                })
+        
+        return {
+            "running": main_scheduler.running,
+            "strava_jobs": jobs,
+            "message": "Sincronização automática configurada para executar a cada 1 hora"
+        }
+    except Exception as e:
+        return {
+            "running": False,
+            "strava_jobs": [],
+            "error": str(e)
+        }
+
+
+@router.post("/strava/sync-all")
+async def strava_sync_all_manual(
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Dispara uma sincronização manual de todos os usuários.
+    Apenas admin pode executar.
+    """
+    # Verificar se é admin
+    usuario = await db.usuarios.find_one({"id": current_user["id"]})
+    if not usuario or usuario.get("role") != "admin":
+        raise HTTPException(status_code=403, detail="Apenas administradores podem executar esta ação")
+    
+    from services.strava_sync_scheduler import sync_all_strava_users
+    import asyncio
+    
+    # Executar em background
+    asyncio.create_task(sync_all_strava_users())
+    
+    return {"message": "Sincronização iniciada em background. Verifique os logs para acompanhar."}
+
+
+@router.get("/strava/sync-logs")
+async def strava_sync_logs(
+    limit: int = Query(10, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Retorna os logs das últimas sincronizações automáticas.
+    """
+    logs = await db.strava_sync_logs.find(
+        {},
+        {"_id": 0}
+    ).sort("data", -1).limit(limit).to_list(limit)
+    
+    return {"logs": logs}
+
+
 @router.delete("/strava/disconnect")
 async def strava_disconnect(current_user: dict = Depends(get_current_user)):
     """

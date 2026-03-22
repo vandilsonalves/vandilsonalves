@@ -1929,8 +1929,19 @@ async def startup_event():
         replace_existing=True
     )
     
+    # Agendar sincronização automática do Strava a cada hora
+    from services.strava_sync_scheduler import sync_all_strava_users
+    scheduler.add_job(
+        sync_all_strava_users,
+        'interval',
+        hours=1,
+        id="strava_sync_hourly",
+        replace_existing=True
+    )
+    logger.info("📊 Sincronização Strava agendada para cada 1 hora")
+    
     scheduler.start()
-    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza comentários domingo 23:59")
+    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza comentários domingo 23:59, Strava sync a cada 1h")
 
 
 async def check_and_send_alerts():

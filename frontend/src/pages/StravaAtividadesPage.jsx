@@ -116,10 +116,21 @@ const StravaAtividadesPage = () => {
   const [periodoInfo, setPeriodoInfo] = useState(null);
   const [totalMembros, setTotalMembros] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
+  const [syncStatus, setSyncStatus] = useState(null);
 
   useEffect(() => {
     fetchData();
+    fetchSyncStatus();
   }, [periodo, ordenarPor]);
+
+  const fetchSyncStatus = async () => {
+    try {
+      const response = await axios.get(`${API}/strava/sync-status`);
+      setSyncStatus(response.data);
+    } catch (error) {
+      console.error('Erro ao buscar status sync:', error);
+    }
+  };
 
   const fetchData = async () => {
     setLoading(true);
@@ -188,12 +199,22 @@ const StravaAtividadesPage = () => {
                 <Users className="w-4 h-4" />
                 <span className="font-medium">{totalMembros} membros</span>
               </div>
+              
+              {/* Indicador de Sync Automático */}
+              {syncStatus?.running && (
+                <div className="hidden sm:flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-lg px-3 py-2 text-sm">
+                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                  <span>Sync automático ativo</span>
+                </div>
+              )}
+              
               <Button 
                 variant="ghost" 
                 size="icon"
                 onClick={handleRefresh}
                 disabled={refreshing}
                 className="text-white hover:bg-white/20"
+                title="Atualizar dados"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>
