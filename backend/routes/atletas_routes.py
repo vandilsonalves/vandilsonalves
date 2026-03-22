@@ -328,11 +328,24 @@ async def trocar_equipe_atleta(
     
     equipe_final = "" if nova_equipe.upper() == "INDIVIDUAL" else nova_equipe
     
+    # Guardar histórico de equipes para preservar pontuação
+    historico_atual = current_user.get("historico_equipes", [])
+    if equipe_anterior and equipe_anterior != "INDIVIDUAL":
+        # Adicionar entrada no histórico com a data de saída
+        historico_atual.append({
+            "equipe": equipe_anterior,
+            "data_entrada": current_user.get("ultima_troca_equipe", current_user.get("data_cadastro", datetime.now().isoformat())),
+            "data_saida": datetime.now().isoformat()
+        })
+    
     await db.usuarios.update_one(
         {"id": current_user["id"]},
         {"$set": {
             "equipe": equipe_final,
-            "ultima_troca_equipe": datetime.now().isoformat()
+            "ultima_troca_equipe": datetime.now().isoformat(),
+            "data_entrada_equipe_atual": datetime.now().isoformat(),
+            "historico_equipes": historico_atual,
+            "mudou_de_equipe": True  # Flag para identificação visual
         }}
     )
     

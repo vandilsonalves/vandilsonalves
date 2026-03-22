@@ -13,6 +13,78 @@ from services.cache_service import cached, invalidate_on_liga_change
 router = APIRouter(tags=["Liga de Assessorias"])
 
 
+def resultado_pertence_equipe(corrida: dict, atleta: dict, nome_equipe: str) -> bool:
+    """
+    Verifica se o resultado foi conquistado enquanto o atleta estava na equipe.
+    
+    REGRA: Os pontos ficam na assessoria onde foram conquistados, não acompanham o atleta.
+    Se o atleta mudou de equipe, os pontos anteriores permanecem na equipe anterior.
+    """
+    data_corrida_str = corrida.get("data_corrida") or corrida.get("data_evento") or corrida.get("created_at")
+    
+    if not data_corrida_str:
+        # Se não tem data, assumir que pertence à equipe atual
+        return atleta.get("equipe", "").upper() == nome_equipe.upper()
+    
+    # Converter data da corrida
+    try:
+        if isinstance(data_corrida_str, str):
+            # Tentar vários formatos
+            for fmt in ["%Y-%m-%dT%H:%M:%S", "%Y-%m-%d", "%d/%m/%Y"]:
+                try:
+                    data_corrida = datetime.strptime(data_corrida_str[:19], fmt)
+                    break
+                except:
+                    continue
+            else:
+                data_corrida = datetime.now()
+        else:
+            data_corrida = data_corrida_str
+    except:
+        data_corrida = datetime.now()
+    
+    # Verificar histórico de equipes do atleta
+    historico = atleta.get("historico_equipes", [])
+    equipe_atual = atleta.get("equipe", "")
+    data_entrada_atual = atleta.get("data_entrada_equipe_atual")
+    
+    # Se o atleta está na equipe e nunca mudou
+    if equipe_atual.upper() == nome_equipe.upper() and not historico:
+        return True
+    
+    # Se o atleta está na equipe atual, verificar se o resultado foi após a entrada
+    if equipe_atual.upper() == nome_equipe.upper() and data_entrada_atual:
+        try:
+            if isinstance(data_entrada_atual, str):
+                data_entrada = datetime.strptime(data_entrada_atual[:19], "%Y-%m-%dT%H:%M:%S")
+            else:
+                data_entrada = data_entrada_atual
+            
+            # O resultado pertence se foi feito APÓS entrar na equipe
+            return data_corrida >= data_entrada
+        except:
+            return True
+    
+    # Se não é a equipe atual, verificar no histórico
+    for hist in historico:
+        if hist.get("equipe", "").upper() == nome_equipe.upper():
+            try:
+                data_entrada_hist = datetime.strptime(hist["data_entrada"][:19], "%Y-%m-%dT%H:%M:%S")
+                data_saida_hist = datetime.strptime(hist["data_saida"][:19], "%Y-%m-%dT%H:%M:%S")
+                
+                # O resultado pertence se foi feito DURANTE o período na equipe
+                if data_entrada_hist <= data_corrida <= data_saida_hist:
+                    return True
+            except:
+                continue
+    
+    # Se está na equipe atual e não tem data de entrada registrada
+    if equipe_atual.upper() == nome_equipe.upper():
+        return True
+    
+    return False
+
+
 # ==================== LISTA DE ASSESSORIAS ====================
 
 @router.get("/assessorias/lista")
@@ -148,12 +220,31 @@ async def get_ranking_assessorias(
         
         corridas = await db.corridas.find(filtro_corridas_equipe, {"_id": 0}).to_list(None)
         
+        # Buscar dados completos dos atletas para verificar histórico de equipes
+        atletas_dados = {}
+        for atleta_id in atletas_ids:
+            atleta = await db.usuarios.find_one(
+                {"id": atleta_id},
+                {"_id": 0, "id": 1, "equipe": 1, "historico_equipes": 1, "data_entrada_equipe_atual": 1}
+            )
+            if atleta:
+                atletas_dados[atleta_id] = atleta
+        
         pontos_resultados = 0
         total_primeiros = 0
         total_podios = 0
-        total_resultados = len(corridas)
+        resultados_validos = 0
+        atletas_que_mudaram = 0
         
         for corrida in corridas:
+            atleta_id = corrida.get("usuario_id")
+            atleta = atletas_dados.get(atleta_id, {})
+            
+            # REGRA: Só conta se o resultado foi feito enquanto o atleta estava NESTA equipe
+            if not resultado_pertence_equipe(corrida, atleta, nome_equipe):
+                continue
+            
+            resultados_validos += 1
             colocacao = corrida.get("colocacao", 0)
             
             # Pontuação correta da assessoria:
@@ -169,6 +260,11 @@ async def get_ranking_assessorias(
                 pontos_resultados += 0.5
                 total_podios += 1
         
+        # Contar atletas que mudaram de equipe
+        for atleta in atletas_dados.values():
+            if atleta.get("historico_equipes"):
+                atletas_que_mudaram += 1
+        
         pontos_total = pontos_cadastro + pontos_resultados
         
         ranking_assessorias.append({
@@ -179,13 +275,14 @@ async def get_ranking_assessorias(
             "pontos_cadastro": pontos_cadastro,
             "pontos_resultados": pontos_resultados,
             "pontos_total": round(pontos_total, 1),
-            "total_resultados": total_resultados,
+            "total_resultados": resultados_validos,  # Apenas resultados válidos
             "total_primeiros": total_primeiros,
             "total_podios": total_podios,
             "dono_nome": dono_nome,
             "dono_id": dono_id,
-            "verificada": bool(dono_nome and equipe["total_atletas"] >= 10 and total_resultados >= 5),
+            "verificada": bool(dono_nome and equipe["total_atletas"] >= 10 and resultados_validos >= 5),
             "atletas": equipe["atletas"][:10],
+            "atletas_que_mudaram": atletas_que_mudaram,  # Indicador de transparência
             "data_mais_antiga": equipe.get("data_mais_antiga", "")
         })
     

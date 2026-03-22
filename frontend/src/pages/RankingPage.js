@@ -1612,6 +1612,29 @@ const RankingPage = () => {
                       <li>Busque pódios para ganhar bônus extras</li>
                     </ol>
                   </div>
+
+                  {/* NOVA SEÇÃO: Mudança de Equipe */}
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-4 rounded-lg border border-amber-300">
+                    <h3 className="font-semibold text-lg mb-2 text-amber-800 dark:text-amber-300 flex items-center gap-2">
+                      <span>⚠️</span> Regra de Transferência de Atletas
+                    </h3>
+                    <p className="text-sm text-amber-700 dark:text-amber-400 mb-3">
+                      Os pontos ficam vinculados à assessoria onde foram conquistados, <strong>não acompanham o atleta</strong> em caso de mudança de equipe.
+                    </p>
+                    <div className="bg-white dark:bg-slate-800 p-3 rounded-md space-y-2 text-sm">
+                      <p><strong>Exemplo:</strong></p>
+                      <ul className="list-disc list-inside space-y-1 text-slate-600 dark:text-slate-400">
+                        <li>Atleta João está na <strong>Equipe A</strong> e conquista 6 resultados = 6 pontos para Equipe A</li>
+                        <li>João muda para <strong>Equipe B</strong></li>
+                        <li>Os 6 pontos <strong>permanecem na Equipe A</strong></li>
+                        <li>João conquista mais 3 resultados na Equipe B = 3 pontos para Equipe B</li>
+                        <li>Atletas que mudaram de equipe são identificados com o ícone <span className="text-amber-600">🔄</span></li>
+                      </ul>
+                    </div>
+                    <p className="text-xs text-amber-600 mt-2">
+                      Esta regra garante justiça e transparência no ranking de equipes.
+                    </p>
+                  </div>
                 </div>
                 <DialogFooter>
                   <Button onClick={() => setShowComoFuncionaEquipes(false)} className="bg-amber-600 hover:bg-amber-700">
@@ -1676,6 +1699,24 @@ const RankingPage = () => {
                       <li>Atletas podem solicitar desvinculação a qualquer momento</li>
                       <li>Resultados anteriores permanecem contabilizados para a assessoria</li>
                     </ul>
+                  </div>
+
+                  {/* NOVA SEÇÃO: Regra de Transferência */}
+                  <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg border-l-4 border-red-500">
+                    <h3 className="font-semibold text-base mb-2 text-red-800 dark:text-red-300">5.1. Regra de Transferência de Atletas</h3>
+                    <p className="mb-2 text-sm">
+                      <strong>IMPORTANTE:</strong> Os pontos conquistados por um atleta pertencem à assessoria onde foram obtidos, não ao atleta.
+                    </p>
+                    <ul className="list-disc list-inside space-y-1 text-sm">
+                      <li>Ao mudar de equipe, os pontos NÃO acompanham o atleta</li>
+                      <li>Pontos conquistados na equipe anterior permanecem nela</li>
+                      <li>Na nova equipe, o atleta começa a pontuar do zero</li>
+                      <li>Atletas que mudaram de equipe recebem identificação visual (🔄)</li>
+                      <li>Esta regra evita transferências oportunistas e garante justiça</li>
+                    </ul>
+                    <p className="mt-2 text-xs text-red-600 dark:text-red-400">
+                      <strong>Motivo:</strong> Garantir que o esforço coletivo de uma assessoria não seja prejudicado pela saída de atletas.
+                    </p>
                   </div>
                   
                   <div>
