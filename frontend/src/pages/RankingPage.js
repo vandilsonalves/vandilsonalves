@@ -411,12 +411,10 @@ const RankingPage = () => {
                   Por Cidade
                 </Button>
                 
-                {!isAdmin && (
-                  <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
-                    <User className="w-4 h-4 mr-2" />
-                    Meu Perfil
-                  </Button>
-                )}
+                <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
+                  <User className="w-4 h-4 mr-2" />
+                  Meu Perfil
+                </Button>
                 <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600" size="sm">
                   <Upload className="w-4 h-4 mr-2" />
                   Submeter
