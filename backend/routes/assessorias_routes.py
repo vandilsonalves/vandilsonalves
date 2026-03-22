@@ -576,10 +576,28 @@ async def get_detalhes_assessoria(nome_equipe: str):
     # Ordenar atletas por pontos (decrescente)
     atletas_com_pontos.sort(key=lambda x: x.get("pontos", 0), reverse=True)
     
-    corridas = await db.corridas.find(
-        {"usuario_id": {"$in": atletas_ids}},
+    # FILTRO: Apenas corridas do ANO ATUAL (mesma regra do ranking de equipes)
+    from datetime import datetime
+    ano_atual = datetime.now().year
+    inicio_ano = f"{ano_atual}-01-01"
+    
+    corridas_todas = await db.corridas.find(
+        {
+            "usuario_id": {"$in": atletas_ids},
+            "data": {"$gte": inicio_ano}  # Apenas do ano atual
+        },
         {"_id": 0}
     ).to_list(None)
+    
+    # Buscar dados completos dos atletas para verificar histórico de equipes
+    atletas_dados = {}
+    for atleta_id in atletas_ids:
+        atleta = await db.usuarios.find_one(
+            {"id": atleta_id},
+            {"_id": 0, "id": 1, "equipe": 1, "historico_equipes": 1, "data_entrada_equipe_atual": 1}
+        )
+        if atleta:
+            atletas_dados[atleta_id] = atleta
     
     pontos_cadastro = len(atletas_ids) * 0.5
     
@@ -587,11 +605,22 @@ async def get_detalhes_assessoria(nome_equipe: str):
     # +1,0 por resultado aprovado
     # +1,0 adicional para 1º lugar
     # +0,5 adicional para 2º ao 5º lugar
+    # IMPORTANTE: Só conta resultados feitos ENQUANTO o atleta estava nesta equipe
+    # IMPORTANTE: Só conta resultados do ANO ATUAL
     pontos_resultados = 0
     total_primeiros = 0
     total_podios = 0
+    total_resultados_validos = 0
     
-    for c in corridas:
+    for c in corridas_todas:
+        atleta_id = c.get("usuario_id")
+        atleta = atletas_dados.get(atleta_id, {})
+        
+        # REGRA: Só conta se o resultado foi feito enquanto o atleta estava NESTA equipe
+        if not resultado_pertence_equipe(c, atleta, nome_equipe):
+            continue
+        
+        total_resultados_validos += 1
         colocacao = c.get("colocacao", 0)
         
         # +1,0 por resultado aprovado
@@ -664,7 +693,7 @@ async def get_detalhes_assessoria(nome_equipe: str):
         "pontos_cadastro": pontos_cadastro,
         "pontos_resultados": pontos_resultados,
         "pontos_total": round(pontos_cadastro + pontos_resultados, 1),
-        "total_resultados": len(corridas),
+        "total_resultados": total_resultados_validos,
         "total_primeiros": total_primeiros,
         "total_podios": total_podios,
         "posicao_ranking": posicao_nacional,
