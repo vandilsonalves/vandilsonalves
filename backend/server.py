@@ -164,6 +164,7 @@ from routes.ranking_corridas_routes import router as ranking_corridas_router
 from routes.configuracoes_routes import router as configuracoes_router
 from routes.historico_routes import router as historico_router
 from routes.strava_routes import router as strava_router
+from routes.strava_atividades_routes import router as strava_atividades_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -192,6 +193,7 @@ api_router.include_router(ranking_corridas_router)
 api_router.include_router(configuracoes_router)
 api_router.include_router(historico_router)
 api_router.include_router(strava_router)
+api_router.include_router(strava_atividades_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:
