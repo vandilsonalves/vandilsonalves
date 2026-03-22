@@ -11,6 +11,12 @@ from pathlib import Path
 from config import db
 from routes.auth_routes import get_current_user
 from routes.notificacoes_routes import criar_notificacao
+from services.moderacao_service import (
+    analisar_conteudo, NivelInfracao, registrar_infracao,
+    verificar_usuario_bloqueado, bloquear_usuario_temporariamente,
+    incrementar_comentarios_aprovados, verificar_selo_respeitoso,
+    calcular_score_respeito, gerar_feedback_educativo
+)
 
 router = APIRouter()
 
@@ -409,9 +415,17 @@ async def comentar_post(
     dados: ComentarioCreate,
     current_user: dict = Depends(get_current_user)
 ):
-    """Adiciona um comentário em um post"""
+    """Adiciona um comentário em um post com sistema de moderação"""
     
-    # Verificar se o usuário está bloqueado de comentar
+    # 1. Verificar se o usuário está bloqueado temporariamente
+    bloqueado, data_desbloqueio = await verificar_usuario_bloqueado(db, current_user["id"])
+    if bloqueado:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Você está temporariamente bloqueado de comentar até {data_desbloqueio[:10]}. Motivo: Violações repetidas das diretrizes da comunidade."
+        )
+    
+    # Verificar bloqueio antigo
     usuario_bloqueado = await db.usuarios_bloqueados_feed.find_one({
         "usuario_id": current_user["id"],
         "ativo": True
@@ -432,6 +446,36 @@ async def comentar_post(
     if len(dados.texto) > 200:
         raise HTTPException(status_code=400, detail="O comentário não pode ter mais de 200 caracteres")
     
+    # 2. MODERAÇÃO: Analisar conteúdo do comentário
+    bloqueado_mod, categoria, nivel, mensagem_feedback = analisar_conteudo(dados.texto)
+    
+    if bloqueado_mod and nivel:
+        # Registrar infração
+        await registrar_infracao(db, current_user["id"], nivel, categoria, dados.texto)
+        
+        # Se infração GRAVE, bloquear usuário por 7 dias após 3 infrações
+        usuario = await db.usuarios.find_one(
+            {"id": current_user["id"]},
+            {"_id": 0, "bloqueios_moderacao": 1}
+        )
+        if usuario and usuario.get("bloqueios_moderacao", 0) >= 3:
+            await bloquear_usuario_temporariamente(db, current_user["id"], dias=7)
+            mensagem_feedback += " Você foi bloqueado de comentar por 7 dias devido a infrações repetidas."
+        
+        # Gerar feedback educativo
+        feedback_educativo = gerar_feedback_educativo(nivel, categoria)
+        
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": mensagem_feedback,
+                "nivel": nivel.value,
+                "categoria": categoria,
+                "educativo": feedback_educativo
+            }
+        )
+    
+    # 3. Criar comentário (aprovado)
     comentario = {
         "id": str(uuid.uuid4()),
         "post_id": post_id,
@@ -439,12 +483,17 @@ async def comentar_post(
         "autor_nome": current_user.get("nome", ""),
         "texto": dados.texto.strip(),
         "fixado": False,
-        "data_criacao": datetime.now(timezone.utc).isoformat()
+        "data_criacao": datetime.now(timezone.utc).isoformat(),
+        "moderado": True,  # Passou pela moderação
+        "status": "aprovado"
     }
     
     await db.feed_comentarios.insert_one(comentario)
     
-    # Notificar autor do post (se não for o próprio)
+    # 4. Incrementar contador de comentários aprovados
+    await incrementar_comentarios_aprovados(db, current_user["id"])
+    
+    # 5. Notificar autor do post (se não for o próprio)
     if post["autor_id"] != current_user["id"]:
         await criar_notificacao(
             usuario_id=post["autor_id"],
@@ -454,9 +503,18 @@ async def comentar_post(
             dados_extras={"post_id": post_id, "comentario_id": comentario["id"]}
         )
     
+    # 6. Verificar se o usuário ganhou o selo de respeitoso
+    usuario_atualizado = await db.usuarios.find_one(
+        {"id": current_user["id"]},
+        {"_id": 0, "comentarios_aprovados": 1, "advertencias_moderacao": 1, 
+         "bloqueios_moderacao": 1, "comentarios_ocultados": 1, "bloqueios_ultimos_90_dias": 1}
+    )
+    tem_selo = verificar_selo_respeitoso(usuario_atualizado or {})
+    
     return {
         "message": "Comentário adicionado!",
-        "comentario_id": comentario["id"]
+        "comentario_id": comentario["id"],
+        "selo_respeitoso": tem_selo
     }
 
 
@@ -475,13 +533,24 @@ async def get_comentarios_post(
         {"_id": 0}
     ).sort("data_criacao", 1).skip(skip).limit(limite).to_list(limite)
     
-    # Enriquecer com dados dos autores
+    # Enriquecer com dados dos autores e selo respeitoso
     for com in comentarios:
         autor = await db.usuarios.find_one(
             {"id": com["autor_id"]},
-            {"_id": 0, "id": 1, "nome": 1, "foto_url": 1}
+            {"_id": 0, "id": 1, "nome": 1, "foto_url": 1, "comentarios_aprovados": 1,
+             "advertencias_moderacao": 1, "bloqueios_moderacao": 1, 
+             "comentarios_ocultados": 1, "bloqueios_ultimos_90_dias": 1}
         )
-        com["autor"] = autor
+        if autor:
+            tem_selo = verificar_selo_respeitoso(autor)
+            com["autor"] = {
+                "id": autor.get("id"),
+                "nome": autor.get("nome"),
+                "foto_url": autor.get("foto_url"),
+                "selo_respeitoso": tem_selo
+            }
+        else:
+            com["autor"] = None
     
     total = await db.feed_comentarios.count_documents({"post_id": post_id})
     
@@ -490,6 +559,41 @@ async def get_comentarios_post(
         "total": total,
         "pagina": pagina,
         "total_paginas": (total + limite - 1) // limite
+    }
+
+
+@router.get("/feed/meu-status-moderacao")
+async def get_status_moderacao(current_user: dict = Depends(get_current_user)):
+    """Retorna o status de moderação do usuário logado"""
+    
+    usuario = await db.usuarios.find_one(
+        {"id": current_user["id"]},
+        {"_id": 0, "comentarios_aprovados": 1, "advertencias_moderacao": 1,
+         "bloqueios_moderacao": 1, "comentarios_ocultados": 1, 
+         "bloqueios_ultimos_90_dias": 1, "bloqueado_feed_ate": 1,
+         "historico_infracoes": 1}
+    )
+    
+    if not usuario:
+        usuario = {}
+    
+    # Calcular score e selo
+    score = calcular_score_respeito(usuario)
+    tem_selo = verificar_selo_respeitoso(usuario)
+    
+    # Verificar bloqueio
+    bloqueado, data_desbloqueio = await verificar_usuario_bloqueado(db, current_user["id"])
+    
+    return {
+        "score_respeito": score,
+        "selo_respeitoso": tem_selo,
+        "comentarios_aprovados": usuario.get("comentarios_aprovados", 0),
+        "advertencias": usuario.get("advertencias_moderacao", 0),
+        "comentarios_ocultados": usuario.get("comentarios_ocultados", 0),
+        "bloqueios": usuario.get("bloqueios_moderacao", 0),
+        "bloqueado": bloqueado,
+        "bloqueado_ate": data_desbloqueio,
+        "ultimas_infracoes": (usuario.get("historico_infracoes") or [])[-5:]  # Últimas 5
     }
 
 

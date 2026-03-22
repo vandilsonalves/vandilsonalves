@@ -213,7 +213,7 @@ const FeedPage = () => {
     
     setEnviandoComentario(postId);
     try {
-      await axios.post(
+      const response = await axios.post(
         `${API}/feed/posts/${postId}/comentarios`,
         { texto },
         { headers: { Authorization: `Bearer ${token}` } }
@@ -222,10 +222,39 @@ const FeedPage = () => {
       setComentarioTexto({ ...comentarioTexto, [postId]: '' });
       toast.success('Comentário adicionado!');
       
+      // Mostrar selo se ganhou
+      if (response.data?.selo_respeitoso) {
+        toast.success('🏅 Parabéns! Você ganhou o Selo de Atleta Respeitoso!', {
+          duration: 5000
+        });
+      }
+      
       // Recarregar feed para atualizar comentários
       fetchFeed();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erro ao comentar');
+      const errorData = error.response?.data?.detail;
+      
+      // Verificar se é erro de moderação (objeto com detalhes)
+      if (errorData && typeof errorData === 'object') {
+        const { message, nivel, educativo } = errorData;
+        
+        // Mostrar mensagem baseada no nível
+        if (nivel === 'grave') {
+          toast.error(`🚫 ${message}`, { duration: 8000 });
+          if (educativo) {
+            toast.warning(`💡 ${educativo}`, { duration: 10000 });
+          }
+        } else if (nivel === 'medio') {
+          toast.warning(`⚠️ ${message}`, { duration: 6000 });
+          if (educativo) {
+            toast.info(`💡 ${educativo}`, { duration: 8000 });
+          }
+        } else {
+          toast.info(`ℹ️ ${message || 'Seu comentário precisa de revisão.'}`, { duration: 5000 });
+        }
+      } else {
+        toast.error(errorData || 'Erro ao comentar');
+      }
     } finally {
       setEnviandoComentario(null);
     }
@@ -747,6 +776,10 @@ const FeedPage = () => {
                             <div className={`rounded-lg px-3 py-2 flex-1 ${com.fixado ? 'bg-amber-900/30 border border-amber-500/30' : 'bg-slate-700'}`}>
                               <div className="flex items-center gap-2">
                                 <p className="text-sm text-white font-medium">{com.autor?.nome}</p>
+                                {/* Selo de Atleta Respeitoso */}
+                                {com.autor?.selo_respeitoso && (
+                                  <span title="Atleta Respeitoso - Sem infrações" className="text-lg">🏅</span>
+                                )}
                                 {com.fixado && (
                                   <Badge className="bg-amber-500/20 text-amber-400 text-xs py-0">Fixado</Badge>
                                 )}

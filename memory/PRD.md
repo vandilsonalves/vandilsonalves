@@ -1,6 +1,38 @@
 # Ranking Run Pró - PRD (Product Requirements Document)
 
-## Implementation Status (20/Mar/2026)
+## Implementation Status (22/Mar/2026)
+
+### ✅ Latest Implementation: Sistema de Moderação do Feed
+
+**Sistema completo de moderação de conteúdo implementado:**
+
+1. **Serviço de Moderação** (`/app/backend/services/moderacao_service.py`):
+   - Lista de palavras/frases proibidas em 7 categorias
+   - Normalização de texto para detectar tentativas de burla (p1ca → pica)
+   - Análise de contexto esportivo ("matei o treino" = OK)
+   - Sistema de níveis: LEVE (aviso), MÉDIO (ocultar), GRAVE (bloquear)
+
+2. **Categorias de Bloqueio:**
+   - 🚫 Spam/Fraude (ganhe dinheiro, renda extra, etc.)
+   - ⚠️ Ameaças/Violência (vou te matar, te arrebento, etc.)
+   - 🚫 Ofensas diretas (idiota, burro, fdp, etc.)
+   - 🚫 Conteúdo sexual/vulgar
+   - ⚠️ Discriminação (racismo, homofobia, misoginia)
+   - 🚫 Bullying/Humilhação
+
+3. **Selo de Atleta Respeitoso 🏅:**
+   - Usuários sem infrações ganham o selo
+   - Critérios: Score >= 80, 10+ comentários aprovados, zero bloqueios em 90 dias
+   - Exibido ao lado do nome nos comentários
+
+4. **Feedback Educativo:**
+   - Mensagens explicativas quando comentário é bloqueado
+   - Níveis visuais: 🚫 grave, ⚠️ médio, ℹ️ leve
+
+5. **Regra de Transferência de Atletas:**
+   - Pontos conquistados ficam na assessoria onde foram obtidos
+   - Não acompanham o atleta em caso de mudança de equipe
+   - Histórico de equipes registrado
 
 ### ✅ Bug Fixes (Completed Now)
 
