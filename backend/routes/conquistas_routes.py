@@ -217,17 +217,11 @@ async def verificar_conquistas(usuario_id: str):
             dados_extras={"conquista_codigo": codigo, "icone": conquista['icone']}
         )
         
-        # Criar post automático no feed
-        try:
-            from routes.feed_routes import criar_post_conquista
-            await criar_post_conquista(
-                usuario_id=usuario_id,
-                usuario_nome=usuario.get("nome", "Atleta"),
-                conquista_nome=conquista['nome'],
-                conquista_descricao=conquista['descricao'],
-                conquista_emoji=conquista.get('icone', '🏆')
-            )
-        except Exception as e:
-            print(f"Erro ao criar post de conquista no feed: {e}")
+        # Post automático DESABILITADO - atletas devem compartilhar manualmente
+        # try:
+        #     from routes.feed_routes import criar_post_conquista
+        #     await criar_post_conquista(...)
+        # except Exception as e:
+        #     print(f"Erro ao criar post de conquista no feed: {e}")
     
     return novas_conquistas
