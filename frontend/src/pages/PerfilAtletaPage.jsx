@@ -22,6 +22,7 @@ import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
 import IndicarAmigos from '@/components/IndicarAmigos';
 import CriarAssessoria from '@/components/CriarAssessoria';
 import ImageCropModal from '@/components/ImageCropModal';
+import StravaIntegration from '@/components/StravaIntegration';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -1151,6 +1152,11 @@ const PerfilAtletaPage = () => {
             </p>
           </CardContent>
         </Card>
+        
+        {/* Integração Strava */}
+        <div className="mt-6">
+          <StravaIntegration token={token} />
+        </div>
         
         {/* Indicar Amigos */}
         <div className="mt-6">

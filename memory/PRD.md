@@ -2,7 +2,36 @@
 
 ## Implementation Status (22/Mar/2026)
 
-### ✅ Latest Fix: Frontend de Moderação do Feed - CORRIGIDO! (22/Mar/2026)
+### ✅ Latest: Integração Strava IMPLEMENTADA! (22/Mar/2026)
+
+**Credenciais configuradas:**
+- Client ID: 215116
+- Client Secret: Configurado no .env
+
+**Arquivos criados:**
+1. `/app/backend/services/strava_service.py` - Serviço de integração OAuth2
+2. `/app/backend/routes/strava_routes.py` - Endpoints da API
+3. `/app/frontend/src/components/StravaIntegration.jsx` - Componente React
+
+**Endpoints disponíveis:**
+- `GET /api/strava/authorize` - Inicia fluxo OAuth2
+- `GET /api/strava/callback` - Callback do Strava
+- `GET /api/strava/status` - Status da conexão
+- `POST /api/strava/sync` - Sincroniza atividades
+- `GET /api/strava/activities` - Lista atividades importadas
+- `GET /api/strava/stats` - Estatísticas agregadas
+- `DELETE /api/strava/disconnect` - Desconecta conta
+
+**Funcionalidades:**
+- Autenticação OAuth2 completa
+- Importação automática de corridas
+- Refresh automático de tokens expirados
+- Cálculo de pace e estatísticas
+- Componente visual no perfil do atleta
+
+---
+
+### ✅ Fix: Frontend de Moderação do Feed - CORRIGIDO! (22/Mar/2026)
 
 **Problema reportado:** "Sistema de Moderação do Feed não está funcionando"
 
