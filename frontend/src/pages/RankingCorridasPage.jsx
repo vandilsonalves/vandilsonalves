@@ -63,6 +63,7 @@ const RankingCorridasPage = () => {
     kit_atleta: 0,
     hidratacao: 0,
     pos_prova: 0,
+    premiacao: 0,
     participei: false,
     aceito_termo: false
   });
@@ -242,6 +243,7 @@ const RankingCorridasPage = () => {
       kit_atleta: 0,
       hidratacao: 0,
       pos_prova: 0,
+      premiacao: 0,
       participei: false,
       aceito_termo: false
     });
@@ -262,8 +264,8 @@ const RankingCorridasPage = () => {
     // Validar se todos os critérios foram avaliados
     if (avaliacaoData.organizacao === 0 || avaliacaoData.percurso === 0 || 
         avaliacaoData.kit_atleta === 0 || avaliacaoData.hidratacao === 0 || 
-        avaliacaoData.pos_prova === 0) {
-      toast.error('Avalie todos os 5 critérios antes de enviar');
+        avaliacaoData.pos_prova === 0 || avaliacaoData.premiacao === 0) {
+      toast.error('Avalie todos os 6 critérios antes de enviar');
       return;
     }
     
@@ -286,6 +288,7 @@ const RankingCorridasPage = () => {
       form.append('kit_atleta', avaliacaoData.kit_atleta);
       form.append('hidratacao', avaliacaoData.hidratacao);
       form.append('pos_prova', avaliacaoData.pos_prova);
+      form.append('premiacao', avaliacaoData.premiacao);
       form.append('participei', avaliacaoData.participei);
       form.append('aceito_termo', avaliacaoData.aceito_termo);
 
@@ -478,7 +481,7 @@ const RankingCorridasPage = () => {
               
               <div>
                 <h3 className="font-semibold text-lg mb-2">Sistema de Avaliação</h3>
-                <p className="mb-3">Cada corrida é avaliada em <strong>5 critérios</strong>, com notas de 1 a 5 estrelas:</p>
+                <p className="mb-3">Cada corrida é avaliada em <strong>6 critérios</strong>, com notas de 1 a 5 estrelas:</p>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                   <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
@@ -508,12 +511,19 @@ const RankingCorridasPage = () => {
                     </div>
                     <p className="text-xs text-slate-500">Postos, disponibilidade, variedade</p>
                   </div>
-                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg md:col-span-2">
+                  <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg">
                     <div className="flex items-center gap-2 mb-1">
                       <span className="text-lg">🎉</span>
                       <span className="font-semibold">Pós-Prova</span>
                     </div>
-                    <p className="text-xs text-slate-500">Alimentação, área de recuperação, premiação</p>
+                    <p className="text-xs text-slate-500">Alimentação, área de recuperação</p>
+                  </div>
+                  <div className="bg-amber-100 dark:bg-amber-900/30 p-3 rounded-lg border-2 border-amber-400">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-lg">🏆</span>
+                      <span className="font-semibold text-amber-700 dark:text-amber-300">Premiação</span>
+                    </div>
+                    <p className="text-xs text-amber-600 dark:text-amber-400">Dinheiro, brindes, qualidade dos prêmios</p>
                   </div>
                 </div>
               </div>
@@ -521,7 +531,7 @@ const RankingCorridasPage = () => {
               <div>
                 <h3 className="font-semibold text-lg mb-2">Cálculo da Nota Final</h3>
                 <div className="bg-slate-100 dark:bg-slate-800 p-3 rounded-lg font-mono text-sm">
-                  <p><strong>Nota Média</strong> = (Organização + Percurso + Kit + Hidratação + Pós-Prova) ÷ 5</p>
+                  <p><strong>Nota Média</strong> = (Organização + Percurso + Kit + Hidratação + Pós-Prova + Premiação) ÷ 6</p>
                 </div>
                 <p className="text-sm mt-2 text-slate-500">A nota final é a média de todas as avaliações recebidas pela corrida.</p>
               </div>
@@ -602,9 +612,10 @@ const RankingCorridasPage = () => {
                   <li><strong>Percurso (1-5):</strong> Sinalização, segurança, qualidade do piso, paisagem</li>
                   <li><strong>Kit do Atleta (1-5):</strong> Qualidade da camiseta, medalha, sacola, brindes</li>
                   <li><strong>Hidratação (1-5):</strong> Quantidade de postos, disponibilidade, variedade de bebidas</li>
-                  <li><strong>Pós-Prova (1-5):</strong> Alimentação, área de descanso, massagem, premiação</li>
+                  <li><strong>Pós-Prova (1-5):</strong> Alimentação, área de descanso, massagem</li>
+                  <li><strong>Premiação (1-5):</strong> Prêmios em dinheiro, qualidade dos brindes, troféus, sorteios</li>
                 </ul>
-                <p className="mt-2 text-xs text-slate-500">* A nota final é a média aritmética dos 5 critérios</p>
+                <p className="mt-2 text-xs text-slate-500">* A nota final é a média aritmética dos 6 critérios</p>
               </div>
               
               <div>
@@ -1094,7 +1105,7 @@ const RankingCorridasPage = () => {
               </p>
             </div>
             
-            {/* 5 Critérios de Avaliação */}
+            {/* 6 Critérios de Avaliação */}
             <div className="space-y-4">
               <StarRating
                 value={avaliacaoData.organizacao}
@@ -1130,12 +1141,21 @@ const RankingCorridasPage = () => {
                 label="5. Pós-Prova"
                 description="Frutas, massagem, estrutura"
               />
+              
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-300">
+                <StarRating
+                  value={avaliacaoData.premiacao}
+                  onChange={(v) => setAvaliacaoData({...avaliacaoData, premiacao: v})}
+                  label="6. Premiação"
+                  description="Dinheiro, brindes, troféus, sorteios"
+                />
+              </div>
             </div>
             
             {/* Média calculada */}
             {avaliacaoData.organizacao > 0 && avaliacaoData.percurso > 0 && 
              avaliacaoData.kit_atleta > 0 && avaliacaoData.hidratacao > 0 && 
-             avaliacaoData.pos_prova > 0 && (
+             avaliacaoData.pos_prova > 0 && avaliacaoData.premiacao > 0 && (
               <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg border border-emerald-200">
                 <div className="flex items-center justify-between">
                   <span className="font-medium text-emerald-800 dark:text-emerald-200">
@@ -1145,7 +1165,7 @@ const RankingCorridasPage = () => {
                     <span className="text-2xl font-bold text-emerald-600">
                       {((avaliacaoData.organizacao + avaliacaoData.percurso + 
                          avaliacaoData.kit_atleta + avaliacaoData.hidratacao + 
-                         avaliacaoData.pos_prova) / 5).toFixed(1)}
+                         avaliacaoData.pos_prova + avaliacaoData.premiacao) / 6).toFixed(1)}
                     </span>
                     <span className="text-sm text-emerald-600">/ 5.0</span>
                   </div>

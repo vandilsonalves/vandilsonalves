@@ -80,6 +80,7 @@ async def atualizar_stats_corrida(corrida_id: str):
     media_kit = sum(a["kit_atleta"] for a in avaliacoes) / total
     media_hidr = sum(a["hidratacao"] for a in avaliacoes) / total
     media_pos = sum(a["pos_prova"] for a in avaliacoes) / total
+    media_prem = sum(a.get("premiacao", 3) for a in avaliacoes) / total  # Default 3 para avaliações antigas
     
     await db.corridas_eventos.update_one(
         {"id": corrida_id},
@@ -90,7 +91,8 @@ async def atualizar_stats_corrida(corrida_id: str):
             "media_percurso": round(media_perc, 2),
             "media_kit": round(media_kit, 2),
             "media_hidratacao": round(media_hidr, 2),
-            "media_pos_prova": round(media_pos, 2)
+            "media_pos_prova": round(media_pos, 2),
+            "media_premiacao": round(media_prem, 2)
         }}
     )
 
@@ -351,6 +353,7 @@ async def avaliar_corrida(
     kit_atleta: int = Form(...),
     hidratacao: int = Form(...),
     pos_prova: int = Form(...),
+    premiacao: int = Form(...),
     participei: bool = Form(...),
     aceito_termo: bool = Form(...),
     current_user: dict = Depends(get_current_user)
@@ -375,7 +378,7 @@ async def avaliar_corrida(
     # Validar notas
     for nota, nome in [(organizacao, "Organização"), (percurso, "Percurso"), 
                        (kit_atleta, "Kit Atleta"), (hidratacao, "Hidratação"), 
-                       (pos_prova, "Pós Prova")]:
+                       (pos_prova, "Pós Prova"), (premiacao, "Premiação")]:
         if not 1 <= nota <= 5:
             raise HTTPException(status_code=400, detail=f"{nome} deve ser entre 1 e 5")
     
@@ -403,7 +406,7 @@ async def avaliar_corrida(
     if avaliacao_existente:
         raise HTTPException(status_code=400, detail="Você já avaliou esta corrida")
     
-    nota_corrida = (organizacao + percurso + kit_atleta + hidratacao + pos_prova) / 5
+    nota_corrida = (organizacao + percurso + kit_atleta + hidratacao + pos_prova + premiacao) / 6
     
     avaliacao = {
         "id": str(uuid.uuid4()),
@@ -416,6 +419,7 @@ async def avaliar_corrida(
         "kit_atleta": kit_atleta,
         "hidratacao": hidratacao,
         "pos_prova": pos_prova,
+        "premiacao": premiacao,
         "nota_corrida": round(nota_corrida, 2),
         "participei": participei,
         "aceito_termo": aceito_termo,
