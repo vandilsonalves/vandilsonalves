@@ -135,7 +135,29 @@ const FeedPage = () => {
       setNovoPost('');
       fetchFeed();
     } catch (error) {
-      toast.error(error.response?.data?.detail || 'Erro ao publicar post');
+      const errorData = error.response?.data?.detail;
+      
+      // Verificar se é erro de moderação (objeto com detalhes)
+      if (errorData && typeof errorData === 'object' && errorData.message) {
+        const { message, nivel, educativo } = errorData;
+        
+        if (nivel === 'grave') {
+          toast.error(`🚫 ${message}`, { duration: 8000 });
+          if (educativo) {
+            toast.warning(`💡 ${educativo}`, { duration: 10000 });
+          }
+        } else if (nivel === 'medio') {
+          toast.warning(`⚠️ ${message}`, { duration: 6000 });
+          if (educativo) {
+            toast.info(`💡 ${educativo}`, { duration: 8000 });
+          }
+        } else {
+          toast.info(`ℹ️ ${message}`, { duration: 5000 });
+        }
+      } else {
+        // Erro comum (string)
+        toast.error(typeof errorData === 'string' ? errorData : 'Erro ao publicar post');
+      }
     } finally {
       setEnviandoPost(false);
     }
@@ -232,28 +254,34 @@ const FeedPage = () => {
       // Recarregar feed para atualizar comentários
       fetchFeed();
     } catch (error) {
+      console.log('Erro de moderação (debug):', error.response?.data);
       const errorData = error.response?.data?.detail;
       
       // Verificar se é erro de moderação (objeto com detalhes)
-      if (errorData && typeof errorData === 'object') {
+      if (errorData && typeof errorData === 'object' && errorData.message) {
         const { message, nivel, educativo } = errorData;
         
         // Mostrar mensagem baseada no nível
         if (nivel === 'grave') {
           toast.error(`🚫 ${message}`, { duration: 8000 });
           if (educativo) {
-            toast.warning(`💡 ${educativo}`, { duration: 10000 });
+            setTimeout(() => {
+              toast.warning(`💡 ${educativo}`, { duration: 10000 });
+            }, 500);
           }
         } else if (nivel === 'medio') {
           toast.warning(`⚠️ ${message}`, { duration: 6000 });
           if (educativo) {
-            toast.info(`💡 ${educativo}`, { duration: 8000 });
+            setTimeout(() => {
+              toast.info(`💡 ${educativo}`, { duration: 8000 });
+            }, 500);
           }
         } else {
           toast.info(`ℹ️ ${message || 'Seu comentário precisa de revisão.'}`, { duration: 5000 });
         }
       } else {
-        toast.error(errorData || 'Erro ao comentar');
+        // Erro comum (string)
+        toast.error(typeof errorData === 'string' ? errorData : 'Erro ao comentar');
       }
     } finally {
       setEnviandoComentario(null);

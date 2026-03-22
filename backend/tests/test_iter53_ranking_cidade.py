@@ -6,7 +6,7 @@ import pytest
 import requests
 import os
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://atleta-cidade-test.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://assessoria-ranking.preview.emergentagent.com')
 
 class TestRankingEstados:
     """Tests for GET /api/ranking/estados endpoint"""

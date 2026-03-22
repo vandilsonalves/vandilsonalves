@@ -9,7 +9,7 @@ import requests
 import os
 import uuid
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://atleta-cidade-test.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://assessoria-ranking.preview.emergentagent.com')
 
 class TestFeedEndpoints:
     """Tests for Feed API endpoints - Reactions, Comments, Parabéns"""

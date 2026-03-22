@@ -203,6 +203,34 @@ async def criar_post(
     if len(dados.texto) > 1000:
         raise HTTPException(status_code=400, detail="O texto do post não pode ter mais de 1000 caracteres")
     
+    # MODERAÇÃO: Verificar se o usuário está bloqueado
+    bloqueado, data_desbloqueio = await verificar_usuario_bloqueado(db, current_user["id"])
+    if bloqueado:
+        raise HTTPException(
+            status_code=403, 
+            detail=f"Você está temporariamente bloqueado de postar até {data_desbloqueio[:10]}."
+        )
+    
+    # MODERAÇÃO: Analisar conteúdo do post
+    bloqueado_mod, categoria, nivel, mensagem_feedback = analisar_conteudo(dados.texto)
+    
+    if bloqueado_mod and nivel:
+        # Registrar infração
+        await registrar_infracao(db, current_user["id"], nivel, categoria, dados.texto)
+        
+        # Gerar feedback educativo
+        feedback_educativo = gerar_feedback_educativo(nivel, categoria)
+        
+        raise HTTPException(
+            status_code=400,
+            detail={
+                "message": mensagem_feedback,
+                "nivel": nivel.value,
+                "categoria": categoria,
+                "educativo": feedback_educativo
+            }
+        )
+    
     # Se for post de resultado, buscar dados do resultado
     resultado_dados = None
     if dados.tipo == "resultado" and dados.resultado_id:

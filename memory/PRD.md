@@ -2,9 +2,34 @@
 
 ## Implementation Status (22/Mar/2026)
 
-### ✅ Latest Implementation: Sistema de Moderação do Feed
+### ✅ Latest Fix: Frontend de Moderação do Feed - CORRIGIDO! (22/Mar/2026)
 
-**Sistema completo de moderação de conteúdo implementado:**
+**Problema reportado:** "Sistema de Moderação do Feed não está funcionando"
+
+**Diagnóstico:** O backend estava funcionando corretamente (retornando HTTP 400 com mensagem estruturada), mas o frontend não estava exibindo o toast de erro corretamente.
+
+**Correções aplicadas:**
+
+1. **FeedPage.jsx - `handleComentar`:**
+   - Adicionada verificação robusta `errorData.message` para detectar erros de moderação
+   - Adicionado `setTimeout` para mostrar toasts em sequência (evita sobreposição)
+   - Adicionado log de debug para facilitar troubleshooting futuro
+
+2. **FeedPage.jsx - `handleCriarPost`:**
+   - Adicionado tratamento completo de erros de moderação (antes não existia)
+   - Posts agora também são moderados com feedback visual
+
+3. **feed_routes.py - `criar_post`:**
+   - Adicionada chamada à moderação antes de criar o post
+   - Usuários bloqueados não conseguem postar
+
+**Teste visual confirmado:** Toast "💡 Linguagem ofensiva pode machucar..." aparece corretamente
+
+---
+
+### ✅ Sistema de Moderação do Feed (Backend + Frontend)
+
+**Sistema completo de moderação de conteúdo:**
 
 1. **Serviço de Moderação** (`/app/backend/services/moderacao_service.py`):
    - Lista de palavras/frases proibidas em 7 categorias
@@ -26,15 +51,16 @@
    - Exibido ao lado do nome nos comentários
 
 4. **Feedback Educativo:**
-   - Mensagens explicativas quando comentário é bloqueado
+   - Mensagens explicativas quando comentário/post é bloqueado
    - Níveis visuais: 🚫 grave, ⚠️ médio, ℹ️ leve
+   - Toast com mensagem educativa exibido no frontend
 
 5. **Regra de Transferência de Atletas:**
    - Pontos conquistados ficam na assessoria onde foram obtidos
    - Não acompanham o atleta em caso de mudança de equipe
    - Histórico de equipes registrado
 
-### ✅ Bug Fixes (Completed Now)
+### ✅ Bug Fixes (Completed)
 
 1. **Bug Fix: Texto longo sem espaços no Feed** - CORRIGIDO!
    - Adicionado CSS `break-all` no texto dos comentários
@@ -136,8 +162,8 @@
 
 ## Credentials
 - **Admin**: admin@runpro.com / admin
-- **Preview URL**: https://atleta-cidade-test.preview.emergentagent.com
+- **Preview URL**: https://assessoria-ranking.preview.emergentagent.com
 
 ---
 
-*Última atualização: 20/Mar/2026*
+*Última atualização: 22/Mar/2026*
