@@ -695,22 +695,7 @@ const RaioXPage = () => {
       wsComparativo['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
       XLSX.utils.book_append_sheet(workbook, wsComparativo, 'Comparativo');
 
-      // Aba 5: Heatmap (Dias da Semana)
-      const heatmapData = [
-        ['DIAS FAVORITOS PARA CORRER'],
-        [''],
-        ['Dia', 'Quantidade de Corridas'],
-      ];
-      Object.entries(heatmap.dias_semana || {}).forEach(([dia, count]) => {
-        heatmapData.push([dia, count]);
-      });
-      heatmapData.push(['']);
-      heatmapData.push(['Dia Favorito:', heatmap.dia_favorito || '-']);
-      const wsHeatmap = XLSX.utils.aoa_to_sheet(heatmapData);
-      wsHeatmap['!cols'] = [{ wch: 20 }, { wch: 25 }];
-      XLSX.utils.book_append_sheet(workbook, wsHeatmap, 'Dias da Semana');
-
-      // Aba 6: Histórico de Consistência
+      // Aba 5: Histórico de Consistência
       const historicoData = [
         ['HISTÓRICO DE CONSISTÊNCIA'],
         [''],
@@ -766,165 +751,271 @@ const RaioXPage = () => {
   };
 
   // Gera imagem para compartilhamento usando Canvas API diretamente
+  // Formato 9:16 (ideal para Stories do Instagram)
   const generateShareCard = async () => {
     setGeneratingShare(true);
     try {
-      // Criar canvas diretamente
+      // Formato 9:16 para Stories (540x960)
+      const width = 540;
+      const height = 960;
+      
       const canvas = document.createElement('canvas');
-      canvas.width = 600 * 2; // Scale 2x
-      canvas.height = 500 * 2;
+      canvas.width = width * 2; // Scale 2x para qualidade
+      canvas.height = height * 2;
       const ctx = canvas.getContext('2d');
       
       // Scale para 2x
       ctx.scale(2, 2);
       
       // Background gradient
-      const gradient = ctx.createLinearGradient(0, 0, 600, 500);
+      const gradient = ctx.createLinearGradient(0, 0, 0, height);
       gradient.addColorStop(0, '#0f172a');
-      gradient.addColorStop(0.5, '#1e293b');
+      gradient.addColorStop(0.3, '#1e293b');
+      gradient.addColorStop(0.7, '#1e293b');
       gradient.addColorStop(1, '#0f172a');
       ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, 600, 500);
+      ctx.fillRect(0, 0, width, height);
+      
+      // Decorative elements
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.1)';
+      ctx.beginPath();
+      ctx.arc(-50, 100, 200, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.beginPath();
+      ctx.arc(width + 50, height - 100, 200, 0, Math.PI * 2);
+      ctx.fill();
+      
+      let yPos = 30;
       
       // Header - Logo area
-      const logoGradient = ctx.createLinearGradient(24, 24, 72, 72);
+      const logoGradient = ctx.createLinearGradient(20, yPos, 68, yPos + 48);
       logoGradient.addColorStop(0, '#10b981');
       logoGradient.addColorStop(1, '#14b8a6');
       ctx.fillStyle = logoGradient;
       ctx.beginPath();
-      ctx.roundRect(24, 24, 48, 48, 12);
+      ctx.roundRect(20, yPos, 48, 48, 12);
       ctx.fill();
       
-      // Logo icon (lightning bolt)
+      // Logo icon
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 28px Arial';
-      ctx.fillText('⚡', 34, 58);
+      ctx.font = 'bold 26px Arial';
+      ctx.fillText('⚡', 30, yPos + 35);
       
       // Title
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText('RAIO-X do Atleta', 84, 45);
+      ctx.font = 'bold 18px Arial';
+      ctx.fillText('RAIO-X do Atleta', 78, yPos + 25);
       ctx.fillStyle = '#10b981';
-      ctx.font = '14px Arial';
-      ctx.fillText('Ranking Run', 84, 65);
+      ctx.font = '12px Arial';
+      ctx.fillText('Ranking Run', 78, yPos + 42);
       
       // Website
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '12px Arial';
+      ctx.fillStyle = '#64748b';
+      ctx.font = '10px Arial';
       ctx.textAlign = 'right';
-      ctx.fillText('rankingrun.com.br', 576, 50);
+      ctx.fillText('rankingrun.com.br', width - 20, yPos + 35);
       ctx.textAlign = 'left';
+      
+      yPos += 80;
       
       // Nome do atleta
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 24px Arial';
+      ctx.font = 'bold 26px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(atleta?.nome || 'Atleta', 300, 120);
+      ctx.fillText(atleta?.nome || 'Atleta', width / 2, yPos);
       if (atleta?.assessoria) {
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '14px Arial';
-        ctx.fillText(atleta.assessoria, 300, 145);
+        ctx.font = '13px Arial';
+        ctx.fillText(atleta.assessoria, width / 2, yPos + 22);
+        yPos += 30;
       }
       ctx.textAlign = 'left';
       
-      // Score circle
+      yPos += 30;
+      
+      // Score circle (maior)
       const scoreValue = score.score_mes_atual || 0;
+      const scoreX = width / 2;
+      const scoreRadius = 60;
+      
       ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 12;
+      ctx.lineWidth = 14;
       ctx.beginPath();
-      ctx.arc(300, 220, 50, 0, Math.PI * 2);
+      ctx.arc(scoreX, yPos + scoreRadius, scoreRadius, 0, Math.PI * 2);
       ctx.stroke();
       
-      ctx.strokeStyle = '#10b981';
+      // Score progress
+      const scoreGradient = ctx.createLinearGradient(scoreX - scoreRadius, yPos, scoreX + scoreRadius, yPos + scoreRadius * 2);
+      scoreGradient.addColorStop(0, '#10b981');
+      scoreGradient.addColorStop(1, '#06b6d4');
+      ctx.strokeStyle = scoreGradient;
       ctx.lineCap = 'round';
       ctx.beginPath();
-      ctx.arc(300, 220, 50, -Math.PI / 2, -Math.PI / 2 + (scoreValue / 100) * Math.PI * 2);
+      ctx.arc(scoreX, yPos + scoreRadius, scoreRadius, -Math.PI / 2, -Math.PI / 2 + (scoreValue / 100) * Math.PI * 2);
       ctx.stroke();
       
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 28px Arial';
+      ctx.font = 'bold 36px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`${scoreValue}%`, 300, 228);
+      ctx.fillText(`${scoreValue}%`, scoreX, yPos + scoreRadius + 12);
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '10px Arial';
-      ctx.fillText('Consistência', 300, 245);
+      ctx.font = '12px Arial';
+      ctx.fillText('Consistência', scoreX, yPos + scoreRadius + 32);
       ctx.textAlign = 'left';
       
-      // Métricas em cards
-      const metricsY = 310;
-      const cardWidth = 130;
-      const cardHeight = 70;
+      yPos += scoreRadius * 2 + 50;
+      
+      // Métricas em 2x2 grid
+      const cardWidth = 240;
+      const cardHeight = 75;
       const cardGap = 15;
-      const startX = (600 - (cardWidth * 4 + cardGap * 3)) / 2;
+      const gridStartX = (width - cardWidth * 2 - cardGap) / 2;
       
       const metrics = [
-        { icon: '🏆', value: evolucao.totais?.total_provas || 0, label: 'Provas', color: '#facc15' },
-        { icon: '📈', value: `${evolucao.totais?.distancia_total_km || 0}`, label: 'km', color: '#10b981' },
-        { icon: '⏱️', value: `${evolucao.totais?.tempo_total_horas || 0}h`, label: 'Tempo', color: '#3b82f6' },
-        { icon: '⚡', value: records.records?.melhor_pace?.valor_formatado || '-', label: 'Pace', color: '#a855f7' }
+        { icon: '🏆', value: evolucao.totais?.total_provas || 0, label: 'Provas' },
+        { icon: '📏', value: `${evolucao.totais?.distancia_total_km || 0} km`, label: 'Distância' },
+        { icon: '⏱️', value: `${evolucao.totais?.tempo_total_horas || 0}h`, label: 'Tempo Total' },
+        { icon: '⚡', value: records.records?.melhor_pace?.valor_formatado || '-', label: 'Melhor Pace' }
       ];
       
       metrics.forEach((metric, i) => {
-        const x = startX + i * (cardWidth + cardGap);
+        const col = i % 2;
+        const row = Math.floor(i / 2);
+        const x = gridStartX + col * (cardWidth + cardGap);
+        const y = yPos + row * (cardHeight + 10);
         
         // Card background
-        ctx.fillStyle = 'rgba(71, 85, 105, 0.5)';
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.4)';
         ctx.beginPath();
-        ctx.roundRect(x, metricsY, cardWidth, cardHeight, 8);
+        ctx.roundRect(x, y, cardWidth, cardHeight, 10);
         ctx.fill();
         
         // Icon
-        ctx.font = '18px Arial';
-        ctx.fillText(metric.icon, x + cardWidth/2 - 10, metricsY + 22);
+        ctx.font = '22px Arial';
+        ctx.fillText(metric.icon, x + 15, y + 35);
         
         // Value
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 18px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(String(metric.value), x + cardWidth/2, metricsY + 48);
+        ctx.font = 'bold 22px Arial';
+        ctx.fillText(String(metric.value), x + 50, y + 35);
         
         // Label
         ctx.fillStyle = '#94a3b8';
         ctx.font = '11px Arial';
-        ctx.fillText(metric.label, x + cardWidth/2, metricsY + 64);
-        ctx.textAlign = 'left';
+        ctx.fillText(metric.label, x + 50, y + 55);
       });
+      
+      yPos += cardHeight * 2 + 40;
       
       // Records section
       ctx.fillStyle = 'rgba(71, 85, 105, 0.3)';
       ctx.beginPath();
-      ctx.roundRect(24, 400, 552, 60, 8);
+      ctx.roundRect(20, yPos, width - 40, 90, 10);
       ctx.fill();
       
       ctx.fillStyle = '#facc15';
-      ctx.font = '14px Arial';
-      ctx.fillText('🏅 Records Pessoais', 40, 420);
+      ctx.font = 'bold 14px Arial';
+      ctx.fillText('🏅 Records Pessoais', 35, yPos + 25);
       
       const categories = ['5km', '10km', '21km', '42km'];
-      const rpX = 40;
-      ctx.font = '12px Arial';
+      const rpStartX = 35;
+      const rpWidth = (width - 70) / 4;
+      
+      ctx.font = '11px Arial';
       categories.forEach((cat, i) => {
+        const x = rpStartX + i * rpWidth;
         const rp = records.records?.por_categoria?.[cat];
-        const xPos = rpX + i * 135;
+        
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText(cat + ':', xPos, 445);
+        ctx.fillText(cat, x, yPos + 50);
+        
         ctx.fillStyle = rp ? '#10b981' : '#64748b';
-        ctx.fillText(rp?.tempo || '-', xPos + 40, 445);
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(rp?.tempo || '-', x, yPos + 70);
+        ctx.font = '11px Arial';
       });
       
+      yPos += 110;
+      
+      // ========== INSÍGNIAS CONQUISTADAS ==========
+      const badgesConquistados = badges.filter(b => b.conquistado);
+      
+      if (badgesConquistados.length > 0) {
+        // Título da seção
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+        ctx.beginPath();
+        ctx.roundRect(20, yPos, width - 40, 130, 10);
+        ctx.fill();
+        
+        ctx.fillStyle = '#facc15';
+        ctx.font = 'bold 14px Arial';
+        ctx.fillText(`🎖️ Insígnias Conquistadas (${badgesConquistados.length})`, 35, yPos + 25);
+        
+        // Desenhar insígnias
+        const badgeSize = 50;
+        const badgeGap = 10;
+        const maxBadgesPerRow = Math.floor((width - 70) / (badgeSize + badgeGap));
+        const badgesToShow = badgesConquistados.slice(0, maxBadgesPerRow * 2); // Máximo 2 linhas
+        const totalBadgesWidth = Math.min(badgesToShow.length, maxBadgesPerRow) * (badgeSize + badgeGap) - badgeGap;
+        const badgeStartX = (width - totalBadgesWidth) / 2;
+        
+        badgesToShow.forEach((badge, i) => {
+          const row = Math.floor(i / maxBadgesPerRow);
+          const col = i % maxBadgesPerRow;
+          const x = badgeStartX + col * (badgeSize + badgeGap);
+          const y = yPos + 40 + row * (badgeSize + 10);
+          
+          // Badge circle
+          const badgeGradient = ctx.createLinearGradient(x, y, x + badgeSize, y + badgeSize);
+          badgeGradient.addColorStop(0, badge.cor_primaria || '#10b981');
+          badgeGradient.addColorStop(1, badge.cor_secundaria || '#059669');
+          ctx.fillStyle = badgeGradient;
+          ctx.beginPath();
+          ctx.arc(x + badgeSize / 2, y + badgeSize / 2, badgeSize / 2 - 2, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Badge border
+          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          ctx.lineWidth = 2;
+          ctx.stroke();
+          
+          // Badge icon (first letter or icon)
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 20px Arial';
+          ctx.textAlign = 'center';
+          ctx.fillText(badge.nome?.charAt(0) || '★', x + badgeSize / 2, y + badgeSize / 2 + 7);
+          ctx.textAlign = 'left';
+        });
+        
+        yPos += 145;
+      }
+      
       // Footer
-      ctx.fillStyle = '#475569';
+      yPos = height - 50;
+      
+      // Linha decorativa
+      const lineGradient = ctx.createLinearGradient(20, yPos, width - 20, yPos);
+      lineGradient.addColorStop(0, '#10b981');
+      lineGradient.addColorStop(0.5, '#06b6d4');
+      lineGradient.addColorStop(1, '#10b981');
+      ctx.strokeStyle = lineGradient;
+      ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(24, 475);
-      ctx.lineTo(576, 475);
+      ctx.moveTo(20, yPos);
+      ctx.lineTo(width - 20, yPos);
       ctx.stroke();
       
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '11px Arial';
-      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 24, 490);
-      ctx.textAlign = 'right';
-      ctx.fillText('Ranking Run', 576, 490);
+      yPos += 25;
       
+      ctx.fillStyle = '#64748b';
+      ctx.font = '11px Arial';
+      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 20, yPos);
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#10b981';
+      ctx.font = 'bold 12px Arial';
+      ctx.fillText('Ranking Run', width - 20, yPos);
+      ctx.textAlign = 'left';
+
       const imageUrl = canvas.toDataURL('image/png');
       setShareImageUrl(imageUrl);
     } catch (error) {
@@ -1199,39 +1290,6 @@ const RaioXPage = () => {
                       />
                     </AreaChart>
                   </ResponsiveContainer>
-                </CardContent>
-              </Card>
-
-              {/* Heatmap - Dias da Semana */}
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-blue-400" />
-                    Dias Favoritos
-                  </CardTitle>
-                  <CardDescription className="text-slate-400">
-                    Dia favorito: <span className="text-blue-400 font-medium">{heatmap.dia_favorito}</span>
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
-                    {Object.entries(heatmap.dias_semana).map(([dia, count]) => {
-                      const max = Math.max(...Object.values(heatmap.dias_semana));
-                      const percent = max > 0 ? (count / max) * 100 : 0;
-                      return (
-                        <div key={dia} className="flex items-center gap-2">
-                          <span className="text-sm text-slate-400 w-8">{dia}</span>
-                          <div className="flex-1 bg-slate-700 rounded-full h-4 overflow-hidden">
-                            <div
-                              className="h-full bg-gradient-to-r from-blue-500 to-cyan-400 rounded-full transition-all"
-                              style={{ width: `${percent}%` }}
-                            />
-                          </div>
-                          <span className="text-sm text-white w-6 text-right">{count}</span>
-                        </div>
-                      );
-                    })}
-                  </div>
                 </CardContent>
               </Card>
             </div>

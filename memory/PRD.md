@@ -2,7 +2,29 @@
 
 ## Implementation Status (23/Mar/2026)
 
-### ✅ Latest: Melhorias RAIO-X (Comparativo + Records) - 23/Mar/2026
+### ✅ Latest: Melhorias Imagem Compartilhamento RAIO-X (23/Mar/2026)
+
+**Alterações realizadas:**
+
+1. **Gráfico "Dias Favoritos" REMOVIDO** ✅
+   - Removido da aba Visão Geral
+   - Removido da exportação Excel
+
+2. **Imagem de Compartilhamento FORMATO 9:16** ✅
+   - Dimensões: 540x960 pixels (ideal para Stories)
+   - Layout vertical otimizado para Instagram/WhatsApp
+   - Elementos decorativos com gradientes
+
+3. **Insígnias Conquistadas na Imagem** ✅
+   - Seção "Insígnias Conquistadas" adicionada ao card
+   - Exibe até 2 linhas de insígnias com cores gradientes
+   - Mostra a quantidade total de conquistas
+
+**Arquivo modificado:** `/app/frontend/src/pages/RaioXPage.jsx`
+
+---
+
+### ✅ Melhorias RAIO-X (Comparativo + Records) - 23/Mar/2026
 
 **Novas funcionalidades:**
 
