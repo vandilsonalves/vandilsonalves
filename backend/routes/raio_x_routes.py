@@ -208,14 +208,14 @@ async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
                 "valor": pace,
                 "valor_formatado": pace_para_string(pace),
                 "data": c.get("data"),
-                "corrida": c.get("nome_competicao", c.get("nome", "Corrida")),
+                "corrida": c.get("prova") or c.get("nome_competicao") or c.get("nome") or "Corrida",
                 "distancia": distancia
             }
             historico_rps.append({
                 "tipo": "Melhor Pace",
                 "valor": pace_para_string(pace),
                 "data": c.get("data"),
-                "corrida": c.get("nome_competicao", "")
+                "corrida": c.get("prova") or c.get("nome_competicao") or ""
             })
         
         # Verificar maior distância
@@ -223,7 +223,7 @@ async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
             maior_distancia = {
                 "valor": distancia,
                 "data": c.get("data"),
-                "corrida": c.get("nome_competicao", c.get("nome", "Corrida")),
+                "corrida": c.get("prova") or c.get("nome_competicao") or c.get("nome") or "Corrida",
                 "tempo": c.get("tempo")
             }
         
@@ -234,12 +234,12 @@ async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
                     if config["melhor_tempo"] is None or tempo_min < config["melhor_tempo"]:
                         categorias[cat]["melhor_tempo"] = tempo_min
                         categorias[cat]["data"] = c.get("data")
-                        categorias[cat]["corrida"] = c.get("nome_competicao", "")
+                        categorias[cat]["corrida"] = c.get("prova") or c.get("nome_competicao") or c.get("nome") or ""
                         historico_rps.append({
                             "tipo": f"RP {cat}",
                             "valor": c.get("tempo"),
                             "data": c.get("data"),
-                            "corrida": c.get("nome_competicao", "")
+                            "corrida": c.get("prova") or c.get("nome_competicao") or c.get("nome") or ""
                         })
     
     # Formatar categorias
@@ -378,6 +378,106 @@ async def get_comparativo_mensal(current_user: dict = Depends(get_current_user))
         },
         "variacoes": variacoes,
         "melhor_performance_mes": melhor_do_mes
+    }
+
+
+@router.get("/raio-x/comparativo-meses")
+async def get_comparativo_meses_personalizados(
+    mes1: str = Query(..., description="Primeiro mês no formato YYYY-MM"),
+    mes2: str = Query(..., description="Segundo mês no formato YYYY-MM"),
+    current_user: dict = Depends(get_current_user)
+):
+    """
+    Compara performance entre dois meses específicos escolhidos pelo atleta.
+    """
+    usuario_id = current_user["id"]
+    
+    corridas = await db.corridas.find(
+        {"usuario_id": usuario_id},
+        {"_id": 0}
+    ).to_list(None)
+    
+    def calcular_metricas(corridas_mes):
+        if not corridas_mes:
+            return None
+        
+        distancia_total = 0
+        tempo_total = 0
+        paces = []
+        
+        for c in corridas_mes:
+            dist = c.get("distancia_km") or c.get("distancia", 0)
+            if isinstance(dist, str):
+                try:
+                    dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
+                except:
+                    continue
+            elif dist is None:
+                continue
+            
+            tempo_min = tempo_para_minutos(c.get("tempo", ""))
+            pace = calcular_pace(c.get("tempo", ""), dist)
+            
+            distancia_total += dist
+            if tempo_min:
+                tempo_total += tempo_min
+            if pace:
+                paces.append(pace)
+        
+        pace_medio = statistics.mean(paces) if paces else None
+        
+        return {
+            "distancia_total_km": round(distancia_total, 2),
+            "tempo_total_horas": round(tempo_total / 60, 2),
+            "num_provas": len(corridas_mes),
+            "pace_medio": pace_para_string(pace_medio) if pace_medio else "-",
+            "pace_medio_valor": round(pace_medio, 2) if pace_medio else None
+        }
+    
+    # Filtrar corridas por mês
+    corridas_mes1 = [c for c in corridas if c.get("data", "").startswith(mes1)]
+    corridas_mes2 = [c for c in corridas if c.get("data", "").startswith(mes2)]
+    
+    metricas_mes1 = calcular_metricas(corridas_mes1)
+    metricas_mes2 = calcular_metricas(corridas_mes2)
+    
+    # Calcular variações (mes1 comparado ao mes2)
+    variacoes = {}
+    if metricas_mes1 and metricas_mes2:
+        if metricas_mes2["distancia_total_km"] > 0:
+            var_dist = ((metricas_mes1["distancia_total_km"] - metricas_mes2["distancia_total_km"]) / metricas_mes2["distancia_total_km"]) * 100
+            variacoes["distancia"] = round(var_dist, 1)
+        
+        if metricas_mes2["num_provas"] > 0:
+            var_provas = ((metricas_mes1["num_provas"] - metricas_mes2["num_provas"]) / metricas_mes2["num_provas"]) * 100
+            variacoes["provas"] = round(var_provas, 1)
+        
+        if metricas_mes2["pace_medio_valor"] and metricas_mes1["pace_medio_valor"]:
+            var_pace = ((metricas_mes2["pace_medio_valor"] - metricas_mes1["pace_medio_valor"]) / metricas_mes2["pace_medio_valor"]) * 100
+            variacoes["pace"] = round(var_pace, 1)
+    
+    # Formatar nomes dos meses
+    try:
+        mes1_date = datetime.strptime(mes1, "%Y-%m")
+        mes2_date = datetime.strptime(mes2, "%Y-%m")
+        mes1_formatado = mes1_date.strftime("%B/%Y")
+        mes2_formatado = mes2_date.strftime("%B/%Y")
+    except:
+        mes1_formatado = mes1
+        mes2_formatado = mes2
+    
+    return {
+        "mes1": {
+            "periodo": mes1,
+            "periodo_formatado": mes1_formatado,
+            "metricas": metricas_mes1
+        },
+        "mes2": {
+            "periodo": mes2,
+            "periodo_formatado": mes2_formatado,
+            "metricas": metricas_mes2
+        },
+        "variacoes": variacoes
     }
 
 

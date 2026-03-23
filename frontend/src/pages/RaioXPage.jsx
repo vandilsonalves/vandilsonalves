@@ -16,10 +16,10 @@ import {
   ResponsiveContainer, RadialBarChart, RadialBar
 } from 'recharts';
 import {
-  Loader2, ChevronLeft, Download, TrendingUp, TrendingDown, Trophy,
+  Loader2, ChevronLeft, ChevronRight, Download, TrendingUp, TrendingDown, Trophy,
   Target, Zap, Calendar, Clock, Activity, Award, Flame, Star,
   ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieIcon, FileText, FileSpreadsheet,
-  Share2, Copy, Check, X, Lock, Sparkles, Medal, Shield, Play, Crown, Users, Eye, HelpCircle
+  Share2, Copy, Check, X, Lock, Sparkles, Medal, Shield, Play, Crown, Users, Eye, HelpCircle, ArrowLeftRight
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -228,6 +228,19 @@ const RaioXPage = () => {
   const [badges, setBadges] = useState([]);
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  
+  // Estados para comparativo personalizado
+  const anoAtual = new Date().getFullYear();
+  const mesAtualNum = new Date().getMonth();
+  const [mesSelecionado1, setMesSelecionado1] = useState(mesAtualNum);
+  const [mesSelecionado2, setMesSelecionado2] = useState(mesAtualNum > 0 ? mesAtualNum - 1 : 11);
+  const [comparativoPersonalizado, setComparativoPersonalizado] = useState(null);
+  const [loadingComparativo, setLoadingComparativo] = useState(false);
+  
+  const mesesDoAno = [
+    'Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho',
+    'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'
+  ];
 
   useEffect(() => {
     if (token) {
@@ -267,6 +280,33 @@ const RaioXPage = () => {
       setBadgesLoading(false);
     }
   };
+
+  // Busca comparativo personalizado
+  const fetchComparativoPersonalizado = async () => {
+    setLoadingComparativo(true);
+    try {
+      const mes1 = `${anoAtual}-${String(mesSelecionado1 + 1).padStart(2, '0')}`;
+      const mes2 = `${anoAtual}-${String(mesSelecionado2 + 1).padStart(2, '0')}`;
+      
+      const response = await axios.get(`${API}/raio-x/comparativo-meses`, {
+        params: { mes1, mes2 },
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setComparativoPersonalizado(response.data);
+    } catch (error) {
+      console.error('Erro ao carregar comparativo:', error);
+      toast.error('Erro ao carregar comparativo');
+    } finally {
+      setLoadingComparativo(false);
+    }
+  };
+
+  // Buscar comparativo quando meses mudam
+  useEffect(() => {
+    if (token && activeTab === 'comparativo') {
+      fetchComparativoPersonalizado();
+    }
+  }, [mesSelecionado1, mesSelecionado2, activeTab, token]);
 
   const exportToPDF = async () => {
     const loadingToast = toast.loading('Gerando PDF completo...');
@@ -1432,153 +1472,207 @@ const RaioXPage = () => {
 
           {/* Aba: Comparativo */}
           <TabsContent value="comparativo">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Comparativo Este Mês vs Mês Anterior */}
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white">Este Mês vs Mês Anterior</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-6">
-                    {/* Distância */}
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-slate-400">Distância Total</span>
-                        <div className="flex items-center gap-2">
-                          {comparativo.variacoes?.distancia > 0 ? (
-                            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                          ) : comparativo.variacoes?.distancia < 0 ? (
-                            <ArrowDownRight className="w-4 h-4 text-red-400" />
-                          ) : null}
-                          <span className={comparativo.variacoes?.distancia > 0 ? 'text-emerald-400' : comparativo.variacoes?.distancia < 0 ? 'text-red-400' : 'text-slate-400'}>
-                            {comparativo.variacoes?.distancia > 0 ? '+' : ''}{comparativo.variacoes?.distancia || 0}%
-                          </span>
-                        </div>
+            <div className="space-y-6">
+              {/* Seletores de Mês */}
+              <Card className="bg-gradient-to-r from-orange-500/10 to-amber-500/10 border-orange-500/30">
+                <CardContent className="py-4">
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-4">
+                    {/* Mês 1 */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setMesSelecionado1(prev => prev > 0 ? prev - 1 : 11)}
+                        className="text-white hover:bg-slate-700"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </Button>
+                      <div className="w-32 text-center">
+                        <p className="text-xs text-slate-400">Comparar</p>
+                        <p className="text-lg font-bold text-white">{mesesDoAno[mesSelecionado1]}</p>
                       </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1 bg-slate-700 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-white">{comparativo.mes_atual?.metricas?.distancia_total_km || 0}</p>
-                          <p className="text-xs text-slate-400">km este mês</p>
-                        </div>
-                        <div className="flex-1 bg-slate-700/50 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-slate-400">{comparativo.mes_anterior?.metricas?.distancia_total_km || 0}</p>
-                          <p className="text-xs text-slate-500">km mês passado</p>
-                        </div>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setMesSelecionado1(prev => prev < 11 ? prev + 1 : 0)}
+                        className="text-white hover:bg-slate-700"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </Button>
                     </div>
-
-                    {/* Provas */}
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-slate-400">Número de Provas</span>
-                        <div className="flex items-center gap-2">
-                          {comparativo.variacoes?.provas > 0 ? (
-                            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                          ) : comparativo.variacoes?.provas < 0 ? (
-                            <ArrowDownRight className="w-4 h-4 text-red-400" />
-                          ) : null}
-                          <span className={comparativo.variacoes?.provas > 0 ? 'text-emerald-400' : comparativo.variacoes?.provas < 0 ? 'text-red-400' : 'text-slate-400'}>
-                            {comparativo.variacoes?.provas > 0 ? '+' : ''}{comparativo.variacoes?.provas || 0}%
-                          </span>
-                        </div>
-                      </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1 bg-slate-700 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-white">{comparativo.mes_atual?.metricas?.num_provas || 0}</p>
-                          <p className="text-xs text-slate-400">este mês</p>
-                        </div>
-                        <div className="flex-1 bg-slate-700/50 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-slate-400">{comparativo.mes_anterior?.metricas?.num_provas || 0}</p>
-                          <p className="text-xs text-slate-500">mês passado</p>
-                        </div>
-                      </div>
+                    
+                    {/* Ícone de comparação */}
+                    <div className="flex items-center gap-2 px-4">
+                      <ArrowLeftRight className="w-6 h-6 text-orange-400" />
                     </div>
-
-                    {/* Pace */}
-                    <div>
-                      <div className="flex justify-between mb-2">
-                        <span className="text-slate-400">Pace Médio</span>
-                        <div className="flex items-center gap-2">
-                          {comparativo.variacoes?.pace > 0 ? (
-                            <ArrowUpRight className="w-4 h-4 text-emerald-400" />
-                          ) : comparativo.variacoes?.pace < 0 ? (
-                            <ArrowDownRight className="w-4 h-4 text-red-400" />
-                          ) : null}
-                          <span className={comparativo.variacoes?.pace > 0 ? 'text-emerald-400' : comparativo.variacoes?.pace < 0 ? 'text-red-400' : 'text-slate-400'}>
-                            {comparativo.variacoes?.pace > 0 ? '+' : ''}{comparativo.variacoes?.pace || 0}%
-                          </span>
-                        </div>
+                    
+                    {/* Mês 2 */}
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setMesSelecionado2(prev => prev > 0 ? prev - 1 : 11)}
+                        className="text-white hover:bg-slate-700"
+                      >
+                        <ChevronLeft className="w-5 h-5" />
+                      </Button>
+                      <div className="w-32 text-center">
+                        <p className="text-xs text-slate-400">Com</p>
+                        <p className="text-lg font-bold text-white">{mesesDoAno[mesSelecionado2]}</p>
                       </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1 bg-slate-700 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-white">{comparativo.mes_atual?.metricas?.pace_medio || '-'}</p>
-                          <p className="text-xs text-slate-400">/km este mês</p>
-                        </div>
-                        <div className="flex-1 bg-slate-700/50 rounded-lg p-3 text-center">
-                          <p className="text-2xl font-bold text-slate-400">{comparativo.mes_anterior?.metricas?.pace_medio || '-'}</p>
-                          <p className="text-xs text-slate-500">/km mês passado</p>
-                        </div>
-                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => setMesSelecionado2(prev => prev < 11 ? prev + 1 : 0)}
+                        className="text-white hover:bg-slate-700"
+                      >
+                        <ChevronRight className="w-5 h-5" />
+                      </Button>
                     </div>
                   </div>
+                  <p className="text-center text-xs text-slate-500 mt-2">Ano: {anoAtual}</p>
                 </CardContent>
               </Card>
 
-              {/* Melhor Performance do Mês */}
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Star className="w-5 h-5 text-yellow-400" />
-                    Melhor Performance do Mês
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  {comparativo.melhor_performance_mes ? (
-                    <div className="text-center py-4">
-                      <Award className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
-                      <h3 className="text-xl font-bold text-white">{comparativo.melhor_performance_mes.corrida}</h3>
-                      <p className="text-slate-400 mt-2">{new Date(comparativo.melhor_performance_mes.data).toLocaleDateString('pt-BR')}</p>
-                      <div className="flex justify-center gap-6 mt-4">
+              {loadingComparativo ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                  {/* Comparativo Personalizado */}
+                  <Card className="bg-slate-800 border-slate-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Calendar className="w-5 h-5 text-orange-400" />
+                        {mesesDoAno[mesSelecionado1]} vs {mesesDoAno[mesSelecionado2]}
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-6">
+                        {/* Distância */}
                         <div>
-                          <p className="text-2xl font-bold text-emerald-400">{comparativo.melhor_performance_mes.distancia} km</p>
-                          <p className="text-xs text-slate-500">Distância</p>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-slate-400">Distância Total</span>
+                            <div className="flex items-center gap-2">
+                              {(comparativoPersonalizado?.variacoes?.distancia || 0) > 0 ? (
+                                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                              ) : (comparativoPersonalizado?.variacoes?.distancia || 0) < 0 ? (
+                                <ArrowDownRight className="w-4 h-4 text-red-400" />
+                              ) : null}
+                              <span className={(comparativoPersonalizado?.variacoes?.distancia || 0) > 0 ? 'text-emerald-400' : (comparativoPersonalizado?.variacoes?.distancia || 0) < 0 ? 'text-red-400' : 'text-slate-400'}>
+                                {(comparativoPersonalizado?.variacoes?.distancia || 0) > 0 ? '+' : ''}{comparativoPersonalizado?.variacoes?.distancia || 0}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-4">
+                            <div className="flex-1 bg-slate-700 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-white">{comparativoPersonalizado?.mes1?.metricas?.distancia_total_km || 0}</p>
+                              <p className="text-xs text-slate-400">km em {mesesDoAno[mesSelecionado1]}</p>
+                            </div>
+                            <div className="flex-1 bg-slate-700/50 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-slate-400">{comparativoPersonalizado?.mes2?.metricas?.distancia_total_km || 0}</p>
+                              <p className="text-xs text-slate-500">km em {mesesDoAno[mesSelecionado2]}</p>
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Provas */}
                         <div>
-                          <p className="text-2xl font-bold text-blue-400">{comparativo.melhor_performance_mes.tempo}</p>
-                          <p className="text-xs text-slate-500">Tempo</p>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-slate-400">Número de Provas</span>
+                            <div className="flex items-center gap-2">
+                              {(comparativoPersonalizado?.variacoes?.provas || 0) > 0 ? (
+                                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                              ) : (comparativoPersonalizado?.variacoes?.provas || 0) < 0 ? (
+                                <ArrowDownRight className="w-4 h-4 text-red-400" />
+                              ) : null}
+                              <span className={(comparativoPersonalizado?.variacoes?.provas || 0) > 0 ? 'text-emerald-400' : (comparativoPersonalizado?.variacoes?.provas || 0) < 0 ? 'text-red-400' : 'text-slate-400'}>
+                                {(comparativoPersonalizado?.variacoes?.provas || 0) > 0 ? '+' : ''}{comparativoPersonalizado?.variacoes?.provas || 0}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-4">
+                            <div className="flex-1 bg-slate-700 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-white">{comparativoPersonalizado?.mes1?.metricas?.num_provas || 0}</p>
+                              <p className="text-xs text-slate-400">em {mesesDoAno[mesSelecionado1]}</p>
+                            </div>
+                            <div className="flex-1 bg-slate-700/50 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-slate-400">{comparativoPersonalizado?.mes2?.metricas?.num_provas || 0}</p>
+                              <p className="text-xs text-slate-500">em {mesesDoAno[mesSelecionado2]}</p>
+                            </div>
+                          </div>
                         </div>
+
+                        {/* Pace */}
                         <div>
-                          <p className="text-2xl font-bold text-orange-400">{comparativo.melhor_performance_mes.pace}</p>
-                          <p className="text-xs text-slate-500">Pace</p>
+                          <div className="flex justify-between mb-2">
+                            <span className="text-slate-400">Pace Médio</span>
+                            <div className="flex items-center gap-2">
+                              {(comparativoPersonalizado?.variacoes?.pace || 0) > 0 ? (
+                                <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                              ) : (comparativoPersonalizado?.variacoes?.pace || 0) < 0 ? (
+                                <ArrowDownRight className="w-4 h-4 text-red-400" />
+                              ) : null}
+                              <span className={(comparativoPersonalizado?.variacoes?.pace || 0) > 0 ? 'text-emerald-400' : (comparativoPersonalizado?.variacoes?.pace || 0) < 0 ? 'text-red-400' : 'text-slate-400'}>
+                                {(comparativoPersonalizado?.variacoes?.pace || 0) > 0 ? '+' : ''}{comparativoPersonalizado?.variacoes?.pace || 0}%
+                              </span>
+                            </div>
+                          </div>
+                          <div className="flex gap-4">
+                            <div className="flex-1 bg-slate-700 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-white">{comparativoPersonalizado?.mes1?.metricas?.pace_medio || '-'}</p>
+                              <p className="text-xs text-slate-400">/km em {mesesDoAno[mesSelecionado1]}</p>
+                            </div>
+                            <div className="flex-1 bg-slate-700/50 rounded-lg p-3 text-center">
+                              <p className="text-2xl font-bold text-slate-400">{comparativoPersonalizado?.mes2?.metricas?.pace_medio || '-'}</p>
+                              <p className="text-xs text-slate-500">/km em {mesesDoAno[mesSelecionado2]}</p>
+                            </div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Activity className="w-12 h-12 text-slate-600 mx-auto mb-3" />
-                      <p className="text-slate-400">Nenhuma corrida registrada este mês</p>
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                    </CardContent>
+                  </Card>
 
-              {/* Gráfico de Comparação Histórica */}
-              <Card className="bg-slate-800 border-slate-700 lg:col-span-2">
-                <CardHeader>
-                  <CardTitle className="text-white">Histórico de Consistência</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <BarChart data={score.historico}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
-                      <XAxis dataKey="mes_formatado" stroke="#64748b" fontSize={12} />
-                      <YAxis stroke="#64748b" fontSize={12} domain={[0, 100]} />
-                      <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #334155' }} />
-                      <Bar dataKey="score" fill="#8b5cf6" radius={[4, 4, 0, 0]} name="Score (%)" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
+                  {/* Melhor Performance do Mês Atual */}
+                  <Card className="bg-slate-800 border-slate-700">
+                    <CardHeader>
+                      <CardTitle className="text-white flex items-center gap-2">
+                        <Star className="w-5 h-5 text-yellow-400" />
+                        Melhor Performance do Mês
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      {comparativo.melhor_performance_mes ? (
+                        <div className="text-center py-4">
+                          <Award className="w-16 h-16 text-yellow-400 mx-auto mb-4" />
+                          <h3 className="text-xl font-bold text-white">{comparativo.melhor_performance_mes.corrida}</h3>
+                          <p className="text-slate-400 mt-2">{new Date(comparativo.melhor_performance_mes.data).toLocaleDateString('pt-BR')}</p>
+                          <div className="flex justify-center gap-6 mt-4">
+                            <div>
+                              <p className="text-2xl font-bold text-emerald-400">{comparativo.melhor_performance_mes.distancia} km</p>
+                              <p className="text-xs text-slate-500">Distância</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold text-blue-400">{comparativo.melhor_performance_mes.tempo}</p>
+                              <p className="text-xs text-slate-500">Tempo</p>
+                            </div>
+                            <div>
+                              <p className="text-2xl font-bold text-purple-400">{comparativo.melhor_performance_mes.pace}</p>
+                              <p className="text-xs text-slate-500">Pace</p>
+                            </div>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <Activity className="w-12 h-12 text-slate-600 mx-auto mb-3" />
+                          <p className="text-slate-400">Nenhuma corrida registrada este mês</p>
+                        </div>
+                      )}
+                    </CardContent>
+                  </Card>
+                </div>
+              )}
             </div>
           </TabsContent>
 

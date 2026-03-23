@@ -2,7 +2,27 @@
 
 ## Implementation Status (23/Mar/2026)
 
-### ✅ Latest: Correções RAIO-X (Distância, PDF Completo, Compartilhar Instagram) - 23/Mar/2026
+### ✅ Latest: Melhorias RAIO-X (Comparativo + Records) - 23/Mar/2026
+
+**Novas funcionalidades:**
+
+1. **Comparativo Personalizado por Mês** ✅
+   - Seletores com setas para navegar entre os meses (Janeiro-Dezembro)
+   - Ícone de comparação visual entre os dois meses
+   - Comparação de: Distância Total, Número de Provas, Pace Médio
+   - Novo endpoint: `GET /api/raio-x/comparativo-meses?mes1=YYYY-MM&mes2=YYYY-MM`
+
+2. **Records por Distância - Coluna "Corrida" corrigida** ✅
+   - Agora exibe o nome da corrida em todas as categorias (5km, 10km, 21km, 42km)
+   - Corrigido para usar `prova or nome_competicao or nome`
+
+**Arquivos modificados:**
+- `/app/backend/routes/raio_x_routes.py` - Novo endpoint comparativo-meses + fix nome corrida
+- `/app/frontend/src/pages/RaioXPage.jsx` - Seletores de mês no Comparativo
+
+---
+
+### ✅ Correções RAIO-X (Distância, PDF Completo, Compartilhar Instagram) - 23/Mar/2026
 
 **Bugs corrigidos:**
 
