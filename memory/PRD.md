@@ -191,7 +191,7 @@
 
 ## Credentials
 - **Admin**: admin@runpro.com / admin
-- **Preview URL**: https://assessoria-ranking.preview.emergentagent.com
+- **Preview URL**: https://ranking-run-v2.preview.emergentagent.com
 
 ---
 

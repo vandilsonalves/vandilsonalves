@@ -13,7 +13,7 @@ import requests
 import os
 import json
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://assessoria-ranking.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://ranking-run-v2.preview.emergentagent.com').rstrip('/')
 
 # Test credentials
 TEST_ADMIN_EMAIL = "admin@runpro.com"

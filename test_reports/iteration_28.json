@@ -23,7 +23,7 @@
     "frontend": "100% (26/26 UI elements verified)"
   },
   "test_credentials": {
-    "api_url": "https://assessoria-ranking.preview.emergentagent.com",
+    "api_url": "https://ranking-run-v2.preview.emergentagent.com",
     "assessoria_teste": "Assessoria CAFAV"
   },
   "seed_data_creation": "",

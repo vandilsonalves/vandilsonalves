@@ -1,7 +1,7 @@
 // /app/frontend/src/pages/RaioXPage.jsx
 // Página RAIO-X do Atleta - Análise completa de performance
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -18,10 +18,14 @@ import {
 import {
   Loader2, ChevronLeft, Download, TrendingUp, TrendingDown, Trophy,
   Target, Zap, Calendar, Clock, Activity, Award, Flame, Star,
-  ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieIcon
+  ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieIcon, FileText, FileSpreadsheet
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import * as XLSX from 'xlsx';
+import { saveAs } from 'file-saver';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -118,14 +122,319 @@ const RaioXPage = () => {
     }
   };
 
-  const exportToPDF = () => {
-    toast.info('Gerando PDF... (funcionalidade em desenvolvimento)');
-    // TODO: Implementar exportação PDF
+  const exportToPDF = async () => {
+    const loadingToast = toast.loading('Gerando PDF...');
+    try {
+      // Captura a div principal do conteúdo
+      const contentElement = document.getElementById('raio-x-content');
+      if (!contentElement) {
+        toast.dismiss(loadingToast);
+        toast.error('Erro ao capturar conteúdo');
+        return;
+      }
+
+      // Configura html2canvas para capturar o conteúdo
+      const canvas = await html2canvas(contentElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#0f172a' // slate-900
+      });
+
+      const imgData = canvas.toDataURL('image/png');
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      
+      // Cabeçalho
+      pdf.setFillColor(16, 185, 129); // emerald-500
+      pdf.rect(0, 0, pdfWidth, 25, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(18);
+      pdf.text('RAIO-X do Atleta', 15, 15);
+      pdf.setFontSize(10);
+      pdf.text(`${atleta?.nome || 'Atleta'} - Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 15, 21);
+
+      // Resumo de métricas
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(12);
+      let yPos = 35;
+      
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Resumo de Performance', 15, yPos);
+      yPos += 10;
+      
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      
+      const metricas = [
+        ['Score de Consistência:', `${score.score_mes_atual}% - ${score.classificacao}`],
+        ['Distância Total:', `${evolucao.totais?.distancia_total_km || 0} km`],
+        ['Tempo Total:', `${evolucao.totais?.tempo_total_horas || 0} horas`],
+        ['Total de Provas:', `${evolucao.totais?.total_provas || 0}`],
+        ['Melhor Pace:', records.records?.melhor_pace?.valor_formatado || '-'],
+        ['Média 6 Meses:', `${score.media_6_meses}%`],
+      ];
+      
+      metricas.forEach(([label, value]) => {
+        pdf.text(label, 15, yPos);
+        pdf.text(value, 70, yPos);
+        yPos += 6;
+      });
+
+      // Records por categoria
+      yPos += 8;
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Records Pessoais (RP)', 15, yPos);
+      yPos += 8;
+      
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      ['5km', '10km', '21km', '42km'].forEach((cat) => {
+        const rp = records.records?.por_categoria?.[cat];
+        pdf.text(`${cat}:`, 15, yPos);
+        if (rp) {
+          pdf.text(`${rp.tempo} (Pace: ${rp.pace})`, 35, yPos);
+          pdf.text(rp.corrida || '', 90, yPos);
+        } else {
+          pdf.text('Sem registro', 35, yPos);
+        }
+        yPos += 6;
+      });
+
+      // Evolução mensal
+      yPos += 8;
+      pdf.setFontSize(14);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Evolução Mensal', 15, yPos);
+      yPos += 8;
+      
+      pdf.setFontSize(9);
+      pdf.setFont(undefined, 'normal');
+      
+      // Cabeçalho da tabela
+      pdf.setFillColor(226, 232, 240);
+      pdf.rect(15, yPos - 4, 180, 6, 'F');
+      pdf.text('Mês', 17, yPos);
+      pdf.text('Provas', 50, yPos);
+      pdf.text('Distância', 75, yPos);
+      pdf.text('Tempo', 105, yPos);
+      pdf.text('Pace Médio', 135, yPos);
+      yPos += 6;
+      
+      const ultimosMeses = evolucao.evolucao_mensal?.slice(-6) || [];
+      ultimosMeses.forEach((mes) => {
+        if (yPos > pdfHeight - 20) {
+          pdf.addPage();
+          yPos = 20;
+        }
+        pdf.text(mes.mes_formatado || '', 17, yPos);
+        pdf.text(String(mes.num_provas || 0), 50, yPos);
+        pdf.text(`${mes.distancia_total_km || 0} km`, 75, yPos);
+        pdf.text(`${mes.tempo_total_horas || 0}h`, 105, yPos);
+        pdf.text(mes.pace_medio || '-', 135, yPos);
+        yPos += 5;
+      });
+
+      // Adiciona imagem dos gráficos na página 2
+      pdf.addPage();
+      pdf.setFillColor(16, 185, 129);
+      pdf.rect(0, 0, pdfWidth, 15, 'F');
+      pdf.setTextColor(255, 255, 255);
+      pdf.setFontSize(12);
+      pdf.text('Visualização dos Gráficos', 15, 10);
+      
+      const imgWidth = pdfWidth - 20;
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      pdf.addImage(imgData, 'PNG', 10, 20, imgWidth, Math.min(imgHeight, pdfHeight - 30));
+
+      pdf.save(`RAIO-X_${atleta?.nome?.replace(/\s+/g, '_') || 'Atleta'}_${new Date().toISOString().split('T')[0]}.pdf`);
+      
+      toast.dismiss(loadingToast);
+      toast.success('PDF gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar PDF:', error);
+      toast.dismiss(loadingToast);
+      toast.error('Erro ao gerar PDF');
+    }
   };
 
   const exportToExcel = () => {
-    toast.info('Gerando Excel... (funcionalidade em desenvolvimento)');
-    // TODO: Implementar exportação Excel
+    const loadingToast = toast.loading('Gerando Excel...');
+    try {
+      const workbook = XLSX.utils.book_new();
+
+      // Aba 1: Resumo
+      const resumoData = [
+        ['RAIO-X do Atleta - Resumo'],
+        [''],
+        ['Atleta:', atleta?.nome || 'N/A'],
+        ['Data de Geração:', new Date().toLocaleDateString('pt-BR')],
+        [''],
+        ['MÉTRICAS GERAIS'],
+        ['Score de Consistência', `${score.score_mes_atual}%`],
+        ['Classificação', score.classificacao],
+        ['Distância Total (km)', evolucao.totais?.distancia_total_km || 0],
+        ['Tempo Total (horas)', evolucao.totais?.tempo_total_horas || 0],
+        ['Total de Provas', evolucao.totais?.total_provas || 0],
+        ['Melhor Pace', records.records?.melhor_pace?.valor_formatado || '-'],
+        ['Média 6 Meses', `${score.media_6_meses}%`],
+        ['Corridas Este Mês', score.corridas_mes_atual],
+      ];
+      const wsResumo = XLSX.utils.aoa_to_sheet(resumoData);
+      wsResumo['!cols'] = [{ wch: 25 }, { wch: 30 }];
+      XLSX.utils.book_append_sheet(workbook, wsResumo, 'Resumo');
+
+      // Aba 2: Records Pessoais
+      const recordsData = [
+        ['RECORDS PESSOAIS (RP)'],
+        [''],
+        ['Distância', 'Tempo', 'Pace', 'Corrida', 'Data'],
+      ];
+      ['5km', '10km', '21km', '42km'].forEach((cat) => {
+        const rp = records.records?.por_categoria?.[cat];
+        recordsData.push([
+          cat,
+          rp?.tempo || '-',
+          rp?.pace || '-',
+          rp?.corrida || '-',
+          rp?.data ? new Date(rp.data).toLocaleDateString('pt-BR') : '-'
+        ]);
+      });
+      recordsData.push(['']);
+      recordsData.push(['DESTAQUES']);
+      recordsData.push(['Melhor Pace Geral', records.records?.melhor_pace?.valor_formatado || '-']);
+      recordsData.push(['Maior Distância', `${records.records?.maior_distancia?.valor || '-'} km`]);
+      
+      const wsRecords = XLSX.utils.aoa_to_sheet(recordsData);
+      wsRecords['!cols'] = [{ wch: 15 }, { wch: 15 }, { wch: 15 }, { wch: 30 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(workbook, wsRecords, 'Records');
+
+      // Aba 3: Evolução Mensal
+      const evolucaoData = [
+        ['EVOLUÇÃO MENSAL'],
+        [''],
+        ['Mês', 'Nº Provas', 'Distância (km)', 'Tempo (h)', 'Pace Médio'],
+      ];
+      (evolucao.evolucao_mensal || []).forEach((mes) => {
+        evolucaoData.push([
+          mes.mes_formatado || '',
+          mes.num_provas || 0,
+          mes.distancia_total_km || 0,
+          mes.tempo_total_horas || 0,
+          mes.pace_medio || '-'
+        ]);
+      });
+      const wsEvolucao = XLSX.utils.aoa_to_sheet(evolucaoData);
+      wsEvolucao['!cols'] = [{ wch: 15 }, { wch: 12 }, { wch: 15 }, { wch: 12 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(workbook, wsEvolucao, 'Evolução Mensal');
+
+      // Aba 4: Comparativo
+      const comparativoData = [
+        ['COMPARATIVO MENSAL'],
+        [''],
+        ['Métrica', 'Este Mês', 'Mês Anterior', 'Variação (%)'],
+        ['Distância (km)', 
+          comparativo.mes_atual?.metricas?.distancia_total_km || 0,
+          comparativo.mes_anterior?.metricas?.distancia_total_km || 0,
+          `${comparativo.variacoes?.distancia || 0}%`
+        ],
+        ['Nº de Provas',
+          comparativo.mes_atual?.metricas?.num_provas || 0,
+          comparativo.mes_anterior?.metricas?.num_provas || 0,
+          `${comparativo.variacoes?.provas || 0}%`
+        ],
+        ['Pace Médio',
+          comparativo.mes_atual?.metricas?.pace_medio || '-',
+          comparativo.mes_anterior?.metricas?.pace_medio || '-',
+          `${comparativo.variacoes?.pace || 0}%`
+        ],
+      ];
+      if (comparativo.melhor_performance_mes) {
+        comparativoData.push(['']);
+        comparativoData.push(['MELHOR PERFORMANCE DO MÊS']);
+        comparativoData.push(['Corrida', comparativo.melhor_performance_mes.corrida]);
+        comparativoData.push(['Data', new Date(comparativo.melhor_performance_mes.data).toLocaleDateString('pt-BR')]);
+        comparativoData.push(['Distância', `${comparativo.melhor_performance_mes.distancia} km`]);
+        comparativoData.push(['Tempo', comparativo.melhor_performance_mes.tempo]);
+        comparativoData.push(['Pace', comparativo.melhor_performance_mes.pace]);
+      }
+      const wsComparativo = XLSX.utils.aoa_to_sheet(comparativoData);
+      wsComparativo['!cols'] = [{ wch: 20 }, { wch: 15 }, { wch: 15 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(workbook, wsComparativo, 'Comparativo');
+
+      // Aba 5: Heatmap (Dias da Semana)
+      const heatmapData = [
+        ['DIAS FAVORITOS PARA CORRER'],
+        [''],
+        ['Dia', 'Quantidade de Corridas'],
+      ];
+      Object.entries(heatmap.dias_semana || {}).forEach(([dia, count]) => {
+        heatmapData.push([dia, count]);
+      });
+      heatmapData.push(['']);
+      heatmapData.push(['Dia Favorito:', heatmap.dia_favorito || '-']);
+      const wsHeatmap = XLSX.utils.aoa_to_sheet(heatmapData);
+      wsHeatmap['!cols'] = [{ wch: 20 }, { wch: 25 }];
+      XLSX.utils.book_append_sheet(workbook, wsHeatmap, 'Dias da Semana');
+
+      // Aba 6: Histórico de Consistência
+      const historicoData = [
+        ['HISTÓRICO DE CONSISTÊNCIA'],
+        [''],
+        ['Mês', 'Score (%)'],
+      ];
+      (score.historico || []).forEach((item) => {
+        historicoData.push([item.mes_formatado || '', item.score || 0]);
+      });
+      const wsHistorico = XLSX.utils.aoa_to_sheet(historicoData);
+      wsHistorico['!cols'] = [{ wch: 15 }, { wch: 15 }];
+      XLSX.utils.book_append_sheet(workbook, wsHistorico, 'Histórico Consistência');
+
+      // Aba 7: Previsões
+      if (previsoes.tem_dados) {
+        const previsoesData = [
+          ['PREVISÕES INTELIGENTES'],
+          [''],
+          ['Pace Base Atual:', previsoes.pace_base],
+          ['Corridas Analisadas:', previsoes.corridas_analisadas],
+          [''],
+          ['PREVISÕES POR DISTÂNCIA'],
+          ['Distância', 'Tempo Previsto', 'Pace Previsto', 'Confiança'],
+        ];
+        Object.entries(previsoes.previsoes || {}).forEach(([, prev]) => {
+          previsoesData.push([
+            prev.distancia,
+            prev.tempo_previsto,
+            prev.pace_previsto,
+            prev.confianca
+          ]);
+        });
+        previsoesData.push(['']);
+        previsoesData.push(['Probabilidade RP próxima corrida:', previsoes.probabilidade_rp_proxima]);
+        previsoesData.push(['Dica:', previsoes.dica]);
+        
+        const wsPrevisoes = XLSX.utils.aoa_to_sheet(previsoesData);
+        wsPrevisoes['!cols'] = [{ wch: 30 }, { wch: 20 }, { wch: 20 }, { wch: 15 }];
+        XLSX.utils.book_append_sheet(workbook, wsPrevisoes, 'Previsões IA');
+      }
+
+      // Gera o arquivo
+      const excelBuffer = XLSX.write(workbook, { bookType: 'xlsx', type: 'array' });
+      const blob = new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+      saveAs(blob, `RAIO-X_${atleta?.nome?.replace(/\s+/g, '_') || 'Atleta'}_${new Date().toISOString().split('T')[0]}.xlsx`);
+
+      toast.dismiss(loadingToast);
+      toast.success('Excel gerado com sucesso!');
+    } catch (error) {
+      console.error('Erro ao gerar Excel:', error);
+      toast.dismiss(loadingToast);
+      toast.error('Erro ao gerar Excel');
+    }
   };
 
   if (loading) {
@@ -247,7 +556,7 @@ const RaioXPage = () => {
       </div>
 
       {/* Conteúdo Principal */}
-      <div className="container mx-auto px-4 py-6">
+      <div id="raio-x-content" className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="bg-slate-800 border-slate-700 mb-6">
             <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
