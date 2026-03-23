@@ -18,7 +18,8 @@ import {
 import {
   Loader2, ChevronLeft, Download, TrendingUp, TrendingDown, Trophy,
   Target, Zap, Calendar, Clock, Activity, Award, Flame, Star,
-  ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieIcon, FileText, FileSpreadsheet
+  ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieIcon, FileText, FileSpreadsheet,
+  Share2, Copy, Check, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -100,6 +101,11 @@ const RaioXPage = () => {
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState(null);
   const [activeTab, setActiveTab] = useState('visao-geral');
+  const [showShareModal, setShowShareModal] = useState(false);
+  const [shareImageUrl, setShareImageUrl] = useState(null);
+  const [generatingShare, setGeneratingShare] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
+  const shareCardRef = useRef(null);
 
   useEffect(() => {
     if (token) {
@@ -437,6 +443,94 @@ const RaioXPage = () => {
     }
   };
 
+  // Gera imagem para compartilhamento
+  const generateShareCard = async () => {
+    setGeneratingShare(true);
+    try {
+      const cardElement = shareCardRef.current;
+      if (!cardElement) {
+        toast.error('Erro ao gerar card');
+        return;
+      }
+
+      const canvas = await html2canvas(cardElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#0f172a'
+      });
+
+      const imageUrl = canvas.toDataURL('image/png');
+      setShareImageUrl(imageUrl);
+    } catch (error) {
+      console.error('Erro ao gerar card:', error);
+      toast.error('Erro ao gerar imagem');
+    } finally {
+      setGeneratingShare(false);
+    }
+  };
+
+  // Abre modal de compartilhamento
+  const handleOpenShare = async () => {
+    setShowShareModal(true);
+    await generateShareCard();
+  };
+
+  // Baixa a imagem do card
+  const downloadShareImage = () => {
+    if (!shareImageUrl) return;
+    const link = document.createElement('a');
+    link.download = `RAIO-X_${atleta?.nome?.replace(/\s+/g, '_') || 'Atleta'}_${new Date().toISOString().split('T')[0]}.png`;
+    link.href = shareImageUrl;
+    link.click();
+    toast.success('Imagem baixada!');
+  };
+
+  // Gera URL de compartilhamento
+  const getShareUrl = () => {
+    return `${window.location.origin}/raio-x`;
+  };
+
+  // Gera texto de compartilhamento
+  const getShareText = () => {
+    const nome = atleta?.nome || 'Atleta';
+    const scoreAtual = score?.score_mes_atual || 0;
+    const totalProvas = evolucao?.totais?.total_provas || 0;
+    const melhorPace = records?.records?.melhor_pace?.valor_formatado || '-';
+    return `🏃 Meu RAIO-X no Ranking Run!\n\n📊 Score: ${scoreAtual}%\n🏆 ${totalProvas} provas\n⚡ Melhor pace: ${melhorPace}/km\n\nConfira seu desempenho também!`;
+  };
+
+  // Compartilha no WhatsApp
+  const shareWhatsApp = () => {
+    const text = encodeURIComponent(getShareText() + '\n\n' + getShareUrl());
+    window.open(`https://wa.me/?text=${text}`, '_blank');
+  };
+
+  // Compartilha no Facebook
+  const shareFacebook = () => {
+    const url = encodeURIComponent(getShareUrl());
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+  };
+
+  // Compartilha no Twitter/X
+  const shareTwitter = () => {
+    const text = encodeURIComponent(getShareText());
+    const url = encodeURIComponent(getShareUrl());
+    window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+  };
+
+  // Copia link
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(getShareUrl());
+      setLinkCopied(true);
+      toast.success('Link copiado!');
+      setTimeout(() => setLinkCopied(false), 2000);
+    } catch (error) {
+      toast.error('Erro ao copiar link');
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-slate-900 flex items-center justify-center">
@@ -494,6 +588,10 @@ const RaioXPage = () => {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={handleOpenShare} className="border-white/30 text-white hover:bg-white/20">
+                <Share2 className="w-4 h-4 mr-2" />
+                Compartilhar
+              </Button>
               <Button variant="outline" size="sm" onClick={exportToPDF} className="border-white/30 text-white hover:bg-white/20">
                 <Download className="w-4 h-4 mr-2" />
                 PDF
@@ -1115,6 +1213,242 @@ const RaioXPage = () => {
           </TabsContent>
         </Tabs>
       </div>
+
+      {/* Modal de Compartilhamento */}
+      {showShareModal && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+          <div className="bg-slate-800 rounded-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+            {/* Header do Modal */}
+            <div className="flex items-center justify-between p-4 border-b border-slate-700">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Share2 className="w-5 h-5 text-emerald-400" />
+                Compartilhar RAIO-X
+              </h3>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowShareModal(false)}
+                className="text-slate-400 hover:text-white"
+              >
+                <X className="w-5 h-5" />
+              </Button>
+            </div>
+
+            {/* Card para Compartilhamento (escondido, usado para gerar imagem) */}
+            <div className="absolute -left-[9999px]">
+              <div
+                ref={shareCardRef}
+                className="w-[600px] p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
+              >
+                {/* Header do Card */}
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
+                      <Zap className="w-7 h-7 text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-white">RAIO-X do Atleta</h2>
+                      <p className="text-emerald-400 text-sm">Ranking Run</p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-slate-400 text-xs">rankingrun.com.br</p>
+                  </div>
+                </div>
+
+                {/* Nome do Atleta */}
+                <div className="text-center mb-6">
+                  <h3 className="text-2xl font-bold text-white">{atleta?.nome}</h3>
+                  {atleta?.assessoria && (
+                    <p className="text-slate-400">{atleta.assessoria}</p>
+                  )}
+                </div>
+
+                {/* Score de Consistência */}
+                <div className="flex justify-center mb-6">
+                  <div className="relative w-32 h-32">
+                    <svg className="w-full h-full transform -rotate-90">
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="#334155"
+                        strokeWidth="12"
+                        fill="none"
+                      />
+                      <circle
+                        cx="64"
+                        cy="64"
+                        r="56"
+                        stroke="#10b981"
+                        strokeWidth="12"
+                        fill="none"
+                        strokeDasharray={`${(score.score_mes_atual / 100) * 352} 352`}
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <div className="absolute inset-0 flex flex-col items-center justify-center">
+                      <span className="text-3xl font-bold text-white">{score.score_mes_atual}%</span>
+                      <span className="text-xs text-slate-400">Consistência</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Métricas */}
+                <div className="grid grid-cols-4 gap-3 mb-6">
+                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                    <Trophy className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-white">{evolucao.totais?.total_provas || 0}</p>
+                    <p className="text-xs text-slate-400">Provas</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                    <TrendingUp className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-white">{evolucao.totais?.distancia_total_km || 0}</p>
+                    <p className="text-xs text-slate-400">km</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                    <Clock className="w-5 h-5 text-blue-400 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-white">{evolucao.totais?.tempo_total_horas || 0}h</p>
+                    <p className="text-xs text-slate-400">Tempo</p>
+                  </div>
+                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
+                    <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1" />
+                    <p className="text-xl font-bold text-white">{records.records?.melhor_pace?.valor_formatado || '-'}</p>
+                    <p className="text-xs text-slate-400">Pace</p>
+                  </div>
+                </div>
+
+                {/* Records */}
+                <div className="bg-slate-700/30 rounded-lg p-4 mb-4">
+                  <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
+                    <Award className="w-4 h-4 text-yellow-400" />
+                    Records Pessoais
+                  </h4>
+                  <div className="grid grid-cols-4 gap-2">
+                    {['5km', '10km', '21km', '42km'].map((cat) => {
+                      const rp = records.records?.por_categoria?.[cat];
+                      return (
+                        <div key={cat} className="text-center">
+                          <p className="text-xs text-slate-400">{cat}</p>
+                          <p className={`text-sm font-bold ${rp ? 'text-emerald-400' : 'text-slate-500'}`}>
+                            {rp?.tempo || '-'}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-4 border-t border-slate-700">
+                  <div className="flex items-center gap-2">
+                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
+                      <Zap className="w-5 h-5 text-white" />
+                    </div>
+                    <span className="text-sm font-semibold text-white">Ranking Run</span>
+                  </div>
+                  <p className="text-xs text-slate-500">
+                    {new Date().toLocaleDateString('pt-BR')}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Preview da Imagem */}
+            <div className="p-4">
+              <div className="bg-slate-900 rounded-lg p-2 mb-4">
+                {generatingShare ? (
+                  <div className="h-64 flex items-center justify-center">
+                    <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                  </div>
+                ) : shareImageUrl ? (
+                  <img
+                    src={shareImageUrl}
+                    alt="Preview do card"
+                    className="w-full rounded-lg"
+                  />
+                ) : (
+                  <div className="h-64 flex items-center justify-center text-slate-400">
+                    Gerando preview...
+                  </div>
+                )}
+              </div>
+
+              {/* Botões de Redes Sociais */}
+              <div className="space-y-3">
+                <p className="text-sm text-slate-400 text-center mb-2">Compartilhar via</p>
+                
+                <div className="grid grid-cols-2 gap-2">
+                  {/* WhatsApp */}
+                  <Button
+                    onClick={shareWhatsApp}
+                    className="bg-[#25D366] hover:bg-[#20BD5A] text-white"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                    </svg>
+                    WhatsApp
+                  </Button>
+
+                  {/* Facebook */}
+                  <Button
+                    onClick={shareFacebook}
+                    className="bg-[#1877F2] hover:bg-[#166FE5] text-white"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                    </svg>
+                    Facebook
+                  </Button>
+
+                  {/* Twitter/X */}
+                  <Button
+                    onClick={shareTwitter}
+                    className="bg-black hover:bg-gray-900 text-white"
+                  >
+                    <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                    </svg>
+                    Twitter/X
+                  </Button>
+
+                  {/* Copiar Link */}
+                  <Button
+                    onClick={copyLink}
+                    variant="outline"
+                    className="border-slate-600 text-white hover:bg-slate-700"
+                  >
+                    {linkCopied ? (
+                      <>
+                        <Check className="w-5 h-5 mr-2 text-emerald-400" />
+                        Copiado!
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-5 h-5 mr-2" />
+                        Copiar Link
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Botão de Download da Imagem */}
+                <Button
+                  onClick={downloadShareImage}
+                  disabled={!shareImageUrl}
+                  className="w-full bg-emerald-600 hover:bg-emerald-700 text-white mt-2"
+                >
+                  <Download className="w-5 h-5 mr-2" />
+                  Baixar Imagem para Instagram
+                </Button>
+                <p className="text-xs text-slate-500 text-center">
+                  Baixe a imagem e compartilhe nos Stories do Instagram
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
