@@ -254,6 +254,7 @@ const AdminDashboard = () => {
   const [filtroStatusAutorizacao, setFiltroStatusAutorizacao] = useState('todos');
   const [showCarteirinhaModal, setShowCarteirinhaModal] = useState(false);
   const [carteirinhaData, setCarteirinhaData] = useState(null);
+  const [buscaAutorizacao, setBuscaAutorizacao] = useState('');
   
   // Seleção múltipla de autorizações
   const [atletasSelecionados, setAtletasSelecionados] = useState([]);
@@ -555,10 +556,24 @@ const AdminDashboard = () => {
     }
   };
 
-  const filteredAtletasAutorizacao = atletasPeriodoTeste.filter(atleta => {
-    if (filtroStatusAutorizacao === 'todos') return true;
-    return atleta.status_periodo === filtroStatusAutorizacao;
-  });
+  const filteredAtletasAutorizacao = atletasPeriodoTeste
+    .filter(atleta => {
+      // Filtro por status
+      if (filtroStatusAutorizacao !== 'todos' && atleta.status_periodo !== filtroStatusAutorizacao) {
+        return false;
+      }
+      // Filtro por busca (nome ou email)
+      if (buscaAutorizacao.trim()) {
+        const termo = buscaAutorizacao.toLowerCase();
+        const nomeMatch = atleta.nome?.toLowerCase().includes(termo);
+        const emailMatch = atleta.email?.toLowerCase().includes(termo);
+        const equipeMatch = atleta.equipe?.toLowerCase().includes(termo);
+        return nomeMatch || emailMatch || equipeMatch;
+      }
+      return true;
+    })
+    // Ordenar alfabeticamente por nome
+    .sort((a, b) => (a.nome || '').localeCompare(b.nome || '', 'pt-BR'));
 
   const fetchStats = async () => {
     setLoadingStats(true);
@@ -1992,6 +2007,31 @@ const AdminDashboard = () => {
                 </div>
               </CardHeader>
               <CardContent className="p-0">
+                {/* Barra de Pesquisa */}
+                <div className="p-4 border-b dark:border-slate-700">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Buscar por nome, email ou equipe..."
+                      value={buscaAutorizacao}
+                      onChange={(e) => setBuscaAutorizacao(e.target.value)}
+                      className="w-full pl-10 pr-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-700 text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                    />
+                    {buscaAutorizacao && (
+                      <button
+                        onClick={() => setBuscaAutorizacao('')}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-2">
+                    Mostrando {filteredAtletasAutorizacao.length} atleta(s) em ordem alfabética
+                  </p>
+                </div>
+                
                 {loadingAutorizacoes ? (
                   <div className="flex items-center justify-center py-12">
                     <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
