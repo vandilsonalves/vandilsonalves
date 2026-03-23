@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Save, User, Mail, MapPin, Users, Trophy, 
   Facebook, Instagram, Phone, FileText, Camera, Check, Loader2,
-  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff, Crop
+  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff, Crop, Zap
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -646,6 +646,22 @@ const PerfilAtletaPage = () => {
                     <p className="text-xs text-slate-400">Corridas</p>
                   </div>
                 </div>
+              </div>
+
+              {/* Botão RAIO-X */}
+              <div className="pt-4 border-t border-slate-700">
+                <Button
+                  onClick={() => navigate('/raio-x')}
+                  className="w-full bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 text-white font-medium"
+                  data-testid="raio-x-btn"
+                >
+                  <Zap className="w-4 h-4 mr-2" />
+                  RAIO-X do Atleta
+                  <span className="ml-2 text-xs bg-white/20 px-2 py-0.5 rounded">Novo!</span>
+                </Button>
+                <p className="text-xs text-slate-500 text-center mt-2">
+                  Veja sua evolução, records e previsões
+                </p>
               </div>
 
               {/* Selos e Conquistas - Novo Componente */}

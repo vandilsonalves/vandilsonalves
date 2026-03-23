@@ -20,6 +20,7 @@ import RegrasPage from "@/pages/RegrasPage";
 import HistoricoSubmissoesPage from "@/pages/HistoricoSubmissoesPage";
 import RankingCidadePage from "@/pages/RankingCidadePage";
 import StravaAtividadesPage from "@/pages/StravaAtividadesPage";
+import RaioXPage from "@/pages/RaioXPage";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 
 function App() {
@@ -46,6 +47,7 @@ function App() {
             <Route path="/historico" element={<HistoricoSubmissoesPage />} />
             <Route path="/ranking-cidade" element={<RankingCidadePage />} />
             <Route path="/strava-clube" element={<StravaAtividadesPage />} />
+            <Route path="/raio-x" element={<RaioXPage />} />
           </Routes>
         </BrowserRouter>
         <PWAInstallPrompt />
