@@ -12,7 +12,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import NotificacoesBell from '@/components/NotificacoesBell';
-import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck, MessageSquare, History, Activity } from 'lucide-react';
+import { Search, HelpCircle, LogIn, Upload, FileDown, Shield, LogOut, User, Share2, Trophy, Flame, Users, MapPin, Target, Award, CheckCircle, TrendingUp, RefreshCw, Eye, Send, Loader2, Star, FileText, BadgeCheck, MessageSquare, History, Activity, Zap } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -415,6 +415,12 @@ const RankingPage = () => {
                 <Button onClick={() => navigate('/strava-clube')} variant="ghost" size="sm" className="text-orange-500 hover:text-orange-600" data-testid="btn-strava-clube">
                   <Activity className="w-4 h-4 mr-1" />
                   Strava
+                </Button>
+                
+                {/* Link para RAIO-X */}
+                <Button onClick={() => navigate('/raio-x')} variant="ghost" size="sm" className="text-purple-500 hover:text-purple-600" data-testid="btn-raio-x">
+                  <Zap className="w-4 h-4 mr-1" />
+                  RAIO-X
                 </Button>
                 
                 <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
