@@ -1,8 +1,40 @@
 # Ranking Run Pró - PRD (Product Requirements Document)
 
-## Implementation Status (22/Mar/2026)
+## Implementation Status (23/Mar/2026)
 
-### ✅ Latest: Integração Strava IMPLEMENTADA! (22/Mar/2026)
+### ✅ Latest: Exportação PDF/Excel do RAIO-X IMPLEMENTADA! (23/Mar/2026)
+
+**Funcionalidade:** Exportação real de dados de performance do atleta em PDF e Excel na página RAIO-X.
+
+**Arquivos modificados:**
+- `/app/frontend/src/pages/RaioXPage.jsx` - Funções `exportToPDF` e `exportToExcel`
+
+**Bibliotecas utilizadas:**
+- `jspdf` + `jspdf-autotable` - Geração de PDF
+- `html2canvas` - Captura visual dos gráficos Recharts
+- `xlsx` + `file-saver` - Geração de Excel
+
+**PDF inclui:**
+- Cabeçalho com nome do atleta e data
+- Resumo de métricas (Score, Distância, Tempo, Provas, Pace)
+- Records Pessoais por categoria (5km, 10km, 21km, 42km)
+- Tabela de evolução mensal
+- Screenshot dos gráficos Recharts
+
+**Excel inclui 7 abas:**
+1. Resumo - Métricas gerais
+2. Records - Records pessoais por distância
+3. Evolução Mensal - Histórico de provas/distância/tempo
+4. Comparativo - Este mês vs anterior
+5. Dias da Semana - Heatmap de dias favoritos
+6. Histórico Consistência - Score mensal
+7. Previsões IA - Previsões de tempo por distância
+
+**Teste:** `/app/test_reports/iteration_57.json` - PASSED (PDF 18MB, Excel 30KB)
+
+---
+
+### ✅ Integração Strava IMPLEMENTADA! (22/Mar/2026)
 
 **Credenciais configuradas:**
 - Client ID: 215116
@@ -171,6 +203,7 @@
 ---
 
 ## Test Reports
+- `/app/test_reports/iteration_57.json` - Exportação PDF/Excel RAIO-X (PASSED)
 - `/app/test_reports/iteration_56.json` - Bug Fixes CSS e Filtro Gênero (VERIFIED)
 - `/app/test_reports/iteration_55.json` - Gerenciamento Comentários (17/17 passed)
 - `/app/test_reports/iteration_54.json` - PWA (33/33 passed)
@@ -181,18 +214,19 @@
 ## Pending Tasks
 
 ### P1 - Próximas Tarefas
-- [ ] **Integração Strava/Garmin** - Aguardando chaves API
+- Nenhuma tarefa P1 pendente no momento
 
 ### P2 - Backlog/Refatoração
-- [ ] **Refatoração do RankingPage.js** - 2.100+ linhas
-- [ ] **Refatoração do AdminDashboard.jsx** - 3.600+ linhas
+- [ ] **Refatoração do RankingPage.js** - 2.200+ linhas (prioridade técnica)
+- [ ] **Refatoração do AdminDashboard.jsx** - 3.900+ linhas (prioridade técnica)
 
 ---
 
 ## Credentials
 - **Admin**: admin@runpro.com / admin
+- **Atleta teste**: teste.dono@teste.com / 123456
 - **Preview URL**: https://ranking-run-v2.preview.emergentagent.com
 
 ---
 
-*Última atualização: 22/Mar/2026*
+*Última atualização: 23/Mar/2026*
