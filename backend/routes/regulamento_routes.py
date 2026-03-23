@@ -98,6 +98,90 @@ async def atualizar_regulamento(
     }
 
 
+# ==================== ROTAS COM PREFIXO /admin (para compatibilidade com AdminDashboard) ====================
+
+@router.get("/admin/regulamento")
+async def get_regulamento_admin_dashboard(admin: dict = Depends(get_admin_user)):
+    """Retorna o regulamento para o painel admin"""
+    regulamento = await db.configuracoes.find_one(
+        {"tipo": "regulamento"},
+        {"_id": 0}
+    )
+    
+    if not regulamento:
+        return {
+            "titulo": "Regulamento Oficial",
+            "conteudo": "",
+            "versao": "1.0",
+            "ultima_atualizacao": None,
+            "atualizado_por": None
+        }
+    
+    return {
+        "titulo": regulamento.get("titulo", "Regulamento Oficial"),
+        "conteudo": regulamento.get("conteudo", ""),
+        "versao": regulamento.get("versao", "1.0"),
+        "ultima_atualizacao": regulamento.get("data_atualizacao"),
+        "atualizado_por": regulamento.get("atualizado_por_nome")
+    }
+
+
+@router.put("/admin/regulamento")
+async def atualizar_regulamento_admin_dashboard(
+    admin: dict = Depends(get_admin_user),
+    titulo: str = None,
+    conteudo: str = None
+):
+    """Atualiza o regulamento pelo painel admin"""
+    from fastapi import Form
+    
+    # Os dados vêm como FormData do frontend
+    # Vamos buscar do request body
+    pass
+
+
+# Alternativa: aceitar FormData
+from fastapi import Form
+
+@router.put("/admin/regulamento/form")
+async def atualizar_regulamento_form(
+    titulo: str = Form(...),
+    conteudo: str = Form(...),
+    admin: dict = Depends(get_admin_user)
+):
+    """Atualiza o regulamento via FormData"""
+    
+    regulamento_atual = await db.configuracoes.find_one({"tipo": "regulamento"})
+    
+    nova_versao = "1.0"
+    if regulamento_atual:
+        versao_atual = regulamento_atual.get("versao", "1.0")
+        partes = versao_atual.split(".")
+        partes[-1] = str(int(partes[-1]) + 1)
+        nova_versao = ".".join(partes)
+    
+    await db.configuracoes.update_one(
+        {"tipo": "regulamento"},
+        {
+            "$set": {
+                "tipo": "regulamento",
+                "titulo": titulo,
+                "conteudo": conteudo,
+                "versao": nova_versao,
+                "data_atualizacao": datetime.now(timezone.utc).isoformat(),
+                "atualizado_por": admin["id"],
+                "atualizado_por_nome": admin.get("nome", "Admin")
+            }
+        },
+        upsert=True
+    )
+    
+    return {
+        "message": "Regulamento atualizado com sucesso",
+        "versao": nova_versao
+    }
+
+
 @router.get("/termo-avaliacao")
 async def get_texto_termo():
     """Retorna o texto do termo de avaliação"""

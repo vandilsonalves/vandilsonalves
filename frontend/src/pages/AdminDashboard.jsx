@@ -389,7 +389,7 @@ const AdminDashboard = () => {
       formData.append('titulo', regulamento.titulo);
       formData.append('conteudo', regulamento.conteudo);
       
-      await axios.put(`${API}/admin/regulamento`, formData, {
+      await axios.put(`${API}/admin/regulamento/form`, formData, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
