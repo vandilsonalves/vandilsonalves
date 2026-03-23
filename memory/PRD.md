@@ -2,7 +2,31 @@
 
 ## Implementation Status (23/Mar/2026)
 
-### ✅ Latest: Aba Conquistas no RAIO-X IMPLEMENTADA! (23/Mar/2026)
+### ✅ Latest: Correções RAIO-X (Distância, PDF Completo, Compartilhar Instagram) - 23/Mar/2026
+
+**Bugs corrigidos:**
+
+1. **Distância Total 0km → CORRIGIDO**
+   - Problema: Campo `distancia` tinha valor "10KM" (string com KM maiúsculo) mas código fazia `.replace("km", "")` (minúsculo)
+   - Solução: Alterado para `.upper().replace("KM", "")` em todas as ocorrências de `/app/backend/routes/raio_x_routes.py`
+   - Agora calcula corretamente: 10km + 10km + 21km + 21km = 62km ✅
+
+2. **PDF só baixava Visão Geral → CORRIGIDO**
+   - Adicionadas seções: Comparativo Mensal, Previsões IA, Conquistas
+   - PDF agora tem 5-6 páginas com todas as informações
+
+3. **Imagem Instagram não gerava → CORRIGIDO**
+   - Problema: html2canvas não conseguia renderizar elemento posicionado em -9999px
+   - Solução: Substituído por Canvas API nativa que desenha o card diretamente
+   - Card inclui: Logo, nome atleta, score, métricas, records, branding
+
+**Arquivos modificados:**
+- `/app/backend/routes/raio_x_routes.py` - Fix cálculo distância (5 locais)
+- `/app/frontend/src/pages/RaioXPage.jsx` - PDF completo + Canvas API para share
+
+---
+
+### ✅ Aba Conquistas no RAIO-X IMPLEMENTADA! (23/Mar/2026)
 
 **Funcionalidade:** Nova aba "Conquistas" na página RAIO-X mostrando todas as insígnias do atleta.
 

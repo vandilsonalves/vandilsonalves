@@ -112,9 +112,12 @@ async def get_evolucao_atleta(
         distancia = c.get("distancia_km") or c.get("distancia", 0)
         if isinstance(distancia, str):
             try:
-                distancia = float(distancia.replace("km", "").replace(",", ".").strip())
+                # Remover sufixos KM/km e converter para float
+                distancia = float(distancia.upper().replace("KM", "").replace(",", ".").strip())
             except:
                 distancia = 0
+        elif distancia is None:
+            distancia = 0
         
         tempo_min = tempo_para_minutos(c.get("tempo", ""))
         pace = calcular_pace(c.get("tempo", ""), distancia)
@@ -190,9 +193,11 @@ async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
         distancia = c.get("distancia_km") or c.get("distancia", 0)
         if isinstance(distancia, str):
             try:
-                distancia = float(distancia.replace("km", "").replace(",", ".").strip())
+                distancia = float(distancia.upper().replace("KM", "").replace(",", ".").strip())
             except:
                 continue
+        elif distancia is None:
+            continue
         
         tempo_min = tempo_para_minutos(c.get("tempo", ""))
         pace = calcular_pace(c.get("tempo", ""), distancia)
@@ -289,9 +294,11 @@ async def get_comparativo_mensal(current_user: dict = Depends(get_current_user))
             dist = c.get("distancia_km") or c.get("distancia", 0)
             if isinstance(dist, str):
                 try:
-                    dist = float(dist.replace("km", "").replace(",", ".").strip())
+                    dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
                 except:
                     continue
+            elif dist is None:
+                continue
             
             tempo_min = tempo_para_minutos(c.get("tempo", ""))
             pace = calcular_pace(c.get("tempo", ""), dist)
@@ -342,9 +349,11 @@ async def get_comparativo_mensal(current_user: dict = Depends(get_current_user))
             dist = c.get("distancia_km") or c.get("distancia", 0)
             if isinstance(dist, str):
                 try:
-                    dist = float(dist.replace("km", "").replace(",", ".").strip())
+                    dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
                 except:
                     continue
+            elif dist is None:
+                continue
             pace = calcular_pace(c.get("tempo", ""), dist)
             if pace and pace < melhor_pace_mes and dist >= 3:
                 melhor_pace_mes = pace
@@ -397,9 +406,11 @@ async def get_previsoes_ia(current_user: dict = Depends(get_current_user)):
         dist = c.get("distancia_km") or c.get("distancia", 0)
         if isinstance(dist, str):
             try:
-                dist = float(dist.replace("km", "").replace(",", ".").strip())
+                dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
             except:
                 continue
+        elif dist is None:
+            continue
         
         pace = calcular_pace(c.get("tempo", ""), dist)
         if pace and dist >= 3:

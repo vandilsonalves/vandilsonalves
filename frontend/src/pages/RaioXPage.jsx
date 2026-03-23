@@ -1,7 +1,7 @@
 // /app/frontend/src/pages/RaioXPage.jsx
 // Página RAIO-X do Atleta - Análise completa de performance
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -225,7 +225,6 @@ const RaioXPage = () => {
   const [shareImageUrl, setShareImageUrl] = useState(null);
   const [generatingShare, setGeneratingShare] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
-  const shareCardRef = useRef(null);
   const [badges, setBadges] = useState([]);
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
@@ -270,30 +269,13 @@ const RaioXPage = () => {
   };
 
   const exportToPDF = async () => {
-    const loadingToast = toast.loading('Gerando PDF...');
+    const loadingToast = toast.loading('Gerando PDF completo...');
     try {
-      // Captura a div principal do conteúdo
-      const contentElement = document.getElementById('raio-x-content');
-      if (!contentElement) {
-        toast.dismiss(loadingToast);
-        toast.error('Erro ao capturar conteúdo');
-        return;
-      }
-
-      // Configura html2canvas para capturar o conteúdo
-      const canvas = await html2canvas(contentElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#0f172a' // slate-900
-      });
-
-      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
       
+      // ========== PÁGINA 1: VISÃO GERAL ==========
       // Cabeçalho
       pdf.setFillColor(16, 185, 129); // emerald-500
       pdf.rect(0, 0, pdfWidth, 25, 'F');
@@ -305,12 +287,11 @@ const RaioXPage = () => {
 
       // Resumo de métricas
       pdf.setTextColor(0, 0, 0);
-      pdf.setFontSize(12);
       let yPos = 35;
       
       pdf.setFontSize(14);
       pdf.setFont(undefined, 'bold');
-      pdf.text('Resumo de Performance', 15, yPos);
+      pdf.text('1. Resumo de Performance', 15, yPos);
       yPos += 10;
       
       pdf.setFontSize(10);
@@ -323,19 +304,20 @@ const RaioXPage = () => {
         ['Total de Provas:', `${evolucao.totais?.total_provas || 0}`],
         ['Melhor Pace:', records.records?.melhor_pace?.valor_formatado || '-'],
         ['Média 6 Meses:', `${score.media_6_meses}%`],
+        ['Corridas Este Mês:', `${score.corridas_mes_atual || 0}`],
       ];
       
       metricas.forEach(([label, value]) => {
         pdf.text(label, 15, yPos);
-        pdf.text(value, 70, yPos);
+        pdf.text(String(value), 70, yPos);
         yPos += 6;
       });
 
       // Records por categoria
-      yPos += 8;
+      yPos += 10;
       pdf.setFontSize(14);
       pdf.setFont(undefined, 'bold');
-      pdf.text('Records Pessoais (RP)', 15, yPos);
+      pdf.text('2. Records Pessoais (RP)', 15, yPos);
       yPos += 8;
       
       pdf.setFontSize(10);
@@ -345,64 +327,223 @@ const RaioXPage = () => {
         pdf.text(`${cat}:`, 15, yPos);
         if (rp) {
           pdf.text(`${rp.tempo} (Pace: ${rp.pace})`, 35, yPos);
-          pdf.text(rp.corrida || '', 90, yPos);
+          pdf.text(String(rp.corrida || ''), 100, yPos);
         } else {
           pdf.text('Sem registro', 35, yPos);
         }
         yPos += 6;
       });
 
-      // Evolução mensal
-      yPos += 8;
+      // Destaques
+      yPos += 5;
+      pdf.setFillColor(240, 253, 244); // green-50
+      pdf.rect(15, yPos - 3, 180, 18, 'F');
+      pdf.setTextColor(22, 163, 74); // green-600
+      pdf.text('Destaques:', 20, yPos + 2);
+      pdf.setTextColor(0, 0, 0);
+      pdf.text(`Melhor Pace Geral: ${records.records?.melhor_pace?.valor_formatado || '-'}/km`, 20, yPos + 8);
+      pdf.text(`Maior Distância: ${records.records?.maior_distancia?.valor || '-'} km`, 20, yPos + 14);
+      yPos += 25;
+
+      // ========== PÁGINA 2: EVOLUÇÃO ==========
+      pdf.addPage();
+      pdf.setFillColor(59, 130, 246); // blue-500
+      pdf.rect(0, 0, pdfWidth, 15, 'F');
+      pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(14);
-      pdf.setFont(undefined, 'bold');
-      pdf.text('Evolução Mensal', 15, yPos);
-      yPos += 8;
+      pdf.text('3. Evolução Mensal', 15, 10);
       
+      yPos = 25;
+      pdf.setTextColor(0, 0, 0);
       pdf.setFontSize(9);
-      pdf.setFont(undefined, 'normal');
       
       // Cabeçalho da tabela
       pdf.setFillColor(226, 232, 240);
-      pdf.rect(15, yPos - 4, 180, 6, 'F');
+      pdf.rect(15, yPos - 4, 180, 7, 'F');
+      pdf.setFont(undefined, 'bold');
       pdf.text('Mês', 17, yPos);
-      pdf.text('Provas', 50, yPos);
-      pdf.text('Distância', 75, yPos);
-      pdf.text('Tempo', 105, yPos);
-      pdf.text('Pace Médio', 135, yPos);
-      yPos += 6;
+      pdf.text('Provas', 55, yPos);
+      pdf.text('Distância (km)', 80, yPos);
+      pdf.text('Tempo (h)', 115, yPos);
+      pdf.text('Pace Médio', 145, yPos);
+      yPos += 8;
       
-      const ultimosMeses = evolucao.evolucao_mensal?.slice(-6) || [];
-      ultimosMeses.forEach((mes) => {
+      pdf.setFont(undefined, 'normal');
+      const todosMeses = evolucao.evolucao_mensal || [];
+      todosMeses.forEach((mes) => {
         if (yPos > pdfHeight - 20) {
           pdf.addPage();
           yPos = 20;
         }
         pdf.text(mes.mes_formatado || '', 17, yPos);
-        pdf.text(String(mes.num_provas || 0), 50, yPos);
-        pdf.text(`${mes.distancia_total_km || 0} km`, 75, yPos);
-        pdf.text(`${mes.tempo_total_horas || 0}h`, 105, yPos);
-        pdf.text(mes.pace_medio || '-', 135, yPos);
-        yPos += 5;
+        pdf.text(String(mes.num_provas || 0), 55, yPos);
+        pdf.text(String(mes.distancia_total_km || 0), 80, yPos);
+        pdf.text(String(mes.tempo_total_horas || 0), 115, yPos);
+        pdf.text(mes.pace_medio || '-', 145, yPos);
+        yPos += 6;
       });
 
-      // Adiciona imagem dos gráficos na página 2
+      // Totais
+      yPos += 5;
+      pdf.setFillColor(226, 232, 240);
+      pdf.rect(15, yPos - 4, 180, 7, 'F');
+      pdf.setFont(undefined, 'bold');
+      pdf.text('TOTAL:', 17, yPos);
+      pdf.text(String(evolucao.totais?.total_provas || 0), 55, yPos);
+      pdf.text(String(evolucao.totais?.distancia_total_km || 0), 80, yPos);
+      pdf.text(String(evolucao.totais?.tempo_total_horas || 0), 115, yPos);
+
+      // ========== PÁGINA 3: COMPARATIVO ==========
       pdf.addPage();
-      pdf.setFillColor(16, 185, 129);
+      pdf.setFillColor(249, 115, 22); // orange-500
       pdf.rect(0, 0, pdfWidth, 15, 'F');
       pdf.setTextColor(255, 255, 255);
-      pdf.setFontSize(12);
-      pdf.text('Visualização dos Gráficos', 15, 10);
+      pdf.setFontSize(14);
+      pdf.text('4. Comparativo Mensal', 15, 10);
       
-      const imgWidth = pdfWidth - 20;
-      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      yPos = 25;
+      pdf.setTextColor(0, 0, 0);
+      pdf.setFontSize(11);
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Este Mês vs Mês Anterior', 15, yPos);
+      yPos += 10;
       
-      pdf.addImage(imgData, 'PNG', 10, 20, imgWidth, Math.min(imgHeight, pdfHeight - 30));
+      pdf.setFontSize(10);
+      pdf.setFont(undefined, 'normal');
+      
+      const compData = [
+        ['Distância (km):', comparativo.mes_atual?.metricas?.distancia_total_km || 0, comparativo.mes_anterior?.metricas?.distancia_total_km || 0, comparativo.variacoes?.distancia || 0],
+        ['Nº de Provas:', comparativo.mes_atual?.metricas?.num_provas || 0, comparativo.mes_anterior?.metricas?.num_provas || 0, comparativo.variacoes?.provas || 0],
+        ['Pace Médio:', comparativo.mes_atual?.metricas?.pace_medio || '-', comparativo.mes_anterior?.metricas?.pace_medio || '-', comparativo.variacoes?.pace || 0],
+        ['Tempo Total:', comparativo.mes_atual?.metricas?.tempo_total_horas || 0, comparativo.mes_anterior?.metricas?.tempo_total_horas || 0, ''],
+      ];
+      
+      // Cabeçalho
+      pdf.setFillColor(226, 232, 240);
+      pdf.rect(15, yPos - 4, 180, 7, 'F');
+      pdf.setFont(undefined, 'bold');
+      pdf.text('Métrica', 17, yPos);
+      pdf.text('Este Mês', 70, yPos);
+      pdf.text('Mês Anterior', 105, yPos);
+      pdf.text('Variação (%)', 150, yPos);
+      yPos += 8;
+      
+      pdf.setFont(undefined, 'normal');
+      compData.forEach(([metrica, atual, anterior, variacao]) => {
+        pdf.text(String(metrica), 17, yPos);
+        pdf.text(String(atual), 70, yPos);
+        pdf.text(String(anterior), 105, yPos);
+        if (variacao !== '') {
+          const varStr = `${variacao > 0 ? '+' : ''}${variacao}%`;
+          pdf.setTextColor(variacao > 0 ? 22 : variacao < 0 ? 220 : 100, variacao > 0 ? 163 : variacao < 0 ? 38 : 100, variacao > 0 ? 74 : variacao < 0 ? 38 : 100);
+          pdf.text(varStr, 150, yPos);
+          pdf.setTextColor(0, 0, 0);
+        }
+        yPos += 6;
+      });
+
+      // Melhor performance do mês
+      if (comparativo.melhor_performance_mes) {
+        yPos += 10;
+        pdf.setFillColor(240, 253, 244);
+        pdf.rect(15, yPos - 4, 180, 25, 'F');
+        pdf.setTextColor(22, 163, 74);
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Melhor Performance do Mês', 20, yPos + 2);
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFont(undefined, 'normal');
+        pdf.text(`Corrida: ${comparativo.melhor_performance_mes.corrida}`, 20, yPos + 9);
+        pdf.text(`Distância: ${comparativo.melhor_performance_mes.distancia} km | Tempo: ${comparativo.melhor_performance_mes.tempo} | Pace: ${comparativo.melhor_performance_mes.pace}`, 20, yPos + 16);
+      }
+
+      // ========== PÁGINA 4: PREVISÕES IA ==========
+      if (previsoes.tem_dados) {
+        pdf.addPage();
+        pdf.setFillColor(139, 92, 246); // purple-500
+        pdf.rect(0, 0, pdfWidth, 15, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(14);
+        pdf.text('5. Previsões Inteligentes (IA)', 15, 10);
+        
+        yPos = 25;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        
+        pdf.text(`Pace Base Atual: ${previsoes.pace_base}`, 15, yPos);
+        pdf.text(`Corridas Analisadas: ${previsoes.corridas_analisadas}`, 100, yPos);
+        yPos += 10;
+        
+        pdf.setFont(undefined, 'bold');
+        pdf.text('Previsões por Distância:', 15, yPos);
+        yPos += 8;
+        
+        // Cabeçalho
+        pdf.setFillColor(226, 232, 240);
+        pdf.rect(15, yPos - 4, 180, 7, 'F');
+        pdf.text('Distância', 17, yPos);
+        pdf.text('Tempo Previsto', 55, yPos);
+        pdf.text('Pace Previsto', 100, yPos);
+        pdf.text('Confiança', 145, yPos);
+        yPos += 8;
+        
+        pdf.setFont(undefined, 'normal');
+        Object.values(previsoes.previsoes || {}).forEach((prev) => {
+          pdf.text(String(prev.distancia), 17, yPos);
+          pdf.text(String(prev.tempo_previsto), 55, yPos);
+          pdf.text(String(prev.pace_previsto), 100, yPos);
+          pdf.text(String(prev.confianca), 145, yPos);
+          yPos += 6;
+        });
+
+        yPos += 10;
+        pdf.setFillColor(243, 232, 255); // purple-100
+        pdf.rect(15, yPos - 4, 180, 20, 'F');
+        pdf.setTextColor(107, 33, 168); // purple-800
+        pdf.setFont(undefined, 'bold');
+        pdf.text(`Probabilidade de RP na próxima corrida: ${previsoes.probabilidade_rp_proxima}`, 20, yPos + 3);
+        pdf.setFont(undefined, 'normal');
+        pdf.setFontSize(9);
+        const dica = previsoes.dica || '';
+        const dicaLines = pdf.splitTextToSize(dica, 170);
+        pdf.text(dicaLines, 20, yPos + 10);
+      }
+
+      // ========== PÁGINA 5: CONQUISTAS ==========
+      const badgesConquistados = badges.filter(b => b.conquistado);
+      if (badgesConquistados.length > 0) {
+        pdf.addPage();
+        pdf.setFillColor(234, 179, 8); // yellow-500
+        pdf.rect(0, 0, pdfWidth, 15, 'F');
+        pdf.setTextColor(255, 255, 255);
+        pdf.setFontSize(14);
+        pdf.text('6. Conquistas & Insígnias', 15, 10);
+        
+        yPos = 25;
+        pdf.setTextColor(0, 0, 0);
+        pdf.setFontSize(10);
+        pdf.text(`Total de insígnias conquistadas: ${badgesConquistados.length}/${badges.length}`, 15, yPos);
+        yPos += 10;
+        
+        badgesConquistados.forEach((badge) => {
+          if (yPos > pdfHeight - 20) {
+            pdf.addPage();
+            yPos = 20;
+          }
+          pdf.setFont(undefined, 'bold');
+          pdf.text(`• ${badge.nome}`, 15, yPos);
+          pdf.setFont(undefined, 'normal');
+          pdf.text(badge.descricao || '', 50, yPos);
+          if (badge.data_conquista) {
+            pdf.text(`(${new Date(badge.data_conquista).toLocaleDateString('pt-BR')})`, 160, yPos);
+          }
+          yPos += 6;
+        });
+      }
 
       pdf.save(`RAIO-X_${atleta?.nome?.replace(/\s+/g, '_') || 'Atleta'}_${new Date().toISOString().split('T')[0]}.pdf`);
       
       toast.dismiss(loadingToast);
-      toast.success('PDF gerado com sucesso!');
+      toast.success('PDF completo gerado com sucesso!');
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
       toast.dismiss(loadingToast);
@@ -584,28 +725,171 @@ const RaioXPage = () => {
     }
   };
 
-  // Gera imagem para compartilhamento
+  // Gera imagem para compartilhamento usando Canvas API diretamente
   const generateShareCard = async () => {
     setGeneratingShare(true);
     try {
-      const cardElement = shareCardRef.current;
-      if (!cardElement) {
-        toast.error('Erro ao gerar card');
-        return;
+      // Criar canvas diretamente
+      const canvas = document.createElement('canvas');
+      canvas.width = 600 * 2; // Scale 2x
+      canvas.height = 500 * 2;
+      const ctx = canvas.getContext('2d');
+      
+      // Scale para 2x
+      ctx.scale(2, 2);
+      
+      // Background gradient
+      const gradient = ctx.createLinearGradient(0, 0, 600, 500);
+      gradient.addColorStop(0, '#0f172a');
+      gradient.addColorStop(0.5, '#1e293b');
+      gradient.addColorStop(1, '#0f172a');
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, 600, 500);
+      
+      // Header - Logo area
+      const logoGradient = ctx.createLinearGradient(24, 24, 72, 72);
+      logoGradient.addColorStop(0, '#10b981');
+      logoGradient.addColorStop(1, '#14b8a6');
+      ctx.fillStyle = logoGradient;
+      ctx.beginPath();
+      ctx.roundRect(24, 24, 48, 48, 12);
+      ctx.fill();
+      
+      // Logo icon (lightning bolt)
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.fillText('⚡', 34, 58);
+      
+      // Title
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px Arial';
+      ctx.fillText('RAIO-X do Atleta', 84, 45);
+      ctx.fillStyle = '#10b981';
+      ctx.font = '14px Arial';
+      ctx.fillText('Ranking Run', 84, 65);
+      
+      // Website
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '12px Arial';
+      ctx.textAlign = 'right';
+      ctx.fillText('rankingrun.com.br', 576, 50);
+      ctx.textAlign = 'left';
+      
+      // Nome do atleta
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 24px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(atleta?.nome || 'Atleta', 300, 120);
+      if (atleta?.assessoria) {
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '14px Arial';
+        ctx.fillText(atleta.assessoria, 300, 145);
       }
-
-      const canvas = await html2canvas(cardElement, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#0f172a'
+      ctx.textAlign = 'left';
+      
+      // Score circle
+      const scoreValue = score.score_mes_atual || 0;
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 12;
+      ctx.beginPath();
+      ctx.arc(300, 220, 50, 0, Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.strokeStyle = '#10b981';
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.arc(300, 220, 50, -Math.PI / 2, -Math.PI / 2 + (scoreValue / 100) * Math.PI * 2);
+      ctx.stroke();
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 28px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${scoreValue}%`, 300, 228);
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '10px Arial';
+      ctx.fillText('Consistência', 300, 245);
+      ctx.textAlign = 'left';
+      
+      // Métricas em cards
+      const metricsY = 310;
+      const cardWidth = 130;
+      const cardHeight = 70;
+      const cardGap = 15;
+      const startX = (600 - (cardWidth * 4 + cardGap * 3)) / 2;
+      
+      const metrics = [
+        { icon: '🏆', value: evolucao.totais?.total_provas || 0, label: 'Provas', color: '#facc15' },
+        { icon: '📈', value: `${evolucao.totais?.distancia_total_km || 0}`, label: 'km', color: '#10b981' },
+        { icon: '⏱️', value: `${evolucao.totais?.tempo_total_horas || 0}h`, label: 'Tempo', color: '#3b82f6' },
+        { icon: '⚡', value: records.records?.melhor_pace?.valor_formatado || '-', label: 'Pace', color: '#a855f7' }
+      ];
+      
+      metrics.forEach((metric, i) => {
+        const x = startX + i * (cardWidth + cardGap);
+        
+        // Card background
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.5)';
+        ctx.beginPath();
+        ctx.roundRect(x, metricsY, cardWidth, cardHeight, 8);
+        ctx.fill();
+        
+        // Icon
+        ctx.font = '18px Arial';
+        ctx.fillText(metric.icon, x + cardWidth/2 - 10, metricsY + 22);
+        
+        // Value
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 18px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(String(metric.value), x + cardWidth/2, metricsY + 48);
+        
+        // Label
+        ctx.fillStyle = '#94a3b8';
+        ctx.font = '11px Arial';
+        ctx.fillText(metric.label, x + cardWidth/2, metricsY + 64);
+        ctx.textAlign = 'left';
       });
-
+      
+      // Records section
+      ctx.fillStyle = 'rgba(71, 85, 105, 0.3)';
+      ctx.beginPath();
+      ctx.roundRect(24, 400, 552, 60, 8);
+      ctx.fill();
+      
+      ctx.fillStyle = '#facc15';
+      ctx.font = '14px Arial';
+      ctx.fillText('🏅 Records Pessoais', 40, 420);
+      
+      const categories = ['5km', '10km', '21km', '42km'];
+      const rpX = 40;
+      ctx.font = '12px Arial';
+      categories.forEach((cat, i) => {
+        const rp = records.records?.por_categoria?.[cat];
+        const xPos = rpX + i * 135;
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(cat + ':', xPos, 445);
+        ctx.fillStyle = rp ? '#10b981' : '#64748b';
+        ctx.fillText(rp?.tempo || '-', xPos + 40, 445);
+      });
+      
+      // Footer
+      ctx.fillStyle = '#475569';
+      ctx.beginPath();
+      ctx.moveTo(24, 475);
+      ctx.lineTo(576, 475);
+      ctx.stroke();
+      
+      ctx.fillStyle = '#94a3b8';
+      ctx.font = '11px Arial';
+      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 24, 490);
+      ctx.textAlign = 'right';
+      ctx.fillText('Ranking Run', 576, 490);
+      
       const imageUrl = canvas.toDataURL('image/png');
       setShareImageUrl(imageUrl);
     } catch (error) {
       console.error('Erro ao gerar card:', error);
-      toast.error('Erro ao gerar imagem');
+      toast.error('Erro ao gerar imagem. Tente novamente.');
     } finally {
       setGeneratingShare(false);
     }
@@ -1471,126 +1755,6 @@ const RaioXPage = () => {
               >
                 <X className="w-5 h-5" />
               </Button>
-            </div>
-
-            {/* Card para Compartilhamento (escondido, usado para gerar imagem) */}
-            <div className="absolute -left-[9999px]">
-              <div
-                ref={shareCardRef}
-                className="w-[600px] p-6 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900"
-              >
-                {/* Header do Card */}
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl flex items-center justify-center">
-                      <Zap className="w-7 h-7 text-white" />
-                    </div>
-                    <div>
-                      <h2 className="text-xl font-bold text-white">RAIO-X do Atleta</h2>
-                      <p className="text-emerald-400 text-sm">Ranking Run</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-slate-400 text-xs">rankingrun.com.br</p>
-                  </div>
-                </div>
-
-                {/* Nome do Atleta */}
-                <div className="text-center mb-6">
-                  <h3 className="text-2xl font-bold text-white">{atleta?.nome}</h3>
-                  {atleta?.assessoria && (
-                    <p className="text-slate-400">{atleta.assessoria}</p>
-                  )}
-                </div>
-
-                {/* Score de Consistência */}
-                <div className="flex justify-center mb-6">
-                  <div className="relative w-32 h-32">
-                    <svg className="w-full h-full transform -rotate-90">
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        stroke="#334155"
-                        strokeWidth="12"
-                        fill="none"
-                      />
-                      <circle
-                        cx="64"
-                        cy="64"
-                        r="56"
-                        stroke="#10b981"
-                        strokeWidth="12"
-                        fill="none"
-                        strokeDasharray={`${(score.score_mes_atual / 100) * 352} 352`}
-                        strokeLinecap="round"
-                      />
-                    </svg>
-                    <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-3xl font-bold text-white">{score.score_mes_atual}%</span>
-                      <span className="text-xs text-slate-400">Consistência</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Métricas */}
-                <div className="grid grid-cols-4 gap-3 mb-6">
-                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                    <Trophy className="w-5 h-5 text-yellow-400 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-white">{evolucao.totais?.total_provas || 0}</p>
-                    <p className="text-xs text-slate-400">Provas</p>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                    <TrendingUp className="w-5 h-5 text-emerald-400 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-white">{evolucao.totais?.distancia_total_km || 0}</p>
-                    <p className="text-xs text-slate-400">km</p>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                    <Clock className="w-5 h-5 text-blue-400 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-white">{evolucao.totais?.tempo_total_horas || 0}h</p>
-                    <p className="text-xs text-slate-400">Tempo</p>
-                  </div>
-                  <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                    <Zap className="w-5 h-5 text-purple-400 mx-auto mb-1" />
-                    <p className="text-xl font-bold text-white">{records.records?.melhor_pace?.valor_formatado || '-'}</p>
-                    <p className="text-xs text-slate-400">Pace</p>
-                  </div>
-                </div>
-
-                {/* Records */}
-                <div className="bg-slate-700/30 rounded-lg p-4 mb-4">
-                  <h4 className="text-sm font-semibold text-slate-300 mb-3 flex items-center gap-2">
-                    <Award className="w-4 h-4 text-yellow-400" />
-                    Records Pessoais
-                  </h4>
-                  <div className="grid grid-cols-4 gap-2">
-                    {['5km', '10km', '21km', '42km'].map((cat) => {
-                      const rp = records.records?.por_categoria?.[cat];
-                      return (
-                        <div key={cat} className="text-center">
-                          <p className="text-xs text-slate-400">{cat}</p>
-                          <p className={`text-sm font-bold ${rp ? 'text-emerald-400' : 'text-slate-500'}`}>
-                            {rp?.tempo || '-'}
-                          </p>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-slate-700">
-                  <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-lg flex items-center justify-center">
-                      <Zap className="w-5 h-5 text-white" />
-                    </div>
-                    <span className="text-sm font-semibold text-white">Ranking Run</span>
-                  </div>
-                  <p className="text-xs text-slate-500">
-                    {new Date().toLocaleDateString('pt-BR')}
-                  </p>
-                </div>
-              </div>
             </div>
 
             {/* Preview da Imagem */}
