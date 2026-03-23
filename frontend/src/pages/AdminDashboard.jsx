@@ -254,6 +254,10 @@ const AdminDashboard = () => {
   const [filtroStatusAutorizacao, setFiltroStatusAutorizacao] = useState('todos');
   const [showCarteirinhaModal, setShowCarteirinhaModal] = useState(false);
   const [carteirinhaData, setCarteirinhaData] = useState(null);
+  
+  // Seleção múltipla de autorizações
+  const [atletasSelecionados, setAtletasSelecionados] = useState([]);
+  const [aprovandoEmMassa, setAprovandoEmMassa] = useState(false);
 
   // Promover Dono de Assessoria
   const [showPromoverModal, setShowPromoverModal] = useState(false);
@@ -468,6 +472,69 @@ const AdminDashboard = () => {
       console.error('Erro ao gerar carteirinha:', error);
       toast.error(error.response?.data?.detail || 'Erro ao gerar carteirinha');
     }
+  };
+
+  // Funções de seleção múltipla para autorizações
+  const handleToggleSelectAtleta = (atletaId) => {
+    setAtletasSelecionados(prev => 
+      prev.includes(atletaId) 
+        ? prev.filter(id => id !== atletaId)
+        : [...prev, atletaId]
+    );
+  };
+
+  const handleSelectAll = () => {
+    // Selecionar apenas os que não estão autorizados
+    const atletasNaoAutorizados = filteredAtletasAutorizacao
+      .filter(a => a.status_periodo !== 'autorizado')
+      .map(a => a.id);
+    
+    if (atletasSelecionados.length === atletasNaoAutorizados.length) {
+      setAtletasSelecionados([]);
+    } else {
+      setAtletasSelecionados(atletasNaoAutorizados);
+    }
+  };
+
+  const handleAprovarEmMassa = async () => {
+    if (atletasSelecionados.length === 0) {
+      toast.error('Selecione pelo menos um atleta');
+      return;
+    }
+
+    if (!confirm(`Deseja autorizar ${atletasSelecionados.length} atleta(s) selecionado(s)?`)) return;
+
+    setAprovandoEmMassa(true);
+    let aprovados = 0;
+    let erros = 0;
+
+    for (const atletaId of atletasSelecionados) {
+      try {
+        const formData = new FormData();
+        formData.append('atleta_id', atletaId);
+        formData.append('tipo_autorizacao', tipoAutorizacao);
+        formData.append('observacao', 'Aprovação em massa');
+
+        await axios.post(`${API}/admin/autorizacoes`, formData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        aprovados++;
+      } catch (error) {
+        console.error(`Erro ao autorizar atleta ${atletaId}:`, error);
+        erros++;
+      }
+    }
+
+    if (aprovados > 0) {
+      toast.success(`${aprovados} atleta(s) autorizado(s) com sucesso!`);
+    }
+    if (erros > 0) {
+      toast.error(`${erros} atleta(s) não puderam ser autorizados`);
+    }
+
+    setAtletasSelecionados([]);
+    setAprovandoEmMassa(false);
+    fetchAtletasPeriodoTeste();
   };
 
   const getStatusColor = (status) => {
@@ -1892,6 +1959,21 @@ const AdminDashboard = () => {
                     Gerenciar Autorizações de Acesso
                   </CardTitle>
                   <div className="flex items-center gap-2">
+                    {/* Botão Aprovar Selecionados */}
+                    {atletasSelecionados.length > 0 && (
+                      <Button
+                        onClick={handleAprovarEmMassa}
+                        disabled={aprovandoEmMassa}
+                        className="bg-emerald-500 hover:bg-emerald-600 text-white"
+                      >
+                        {aprovandoEmMassa ? (
+                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                        ) : (
+                          <CheckCircle className="w-4 h-4 mr-2" />
+                        )}
+                        Aprovar {atletasSelecionados.length} selecionado(s)
+                      </Button>
+                    )}
                     <Select value={filtroStatusAutorizacao} onValueChange={setFiltroStatusAutorizacao}>
                       <SelectTrigger className="w-40">
                         <SelectValue placeholder="Status" />
@@ -1919,6 +2001,18 @@ const AdminDashboard = () => {
                     <table className="w-full">
                       <thead className="bg-slate-50 dark:bg-slate-900/50">
                         <tr>
+                          <th className="px-4 py-3 text-center w-12">
+                            <input
+                              type="checkbox"
+                              className="w-4 h-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                              checked={
+                                filteredAtletasAutorizacao.filter(a => a.status_periodo !== 'autorizado').length > 0 &&
+                                atletasSelecionados.length === filteredAtletasAutorizacao.filter(a => a.status_periodo !== 'autorizado').length
+                              }
+                              onChange={handleSelectAll}
+                              title="Selecionar todos"
+                            />
+                          </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Atleta</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Equipe</th>
                           <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Status</th>
@@ -1928,7 +2022,22 @@ const AdminDashboard = () => {
                       </thead>
                       <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
                         {filteredAtletasAutorizacao.map((atleta) => (
-                          <tr key={atleta.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                          <tr 
+                            key={atleta.id} 
+                            className={`hover:bg-slate-50 dark:hover:bg-slate-700/50 ${
+                              atletasSelecionados.includes(atleta.id) ? 'bg-emerald-50 dark:bg-emerald-900/20' : ''
+                            }`}
+                          >
+                            <td className="px-4 py-3 text-center">
+                              {atleta.status_periodo !== 'autorizado' && (
+                                <input
+                                  type="checkbox"
+                                  className="w-4 h-4 rounded border-slate-300 text-emerald-500 focus:ring-emerald-500 cursor-pointer"
+                                  checked={atletasSelecionados.includes(atleta.id)}
+                                  onChange={() => handleToggleSelectAtleta(atleta.id)}
+                                />
+                              )}
+                            </td>
                             <td className="px-4 py-3">
                               <div>
                                 <p className="font-medium text-slate-900 dark:text-white">{atleta.nome}</p>
