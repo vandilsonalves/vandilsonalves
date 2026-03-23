@@ -19,7 +19,7 @@ import {
   Loader2, ChevronLeft, Download, TrendingUp, TrendingDown, Trophy,
   Target, Zap, Calendar, Clock, Activity, Award, Flame, Star,
   ArrowUpRight, ArrowDownRight, Minus, BarChart3, PieChart as PieIcon, FileText, FileSpreadsheet,
-  Share2, Copy, Check, X
+  Share2, Copy, Check, X, Lock, Sparkles, Medal, Shield, Play, Crown, Users, Eye, HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -27,6 +27,8 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import * as XLSX from 'xlsx';
 import { saveAs } from 'file-saver';
+import { Tooltip as TooltipUI, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -38,6 +40,124 @@ const GRADIENT_COLORS = {
   blue: ['#3b82f6', '#2563eb'],
   orange: ['#f59e0b', '#d97706'],
   purple: ['#8b5cf6', '#7c3aed']
+};
+
+// Mapeamento de ícones para badges
+const ICON_MAP = {
+  star: Star,
+  medal: Medal,
+  trophy: Trophy,
+  award: Award,
+  zap: Zap,
+  play: Play,
+  shield: Shield,
+  target: Target,
+  crown: Crown,
+  calendar: Calendar,
+  users: Users,
+  eye: Eye,
+  sparkles: Sparkles,
+  flame: Flame
+};
+
+// Definição das insígnias para o guia de ajuda
+const TODAS_INSIGNIAS = [
+  { id: 'primeiro_lugar', nome: 'Campeão', emoji: '🥇', cor: '#FFD700', descricao: 'Conquistou o 1º lugar em uma corrida oficial', como_conquistar: 'Fique em 1º lugar na sua categoria em qualquer corrida aprovada', pontos_bonus: 5 },
+  { id: 'podio', nome: 'Pódio', emoji: '🏆', cor: '#F59E0B', descricao: 'Subiu ao pódio (top 3) em uma corrida', como_conquistar: 'Fique entre os 3 primeiros lugares na sua categoria', pontos_bonus: 2 },
+  { id: '10_corridas', nome: 'Veterano', emoji: '🏃', cor: '#10B981', descricao: 'Completou 10 corridas', como_conquistar: 'Participe e complete 10 corridas registradas no ranking', pontos_bonus: 10 },
+  { id: '12_resultados', nome: 'Atleta Bronze', emoji: '🥉', cor: '#CD7F32', descricao: 'Lançou 12 resultados no ranking', como_conquistar: 'Registre 12 resultados de corridas aprovados no sistema', pontos_bonus: 12 },
+  { id: '20_resultados', nome: 'Atleta Prata', emoji: '🥈', cor: '#C0C0C0', descricao: 'Lançou 20 resultados no ranking', como_conquistar: 'Registre 20 resultados de corridas aprovados no sistema', pontos_bonus: 20 },
+  { id: '30_resultados', nome: 'Atleta Ouro', emoji: '🥇', cor: '#FFD700', descricao: 'Lançou 30 resultados no ranking', como_conquistar: 'Registre 30 resultados de corridas aprovados no sistema', pontos_bonus: 30 },
+  { id: 'elite', nome: 'Atleta Elite', emoji: '⭐', cor: '#FFD700', descricao: 'Alcançou 100 pontos no ranking', como_conquistar: 'Acumule 100 pontos ou mais no ranking geral', pontos_bonus: 20 },
+  { id: 'maratonista', nome: 'Maratonista', emoji: '🎯', cor: '#8B5CF6', descricao: 'Completou uma maratona (42KM)', como_conquistar: 'Complete uma corrida de 42KM ou mais', pontos_bonus: 15 },
+  { id: 'consistente', nome: 'Consistente', emoji: '📅', cor: '#3B82F6', descricao: 'Completou corridas em 6 meses diferentes', como_conquistar: 'Participe de pelo menos uma corrida em 6 meses distintos', pontos_bonus: 10 },
+  { id: 'embaixador', nome: 'Embaixador Run', emoji: '🎖️', cor: '#EC4899', descricao: 'Embaixador oficial do Ranking Run', como_conquistar: 'Seja selecionado como embaixador oficial da plataforma', pontos_bonus: 25 }
+];
+
+// Componente de Badge Individual
+const BadgeItem = ({ badge, size = 'md' }) => {
+  const IconComponent = ICON_MAP[badge.icone] || Star;
+  
+  const sizeClasses = {
+    sm: 'w-12 h-12',
+    md: 'w-16 h-16',
+    lg: 'w-20 h-20'
+  };
+  
+  const iconSizes = {
+    sm: 'w-6 h-6',
+    md: 'w-8 h-8',
+    lg: 'w-10 h-10'
+  };
+  
+  return (
+    <TooltipProvider>
+      <TooltipUI>
+        <TooltipTrigger asChild>
+          <div 
+            className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center transition-all duration-300 ${
+              badge.conquistado 
+                ? 'cursor-pointer hover:scale-110 shadow-lg hover:shadow-xl' 
+                : 'opacity-40 grayscale cursor-not-allowed'
+            }`}
+            style={{
+              background: badge.conquistado 
+                ? `linear-gradient(135deg, ${badge.cor_primaria}, ${badge.cor_secundaria})` 
+                : '#475569'
+            }}
+          >
+            {/* Anel externo */}
+            <div 
+              className="absolute inset-0 rounded-full"
+              style={{
+                border: badge.conquistado ? `3px solid ${badge.cor_primaria}40` : '3px solid #47556940',
+                transform: 'scale(1.12)'
+              }}
+            />
+            
+            {/* Brilho interno */}
+            {badge.conquistado && (
+              <div 
+                className="absolute top-1 left-1/4 w-1/3 h-1/4 rounded-full opacity-40"
+                style={{ background: 'linear-gradient(to bottom, white, transparent)' }}
+              />
+            )}
+            
+            {/* Ícone */}
+            <IconComponent 
+              className={`${iconSizes[size]} ${badge.conquistado ? 'text-white' : 'text-slate-400'}`}
+              strokeWidth={2}
+            />
+            
+            {/* Indicador */}
+            {badge.conquistado ? (
+              <div 
+                className="absolute -bottom-1 -right-1 rounded-full p-1"
+                style={{ background: badge.cor_primaria }}
+              >
+                <Check className="w-3 h-3 text-white" />
+              </div>
+            ) : (
+              <div className="absolute -bottom-1 -right-1 bg-slate-600 rounded-full p-1">
+                <Lock className="w-3 h-3 text-white" />
+              </div>
+            )}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs bg-slate-800 border-slate-700">
+          <div className="text-center p-1">
+            <p className="font-bold text-white">{badge.nome}</p>
+            <p className="text-xs text-slate-400">{badge.descricao}</p>
+            {badge.data_conquista && (
+              <p className="text-xs text-emerald-400 mt-1">
+                Conquistado em {new Date(badge.data_conquista).toLocaleDateString('pt-BR')}
+              </p>
+            )}
+          </div>
+        </TooltipContent>
+      </TooltipUI>
+    </TooltipProvider>
+  );
 };
 
 // Componente de KPI Widget
@@ -106,12 +226,21 @@ const RaioXPage = () => {
   const [generatingShare, setGeneratingShare] = useState(false);
   const [linkCopied, setLinkCopied] = useState(false);
   const shareCardRef = useRef(null);
+  const [badges, setBadges] = useState([]);
+  const [badgesLoading, setBadgesLoading] = useState(false);
+  const [showHelpModal, setShowHelpModal] = useState(false);
 
   useEffect(() => {
     if (token) {
       fetchRaioX();
     }
   }, [token]);
+
+  useEffect(() => {
+    if (user?.id) {
+      fetchBadges();
+    }
+  }, [user?.id]);
 
   const fetchRaioX = async () => {
     setLoading(true);
@@ -125,6 +254,18 @@ const RaioXPage = () => {
       toast.error('Erro ao carregar dados');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchBadges = async () => {
+    setBadgesLoading(true);
+    try {
+      const response = await axios.get(`${API}/badges/atleta/${user.id}`);
+      setBadges(response.data.badges || []);
+    } catch (error) {
+      console.error('Erro ao carregar badges:', error);
+    } finally {
+      setBadgesLoading(false);
     }
   };
 
@@ -656,11 +797,12 @@ const RaioXPage = () => {
       {/* Conteúdo Principal */}
       <div id="raio-x-content" className="container mx-auto px-4 py-6">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <TabsList className="bg-slate-800 border-slate-700 mb-6">
+          <TabsList className="bg-slate-800 border-slate-700 mb-6 flex-wrap">
             <TabsTrigger value="visao-geral">Visão Geral</TabsTrigger>
             <TabsTrigger value="evolucao">Evolução</TabsTrigger>
             <TabsTrigger value="records">Records (RP)</TabsTrigger>
             <TabsTrigger value="comparativo">Comparativo</TabsTrigger>
+            <TabsTrigger value="conquistas">Conquistas</TabsTrigger>
             <TabsTrigger value="previsoes">Previsões IA</TabsTrigger>
           </TabsList>
 
@@ -1156,6 +1298,103 @@ const RaioXPage = () => {
             </div>
           </TabsContent>
 
+          {/* Aba: Conquistas */}
+          <TabsContent value="conquistas">
+            <div className="space-y-6">
+              {/* Header com botão de ajuda */}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <Trophy className="w-6 h-6 text-amber-500" />
+                  <h2 className="text-xl font-bold text-white">Insígnias & Conquistas</h2>
+                  {badges.length > 0 && (
+                    <Badge variant="outline" className="border-amber-500/50 text-amber-400">
+                      {badges.filter(b => b.conquistado).length}/{badges.length}
+                    </Badge>
+                  )}
+                </div>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setShowHelpModal(true)}
+                  className="border-slate-600 text-slate-300 hover:bg-slate-700"
+                >
+                  <HelpCircle className="w-4 h-4 mr-2" />
+                  Como Conquistar
+                </Button>
+              </div>
+
+              {badgesLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+                </div>
+              ) : badges.length === 0 ? (
+                <Card className="bg-slate-800 border-slate-700">
+                  <CardContent className="py-12 text-center">
+                    <Trophy className="w-16 h-16 text-slate-600 mx-auto mb-4" />
+                    <h3 className="text-lg font-semibold text-white mb-2">Nenhuma insígnia disponível</h3>
+                    <p className="text-slate-400">Continue participando de corridas para desbloquear conquistas!</p>
+                  </CardContent>
+                </Card>
+              ) : (
+                <>
+                  {/* Badges Conquistados */}
+                  {badges.filter(b => b.conquistado).length > 0 && (
+                    <Card className="bg-slate-800 border-slate-700">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg text-white flex items-center gap-2">
+                          <Sparkles className="w-5 h-5 text-amber-400" />
+                          Conquistados ({badges.filter(b => b.conquistado).length})
+                        </CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-4">
+                          {badges.filter(b => b.conquistado).map(badge => (
+                            <BadgeItem key={badge.id} badge={badge} size="md" />
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Badges A Conquistar */}
+                  {badges.filter(b => !b.conquistado).length > 0 && (
+                    <Card className="bg-slate-800/50 border-slate-700">
+                      <CardHeader className="pb-3">
+                        <CardTitle className="text-lg text-slate-400 flex items-center gap-2">
+                          <Lock className="w-5 h-5" />
+                          A Conquistar ({badges.filter(b => !b.conquistado).length})
+                        </CardTitle>
+                        <CardDescription className="text-slate-500">
+                          Continue participando para desbloquear mais insígnias!
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="flex flex-wrap gap-4">
+                          {badges.filter(b => !b.conquistado).map(badge => (
+                            <BadgeItem key={badge.id} badge={badge} size="md" />
+                          ))}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  )}
+
+                  {/* Dica */}
+                  <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30">
+                    <div className="flex items-start gap-3">
+                      <Star className="w-5 h-5 text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-emerald-400">Dica</p>
+                        <p className="text-sm text-emerald-300/80">
+                          Cada insígnia conquistada garante pontos bônus no ranking! Continue participando de corridas e registrando seus resultados para desbloquear todas as conquistas.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </TabsContent>
+
           {/* Aba: Previsões IA */}
           <TabsContent value="previsoes">
             <Card className="bg-slate-800 border-slate-700 mb-6">
@@ -1449,6 +1688,68 @@ const RaioXPage = () => {
           </div>
         </div>
       )}
+
+      {/* Modal de Ajuda - Como Conquistar Insígnias */}
+      <Dialog open={showHelpModal} onOpenChange={setShowHelpModal}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl text-white">
+              <Trophy className="w-6 h-6 text-amber-500" />
+              Guia de Insígnias & Conquistas
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-4 mt-4">
+            <p className="text-slate-400 text-sm">
+              As insígnias são conquistas especiais que você pode ganhar ao participar de corridas e atingir marcos importantes. 
+              Cada insígnia concede pontos bônus ao ser conquistada!
+            </p>
+            
+            <div className="grid gap-3">
+              {TODAS_INSIGNIAS.map((insignia) => (
+                <div 
+                  key={insignia.id}
+                  className="flex items-start gap-4 p-4 rounded-xl border border-slate-700 hover:bg-slate-700/50 transition-colors"
+                >
+                  {/* Badge visual */}
+                  <div 
+                    className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg"
+                    style={{ background: `linear-gradient(135deg, ${insignia.cor}, ${insignia.cor}dd)` }}
+                  >
+                    <span className="text-2xl">{insignia.emoji}</span>
+                  </div>
+                  
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="font-bold text-white">{insignia.nome}</h3>
+                      <Badge className="text-xs" style={{ backgroundColor: `${insignia.cor}20`, color: insignia.cor }}>
+                        +{insignia.pontos_bonus} pts
+                      </Badge>
+                    </div>
+                    <p className="text-sm text-slate-400 mt-1">{insignia.descricao}</p>
+                    <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      <strong>Como conquistar:</strong> {insignia.como_conquistar}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div className="mt-6 p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30">
+              <h4 className="font-bold text-emerald-400 flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Dica
+              </h4>
+              <p className="text-sm text-emerald-300/80 mt-1">
+                Continue participando de corridas e registrando seus resultados para desbloquear mais insígnias. 
+                Cada conquista te aproxima do status de Atleta Elite!
+              </p>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
