@@ -248,10 +248,9 @@ const RankingCidadePage = () => {
                 </Select>
               </div>
 
-              {/* Gênero (apenas para profissional) */}
-              {modalidade === 'profissional' && (
-                <div>
-                  <label className="text-sm text-slate-400 mb-2 block">Gênero</label>
+              {/* Gênero */}
+              <div>
+                <label className="text-sm text-slate-400 mb-2 block">Gênero</label>
                   <Select value={genero} onValueChange={setGenero}>
                     <SelectTrigger className="bg-slate-700 border-slate-600 text-white" data-testid="select-genero">
                       <SelectValue />
@@ -263,8 +262,7 @@ const RankingCidadePage = () => {
                       <SelectItem value="cadeirante" className="text-white hover:bg-slate-700">Cadeirante</SelectItem>
                     </SelectContent>
                   </Select>
-                </div>
-              )}
+              </div>
             </div>
           </CardContent>
         </Card>

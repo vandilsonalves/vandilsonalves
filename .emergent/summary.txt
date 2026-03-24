@@ -1,79 +1,61 @@
 <analysis>**original_problem_statement:**
-Ao longo da sessão, o usuário solicitou uma série de funcionalidades e correções de bugs. As solicitações mais recentes, em ordem de prioridade definida pelo usuário, são:
-1.  **(FEITO)** Implementar notificações por e-mail para aprovação/rejeição de resultados.
-2.  **(FEITO)** Criar uma página de histórico de submissões para os atletas.
-3.  **(EM ANDAMENTO)** Melhorar o feed de atividades com curtidas, comentários e posts automáticos de conquistas.
-4.  Criar um ranking por cidade/bairro para as modalidades Profissional/Amador e Povão.
-5.  Integrar com Strava/Garmin para importação automática de corridas.
-6.  Transformar a aplicação em um App Mobile (PWA).
-7.  Refatorar a página  e verificar o domínio no Resend.
+O usuário solicitou a finalização da exportação de PDF e Excel da página RAIO-X, adição de compartilhamento nas redes sociais e integração da aba de Conquistas (insígnias). Em seguida, pediu diversas melhorias no RAIO-X: correção do cálculo de distância (que estava 0 km), adição de seletores de meses para comparativo personalizado, inclusão de nomes de corridas nos recordes e remoção do gráfico Dias Favoritos. Para o compartilhamento, exigiu que a imagem gerada fosse no formato vertical (9:16) para Stories, contendo as métricas e os desenhos 3D reais das insígnias conquistadas. Por fim, relatou um bug no Ranking por Cidade onde o filtro de Gênero e Modalidade estava misturando os nomes dos atletas.
 
-Além disso, o usuário reportou e o agente corrigiu vários bugs críticos, incluindo um erro na tabela de pontuação que inflava os pontos das equipes, e uma falha de sincronização que não computava os pontos para atletas recém-aprovados.
+**User's preferred language**: **Português (Brasil)**. INSTRUCT next agent to respond in the user's preferred language only.
 
-**User's preferred language**: O idioma principal do usuário é o **Português (Brasil)**. O próximo agente DEVE responder apenas em português.
-
-**what currently exists?**
-Uma aplicação full-stack (React/FastAPI/MongoDB). Nesta sessão, o agente corrigiu múltiplos bugs críticos, incluindo um erro de cálculo na tabela de pontuação do ranking profissional (que causava uma pontuação 10x maior) e uma falha que impedia a sincronização de pontos de atletas após a aprovação de uma corrida. Além disso, implementou várias novas funcionalidades solicitadas pelo usuário:
-*   **Sistema de Regras:** Uma página pública  e um painel de administração para editar as regras de pontuação do sistema.
-*   **Melhorias no Dashboard:** Reorganização do menu lateral em seções e um novo card visual para exibir a distribuição de atletas por insígnia.
-*   **Guia de Insígnias:** Um modal de ajuda que explica o significado e os critérios de cada insígnia.
-*   **Notificações por Email:** Atletas agora recebem e-mails quando seus resultados são aprovados ou rejeitados.
-*   **Histórico de Submissões:** Uma nova página  onde os atletas podem ver o status de todas as suas corridas enviadas.
-*   **Feed de Atividades:** O backend foi preparado para criar posts automaticamente quando um atleta ganha uma insígnia ou tem um resultado aprovado.
+**what currently exists?** 
+Uma aplicação full-stack (React/FastAPI/MongoDB) de ranking fitness. O sistema possui o painel avançado RAIO-X, que renderiza gráficos de performance, permite exportação robusta para PDF/Excel e gera Share Cards customizados (via HTML5 Canvas API) no formato 9:16 com desenhos de insígnias 3D. A integração com Strava e cálculos de pace, recordes e consistência estão 100% operacionais.
 
 **Last working item**:
-- **Last item agent was working:** Melhoria do Feed de Atividades. O agente implementou a lógica de backend para criar posts automaticamente no feed quando um usuário ganha uma conquista ou tem um resultado de corrida aprovado.
-- **Status:** IN PROGRESS
-- **Agent Testing Done:** N
-- **Which testing method agent to use?** . Primeiro, o agente de backend deve usar  para testar os endpoints do feed, verificando se os posts automáticos são criados corretamente. Em seguida, o agente de frontend deve validar a exibição desses posts na UI () e implementar a funcionalidade de curtir e comentar.
+- **Last item agent was working:** Corrigindo o bug no Ranking por Cidade onde os filtros de Gênero e Modalidade não estavam funcionando corretamente. O agente editou o arquivo  para incluir a filtragem por  nas queries de fallback e povão.
+- **Status:** TESTING PENDING
+- **Agent Testing Done:** N (A sessão encerrou logo após o  ser executado).
+- **Which testing method agent to use?** Both (Backend via curl/python-c para verificar o endpoint  e Frontend via screenshot testando os dropdowns de gênero/modalidade).
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-Nenhum bug pendente conhecido. O foco atual é no desenvolvimento de novas funcionalidades.
+- Issue 1 (P0): Validar e testar a correção do filtro de Gênero/Modalidade no Ranking por Cidade.
+  - Attempted fixes: O agente adicionou a condição  nos dicionários de busca das linhas de fallback e ranking povão no .
+  - Next debug checklist: 
+    - Fazer restart do backend (backend: stopped
+backend: started).
+    - Testar via API ou UI se a troca de Gênero ('M'/'F') e Modalidade ('profissional'/'povao') atualiza a lista corretamente sem misturar os nomes.
+  - Why fix this issue and what will be achieved with the fix? O usuário relatou que os nomes estavam sendo listados incorretamente (misturando gêneros).
+  - Status: TESTING PENDING
+  - Is recurring issue? N
+  - Should Test frontend/backend/both after fix? Both
+  - Blocked on other issue: None
 
 **In progress Task List**:
-- **Task 1: Concluir a melhoria do Feed de Atividades (P0)**
-    - **Where to resume:** A lógica de backend para criar posts automáticos está pronta em  e . O próximo passo é no frontend.
-        1.  Abra .
-        2.  Adapte a UI para exibir os novos tipos de posts automáticos (conquistas e resultados).
-        3.  Implemente a funcionalidade de Curtir e Comentar, conectando aos endpoints de API existentes.
-        4.  Adicione um botão de reação rápida Parabéns para posts de conquistas.
-        5.  (Opcional, se o tempo permitir) Crie um sistema de notificação na plataforma para interações no feed.
-    - **What will be achieved with this?** Aumentar o engajamento social na plataforma, permitindo que os usuários celebrem as conquistas uns dos outros.
-    - **Status:** IN PROGRESS
-    - **Should Test frontend/backend/both after fix?** both
-    - **Blocked on something:** Não.
+Nenhuma (apenas o Issue P0 acima).
 
 **Upcoming and Future Tasks**
-*   **Upcoming Tasks:**
-    *   **P1 - Ranking por Cidade/Bairro:** Criar uma nova visão de ranking filtrada por cidade para as modalidades Profissional/Amador e Povão. Será necessário um novo endpoint de backend e um novo componente de frontend.
-    *   **P2 - Integração com Strava/Garmin:** Permitir que os usuários conectem suas contas para importar corridas automaticamente. **Lembre-se de usar  para esta tarefa.**
-    *   **P3 - App Mobile (PWA):** Configurar a aplicação React para ser um Progressive Web App, adicionando um service worker e um arquivo de manifesto.
-*   **Future Tasks:**
-    *   Refatoração do : O arquivo em  tem mais de 2.100 linhas e precisa ser quebrado em componentes menores.
-    *   Verificação de domínio no Resend: Tarefa técnica para melhorar a entrega de e-mails.
+- **P2 - Refatoração do **: Arquivo possui mais de 2.200 linhas. Precisa ser quebrado em componentes menores.
+- **P2 - Refatoração do **: Arquivo possui quase 3.900 linhas. Necessita forte componentização.
+- **P2 - Refatoração do **: Após as implementações de Canvas API e lógicas de exportação, o arquivo passou de 2.300 linhas. Necessita extração da lógica do Canvas para arquivos utilitários.
 
 **Completed work in this session**
-- **Correção de Bug - Validação de Formulário:** O campo tempo na submissão de resultados tornou-se obrigatório para todos, e a validação de 30 dias foi confirmada.
-- **Correção de Bug - Tabela de Pontuação:** Corrigido um erro crítico onde a tabela de pontos para Profissional/Amador estava 10x maior. Um script de migração foi executado para recalcular todos os pontos de corridas e usuários existentes.
-- **Correção de Bug - Sincronização de Pontos:** Resolvida uma falha onde a aprovação de uma corrida não atualizava o  do atleta.
-- **Funcionalidade - Sistema de Regras e Configurações:** Implementada uma página pública de regras e um painel de admin para gerenciá-las.
-- **Funcionalidade - Gráficos e UI de Insígnias:** Criado um novo card visual no dashboard para mostrar a contagem de atletas por insígnia e um modal de ajuda explicando cada uma delas.
-- **Funcionalidade - Notificações por Email:** Atletas agora são notificados por email sobre a aprovação ou rejeição de seus resultados.
-- **Funcionalidade - Histórico de Submissões:** Criada uma página para atletas acompanharem suas submissões.
-- **Melhora de UX - Reorganização do Dashboard:** O menu do painel de administração foi reestruturado em seções lógicas.
+- Finalização da Exportação PDF/Excel no RAIO-X (incluindo todas as abas) (DONE)
+- Implementação de Compartilhamento em Redes Sociais via Geração de Imagem (DONE)
+- Adição da aba de Conquistas (Badges) visuais no RAIO-X (DONE)
+- Inclusão do botão RAIO-X na barra de navegação principal (DONE)
+- Correção do cálculo de Distância Total (Tratamento de strings KM maiúsculas/minúsculas no DB) (DONE)
+- Criação de comparativo dinâmico de performance Mês a Mês com seletores (DONE)
+- Inclusão dos nomes das corridas na tabela de Records (RPs) (DONE)
+- Remoção da métrica Dias Favoritos do App (DONE)
+- Refatoração profunda do Share Card para formato Vertical 9:16 via **Canvas API** direta (Substituindo html2canvas) (DONE)
+- Desenho de ícones reais 3D (medalha, play) no Share Card do Canvas (DONE)
+- Troubleshooting e atualização do Redis que caía constantemente (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-- **Issue 1:** As rotas de integração com o Instagram em  são apenas *stubs* (esqueletos de código) e não possuem implementação funcional.
+Nenhum.
 
 **Known issue recurrence from previous fork**
-- **Issue recurrence in previous fork:** Instabilidade do serviço Redis.
-- **Recurrence count:** Alta.
-- **Status:** RECURRING. O Redis pode entrar em estado  no supervisor. A solução é reinstalar (Reading package lists...
+- Issue recurrence in previous fork: Serviço do Redis trava constantemente ( no supervisor ou ).
+- Recurrence count: Alta (ocorreu várias vezes nesta sessão).
+- Status: RESOLVED / WORKAROUND (O agente contornou reinstalando o redis: Reading package lists...
 Building dependency tree...
 Reading state information...
-The following additional packages will be installed:
-  libjemalloc2 liblzf1
 Suggested packages:
   ruby-redis
 The following NEW packages will be installed:
@@ -81,100 +63,105 @@ The following NEW packages will be installed:
 0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.
 Need to get 1198 kB of archives.
 After this operation, 7125 kB of additional disk space will be used.
-Do you want to continue? [Y/n] Abort.) e iniciar o serviço (). O status  no supervisor pode ser apenas cosmético se  retornar , pois o Redis passa a ser gerenciado pelo sistema operacional.
+Get:1 https://cloudfront.debian.net/debian bookworm/main arm64 libjemalloc2 arm64 5.3.0-1 [217 kB]
+Get:2 https://cloudfront.debian.net/debian bookworm/main arm64 liblzf1 arm64 3.6-3 [9860 B]
+Get:3 https://cloudfront.debian.net/debian bookworm/main arm64 redis-tools arm64 5:7.0.15-1~deb12u6 [898 kB]
+Get:4 https://cloudfront.debian.net/debian bookworm/main arm64 redis-server arm64 5:7.0.15-1~deb12u6 [73.1 kB]
+Fetched 1198 kB in 0s (9272 kB/s)
+Selecting previously unselected package libjemalloc2:arm64.
+(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 46697 files and directories currently installed.)
+Preparing to unpack .../libjemalloc2_5.3.0-1_arm64.deb ...
+Unpacking libjemalloc2:arm64 (5.3.0-1) ...
+Selecting previously unselected package liblzf1:arm64.
+Preparing to unpack .../liblzf1_3.6-3_arm64.deb ...
+Unpacking liblzf1:arm64 (3.6-3) ...
+Selecting previously unselected package redis-tools.
+Preparing to unpack .../redis-tools_5%3a7.0.15-1~deb12u6_arm64.deb ...
+Unpacking redis-tools (5:7.0.15-1~deb12u6) ...
+Selecting previously unselected package redis-server.
+Preparing to unpack .../redis-server_5%3a7.0.15-1~deb12u6_arm64.deb ...
+Unpacking redis-server (5:7.0.15-1~deb12u6) ...
+Setting up libjemalloc2:arm64 (5.3.0-1) ...
+Setting up liblzf1:arm64 (3.6-3) ...
+Setting up redis-tools (5:7.0.15-1~deb12u6) ...
+Setting up redis-server (5:7.0.15-1~deb12u6) ...
+invoke-rc.d: could not determine current runlevel
+invoke-rc.d: policy-rc.d denied execution of start.
+Created symlink /etc/systemd/system/redis.service → /lib/systemd/system/redis-server.service.
+Created symlink /etc/systemd/system/multi-user.target.wants/redis-server.service → /lib/systemd/system/redis-server.service.
+Processing triggers for libc-bin (2.36-9+deb12u13) ... e depois iniciando o serviço). Fique atento caso a API fique lenta.
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **Desenvolvimento Full-Stack:** Implementação de funcionalidades de ponta a ponta com React, FastAPI e MongoDB.
-- **Sincronização de Dados:** Criação de scripts para corrigir e sincronizar dados inconsistentes entre diferentes coleções do MongoDB.
-- **Notificações por Email:** Uso da integração com Resend para enviar e-mails transacionais.
-- **Geração Automática de Conteúdo:** Criação de posts no feed social com base em eventos do sistema (conquistas, aprovações).
-- **Gerenciamento de Estado de UI:** Uso de  e  para gerenciar modais, abas e carregamento de dados no frontend.
+- **HTML5 Canvas API Direta**: Devido a problemas de renderização e posicionamento CSS com , a geração da imagem de compartilhamento (Share Card 9:16) no  é feita 100% via código Canvas nativo (, , ). 
+- Métodos do Canvas como  e  foram removidos em prol de compatibilidade cruzada, substituídos por lógicas de arcos básicas.
 
 **key DB schema**
-- : Nova coleção que armazena as regras do sistema em um único documento, permitindo que sejam editáveis pelo admin.
-- : A coleção agora pode conter posts gerados automaticamente com um campo  para distinguir entre  e .
-- : Os campos  e  foram validados e agora são atualizados de forma confiável durante o fluxo de aprovação de resultados.
+- : Atenção especial ao campo . Ele armazena dados de forma inconsistente no banco (às vezes  10, às vezes  10KM, às vezes 10km). O backend agora trata isso com .
+
+**changes in tech stack**
+- Abandono de dependência estrita do  em favor do uso nativo de Canvas Context 2D para estabilidade na geração de cards de redes sociais.
 
 **All files of reference**
-*   : Principal arquivo do frontend para a tarefa atual.
-*   : Principal arquivo do backend para a tarefa atual.
-*   : Contém os gatilhos para os posts automáticos no feed.
-*   : Próxima grande tarefa de refatoração.
+-  (Local do bug pendente de teste).
+-  (Arquivo central de todas as novas features de performance).
+-  (Cálculos de performance refatorados).
 
 **Areas that need refactoring**:
-*   **/app/frontend/src/pages/RankingPage.js**: Com mais de 2.100 linhas, é a próxima prioridade para refatoração.
-*   **/app/frontend/src/pages/AdminDashboard.jsx**: Apesar da reorganização do menu, o arquivo ainda tem mais de 3.600 linhas e se beneficiaria de ser quebrado em componentes menores para cada aba.
+-  (A lógica da função  ocupa centenas de linhas e deveria ser movida para um utilitário ).
 
 **key api endpoints**
-*   : (NOVO) Retorna o histórico de submissões para o atleta logado.
-*   : (NOVO) Endpoints para ler e atualizar as regras do sistema.
-*   : (NOVO) Endpoint que alimenta o novo card visual de insígnias.
-*    e : (MODIFICADO) Agora disparam e-mails de notificação e criam posts automáticos no feed.
+- : Atualizado com filtros dinâmicos.
+- : Novo endpoint para comparar quaisquer dois meses do ano.
 
 **Critical Info for New Agent**
-*   **Siga a Lista do Usuário:** O usuário forneceu uma lista clara e priorizada de tarefas na mensagem 367. A tarefa atual é a nº 3 (Feed de Atividades Melhorado). Prossiga para a nº 4 (Ranking por Cidade/Bairro) após concluir e validar a tarefa atual.
-*   **Cuidado com a Sincronização de Pontos:** Um bug crítico de dessincronização de pontos foi corrigido. Qualquer nova funcionalidade que afete a pontuação de um usuário deve garantir que os campos  e  no documento  sejam atualizados atomicamente. A lógica correta está na função  em .
-*   **Problema Cosmético do Redis:** O supervisor pode relatar um erro  para o Redis. Ignore isso se  retornar . O serviço está sendo gerenciado pelo sistema operacional, não pelo supervisor.
+- Se for editar o desenho do Share Card no futuro, **não use**  ou  no , pois quebra no ambiente de teste do usuário. Use  ou desenhe as primitivas.
+- O Redis pode cair. Se isso acontecer, os endpoints demorarão muito e ocorrerá Timeout no Playwright/Test Agent. Sempre verifique o status do Redis com backend                          RUNNING   pid 201, uptime 0:00:03
+celery                           RUNNING   pid 48, uptime 0:00:40
+code-server                      STOPPED   Not started
+frontend                         RUNNING   pid 220, uptime 0:00:03
+mongodb                          RUNNING   pid 55, uptime 0:00:40
+nginx-code-proxy                 RUNNING   pid 46, uptime 0:00:40
+redis                            FATAL     can't find command '/usr/bin/redis-server' ou via logs se houver lentidão.
 
 **documents and test reports created in this job**
-*   : Relatório de teste para a correção do formulário de submissão.
-*   : Relatório de teste para a correção da tabela de pontuação.
-*   : Relatório de teste para o novo sistema de configurações e regras.
+- /app/memory/PRD.md
+- /app/test_reports/iteration_57.json
+- /app/test_reports/iteration_58.json
+- /app/test_reports/iteration_59.json
 
-**Last 10 User Messages and any pending HUMAN messages**
-1.  **user (msg 424):** Confirmou para prosseguir com a tarefa Feed de Atividades Melhorado. (Em andamento)
-2.  **user (msg 422):** Pediu para que o agente continuasse com a próxima tarefa. (Concluído)
-3.  **user (msg 367):** Forneceu uma lista detalhada e priorizada de 7 novas funcionalidades a serem implementadas. (Em andamento)
-4.  **user (msg 364):** Solicitou a implementação de melhorias previamente sugeridas. (Concluído)
-5.  **user (msg 333):** Pediu um ícone de ajuda para explicar o que cada insígnia significa. (Concluído)
-6.  **user (msg 312):** Pediu para organizar o dashboard do admin, que estava muito embolado. (Concluído)
-7.  **user (msg 283):** Pediu um novo gráfico visual para mostrar quantos atletas têm cada insígnia. (Concluído)
-8.  **user (msg 238):** Solicitou a criação de um gráfico de distribuição de atletas por tipo de insígnia. (Concluído)
-9.  **user (msg 222):** Reportou o bug tulipa patacho, onde os pontos de um atleta não foram computados após a aprovação. (Concluído)
-10. **user (msg 214):** Reclamou que o app estava lento. (Concluído)
+**Last 10 User Messages and any pending HUMAN messages** 
+1. **user**: atualizar redis . está meio lento (Concluído)
+2. **user**: Não está aparecendo a aba RAIO-X pra nenhum Atleta (Concluído)
+3. **user**: Aponta erro de cálculo Distância Total=0, PDF não baixando todas abas e Share do Instagram travado. (Concluído)
+4. **user**: atualizar redis (Concluído)
+5. **user**: Solicita senha de um usuário de teste (Fornecida 123456 via reset) (Concluído)
+6. **user**: Solicita setas de comparação de meses no RAIO-X e inclusão de nome da corrida nos recordes. (Concluído)
+7. **user**: exclua os dados e gráfico Dias Favoritos... a imagem deve ser gerada no formato 9:16... tenha insígnias (Concluído)
+8. **user**: atualizar redis (Concluído)
+9. **user**: Pede que as insígnias sejam os desenhos 3D verdadeiros na imagem, e depois reportou erro de geração (corrigido removendo roundRect/ellipse do canvas). (Concluído)
+10. **user**: na primeira imagem em anexo, quando selecionamos a modalidade e o Genero, estão ficando errado, tá misturando os nomes. Corriga isso. atualize os redis *(PENDENTE DE TESTE)*
 
 **Project Health Check:**
-*   **Broken:** Nenhum componente principal está quebrado.
-*   **Mocked:** A integração com o Instagram () permanece como um esqueleto de código não funcional.
+- Broken: Ranking por Cidade (Filtro) - Editado pelo agente anterior mas pendente de teste/restart do backend.
+- Mocked: Nenhum.
 
-**3rd Party Integrations**
-*   **Resend:** Configurado e em uso para envio de e-mails transacionais (notificações de aprovação/rejeição).  está no .
-*   **ReportLab, openpyxl, xlsxwriter:** Usados em sessões anteriores para exportação de dados.
-*   **Redis:** Usado para cache. Apresenta instabilidade no gerenciamento do supervisor, mas funciona corretamente como serviço do sistema.
+**3rd Party Integrations** 
+- Strava (Atividades) — requires User API Key
+- Resend (E-mails) — requires User API Key
 
 **Testing status**
-- **Testing agent used after significant changes:** YES. Usado múltiplas vezes para validar correções de bugs e novas funcionalidades.
-- **Troubleshoot agent used after agent stuck in loop:** NO
-- **Test files created:** Nenhum arquivo ============================= test session starts ==============================
-platform linux -- Python 3.11.14, pytest-9.0.2, pluggy-1.6.0
-rootdir: /app
-plugins: anyio-4.12.1
-collected 681 items / 2 errors
-
-==================================== ERRORS ====================================
-___ ERROR collecting backend/tests/test_iter23_assessoria_responsavel_bio.py ___
-backend/tests/test_iter23_assessoria_responsavel_bio.py:10: in <module>
-    BASE_URL = os.environ.get('REACT_APP_BACKEND_URL').rstrip('/')
-               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-E   AttributeError: 'NoneType' object has no attribute 'rstrip'
-_________ ERROR collecting backend/tests/test_iter43_feed_refactor.py __________
-backend/tests/test_iter43_feed_refactor.py:12: in <module>
-    raise ValueError("REACT_APP_BACKEND_URL environment variable is required")
-E   ValueError: REACT_APP_BACKEND_URL environment variable is required
-=========================== short test summary info ============================
-ERROR backend/tests/test_iter23_assessoria_responsavel_bio.py - AttributeErro...
-ERROR backend/tests/test_iter43_feed_refactor.py - ValueError: REACT_APP_BACK...
-!!!!!!!!!!!!!!!!!!! Interrupted: 2 errors during collection !!!!!!!!!!!!!!!!!!!!
-============================== 2 errors in 0.93s =============================== foi criado nesta sessão.
-- **Known regressions:** Nenhuma.
+- Testing agent used after significant changes: YES (Usado nas iterations 57, 58, 59).
+- Troubleshoot agent used after agent stuck in loop: NO
+- Test files created: None
+- Known regressions: Nenhuma conhecida, exceto o bug recente do ranking por cidade sendo resolvido agora.
 
 **Credentials to test flow:**
-*   **Admin:**  / 
-*   **Atleta (Dono de Assessoria):**  (Aline Rocha, Assessoria TOP RUN)
-*   **Atleta (com bug de sincro corrigido):**  (tulipa patacho)
+- Admin:  / 
+- Atleta (Com Dados):  / 
+- Atleta Teste:  / 
 
 **What agent forgot to execute**
-O agente seguiu as instruções do usuário de forma diligente e não parece ter esquecido nenhuma tarefa solicitada. Ele está atualmente trabalhando na lista de prioridades fornecida pelo usuário.</analysis>
+O agente localizou o erro no filtro de Gênero do Ranking por Cidade, aplicou a substituição com  no arquivo do backend (), mas a sessão terminou **antes** dele conseguir dar restart no backend, rodar o lint, ou testar se os filtros do frontend voltaram a funcionar perfeitamente sem misturar as listas. O próximo passo imediato é validar essa correção (Issue 1).</analysis>

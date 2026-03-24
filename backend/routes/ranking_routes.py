@@ -766,14 +766,21 @@ async def get_ranking_por_cidade(
         # O ranking_povao usa ano 2025 fixo por enquanto
         ano_povao = 2025  # Dados atuais estão em 2025
         
+        # Filtrar usuários por gênero
+        usuarios_filtrados = [u for u in usuarios_cidade if u.get("sexo") == genero or u.get("genero") == genero]
+        usuario_ids_filtrados = [u["id"] for u in usuarios_filtrados]
+        
+        if not usuario_ids_filtrados:
+            return {"ranking": [], "total": 0, "cidade": cidade, "estado": estado}
+        
         ranking_data = await db.ranking_povao.find(
-            {"usuario_id": {"$in": usuario_ids}, "ano": ano_povao},
+            {"usuario_id": {"$in": usuario_ids_filtrados}, "ano": ano_povao},
             {"_id": 0}
         ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).limit(limit).to_list(None)
         
         # Enriquecer com dados do usuário
         for idx, rank in enumerate(ranking_data, 1):
-            usuario = next((u for u in usuarios_cidade if u["id"] == rank["usuario_id"]), None)
+            usuario = next((u for u in usuarios_filtrados if u["id"] == rank["usuario_id"]), None)
             if usuario:
                 result.append({
                     "colocacao": idx,
@@ -823,8 +830,10 @@ async def get_ranking_por_cidade(
                     })
         else:
             # Fallback: usar pontos_total diretamente do usuário (ordenado por pontos)
+            # Filtrar por gênero
+            usuarios_filtrados = [u for u in usuarios_cidade if u.get("sexo") == genero or u.get("genero") == genero]
             usuarios_ordenados = sorted(
-                [u for u in usuarios_cidade if u.get("pontos_total", 0) > 0],
+                [u for u in usuarios_filtrados if u.get("pontos_total", 0) > 0],
                 key=lambda x: (x.get("pontos_total", 0), x.get("total_corridas", 0)),
                 reverse=True
             )[:limit]

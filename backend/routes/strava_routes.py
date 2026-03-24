@@ -21,7 +21,7 @@ from services.strava_service import (
 router = APIRouter()
 
 # URL do frontend para redirecionamento após autenticação
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://ranking-run-v2.preview.emergentagent.com")
+FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://fitness-ranking-dev.preview.emergentagent.com")
 
 
 @router.get("/strava/authorize")

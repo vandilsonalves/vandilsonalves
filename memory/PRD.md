@@ -344,7 +344,7 @@
 ## Credentials
 - **Admin**: admin@runpro.com / admin
 - **Atleta teste**: teste.dono@teste.com / 123456
-- **Preview URL**: https://ranking-run-v2.preview.emergentagent.com
+- **Preview URL**: https://fitness-ranking-dev.preview.emergentagent.com
 
 ---
 

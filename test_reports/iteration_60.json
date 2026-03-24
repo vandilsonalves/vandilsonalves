@@ -1,0 +1,49 @@
+{
+  "summary": "Iteration 60: Ranking por Cidade Gender Filter Bug Fix - VERIFIED. Backend API correctly filters by gender for both profissional and povao modalidades. Frontend shows Gênero selector for both modalidades. No overlap between M and F rankings.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter60_ranking_cidade_genero.py",
+    "/app/test_reports/pytest/pytest_iter60_ranking_cidade_genero.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "✅ Backend fix verified: ranking_routes.py lines 764-798 - povao path now filters by genero",
+    "✅ Backend fix verified: ranking_routes.py lines 800-830 - profissional path filters by genero in ranking_anual query",
+    "✅ Backend fix verified: ranking_routes.py lines 832-854 - fallback path filters by genero",
+    "✅ Frontend fix verified: RankingCidadePage.jsx lines 251-265 - Gênero selector visible for ALL modalidades",
+    "✅ API returns 0 overlap between M and F for São Paulo, Rio de Janeiro, Recife"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter60_ranking_cidade_genero.py"
+  ],
+  "success_rate": {
+    "backend": "100% - 12/12 tests passed",
+    "frontend": "100% - All UI tests passed"
+  },
+  "seed_data_creation": "",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Ranking por Cidade gender filter bug is fixed. Test file test_iter60_ranking_cidade_genero.py covers: 1) API health, 2) Endpoint existence, 3) M vs F different results for profissional, 4) M vs F different results for povao, 5) Gender filter applied across multiple cities, 6) Response structure, 7) Modalidade parameter, 8) Empty city handling, 9) Full integration flow. Frontend verified: Gênero selector visible for both Profissional/Amador and Galera modalidades.",
+  "bug_fix_verification": {
+    "bug_description": "Gender and Modality filters were mixing athlete names in Ranking por Cidade",
+    "fix_applied": "Added gender filter to povao, profissional, and fallback queries in ranking_routes.py. Made Gênero selector visible for both modalidades in RankingCidadePage.jsx",
+    "verification_results": {
+      "profissional_sp_m": "13 athletes",
+      "profissional_sp_f": "1 athlete (Aline Martins)",
+      "overlap_profissional": "0 - CORRECT",
+      "povao_sp_m": "2 athletes",
+      "povao_sp_f": "0 athletes",
+      "overlap_povao": "0 - CORRECT",
+      "genero_selector_visible_profissional": true,
+      "genero_selector_visible_galera": true
+    }
+  }
+}
