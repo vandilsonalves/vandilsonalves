@@ -1,0 +1,86 @@
+{
+  "summary": "Iteration 69: WebSocket 403 fix and data-testid verification - ALL TESTS PASSED. WebSocket now connects successfully without 403 errors (SECRET_KEY imported correctly from auth_routes). All data-testid attributes verified on RaioXPage and StravaAtividadesPage. AdminDashboard compiles without errors and Engajamento menu is visible.",
+  "backend_issues": {
+    "critical": [],
+    "minor": [
+      {"endpoint": "/api/admin/stats/categorias", "issue": "Returns 500 error - KeyError: 'categoria' in aggregation pipeline", "priority": "LOW - pre-existing issue"}
+    ]
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "pre_existing_issues": [
+      {"component": "RankingTable", "issue": "Hydration warning: <tr> cannot be child of <span> - pre-existing React hydration issue"},
+      {"component": "Recharts", "issue": "Chart width/height warnings when container not visible - cosmetic only"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter69_websocket_testid.py",
+    "/app/test_reports/pytest/pytest_iter69_websocket.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter69_websocket_testid.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (all features working)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "WebSocket 403 fix verified - SECRET_KEY now correctly imported from auth_routes.py which imports from services. Console logs show 'WebSocket conectado' and 'Conexão WebSocket confirmada' with NO 403 errors. All data-testid attributes verified: raio-x-page, raio-x-back-btn, raio-x-share-btn, raio-x-pdf-btn, raio-x-excel-btn, share-modal, share-whatsapp-btn, strava-atividades-page, strava-back-btn, strava-refresh-btn. Note: Strava page route is /strava-clube not /strava-atividades.",
+  "features_tested": {
+    "websocket_403_fix": {
+      "status": "PASS",
+      "details": "WebSocket /api/ws/notifications now accepts valid tokens. Console shows 'WebSocket conectado' and 'Conexão WebSocket confirmada'. No 403 errors in console logs."
+    },
+    "websocket_endpoints": {
+      "status": "PASS",
+      "endpoints": [
+        "GET /api/notifications/ws-status (admin only)",
+        "GET /api/notifications/unread-count",
+        "POST /api/notifications/send-test"
+      ]
+    },
+    "raio_x_data_testid": {
+      "status": "PASS",
+      "testids_verified": [
+        "raio-x-page",
+        "raio-x-back-btn",
+        "raio-x-share-btn",
+        "raio-x-pdf-btn",
+        "raio-x-excel-btn",
+        "share-modal",
+        "share-whatsapp-btn"
+      ]
+    },
+    "strava_atividades_data_testid": {
+      "status": "PASS",
+      "testids_verified": [
+        "strava-atividades-page",
+        "strava-back-btn",
+        "strava-refresh-btn"
+      ],
+      "note": "Route is /strava-clube not /strava-atividades"
+    },
+    "admin_dashboard_engajamento": {
+      "status": "PASS",
+      "details": "AdminDashboard compiles without errors. Engajamento menu visible in sidebar. DashboardEngajamento loads with KPIs and graphs."
+    }
+  },
+  "test_data": {
+    "admin_credentials": "admin@runpro.com / admin",
+    "atleta_credentials": "teste.dono@teste.com / 123456"
+  },
+  "websocket_verification": {
+    "console_logs_observed": [
+      "🔔 WebSocket conectado - Notificações em tempo real ativas",
+      "✅ Conexão WebSocket confirmada"
+    ],
+    "403_errors_found": false,
+    "connection_status": "SUCCESS"
+  }
+}

@@ -169,7 +169,7 @@ const StravaAtividadesPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-900">
+    <div className="min-h-screen bg-slate-900" data-testid="strava-atividades-page">
       {/* Header */}
       <div className="bg-gradient-to-r from-orange-600 to-orange-500 text-white">
         <div className="container mx-auto px-4 py-6">
@@ -180,6 +180,7 @@ const StravaAtividadesPage = () => {
                 size="icon"
                 onClick={() => navigate('/')}
                 className="text-white hover:bg-white/20"
+                data-testid="strava-back-btn"
               >
                 <ChevronLeft className="w-6 h-6" />
               </Button>
@@ -215,6 +216,7 @@ const StravaAtividadesPage = () => {
                 disabled={refreshing}
                 className="text-white hover:bg-white/20"
                 title="Atualizar dados"
+                data-testid="strava-refresh-btn"
               >
                 <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
               </Button>

@@ -9,17 +9,14 @@ from typing import Optional
 import json
 import logging
 from jose import jwt, JWTError
-import os
 
 from config import db
 from services.websocket_service import ws_manager, notify_user
+from routes.auth_routes import SECRET_KEY, ALGORITHM
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["WebSocket"])
-
-SECRET_KEY = os.environ.get("SECRET_KEY", "ranking-run-pro-secret-key-2025")
-ALGORITHM = "HS256"
 
 
 async def get_user_from_token(token: str) -> Optional[dict]:
@@ -30,7 +27,7 @@ async def get_user_from_token(token: str) -> Optional[dict]:
         if not user_id:
             return None
         
-        user = await db.usuarios.find_one({"id": user_id}, {"_id": 0, "password_hash": 0})
+        user = await db.usuarios.find_one({"id": user_id}, {"_id": 0, "senha": 0})
         return user
     except JWTError:
         return None
