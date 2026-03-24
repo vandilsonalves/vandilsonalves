@@ -76,6 +76,8 @@ async def enviar_mensagem_admin(
     filtro_modalidades: str = Form("[]"),
     filtro_generos: str = Form("[]"),
     filtro_especial: str = Form("[]"),
+    filtro_estados: str = Form("[]"),
+    filtro_cidades: str = Form("[]"),
     agendar_para: str = Form(""),
     admin: dict = Depends(get_admin_user)
 ):
@@ -91,6 +93,8 @@ async def enviar_mensagem_admin(
     modalidades = json.loads(filtro_modalidades) if filtro_modalidades != "[]" else []
     generos = json.loads(filtro_generos) if filtro_generos != "[]" else []
     especiais = json.loads(filtro_especial) if filtro_especial != "[]" else []
+    estados = json.loads(filtro_estados) if filtro_estados != "[]" else []
+    cidades = json.loads(filtro_cidades) if filtro_cidades != "[]" else []
     anexos_list = json.loads(anexos) if anexos != "[]" else []
 
     agora = datetime.now(timezone.utc).isoformat()
@@ -108,6 +112,8 @@ async def enviar_mensagem_admin(
         "filtro_modalidades": modalidades,
         "filtro_generos": generos,
         "filtro_especial": especiais,
+        "filtro_estados": estados,
+        "filtro_cidades": cidades,
         "total_enviados": 0,
         "admin_id": admin["id"],
         "admin_nome": admin.get("nome", "Admin"),
@@ -128,7 +134,8 @@ async def enviar_mensagem_admin(
 
     # Envio imediato - build query and send
     total = await _enviar_notificacoes(mensagem_id, titulo, mensagem, link, anexos_list,
-                                         filtro_tipo, modalidades, generos, especiais, admin)
+                                         filtro_tipo, modalidades, generos, especiais, admin,
+                                         estados, cidades)
 
     registro["total_enviados"] = total
     await db.mensagens_admin.insert_one(registro)
@@ -141,12 +148,16 @@ async def enviar_mensagem_admin(
     }
 
 
-async def _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais):
+async def _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais, estados=None, cidades=None):
     """Constrói a query MongoDB para filtrar destinatários"""
     query = {"role": {"$in": ["atleta", "dono_assessoria"]}}
 
     if filtro_tipo == "todos":
         pass
+    elif filtro_tipo == "estado" and estados:
+        query["estado"] = {"$in": estados}
+    elif filtro_tipo == "cidade" and cidades:
+        query["cidade"] = {"$in": cidades}
     elif filtro_tipo == "modalidade" and modalidades:
         modalidade_ids = set()
         if "profissional_amador" in modalidades:
@@ -189,9 +200,10 @@ async def _build_destinatarios_query(filtro_tipo, modalidades, generos, especiai
 
 
 async def _enviar_notificacoes(mensagem_id, titulo, mensagem, link, anexos_list,
-                                filtro_tipo, modalidades, generos, especiais, admin):
+                                filtro_tipo, modalidades, generos, especiais, admin,
+                                estados=None, cidades=None):
     """Cria notificações para todos os destinatários que correspondem ao filtro"""
-    query = await _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais)
+    query = await _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais, estados, cidades)
     if not query:
         return 0
 
@@ -280,7 +292,7 @@ async def processar_agendadas():
             msg.get("link", ""), msg.get("anexos", []),
             msg.get("filtro_tipo", "todos"), msg.get("filtro_modalidades", []),
             msg.get("filtro_generos", []), msg.get("filtro_especial", []),
-            admin_fake
+            admin_fake, msg.get("filtro_estados", []), msg.get("filtro_cidades", [])
         )
 
         await db.mensagens_admin.update_one(
@@ -302,6 +314,8 @@ async def contagem_destinatarios(
     filtro_modalidades: str = "[]",
     filtro_generos: str = "[]",
     filtro_especial: str = "[]",
+    filtro_estados: str = "[]",
+    filtro_cidades: str = "[]",
     admin: dict = Depends(get_admin_user)
 ):
     """Retorna quantos atletas serão impactados pelos filtros"""
@@ -312,9 +326,15 @@ async def contagem_destinatarios(
     modalidades = json.loads(filtro_modalidades) if filtro_modalidades != "[]" else []
     generos = json.loads(filtro_generos) if filtro_generos != "[]" else []
     especiais = json.loads(filtro_especial) if filtro_especial != "[]" else []
+    estados = json.loads(filtro_estados) if filtro_estados != "[]" else []
+    cidades = json.loads(filtro_cidades) if filtro_cidades != "[]" else []
 
     if filtro_tipo == "todos":
         pass
+    elif filtro_tipo == "estado" and estados:
+        query["estado"] = {"$in": estados}
+    elif filtro_tipo == "cidade" and cidades:
+        query["cidade"] = {"$in": cidades}
     elif filtro_tipo == "modalidade" and modalidades:
         modalidade_ids = set()
         if "profissional_amador" in modalidades:
@@ -355,3 +375,26 @@ async def contagem_destinatarios(
 
     total = await db.usuarios.count_documents(query)
     return {"total": total}
+
+
+@router.get("/admin/mensagens/estados-disponiveis")
+async def estados_disponiveis(admin: dict = Depends(get_admin_user)):
+    """Lista todos os estados (UFs) com atletas cadastrados"""
+    estados = await db.usuarios.distinct(
+        "estado",
+        {"role": {"$in": ["atleta", "dono_assessoria"]}, "estado": {"$exists": True, "$nin": [None, ""]}}
+    )
+    return {"estados": sorted(estados)}
+
+
+@router.get("/admin/mensagens/cidades-disponiveis")
+async def cidades_disponiveis(
+    estado: str = "",
+    admin: dict = Depends(get_admin_user)
+):
+    """Lista cidades com atletas cadastrados, opcionalmente filtradas por estado"""
+    filtro = {"role": {"$in": ["atleta", "dono_assessoria"]}, "cidade": {"$exists": True, "$nin": [None, ""]}}
+    if estado:
+        filtro["estado"] = estado
+    cidades = await db.usuarios.distinct("cidade", filtro)
+    return {"cidades": sorted(cidades)}

@@ -8,8 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import {
   Send, Paperclip, Link2, Image, X, Loader2, CheckCircle2,
   Users, Clock, FileText, Download, ChevronDown, ChevronUp,
-  Calendar, XCircle, Timer
+  Calendar, XCircle, Timer, MapPin, Building2
 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -53,6 +54,10 @@ const DashboardMensagens = () => {
   const [filtroModalidades, setFiltroModalidades] = useState([]);
   const [filtroGeneros, setFiltroGeneros] = useState([]);
   const [filtroEspecial, setFiltroEspecial] = useState([]);
+  const [filtroEstados, setFiltroEstados] = useState([]);
+  const [filtroCidades, setFiltroCidades] = useState([]);
+  const [estadosDisponiveis, setEstadosDisponiveis] = useState([]);
+  const [cidadesDisponiveis, setCidadesDisponiveis] = useState([]);
 
   const fileInputRef = useRef(null);
 
@@ -61,7 +66,7 @@ const DashboardMensagens = () => {
 
   useEffect(() => {
     fetchContagem();
-  }, [filtroTipo, filtroModalidades, filtroGeneros, filtroEspecial]);
+  }, [filtroTipo, filtroModalidades, filtroGeneros, filtroEspecial, filtroEstados, filtroCidades]);
 
   useEffect(() => {
     if (showHistorico) fetchHistorico();
@@ -69,7 +74,14 @@ const DashboardMensagens = () => {
 
   useEffect(() => {
     fetchAgendadas();
+    fetchEstadosDisponiveis();
   }, []);
+
+  useEffect(() => {
+    if (filtroTipo === 'cidade' && filtroEstados.length > 0) {
+      fetchCidadesDisponiveis(filtroEstados[0]);
+    }
+  }, [filtroEstados, filtroTipo]);
 
   const fetchContagem = async () => {
     try {
@@ -77,12 +89,39 @@ const DashboardMensagens = () => {
         filtro_tipo: filtroTipo,
         filtro_modalidades: JSON.stringify(filtroModalidades),
         filtro_generos: JSON.stringify(filtroGeneros),
-        filtro_especial: JSON.stringify(filtroEspecial)
+        filtro_especial: JSON.stringify(filtroEspecial),
+        filtro_estados: JSON.stringify(filtroEstados),
+        filtro_cidades: JSON.stringify(filtroCidades)
       });
       const res = await fetch(`${API}/admin/mensagens/contagem-destinatarios?${params}`, { headers });
       if (res.ok) {
         const data = await res.json();
         setContagem(data.total);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchEstadosDisponiveis = async () => {
+    try {
+      const res = await fetch(`${API}/admin/mensagens/estados-disponiveis`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setEstadosDisponiveis(data.estados || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const fetchCidadesDisponiveis = async (estado) => {
+    try {
+      const params = estado ? `?estado=${estado}` : '';
+      const res = await fetch(`${API}/admin/mensagens/cidades-disponiveis${params}`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setCidadesDisponiveis(data.cidades || []);
       }
     } catch (e) {
       console.error(e);
@@ -208,6 +247,8 @@ const DashboardMensagens = () => {
       formData.append('filtro_modalidades', JSON.stringify(filtroModalidades));
       formData.append('filtro_generos', JSON.stringify(filtroGeneros));
       formData.append('filtro_especial', JSON.stringify(filtroEspecial));
+      formData.append('filtro_estados', JSON.stringify(filtroEstados));
+      formData.append('filtro_cidades', JSON.stringify(filtroCidades));
       formData.append('agendar_para', agendarPara);
 
       const res = await fetch(`${API}/admin/mensagens/enviar`, {
@@ -244,6 +285,8 @@ const DashboardMensagens = () => {
 
   const getFiltroLabel = (tipo) => {
     if (tipo === 'todos') return 'Todos os Atletas';
+    if (tipo === 'estado') return 'Por Estado';
+    if (tipo === 'cidade') return 'Por Cidade';
     if (tipo === 'modalidade') return 'Por Modalidade';
     if (tipo === 'genero') return 'Por Gênero/Categoria';
     if (tipo === 'especial') return 'Grupos Especiais';
@@ -278,7 +321,9 @@ const DashboardMensagens = () => {
             {/* Tipo de filtro */}
             <div className="flex flex-wrap gap-2">
               {[
-                { id: 'todos', label: 'Todos' },
+                { id: 'todos', label: 'Todos', icon: <Users className="w-3.5 h-3.5 mr-1.5" /> },
+                { id: 'estado', label: 'Por Estado', icon: <MapPin className="w-3.5 h-3.5 mr-1.5" /> },
+                { id: 'cidade', label: 'Por Cidade', icon: <Building2 className="w-3.5 h-3.5 mr-1.5" /> },
                 { id: 'modalidade', label: 'Por Modalidade' },
                 { id: 'genero', label: 'Por Gênero' },
                 { id: 'especial', label: 'Grupos Especiais' }
@@ -292,16 +337,99 @@ const DashboardMensagens = () => {
                     setFiltroModalidades([]);
                     setFiltroGeneros([]);
                     setFiltroEspecial([]);
+                    setFiltroEstados([]);
+                    setFiltroCidades([]);
                   }}
                   className={filtroTipo === opt.id ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'dark:border-slate-600 dark:text-slate-300'}
                   data-testid={`filtro-tipo-${opt.id}`}
                 >
-                  {opt.label}
+                  {opt.icon || null}{opt.label}
                 </Button>
               ))}
             </div>
 
             {/* Sub-filtros */}
+            {filtroTipo === 'estado' && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg space-y-3" data-testid="filtro-estado-panel">
+                <p className="text-xs text-slate-500 mb-2">Selecione os estados (UF):</p>
+                <div className="flex flex-wrap gap-2">
+                  {estadosDisponiveis.length === 0 ? (
+                    <p className="text-sm text-slate-400">Nenhum estado encontrado</p>
+                  ) : (
+                    estadosDisponiveis.map(uf => (
+                      <label key={uf} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 hover:border-emerald-400 transition-colors">
+                        <input
+                          type="checkbox"
+                          checked={filtroEstados.includes(uf)}
+                          onChange={() => toggleFiltro(filtroEstados, setFiltroEstados, uf)}
+                          className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                          data-testid={`filtro-estado-${uf}`}
+                        />
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{uf}</span>
+                      </label>
+                    ))
+                  )}
+                </div>
+                {filtroEstados.length > 0 && (
+                  <p className="text-xs text-emerald-600 font-medium">
+                    <MapPin className="w-3 h-3 inline mr-1" />
+                    {filtroEstados.length} estado(s) selecionado(s): {filtroEstados.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {filtroTipo === 'cidade' && (
+              <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg space-y-3" data-testid="filtro-cidade-panel">
+                <p className="text-xs text-slate-500 mb-2">Primeiro, selecione um estado para filtrar as cidades:</p>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {estadosDisponiveis.map(uf => (
+                    <Button
+                      key={uf}
+                      size="sm"
+                      variant={filtroEstados.includes(uf) ? 'default' : 'outline'}
+                      onClick={() => {
+                        setFiltroEstados([uf]);
+                        setFiltroCidades([]);
+                      }}
+                      className={filtroEstados.includes(uf) ? 'bg-emerald-600 hover:bg-emerald-700 text-white h-7 text-xs' : 'h-7 text-xs dark:border-slate-600 dark:text-slate-300'}
+                      data-testid={`filtro-cidade-estado-${uf}`}
+                    >
+                      {uf}
+                    </Button>
+                  ))}
+                </div>
+                {filtroEstados.length > 0 && cidadesDisponiveis.length > 0 && (
+                  <>
+                    <p className="text-xs text-slate-500">Cidades em {filtroEstados[0]}:</p>
+                    <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
+                      {cidadesDisponiveis.map(cidade => (
+                        <label key={cidade} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 hover:border-emerald-400 transition-colors">
+                          <input
+                            type="checkbox"
+                            checked={filtroCidades.includes(cidade)}
+                            onChange={() => toggleFiltro(filtroCidades, setFiltroCidades, cidade)}
+                            className="rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+                            data-testid={`filtro-cidade-${cidade}`}
+                          />
+                          <span className="text-sm text-slate-700 dark:text-slate-300">{cidade}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </>
+                )}
+                {filtroEstados.length > 0 && cidadesDisponiveis.length === 0 && (
+                  <p className="text-sm text-slate-400">Nenhuma cidade encontrada para {filtroEstados[0]}</p>
+                )}
+                {filtroCidades.length > 0 && (
+                  <p className="text-xs text-emerald-600 font-medium">
+                    <Building2 className="w-3 h-3 inline mr-1" />
+                    {filtroCidades.length} cidade(s) selecionada(s): {filtroCidades.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+
             {filtroTipo === 'modalidade' && (
               <div className="flex flex-wrap gap-2 p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg">
                 {FILTRO_OPTIONS.modalidades.map(opt => (
@@ -675,6 +803,8 @@ const DashboardMensagens = () => {
 
 const getFiltroLabel = (tipo) => {
   if (tipo === 'todos') return 'Todos os Atletas';
+  if (tipo === 'estado') return 'Por Estado';
+  if (tipo === 'cidade') return 'Por Cidade';
   if (tipo === 'modalidade') return 'Por Modalidade';
   if (tipo === 'genero') return 'Por Gênero';
   if (tipo === 'especial') return 'Grupos Especiais';

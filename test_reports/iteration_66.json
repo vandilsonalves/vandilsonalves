@@ -1,0 +1,67 @@
+{
+  "summary": "Iteration 66: New 'Por Estado' and 'Por Cidade' filters for Admin Mensagens - ALL TESTS PASSED. Backend APIs and Frontend UI working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "pre_existing_issues": [
+      {"component": "WebSocket", "issue": "WebSocket connection failing with 403 - pre-existing issue"},
+      {"component": "RankingTable", "issue": "Hydration warning: <tr> cannot be child of <span> - pre-existing React hydration issue"},
+      {"component": "AdminDashboard", "issue": "atletas.forEach is not a function error in fetchStats - pre-existing from iteration 64"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter66_estado_cidade_filters.py",
+    "/app/test_reports/pytest/pytest_iter66_estado_cidade.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter66_estado_cidade_filters.py"
+  ],
+  "success_rate": {
+    "backend": "100% (7/7 tests passed)",
+    "frontend": "100% (all filter buttons and interactions working)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "New Estado and Cidade filters fully implemented and tested. Filter buttons order: Todos -> Por Estado -> Por Cidade -> Por Modalidade -> Por Gênero -> Grupos Especiais. Backend endpoints: GET /api/admin/mensagens/estados-disponiveis (returns 15 states), GET /api/admin/mensagens/cidades-disponiveis?estado=PE (returns cities for state). Contagem endpoint accepts filtro_estados and filtro_cidades params.",
+  "features_tested": {
+    "filter_buttons_order": {
+      "status": "PASS",
+      "details": "6 buttons in correct order: Todos, Por Estado, Por Cidade, Por Modalidade, Por Gênero, Grupos Especiais"
+    },
+    "por_estado_filter": {
+      "status": "PASS",
+      "details": "Shows checkboxes for 15 UFs (BA, CE, DF, ES, GO, MA, MG, PA, PB, PE, PR, RJ, RS, SC, SP). Selecting PE changes count from 449 to 38."
+    },
+    "por_cidade_filter": {
+      "status": "PASS",
+      "details": "Shows state buttons first. Selecting PE shows cities: Caruaru, Jaboatão, Olinda, Recife. Selecting Recife changes count to 18."
+    },
+    "api_estados_disponiveis": {
+      "status": "PASS",
+      "details": "GET /api/admin/mensagens/estados-disponiveis returns list of 15 states"
+    },
+    "api_cidades_disponiveis": {
+      "status": "PASS",
+      "details": "GET /api/admin/mensagens/cidades-disponiveis?estado=PE returns 4 cities: Caruaru, Jaboatão, Olinda, Recife"
+    },
+    "contagem_dynamic_update": {
+      "status": "PASS",
+      "details": "Count updates dynamically: Todos=449, PE=38, Recife=18"
+    }
+  },
+  "test_data": {
+    "total_atletas": 449,
+    "atletas_PE": 38,
+    "atletas_Recife": 18,
+    "estados_count": 15,
+    "cidades_PE": ["Caruaru", "Jaboatão", "Olinda", "Recife"]
+  }
+}
