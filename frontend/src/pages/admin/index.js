@@ -4,3 +4,8 @@ export { default as DashboardAssessorias } from './DashboardAssessorias';
 export { default as DashboardCorridas } from './DashboardCorridas';
 export { default as DashboardResultados } from './DashboardResultados';
 export { default as DashboardRBAC } from './DashboardRBAC';
+export { default as DashboardSubmeter } from './DashboardSubmeter';
+export { default as DashboardRegulamento } from './DashboardRegulamento';
+export { default as DashboardAutorizacoes } from './DashboardAutorizacoes';
+export { default as DashboardAniversariantes } from './DashboardAniversariantes';
+export { default as DashboardInstagram } from './DashboardInstagram';
