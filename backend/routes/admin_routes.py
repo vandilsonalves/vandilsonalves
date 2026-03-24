@@ -418,10 +418,12 @@ async def get_stats_categorias(admin: dict = Depends(get_admin_user)):
     
     stats = []
     for r in result:
-        if r["_id"]["categoria"]:
+        cat = r["_id"].get("categoria")
+        gen = r["_id"].get("genero")
+        if cat:
             stats.append({
-                "categoria": r["_id"]["categoria"],
-                "genero": r["_id"]["genero"],
+                "categoria": cat,
+                "genero": gen or "N/I",
                 "atletas": r["count"]
             })
     return stats
