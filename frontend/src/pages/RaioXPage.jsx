@@ -940,80 +940,327 @@ const RaioXPage = () => {
       // ========== INSÍGNIAS CONQUISTADAS ==========
       const badgesConquistados = badges.filter(b => b.conquistado);
       
+      // Função para desenhar ícone do badge no Canvas
+      const drawBadgeIcon = (ctx, icon, cx, cy, size) => {
+        ctx.fillStyle = '#ffffff';
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+        
+        const s = size * 0.4; // Tamanho do ícone relativo ao badge
+        
+        switch(icon) {
+          case 'star':
+            // Estrela de 5 pontas
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+              const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+              const r = i % 2 === 0 ? s : s * 0.4;
+              const px = cx + r * Math.cos(angle);
+              const py = cy + r * Math.sin(angle);
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'medal':
+            // Medalha
+            ctx.beginPath();
+            ctx.arc(cx, cy + s * 0.2, s * 0.6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 0.3, cy - s * 0.6);
+            ctx.lineTo(cx, cy - s * 0.2);
+            ctx.lineTo(cx + s * 0.3, cy - s * 0.6);
+            ctx.stroke();
+            break;
+            
+          case 'trophy':
+            // Troféu
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 0.5, cy - s * 0.5);
+            ctx.lineTo(cx - s * 0.3, cy + s * 0.2);
+            ctx.lineTo(cx + s * 0.3, cy + s * 0.2);
+            ctx.lineTo(cx + s * 0.5, cy - s * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillRect(cx - s * 0.2, cy + s * 0.2, s * 0.4, s * 0.3);
+            ctx.fillRect(cx - s * 0.35, cy + s * 0.5, s * 0.7, s * 0.15);
+            break;
+            
+          case 'award':
+            // Prêmio/Fita
+            ctx.beginPath();
+            ctx.arc(cx, cy - s * 0.1, s * 0.5, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 0.3, cy + s * 0.3);
+            ctx.lineTo(cx - s * 0.5, cy + s * 0.7);
+            ctx.lineTo(cx, cy + s * 0.4);
+            ctx.lineTo(cx + s * 0.5, cy + s * 0.7);
+            ctx.lineTo(cx + s * 0.3, cy + s * 0.3);
+            ctx.fill();
+            break;
+            
+          case 'zap':
+            // Raio
+            ctx.beginPath();
+            ctx.moveTo(cx + s * 0.1, cy - s * 0.6);
+            ctx.lineTo(cx - s * 0.3, cy + s * 0.1);
+            ctx.lineTo(cx, cy + s * 0.1);
+            ctx.lineTo(cx - s * 0.1, cy + s * 0.6);
+            ctx.lineTo(cx + s * 0.3, cy - s * 0.1);
+            ctx.lineTo(cx, cy - s * 0.1);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'play':
+            // Play
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 0.3, cy - s * 0.5);
+            ctx.lineTo(cx + s * 0.5, cy);
+            ctx.lineTo(cx - s * 0.3, cy + s * 0.5);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'shield':
+            // Escudo
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - s * 0.6);
+            ctx.lineTo(cx + s * 0.5, cy - s * 0.3);
+            ctx.lineTo(cx + s * 0.5, cy + s * 0.1);
+            ctx.quadraticCurveTo(cx + s * 0.4, cy + s * 0.5, cx, cy + s * 0.7);
+            ctx.quadraticCurveTo(cx - s * 0.4, cy + s * 0.5, cx - s * 0.5, cy + s * 0.1);
+            ctx.lineTo(cx - s * 0.5, cy - s * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'target':
+            // Alvo
+            ctx.beginPath();
+            ctx.arc(cx, cy, s * 0.55, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, s * 0.35, 0, Math.PI * 2);
+            ctx.stroke();
+            ctx.beginPath();
+            ctx.arc(cx, cy, s * 0.15, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+          case 'crown':
+            // Coroa
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 0.5, cy + s * 0.3);
+            ctx.lineTo(cx - s * 0.5, cy - s * 0.1);
+            ctx.lineTo(cx - s * 0.25, cy + s * 0.1);
+            ctx.lineTo(cx, cy - s * 0.5);
+            ctx.lineTo(cx + s * 0.25, cy + s * 0.1);
+            ctx.lineTo(cx + s * 0.5, cy - s * 0.1);
+            ctx.lineTo(cx + s * 0.5, cy + s * 0.3);
+            ctx.closePath();
+            ctx.fill();
+            break;
+            
+          case 'calendar':
+            // Calendário
+            ctx.fillRect(cx - s * 0.45, cy - s * 0.35, s * 0.9, s * 0.8);
+            ctx.fillStyle = badge.cor_primaria || '#10b981';
+            ctx.fillRect(cx - s * 0.35, cy - s * 0.15, s * 0.2, s * 0.2);
+            ctx.fillRect(cx - s * 0.05, cy - s * 0.15, s * 0.2, s * 0.2);
+            ctx.fillRect(cx + s * 0.15, cy - s * 0.15, s * 0.2, s * 0.2);
+            ctx.fillRect(cx - s * 0.35, cy + s * 0.15, s * 0.2, s * 0.2);
+            ctx.fillRect(cx - s * 0.05, cy + s * 0.15, s * 0.2, s * 0.2);
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(cx - s * 0.3, cy - s * 0.55, s * 0.1, s * 0.25);
+            ctx.fillRect(cx + s * 0.2, cy - s * 0.55, s * 0.1, s * 0.25);
+            break;
+            
+          case 'users':
+            // Usuários
+            ctx.beginPath();
+            ctx.arc(cx - s * 0.2, cy - s * 0.2, s * 0.25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.arc(cx + s * 0.25, cy - s * 0.15, s * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx - s * 0.2, cy + s * 0.35, s * 0.35, s * 0.25, 0, Math.PI, 0);
+            ctx.fill();
+            ctx.beginPath();
+            ctx.ellipse(cx + s * 0.25, cy + s * 0.3, s * 0.3, s * 0.2, 0, Math.PI, 0);
+            ctx.fill();
+            break;
+            
+          case 'flame':
+            // Chama
+            ctx.beginPath();
+            ctx.moveTo(cx, cy - s * 0.6);
+            ctx.quadraticCurveTo(cx + s * 0.5, cy - s * 0.2, cx + s * 0.3, cy + s * 0.4);
+            ctx.quadraticCurveTo(cx + s * 0.15, cy + s * 0.6, cx, cy + s * 0.5);
+            ctx.quadraticCurveTo(cx - s * 0.15, cy + s * 0.6, cx - s * 0.3, cy + s * 0.4);
+            ctx.quadraticCurveTo(cx - s * 0.5, cy - s * 0.2, cx, cy - s * 0.6);
+            ctx.fill();
+            break;
+            
+          case 'sparkles':
+            // Brilhos
+            const drawSparkle = (sx, sy, ss) => {
+              ctx.beginPath();
+              ctx.moveTo(sx, sy - ss);
+              ctx.lineTo(sx + ss * 0.3, sy - ss * 0.3);
+              ctx.lineTo(sx + ss, sy);
+              ctx.lineTo(sx + ss * 0.3, sy + ss * 0.3);
+              ctx.lineTo(sx, sy + ss);
+              ctx.lineTo(sx - ss * 0.3, sy + ss * 0.3);
+              ctx.lineTo(sx - ss, sy);
+              ctx.lineTo(sx - ss * 0.3, sy - ss * 0.3);
+              ctx.closePath();
+              ctx.fill();
+            };
+            drawSparkle(cx - s * 0.2, cy - s * 0.2, s * 0.3);
+            drawSparkle(cx + s * 0.25, cy + s * 0.1, s * 0.25);
+            drawSparkle(cx - s * 0.1, cy + s * 0.35, s * 0.2);
+            break;
+            
+          case 'eye':
+            // Olho
+            ctx.beginPath();
+            ctx.ellipse(cx, cy, s * 0.5, s * 0.3, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = badge.cor_primaria || '#10b981';
+            ctx.beginPath();
+            ctx.arc(cx, cy, s * 0.2, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(cx - s * 0.05, cy - s * 0.05, s * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            break;
+            
+          default:
+            // Ícone padrão (estrela)
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+              const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+              const r = i % 2 === 0 ? s : s * 0.4;
+              const px = cx + r * Math.cos(angle);
+              const py = cy + r * Math.sin(angle);
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.closePath();
+            ctx.fill();
+        }
+      };
+      
       if (badgesConquistados.length > 0) {
+        // Calcular altura necessária baseada no número de badges
+        const badgeSize = 55;
+        const badgeGap = 8;
+        const maxBadgesPerRow = 7;
+        const numRows = Math.min(Math.ceil(badgesConquistados.length / maxBadgesPerRow), 2);
+        const sectionHeight = 50 + numRows * (badgeSize + 10);
+        
         // Título da seção
-        ctx.fillStyle = 'rgba(234, 179, 8, 0.2)';
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.15)';
         ctx.beginPath();
-        ctx.roundRect(20, yPos, width - 40, 130, 10);
+        ctx.roundRect(20, yPos, width - 40, sectionHeight, 10);
         ctx.fill();
         
         ctx.fillStyle = '#facc15';
         ctx.font = 'bold 14px Arial';
         ctx.fillText(`🎖️ Insígnias Conquistadas (${badgesConquistados.length})`, 35, yPos + 25);
         
-        // Desenhar insígnias
-        const badgeSize = 50;
-        const badgeGap = 10;
-        const maxBadgesPerRow = Math.floor((width - 70) / (badgeSize + badgeGap));
-        const badgesToShow = badgesConquistados.slice(0, maxBadgesPerRow * 2); // Máximo 2 linhas
-        const totalBadgesWidth = Math.min(badgesToShow.length, maxBadgesPerRow) * (badgeSize + badgeGap) - badgeGap;
+        // Desenhar insígnias com ícones reais
+        const badgesToShow = badgesConquistados.slice(0, maxBadgesPerRow * 2);
+        const badgesInFirstRow = Math.min(badgesToShow.length, maxBadgesPerRow);
+        const totalBadgesWidth = badgesInFirstRow * (badgeSize + badgeGap) - badgeGap;
         const badgeStartX = (width - totalBadgesWidth) / 2;
         
         badgesToShow.forEach((badge, i) => {
           const row = Math.floor(i / maxBadgesPerRow);
           const col = i % maxBadgesPerRow;
-          const x = badgeStartX + col * (badgeSize + badgeGap);
-          const y = yPos + 40 + row * (badgeSize + 10);
           
-          // Badge circle
-          const badgeGradient = ctx.createLinearGradient(x, y, x + badgeSize, y + badgeSize);
-          badgeGradient.addColorStop(0, badge.cor_primaria || '#10b981');
-          badgeGradient.addColorStop(1, badge.cor_secundaria || '#059669');
-          ctx.fillStyle = badgeGradient;
+          // Centralizar cada linha
+          const badgesInThisRow = row === 0 ? badgesInFirstRow : Math.min(badgesToShow.length - maxBadgesPerRow, maxBadgesPerRow);
+          const rowWidth = badgesInThisRow * (badgeSize + badgeGap) - badgeGap;
+          const rowStartX = (width - rowWidth) / 2;
+          
+          const x = rowStartX + col * (badgeSize + badgeGap);
+          const y = yPos + 40 + row * (badgeSize + 12);
+          const cx = x + badgeSize / 2;
+          const cy = y + badgeSize / 2;
+          
+          // Sombra do badge (efeito 3D)
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
           ctx.beginPath();
-          ctx.arc(x + badgeSize / 2, y + badgeSize / 2, badgeSize / 2 - 2, 0, Math.PI * 2);
+          ctx.ellipse(cx, cy + badgeSize / 2 + 3, badgeSize / 2.5, badgeSize / 8, 0, 0, Math.PI * 2);
           ctx.fill();
           
-          // Badge border
-          ctx.strokeStyle = 'rgba(255,255,255,0.3)';
+          // Badge base (formato oval/medalha 3D)
+          const badgeGradient = ctx.createLinearGradient(x, y, x + badgeSize, y + badgeSize);
+          const corPrimaria = badge.cor_primaria || '#10b981';
+          const corSecundaria = badge.cor_secundaria || '#059669';
+          badgeGradient.addColorStop(0, corPrimaria);
+          badgeGradient.addColorStop(0.5, corSecundaria);
+          badgeGradient.addColorStop(1, corPrimaria);
+          ctx.fillStyle = badgeGradient;
+          
+          // Formato oval (medalha)
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, badgeSize / 2 - 2, badgeSize / 2.2, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Borda brilhante
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
           ctx.lineWidth = 2;
           ctx.stroke();
           
-          // Badge icon (first letter or icon)
-          ctx.fillStyle = '#ffffff';
-          ctx.font = 'bold 20px Arial';
-          ctx.textAlign = 'center';
-          ctx.fillText(badge.nome?.charAt(0) || '★', x + badgeSize / 2, y + badgeSize / 2 + 7);
-          ctx.textAlign = 'left';
+          // Highlight (brilho no topo)
+          const highlightGradient = ctx.createLinearGradient(cx, y, cx, cy);
+          highlightGradient.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+          highlightGradient.addColorStop(1, 'rgba(255, 255, 255, 0)');
+          ctx.fillStyle = highlightGradient;
+          ctx.beginPath();
+          ctx.ellipse(cx, cy - badgeSize / 6, badgeSize / 3, badgeSize / 5, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Desenhar o ícone real
+          drawBadgeIcon(ctx, badge.icone, cx, cy, badgeSize);
         });
         
-        yPos += 145;
+        yPos += sectionHeight + 15;
       }
       
-      // Footer
-      yPos = height - 50;
+      // Footer (posicionado no final)
+      const footerY = Math.max(yPos, height - 50);
       
       // Linha decorativa
-      const lineGradient = ctx.createLinearGradient(20, yPos, width - 20, yPos);
+      const lineGradient = ctx.createLinearGradient(20, footerY, width - 20, footerY);
       lineGradient.addColorStop(0, '#10b981');
       lineGradient.addColorStop(0.5, '#06b6d4');
       lineGradient.addColorStop(1, '#10b981');
       ctx.strokeStyle = lineGradient;
       ctx.lineWidth = 3;
       ctx.beginPath();
-      ctx.moveTo(20, yPos);
-      ctx.lineTo(width - 20, yPos);
+      ctx.moveTo(20, footerY);
+      ctx.lineTo(width - 20, footerY);
       ctx.stroke();
-      
-      yPos += 25;
       
       ctx.fillStyle = '#64748b';
       ctx.font = '11px Arial';
-      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 20, yPos);
+      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 20, footerY + 25);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#10b981';
       ctx.font = 'bold 12px Arial';
-      ctx.fillText('Ranking Run', width - 20, yPos);
+      ctx.fillText('Ranking Run', width - 20, footerY + 25);
       ctx.textAlign = 'left';
 
       const imageUrl = canvas.toDataURL('image/png');
