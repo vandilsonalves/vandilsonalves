@@ -11,6 +11,20 @@ import statistics
 router = APIRouter()
 
 
+def extrair_distancia(corrida: dict) -> float:
+    """Extrai distância em km de uma corrida, tratando vários formatos"""
+    val = corrida.get("distancia_km") or corrida.get("distancia") or 0
+    try:
+        if isinstance(val, str):
+            val = float(val.upper().replace("KM", "").replace("K", "").replace(",", ".").strip() or "0")
+        else:
+            val = float(val)
+    except (ValueError, TypeError):
+        val = 0
+    return val
+
+
+
 def calcular_pace(tempo_str: str, distancia_km: float) -> Optional[float]:
     """Calcula pace em minutos por km a partir de tempo HH:MM:SS ou MM:SS"""
     if not tempo_str or distancia_km <= 0:
@@ -109,15 +123,7 @@ async def get_evolucao_atleta(
                 "paces": []
             }
         
-        distancia = c.get("distancia_km") or c.get("distancia", 0)
-        if isinstance(distancia, str):
-            try:
-                # Remover sufixos KM/km e converter para float
-                distancia = float(distancia.upper().replace("KM", "").replace(",", ".").strip())
-            except:
-                distancia = 0
-        elif distancia is None:
-            distancia = 0
+        distancia = extrair_distancia(c)
         
         tempo_min = tempo_para_minutos(c.get("tempo", ""))
         pace = calcular_pace(c.get("tempo", ""), distancia)
@@ -190,13 +196,8 @@ async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
     historico_rps = []
     
     for c in corridas:
-        distancia = c.get("distancia_km") or c.get("distancia", 0)
-        if isinstance(distancia, str):
-            try:
-                distancia = float(distancia.upper().replace("KM", "").replace(",", ".").strip())
-            except:
-                continue
-        elif distancia is None:
+        distancia = extrair_distancia(c)
+        if distancia <= 0:
             continue
         
         tempo_min = tempo_para_minutos(c.get("tempo", ""))
@@ -291,7 +292,7 @@ async def get_comparativo_mensal(current_user: dict = Depends(get_current_user))
         paces = []
         
         for c in corridas_mes:
-            dist = c.get("distancia_km") or c.get("distancia", 0)
+            dist = extrair_distancia(c)
             if isinstance(dist, str):
                 try:
                     dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
@@ -346,7 +347,7 @@ async def get_comparativo_mensal(current_user: dict = Depends(get_current_user))
     if corridas_mes_atual:
         melhor_pace_mes = float('inf')
         for c in corridas_mes_atual:
-            dist = c.get("distancia_km") or c.get("distancia", 0)
+            dist = extrair_distancia(c)
             if isinstance(dist, str):
                 try:
                     dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
@@ -406,7 +407,7 @@ async def get_comparativo_meses_personalizados(
         paces = []
         
         for c in corridas_mes:
-            dist = c.get("distancia_km") or c.get("distancia", 0)
+            dist = extrair_distancia(c)
             if isinstance(dist, str):
                 try:
                     dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())
@@ -503,7 +504,7 @@ async def get_previsoes_ia(current_user: dict = Depends(get_current_user)):
     # Coletar dados de pace por distância
     dados_corridas = []
     for c in corridas:
-        dist = c.get("distancia_km") or c.get("distancia", 0)
+        dist = extrair_distancia(c)
         if isinstance(dist, str):
             try:
                 dist = float(dist.upper().replace("KM", "").replace(",", ".").strip())

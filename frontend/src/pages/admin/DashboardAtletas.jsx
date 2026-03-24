@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -9,7 +9,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
   Users, Search, Plus, Eye, Edit, Trash2, Download, 
-  ArrowRightLeft, Award, Loader2, MessageSquare, Crown
+  ArrowRightLeft, Award, Loader2, MessageSquare, Crown,
+  MapPin, Filter, X
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -44,9 +45,28 @@ const DashboardAtletas = ({
   onViewAtleta,
   onEnviarMensagem
 }) => {
-  // Garantir que atletas é sempre um array
   const atletasArray = Array.isArray(atletas) ? atletas : [];
   
+  // Filtros geográficos
+  const [filtroEstado, setFiltroEstado] = useState('all');
+  const [filtroCidade, setFiltroCidade] = useState('all');
+  const [cidadesDisponiveis, setCidadesDisponiveis] = useState([]);
+
+  // Carregar cidades quando estado muda
+  useEffect(() => {
+    if (filtroEstado && filtroEstado !== 'all') {
+      const cidades = [...new Set(
+        atletasArray
+          .filter(a => a.estado === filtroEstado && a.cidade)
+          .map(a => a.cidade)
+      )].sort();
+      setCidadesDisponiveis(cidades);
+    } else {
+      setCidadesDisponiveis([]);
+    }
+    setFiltroCidade('all');
+  }, [filtroEstado, atletasArray.length]);
+
   // Filtrar atletas localmente
   const atletasFiltrados = atletasArray
     .filter(a => {
@@ -59,7 +79,6 @@ const DashboardAtletas = ({
         (filtroModalidade === 'profissional_amador' && a.modalidade_usuario !== 'povao_pace_livre') ||
         (filtroModalidade === 'povao_pace_livre' && a.modalidade_usuario === 'povao_pace_livre');
       
-      // Filtro de categoria/gênero
       let matchCategoria = filtroCategoria === 'all';
       if (!matchCategoria) {
         if (filtroCategoria === 'masculino') {
@@ -77,7 +96,6 @@ const DashboardAtletas = ({
         }
       }
       
-      // Filtro de equipe/assessoria
       let matchEquipe = !filtroEquipe || filtroEquipe === 'all';
       if (!matchEquipe) {
         const temEquipe = a.equipe && a.equipe.trim() !== '' && 
@@ -91,10 +109,21 @@ const DashboardAtletas = ({
           matchEquipe = a.role === 'dono_assessoria' || a.is_dono_assessoria === true;
         }
       }
+
+      // Filtros geográficos
+      const matchEstado = filtroEstado === 'all' || a.estado === filtroEstado;
+      const matchCidade = filtroCidade === 'all' || a.cidade === filtroCidade;
       
-      return matchSearch && matchModalidade && matchCategoria && matchEquipe;
+      return matchSearch && matchModalidade && matchCategoria && matchEquipe && matchEstado && matchCidade;
     })
     .sort((a, b) => (a.nome || '').localeCompare(b.nome || ''));
+
+  const temFiltrosAtivos = filtroEstado !== 'all' || filtroCidade !== 'all';
+
+  const limparFiltrosGeo = () => {
+    setFiltroEstado('all');
+    setFiltroCidade('all');
+  };
 
   const getCategoriaLabel = (a) => {
     if (a.categoria === 'pcd') return `PCD ${a.genero === 'M' ? 'Masc' : 'Fem'}`;
@@ -185,6 +214,47 @@ const DashboardAtletas = ({
                 <SelectItem value="dono_assessoria">Dono de Assessoria</SelectItem>
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Filtros Geográficos */}
+          <div className="flex flex-col md:flex-row gap-4 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <MapPin className="w-4 h-4" />
+              <span className="font-medium">Filtros Geográficos:</span>
+            </div>
+
+            {/* Por Estado */}
+            <Select value={filtroEstado} onValueChange={setFiltroEstado}>
+              <SelectTrigger className="w-full md:w-40" data-testid="atletas-filtro-estado">
+                <SelectValue placeholder="Estado" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todos Estados</SelectItem>
+                {ESTADOS_BR.map(uf => (
+                  <SelectItem key={uf} value={uf}>{uf}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {/* Por Cidade */}
+            <Select value={filtroCidade} onValueChange={setFiltroCidade} disabled={filtroEstado === 'all'}>
+              <SelectTrigger className="w-full md:w-48" data-testid="atletas-filtro-cidade">
+                <SelectValue placeholder={filtroEstado === 'all' ? 'Selecione Estado' : 'Cidade'} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Todas Cidades</SelectItem>
+                {cidadesDisponiveis.map(cidade => (
+                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            {temFiltrosAtivos && (
+              <Button variant="ghost" size="sm" onClick={limparFiltrosGeo} className="text-red-500 hover:text-red-700">
+                <X className="w-4 h-4 mr-1" />
+                Limpar
+              </Button>
+            )}
           </div>
         </CardContent>
       </Card>

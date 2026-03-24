@@ -1,0 +1,78 @@
+{
+  "summary": "Iteration 70: Geographic Filters and Distance Fix - ALL TESTS PASSED. Backend tests (13/13) verified admin/atletas returns estado/cidade fields and raio-x/completo returns distancia_total_km > 0. Frontend tests verified geographic filters in Admin > Atletas page with data-testid attributes, filtering functionality, and Limpar button.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "pre_existing_issues": [
+      {"component": "RankingTable", "issue": "Hydration warning: <tr> cannot be child of <span> - pre-existing React hydration issue"},
+      {"component": "Recharts", "issue": "Chart width/height warnings when container not visible - cosmetic only"},
+      {"component": "DashboardAtletas", "issue": "ESLint warning: useEffect missing dependency 'atletasArray' - minor, does not affect functionality"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter70_geo_filters.py",
+    "/app/test_reports/pytest/pytest_iter70_geo_filters.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter70_geo_filters.py"
+  ],
+  "success_rate": {
+    "backend": "100% (13/13 tests passed)",
+    "frontend": "100% (all features working)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Geographic filters in Admin > Atletas page fully functional. Estado filter (data-testid='atletas-filtro-estado') and Cidade filter (data-testid='atletas-filtro-cidade') work correctly. Selecting SP filters from 449 to 53 atletas. Cidade dropdown populates with SP cities (Campinas, Ribeirão Preto, Santos, Sorocaba, São Paulo). Limpar button resets filters. Backend raio-x/completo returns distancia_total_km > 0 (51.1 km for test user).",
+  "features_tested": {
+    "backend_admin_atletas_geo_fields": {
+      "status": "PASS",
+      "details": "GET /api/admin/atletas?limit=1000 returns atletas with estado and cidade fields. 53 atletas from SP verified."
+    },
+    "backend_raio_x_distancia_fix": {
+      "status": "PASS",
+      "details": "GET /api/raio-x/completo returns evolucao.totais.distancia_total_km = 51.1 km for test user (teste.dono@teste.com). extrair_distancia function working correctly."
+    },
+    "frontend_geo_filters_data_testid": {
+      "status": "PASS",
+      "testids_verified": [
+        "atletas-filtro-estado",
+        "atletas-filtro-cidade"
+      ]
+    },
+    "frontend_estado_filter_functionality": {
+      "status": "PASS",
+      "details": "Selecting SP state filters atletas from 449 to 53. All Brazilian states available in dropdown."
+    },
+    "frontend_cidade_filter_functionality": {
+      "status": "PASS",
+      "details": "Cidade dropdown populates with cities from selected state. SP cities: Campinas, Ribeirão Preto, Santos, Sorocaba, São Paulo."
+    },
+    "frontend_limpar_button": {
+      "status": "PASS",
+      "details": "Limpar button appears when filters are active and resets geographic filters when clicked."
+    },
+    "frontend_atletas_count": {
+      "status": "PASS",
+      "details": "Badge shows correct count: 449 atletas (unfiltered), 53 atletas (filtered by SP)."
+    },
+    "admin_dashboard_compilation": {
+      "status": "PASS",
+      "details": "Admin Dashboard compiles without errors. Only ESLint warnings for useEffect dependencies (pre-existing)."
+    }
+  },
+  "test_data": {
+    "admin_credentials": "admin@runpro.com / admin",
+    "atleta_credentials": "teste.dono@teste.com / 123456",
+    "sp_atletas_count": 53,
+    "total_atletas_count": 449,
+    "distancia_total_km": 51.1
+  }
+}

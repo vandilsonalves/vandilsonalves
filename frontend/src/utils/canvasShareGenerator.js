@@ -1,12 +1,5 @@
 // Canvas Share Card Generator for Raio-X page
-// Extracted from RaioXPage.jsx for maintainability
 // Format: 9:16 (ideal for Instagram Stories)
-
-const ICON_MAP_NAMES = {
-  'trophy': 'Trophy', 'flame': 'Flame', 'target': 'Target', 'award': 'Award',
-  'star': 'Star', 'zap': 'Zap', 'crown': 'Crown', 'medal': 'Medal',
-  'shield': 'Shield', 'rocket': 'Rocket', 'heart': 'Heart', 'lightning': 'Lightning'
-};
 
 /**
  * Generate a 9:16 share card image using Canvas API
@@ -22,17 +15,17 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
       const score = data?.score || {};
       const evolucao = data?.evolucao || {};
       const records = data?.records || {};
+      const comparativo = data?.comparativo || {};
+      const previsoes = data?.previsoes || {};
 
-      // Formato 9:16 para Stories (540x960)
+      // Formato 9:16 para Stories (540x1200 - mais espaço para dados)
       const width = 540;
-      const height = 960;
+      const height = 1200;
       
       const canvas = document.createElement('canvas');
-      canvas.width = width * 2; // Scale 2x para qualidade
+      canvas.width = width * 2;
       canvas.height = height * 2;
       const ctx = canvas.getContext('2d');
-      
-      // Scale para 2x
       ctx.scale(2, 2);
       
       // Background gradient
@@ -45,7 +38,7 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
       ctx.fillRect(0, 0, width, height);
       
       // Decorative elements
-      ctx.fillStyle = 'rgba(16, 185, 129, 0.1)';
+      ctx.fillStyle = 'rgba(16, 185, 129, 0.08)';
       ctx.beginPath();
       ctx.arc(-50, 100, 200, 0, Math.PI * 2);
       ctx.fill();
@@ -53,66 +46,69 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
       ctx.arc(width + 50, height - 100, 200, 0, Math.PI * 2);
       ctx.fill();
       
-      let yPos = 30;
+      let yPos = 25;
       
-      // Header - Logo area
-      const logoGradient = ctx.createLinearGradient(20, yPos, 68, yPos + 48);
+      // ========== HEADER ==========
+      const logoGradient = ctx.createLinearGradient(20, yPos, 68, yPos + 44);
       logoGradient.addColorStop(0, '#10b981');
       logoGradient.addColorStop(1, '#14b8a6');
       ctx.fillStyle = logoGradient;
       ctx.beginPath();
-      ctx.roundRect(20, yPos, 48, 48, 12);
+      ctx.roundRect(20, yPos, 44, 44, 10);
       ctx.fill();
       
-      // Logo icon
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 26px Arial';
-      ctx.fillText('⚡', 30, yPos + 35);
+      ctx.font = 'bold 24px Arial';
+      ctx.fillText('\u26A1', 28, yPos + 32);
       
-      // Title
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 18px Arial';
-      ctx.fillText('RAIO-X do Atleta', 78, yPos + 25);
+      ctx.font = 'bold 16px Arial';
+      ctx.fillText('RAIO-X do Atleta', 74, yPos + 22);
       ctx.fillStyle = '#10b981';
-      ctx.font = '12px Arial';
-      ctx.fillText('Ranking Run', 78, yPos + 42);
+      ctx.font = '11px Arial';
+      ctx.fillText('Ranking Run', 74, yPos + 38);
       
-      // Website
       ctx.fillStyle = '#64748b';
       ctx.font = '10px Arial';
       ctx.textAlign = 'right';
-      ctx.fillText('rankingrun.com.br', width - 20, yPos + 35);
+      ctx.fillText('rankingrun.com.br', width - 20, yPos + 32);
       ctx.textAlign = 'left';
       
-      yPos += 80;
+      yPos += 65;
       
-      // Nome do atleta
+      // ========== NOME DO ATLETA ==========
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 26px Arial';
+      ctx.font = 'bold 22px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(atleta?.nome || 'Atleta', width / 2, yPos);
+      const nome = atleta?.nome || 'Atleta';
+      ctx.fillText(nome.length > 28 ? nome.substring(0, 28) + '...' : nome, width / 2, yPos);
       if (atleta?.assessoria) {
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '13px Arial';
-        ctx.fillText(atleta.assessoria, width / 2, yPos + 22);
-        yPos += 30;
+        ctx.font = '12px Arial';
+        ctx.fillText(atleta.assessoria, width / 2, yPos + 18);
+        yPos += 20;
+      }
+      if (atleta?.cidade && atleta?.estado) {
+        ctx.fillStyle = '#64748b';
+        ctx.font = '11px Arial';
+        ctx.fillText(`${atleta.cidade} - ${atleta.estado}`, width / 2, yPos + 18);
+        yPos += 20;
       }
       ctx.textAlign = 'left';
       
-      yPos += 30;
+      yPos += 20;
       
-      // Score circle (maior)
+      // ========== SCORE CIRCLE ==========
       const scoreValue = score.score_mes_atual || 0;
       const scoreX = width / 2;
-      const scoreRadius = 60;
+      const scoreRadius = 50;
       
       ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 14;
+      ctx.lineWidth = 12;
       ctx.beginPath();
       ctx.arc(scoreX, yPos + scoreRadius, scoreRadius, 0, Math.PI * 2);
       ctx.stroke();
       
-      // Score progress
       const scoreGradient = ctx.createLinearGradient(scoreX - scoreRadius, yPos, scoreX + scoreRadius, yPos + scoreRadius * 2);
       scoreGradient.addColorStop(0, '#10b981');
       scoreGradient.addColorStop(1, '#06b6d4');
@@ -123,131 +119,219 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
       ctx.stroke();
       
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 36px Arial';
+      ctx.font = 'bold 30px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(`${scoreValue}%`, scoreX, yPos + scoreRadius + 12);
+      ctx.fillText(`${scoreValue}%`, scoreX, yPos + scoreRadius + 10);
       ctx.fillStyle = '#94a3b8';
-      ctx.font = '12px Arial';
-      ctx.fillText('Consistência', scoreX, yPos + scoreRadius + 32);
+      ctx.font = '11px Arial';
+      ctx.fillText('Consistencia', scoreX, yPos + scoreRadius + 26);
       ctx.textAlign = 'left';
       
-      yPos += scoreRadius * 2 + 50;
+      yPos += scoreRadius * 2 + 40;
       
-      // Métricas em 2x2 grid
-      const cardWidth = 240;
-      const cardHeight = 75;
-      const cardGap = 15;
+      // ========== METRICAS 2x2 ==========
+      const cardWidth = 235;
+      const cardHeight = 65;
+      const cardGap = 12;
       const gridStartX = (width - cardWidth * 2 - cardGap) / 2;
       
       const metrics = [
-        { icon: '🏆', value: evolucao.totais?.total_provas || 0, label: 'Provas' },
-        { icon: '📏', value: `${evolucao.totais?.distancia_total_km || 0} km`, label: 'Distância' },
-        { icon: '⏱️', value: `${evolucao.totais?.tempo_total_horas || 0}h`, label: 'Tempo Total' },
-        { icon: '⚡', value: records.records?.melhor_pace?.valor_formatado || '-', label: 'Melhor Pace' }
+        { icon: '\uD83C\uDFC6', value: evolucao.totais?.total_provas || 0, label: 'Provas' },
+        { icon: '\uD83D\uDCCF', value: `${evolucao.totais?.distancia_total_km || 0} km`, label: 'Distancia' },
+        { icon: '\u23F1\uFE0F', value: `${evolucao.totais?.tempo_total_horas || 0}h`, label: 'Tempo Total' },
+        { icon: '\u26A1', value: records.records?.melhor_pace?.valor_formatado || '-', label: 'Melhor Pace' }
       ];
       
       metrics.forEach((metric, i) => {
         const col = i % 2;
         const row = Math.floor(i / 2);
         const x = gridStartX + col * (cardWidth + cardGap);
-        const y = yPos + row * (cardHeight + 10);
+        const y = yPos + row * (cardHeight + 8);
         
-        // Card background
         ctx.fillStyle = 'rgba(71, 85, 105, 0.4)';
         ctx.beginPath();
-        ctx.roundRect(x, y, cardWidth, cardHeight, 10);
+        ctx.roundRect(x, y, cardWidth, cardHeight, 8);
         ctx.fill();
         
-        // Icon
-        ctx.font = '22px Arial';
-        ctx.fillText(metric.icon, x + 15, y + 35);
+        ctx.font = '20px Arial';
+        ctx.fillText(metric.icon, x + 12, y + 32);
         
-        // Value
         ctx.fillStyle = '#ffffff';
-        ctx.font = 'bold 22px Arial';
-        ctx.fillText(String(metric.value), x + 50, y + 35);
+        ctx.font = 'bold 20px Arial';
+        ctx.fillText(String(metric.value), x + 42, y + 32);
         
-        // Label
         ctx.fillStyle = '#94a3b8';
-        ctx.font = '11px Arial';
-        ctx.fillText(metric.label, x + 50, y + 55);
+        ctx.font = '10px Arial';
+        ctx.fillText(metric.label, x + 42, y + 48);
       });
       
-      yPos += cardHeight * 2 + 40;
+      yPos += (cardHeight + 8) * 2 + 20;
       
-      // Records section
-      ctx.fillStyle = 'rgba(71, 85, 105, 0.3)';
+      // ========== EVOLUCAO - Mini Bar Chart ==========
+      const evolucaoMensal = evolucao.mensal || [];
+      if (evolucaoMensal.length > 0) {
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.25)';
+        ctx.beginPath();
+        ctx.roundRect(20, yPos, width - 40, 120, 10);
+        ctx.fill();
+        
+        ctx.fillStyle = '#3b82f6';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText('\uD83D\uDCC8 Evolucao Mensal', 35, yPos + 20);
+        
+        const chartX = 35;
+        const chartY = yPos + 32;
+        const chartW = width - 70;
+        const chartH = 70;
+        const last6 = evolucaoMensal.slice(-6);
+        const maxDist = Math.max(...last6.map(m => m.distancia_km || m.distancia || 0), 1);
+        const barW = Math.min(30, (chartW / last6.length) - 6);
+        
+        last6.forEach((mes, i) => {
+          const dist = mes.distancia_km || mes.distancia || 0;
+          const barH = (dist / maxDist) * chartH;
+          const bx = chartX + i * (chartW / last6.length) + (chartW / last6.length - barW) / 2;
+          const by = chartY + chartH - barH;
+          
+          const barGrad = ctx.createLinearGradient(bx, by, bx, by + barH);
+          barGrad.addColorStop(0, '#3b82f6');
+          barGrad.addColorStop(1, '#1d4ed8');
+          ctx.fillStyle = barGrad;
+          ctx.beginPath();
+          ctx.roundRect(bx, by, barW, barH, 3);
+          ctx.fill();
+          
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '9px Arial';
+          ctx.textAlign = 'center';
+          const mesLabel = mes.mes || mes.label || `M${i+1}`;
+          ctx.fillText(typeof mesLabel === 'string' ? mesLabel.substring(0, 3) : `M${i+1}`, bx + barW / 2, chartY + chartH + 12);
+          
+          if (dist > 0) {
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 9px Arial';
+            ctx.fillText(`${Math.round(dist)}`, bx + barW / 2, by - 4);
+          }
+          ctx.textAlign = 'left';
+        });
+        
+        yPos += 135;
+      }
+      
+      // ========== RECORDS PESSOAIS ==========
+      ctx.fillStyle = 'rgba(71, 85, 105, 0.25)';
       ctx.beginPath();
-      ctx.roundRect(20, yPos, width - 40, 90, 10);
+      ctx.roundRect(20, yPos, width - 40, 80, 10);
       ctx.fill();
       
       ctx.fillStyle = '#facc15';
-      ctx.font = 'bold 14px Arial';
-      ctx.fillText('🏅 Records Pessoais', 35, yPos + 25);
+      ctx.font = 'bold 12px Arial';
+      ctx.fillText('\uD83C\uDFC5 Records Pessoais', 35, yPos + 20);
       
       const categories = ['5km', '10km', '21km', '42km'];
       const rpStartX = 35;
       const rpWidth = (width - 70) / 4;
       
-      ctx.font = '11px Arial';
       categories.forEach((cat, i) => {
         const x = rpStartX + i * rpWidth;
         const rp = records.records?.por_categoria?.[cat];
         
         ctx.fillStyle = '#94a3b8';
-        ctx.fillText(cat, x, yPos + 50);
+        ctx.font = '11px Arial';
+        ctx.fillText(cat, x, yPos + 42);
         
         ctx.fillStyle = rp ? '#10b981' : '#64748b';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(rp?.tempo || '-', x, yPos + 70);
-        ctx.font = '11px Arial';
+        ctx.font = 'bold 13px Arial';
+        ctx.fillText(rp?.tempo || '-', x, yPos + 60);
       });
       
-      yPos += 110;
+      yPos += 95;
       
-      // ========== INSÍGNIAS CONQUISTADAS ==========
+      // ========== COMPARATIVO ==========
+      const compMedia = comparativo.media_geral;
+      if (compMedia) {
+        ctx.fillStyle = 'rgba(71, 85, 105, 0.25)';
+        ctx.beginPath();
+        ctx.roundRect(20, yPos, width - 40, 85, 10);
+        ctx.fill();
+        
+        ctx.fillStyle = '#8b5cf6';
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText('\uD83D\uDCCA Comparativo vs Media', 35, yPos + 20);
+        
+        const compItems = [
+          { label: 'Pace', voce: comparativo.atleta?.pace_medio || '-', media: compMedia.pace_medio || '-' },
+          { label: 'Provas', voce: comparativo.atleta?.total_provas || 0, media: Math.round(compMedia.total_provas || 0) },
+          { label: 'Km/mes', voce: Math.round(comparativo.atleta?.km_mes || 0), media: Math.round(compMedia.km_mes || 0) }
+        ];
+        
+        const compW = (width - 70) / 3;
+        compItems.forEach((item, i) => {
+          const x = 35 + i * compW;
+          ctx.fillStyle = '#94a3b8';
+          ctx.font = '10px Arial';
+          ctx.fillText(item.label, x, yPos + 38);
+          
+          ctx.fillStyle = '#10b981';
+          ctx.font = 'bold 12px Arial';
+          ctx.fillText(`Voce: ${item.voce}`, x, yPos + 54);
+          
+          ctx.fillStyle = '#64748b';
+          ctx.font = '11px Arial';
+          ctx.fillText(`Media: ${item.media}`, x, yPos + 68);
+        });
+        
+        yPos += 100;
+      }
+      
+      // ========== PREVISOES IA ==========
+      if (previsoes && (previsoes.proximo_pace || previsoes.proxima_meta)) {
+        ctx.fillStyle = 'rgba(16, 185, 129, 0.1)';
+        ctx.beginPath();
+        ctx.roundRect(20, yPos, width - 40, 50, 10);
+        ctx.fill();
+        
+        ctx.strokeStyle = 'rgba(16, 185, 129, 0.3)';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+        
+        ctx.fillStyle = '#10b981';
+        ctx.font = 'bold 11px Arial';
+        ctx.fillText('\uD83E\uDD16 Previsao IA', 35, yPos + 18);
+        
+        ctx.fillStyle = '#e2e8f0';
+        ctx.font = '11px Arial';
+        const prevText = previsoes.proximo_pace 
+          ? `Proximo pace estimado: ${previsoes.proximo_pace}`
+          : `Proxima meta: ${previsoes.proxima_meta}`;
+        ctx.fillText(prevText.length > 55 ? prevText.substring(0, 55) + '...' : prevText, 35, yPos + 36);
+        
+        yPos += 60;
+      }
+      
+      // ========== INSIGNIAS CONQUISTADAS ==========
       const badgesConquistados = badges.filter(b => b.conquistado);
       
-      // Função para desenhar ícone do badge no Canvas (simplificada)
       const drawBadgeIcon = (ctx, icon, cx, cy, size) => {
         ctx.fillStyle = '#ffffff';
         ctx.strokeStyle = '#ffffff';
         ctx.lineWidth = 2;
         ctx.lineCap = 'round';
         ctx.lineJoin = 'round';
-        
         const s = size * 0.35;
         
         switch(icon) {
           case 'star':
-            // Estrela de 5 pontas
             ctx.beginPath();
             for (let i = 0; i < 10; i++) {
               const angle = (i * Math.PI / 5) - Math.PI / 2;
               const r = i % 2 === 0 ? s : s * 0.5;
-              const px = cx + r * Math.cos(angle);
-              const py = cy + r * Math.sin(angle);
-              if (i === 0) ctx.moveTo(px, py);
-              else ctx.lineTo(px, py);
+              ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
             }
             ctx.closePath();
             ctx.fill();
             break;
-            
-          case 'medal':
-            // Medalha - círculo com fita
-            ctx.beginPath();
-            ctx.arc(cx, cy + s * 0.15, s * 0.65, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(cx - s * 0.35, cy - s * 0.5);
-            ctx.lineTo(cx, cy - s * 0.1);
-            ctx.lineTo(cx + s * 0.35, cy - s * 0.5);
-            ctx.stroke();
-            break;
-            
           case 'trophy':
-            // Troféu simplificado
             ctx.beginPath();
             ctx.moveTo(cx - s * 0.4, cy - s * 0.4);
             ctx.lineTo(cx - s * 0.25, cy + s * 0.15);
@@ -258,23 +342,7 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
             ctx.fillRect(cx - s * 0.15, cy + s * 0.15, s * 0.3, s * 0.25);
             ctx.fillRect(cx - s * 0.3, cy + s * 0.4, s * 0.6, s * 0.12);
             break;
-            
-          case 'award':
-            // Prêmio/Roseta
-            ctx.beginPath();
-            ctx.arc(cx, cy - s * 0.1, s * 0.45, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.moveTo(cx - s * 0.25, cy + s * 0.25);
-            ctx.lineTo(cx - s * 0.4, cy + s * 0.65);
-            ctx.lineTo(cx, cy + s * 0.35);
-            ctx.lineTo(cx + s * 0.4, cy + s * 0.65);
-            ctx.lineTo(cx + s * 0.25, cy + s * 0.25);
-            ctx.fill();
-            break;
-            
           case 'zap':
-            // Raio
             ctx.beginPath();
             ctx.moveTo(cx + s * 0.1, cy - s * 0.55);
             ctx.lineTo(cx - s * 0.25, cy + s * 0.05);
@@ -285,19 +353,16 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
             ctx.closePath();
             ctx.fill();
             break;
-            
-          case 'play':
-            // Triângulo play
+          case 'flame':
             ctx.beginPath();
-            ctx.moveTo(cx - s * 0.25, cy - s * 0.4);
-            ctx.lineTo(cx + s * 0.4, cy);
-            ctx.lineTo(cx - s * 0.25, cy + s * 0.4);
-            ctx.closePath();
+            ctx.moveTo(cx, cy - s * 0.5);
+            ctx.quadraticCurveTo(cx + s * 0.45, cy - s * 0.15, cx + s * 0.28, cy + s * 0.35);
+            ctx.quadraticCurveTo(cx + s * 0.12, cy + s * 0.5, cx, cy + s * 0.42);
+            ctx.quadraticCurveTo(cx - s * 0.12, cy + s * 0.5, cx - s * 0.28, cy + s * 0.35);
+            ctx.quadraticCurveTo(cx - s * 0.45, cy - s * 0.15, cx, cy - s * 0.5);
             ctx.fill();
             break;
-            
           case 'shield':
-            // Escudo
             ctx.beginPath();
             ctx.moveTo(cx, cy - s * 0.5);
             ctx.lineTo(cx + s * 0.45, cy - s * 0.25);
@@ -308,24 +373,7 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
             ctx.closePath();
             ctx.fill();
             break;
-            
-          case 'target':
-            // Alvo - círculos concêntricos
-            ctx.lineWidth = 3;
-            ctx.beginPath();
-            ctx.arc(cx, cy, s * 0.5, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.beginPath();
-            ctx.arc(cx, cy, s * 0.12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.lineWidth = 2;
-            break;
-            
           case 'crown':
-            // Coroa
             ctx.beginPath();
             ctx.moveTo(cx - s * 0.45, cy + s * 0.25);
             ctx.lineTo(cx - s * 0.45, cy - s * 0.05);
@@ -337,94 +385,19 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
             ctx.closePath();
             ctx.fill();
             break;
-            
-          case 'calendar':
-            // Calendário
-            ctx.fillRect(cx - s * 0.4, cy - s * 0.3, s * 0.8, s * 0.7);
-            ctx.fillStyle = '#000000';
-            ctx.fillRect(cx - s * 0.3, cy - s * 0.1, s * 0.18, s * 0.18);
-            ctx.fillRect(cx - s * 0.05, cy - s * 0.1, s * 0.18, s * 0.18);
-            ctx.fillRect(cx + s * 0.12, cy - s * 0.1, s * 0.18, s * 0.18);
-            ctx.fillRect(cx - s * 0.3, cy + s * 0.15, s * 0.18, s * 0.18);
-            ctx.fillStyle = '#ffffff';
-            ctx.fillRect(cx - s * 0.25, cy - s * 0.5, s * 0.08, s * 0.2);
-            ctx.fillRect(cx + s * 0.17, cy - s * 0.5, s * 0.08, s * 0.2);
+          case 'target':
+            ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.arc(cx, cy, s * 0.5, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, s * 0.3, 0, Math.PI * 2); ctx.stroke();
+            ctx.beginPath(); ctx.arc(cx, cy, s * 0.12, 0, Math.PI * 2); ctx.fill();
+            ctx.lineWidth = 2;
             break;
-            
-          case 'users':
-            // Pessoas
-            ctx.beginPath();
-            ctx.arc(cx - s * 0.18, cy - s * 0.2, s * 0.22, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(cx + s * 0.22, cy - s * 0.15, s * 0.18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(cx - s * 0.18, cy + s * 0.35, s * 0.3, Math.PI, 0);
-            ctx.fill();
-            ctx.beginPath();
-            ctx.arc(cx + s * 0.22, cy + s * 0.3, s * 0.25, Math.PI, 0);
-            ctx.fill();
-            break;
-            
-          case 'flame':
-            // Chama
-            ctx.beginPath();
-            ctx.moveTo(cx, cy - s * 0.5);
-            ctx.quadraticCurveTo(cx + s * 0.45, cy - s * 0.15, cx + s * 0.28, cy + s * 0.35);
-            ctx.quadraticCurveTo(cx + s * 0.12, cy + s * 0.5, cx, cy + s * 0.42);
-            ctx.quadraticCurveTo(cx - s * 0.12, cy + s * 0.5, cx - s * 0.28, cy + s * 0.35);
-            ctx.quadraticCurveTo(cx - s * 0.45, cy - s * 0.15, cx, cy - s * 0.5);
-            ctx.fill();
-            break;
-            
-          case 'sparkles':
-            // Brilhos - estrelas pequenas
-            const drawStar = (sx, sy, ss) => {
-              ctx.beginPath();
-              ctx.moveTo(sx, sy - ss);
-              ctx.lineTo(sx + ss * 0.25, sy - ss * 0.25);
-              ctx.lineTo(sx + ss, sy);
-              ctx.lineTo(sx + ss * 0.25, sy + ss * 0.25);
-              ctx.lineTo(sx, sy + ss);
-              ctx.lineTo(sx - ss * 0.25, sy + ss * 0.25);
-              ctx.lineTo(sx - ss, sy);
-              ctx.lineTo(sx - ss * 0.25, sy - ss * 0.25);
-              ctx.closePath();
-              ctx.fill();
-            };
-            drawStar(cx - s * 0.2, cy - s * 0.2, s * 0.25);
-            drawStar(cx + s * 0.22, cy + s * 0.08, s * 0.22);
-            drawStar(cx - s * 0.08, cy + s * 0.32, s * 0.18);
-            break;
-            
-          case 'eye':
-            // Olho
-            ctx.beginPath();
-            ctx.moveTo(cx - s * 0.5, cy);
-            ctx.quadraticCurveTo(cx, cy - s * 0.35, cx + s * 0.5, cy);
-            ctx.quadraticCurveTo(cx, cy + s * 0.35, cx - s * 0.5, cy);
-            ctx.fill();
-            ctx.fillStyle = '#000000';
-            ctx.beginPath();
-            ctx.arc(cx, cy, s * 0.18, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ffffff';
-            ctx.beginPath();
-            ctx.arc(cx - s * 0.05, cy - s * 0.05, s * 0.07, 0, Math.PI * 2);
-            ctx.fill();
-            break;
-            
           default:
-            // Ícone padrão - estrela
             ctx.beginPath();
             for (let i = 0; i < 10; i++) {
               const angle = (i * Math.PI / 5) - Math.PI / 2;
               const r = i % 2 === 0 ? s : s * 0.5;
-              const px = cx + r * Math.cos(angle);
-              const py = cy + r * Math.sin(angle);
-              if (i === 0) ctx.moveTo(px, py);
-              else ctx.lineTo(px, py);
+              ctx.lineTo(cx + r * Math.cos(angle), cy + r * Math.sin(angle));
             }
             ctx.closePath();
             ctx.fill();
@@ -432,108 +405,83 @@ export const generateShareCardImage = async ({ data, badges, atleta }) => {
       };
       
       if (badgesConquistados.length > 0) {
-        // Calcular altura necessária
-        const badgeSize = 52;
-        const badgeGap = 10;
+        const badgeSize = 46;
+        const badgeGap = 8;
         const maxBadgesPerRow = 7;
         const numRows = Math.min(Math.ceil(badgesConquistados.length / maxBadgesPerRow), 2);
-        const sectionHeight = 55 + numRows * (badgeSize + 12);
+        const sectionHeight = 48 + numRows * (badgeSize + 10);
         
-        // Fundo da seção
-        ctx.fillStyle = 'rgba(234, 179, 8, 0.15)';
+        ctx.fillStyle = 'rgba(234, 179, 8, 0.12)';
         ctx.beginPath();
-        ctx.moveTo(30, yPos);
-        ctx.lineTo(width - 30, yPos);
-        ctx.lineTo(width - 20, yPos + 10);
-        ctx.lineTo(width - 20, yPos + sectionHeight - 10);
-        ctx.lineTo(width - 30, yPos + sectionHeight);
-        ctx.lineTo(30, yPos + sectionHeight);
-        ctx.lineTo(20, yPos + sectionHeight - 10);
-        ctx.lineTo(20, yPos + 10);
-        ctx.closePath();
+        ctx.roundRect(20, yPos, width - 40, sectionHeight, 10);
         ctx.fill();
         
         ctx.fillStyle = '#facc15';
-        ctx.font = 'bold 14px Arial';
-        ctx.fillText(`🎖️ Insígnias Conquistadas (${badgesConquistados.length})`, 35, yPos + 25);
+        ctx.font = 'bold 12px Arial';
+        ctx.fillText(`\uD83C\uDF96\uFE0F Insignias (${badgesConquistados.length})`, 35, yPos + 22);
         
-        // Desenhar insígnias
         const badgesToShow = badgesConquistados.slice(0, maxBadgesPerRow * 2);
-        const badgesInFirstRow = Math.min(badgesToShow.length, maxBadgesPerRow);
-        const totalBadgesWidth = badgesInFirstRow * (badgeSize + badgeGap) - badgeGap;
-        const badgeStartX = (width - totalBadgesWidth) / 2;
         
         badgesToShow.forEach((badge, i) => {
           const row = Math.floor(i / maxBadgesPerRow);
           const col = i % maxBadgesPerRow;
-          
-          const badgesInThisRow = row === 0 ? badgesInFirstRow : Math.min(badgesToShow.length - maxBadgesPerRow, maxBadgesPerRow);
-          const rowWidth = badgesInThisRow * (badgeSize + badgeGap) - badgeGap;
+          const badgesInRow = row === 0 
+            ? Math.min(badgesToShow.length, maxBadgesPerRow) 
+            : badgesToShow.length - maxBadgesPerRow;
+          const rowWidth = badgesInRow * (badgeSize + badgeGap) - badgeGap;
           const rowStartX = (width - rowWidth) / 2;
           
           const x = rowStartX + col * (badgeSize + badgeGap);
-          const y = yPos + 40 + row * (badgeSize + 14);
+          const y = yPos + 35 + row * (badgeSize + 10);
           const cx = x + badgeSize / 2;
           const cy = y + badgeSize / 2;
           
-          // Sombra
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.25)';
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
           ctx.beginPath();
-          ctx.arc(cx + 2, cy + 3, badgeSize / 2.3, 0, Math.PI * 2);
+          ctx.arc(cx + 1, cy + 2, badgeSize / 2.3, 0, Math.PI * 2);
           ctx.fill();
           
-          // Badge circular com gradiente
           const corPrimaria = badge.cor_primaria || '#10b981';
           const corSecundaria = badge.cor_secundaria || '#059669';
-          const badgeGradient = ctx.createRadialGradient(cx - 5, cy - 5, 0, cx, cy, badgeSize / 2);
+          const badgeGradient = ctx.createRadialGradient(cx - 4, cy - 4, 0, cx, cy, badgeSize / 2);
           badgeGradient.addColorStop(0, corPrimaria);
           badgeGradient.addColorStop(1, corSecundaria);
           ctx.fillStyle = badgeGradient;
-          
           ctx.beginPath();
           ctx.arc(cx, cy, badgeSize / 2 - 2, 0, Math.PI * 2);
           ctx.fill();
           
-          // Borda brilhante
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
-          ctx.lineWidth = 2;
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.lineWidth = 1.5;
           ctx.stroke();
           
-          // Brilho no topo
-          ctx.fillStyle = 'rgba(255, 255, 255, 0.25)';
-          ctx.beginPath();
-          ctx.arc(cx - 3, cy - badgeSize / 5, badgeSize / 5, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Desenhar o ícone
           drawBadgeIcon(ctx, badge.icone, cx, cy, badgeSize);
         });
         
-        yPos += sectionHeight + 15;
+        yPos += sectionHeight + 10;
       }
       
-      // Footer (posicionado no final)
-      const footerY = Math.max(yPos, height - 50);
+      // ========== FOOTER ==========
+      const footerY = Math.max(yPos + 10, height - 40);
       
-      // Linha decorativa
       const lineGradient = ctx.createLinearGradient(20, footerY, width - 20, footerY);
       lineGradient.addColorStop(0, '#10b981');
       lineGradient.addColorStop(0.5, '#06b6d4');
       lineGradient.addColorStop(1, '#10b981');
       ctx.strokeStyle = lineGradient;
-      ctx.lineWidth = 3;
+      ctx.lineWidth = 2;
       ctx.beginPath();
       ctx.moveTo(20, footerY);
       ctx.lineTo(width - 20, footerY);
       ctx.stroke();
       
       ctx.fillStyle = '#64748b';
-      ctx.font = '11px Arial';
-      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 20, footerY + 25);
+      ctx.font = '10px Arial';
+      ctx.fillText(`Gerado em ${new Date().toLocaleDateString('pt-BR')}`, 20, footerY + 20);
       ctx.textAlign = 'right';
       ctx.fillStyle = '#10b981';
-      ctx.font = 'bold 12px Arial';
-      ctx.fillText('Ranking Run', width - 20, footerY + 25);
+      ctx.font = 'bold 11px Arial';
+      ctx.fillText('Ranking Run', width - 20, footerY + 20);
       ctx.textAlign = 'left';
 
       const imageUrl = canvas.toDataURL('image/png');
