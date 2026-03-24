@@ -53,6 +53,7 @@ Canvas share card extraído para:
 - [x] **Refatoração RankingPage.js** (2267→232 linhas, -90%)
 - [x] **Refatoração RaioXPage.jsx** (2325→1813 linhas, -22%)
 - [x] **Filtros "Por Estado" e "Por Cidade" no Admin Mensagens**
+- [x] **Botões "Selecionar Todos" e "Limpar" nos filtros Estado/Cidade**
 
 ### Backlog
 - [ ] Limpeza de estado morto residual no AdminDashboard.jsx

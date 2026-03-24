@@ -351,7 +351,27 @@ const DashboardMensagens = () => {
             {/* Sub-filtros */}
             {filtroTipo === 'estado' && (
               <div className="p-3 bg-slate-50 dark:bg-slate-700/50 rounded-lg space-y-3" data-testid="filtro-estado-panel">
-                <p className="text-xs text-slate-500 mb-2">Selecione os estados (UF):</p>
+                <div className="flex items-center justify-between">
+                  <p className="text-xs text-slate-500">Selecione os estados (UF):</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setFiltroEstados([...estadosDisponiveis])}
+                      className="text-xs text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
+                      data-testid="filtro-estado-selecionar-todos"
+                    >
+                      Selecionar Todos
+                    </button>
+                    {filtroEstados.length > 0 && (
+                      <button
+                        onClick={() => setFiltroEstados([])}
+                        className="text-xs text-red-500 hover:text-red-600 font-medium hover:underline"
+                        data-testid="filtro-estado-limpar"
+                      >
+                        Limpar
+                      </button>
+                    )}
+                  </div>
+                </div>
                 <div className="flex flex-wrap gap-2">
                   {estadosDisponiveis.length === 0 ? (
                     <p className="text-sm text-slate-400">Nenhum estado encontrado</p>
@@ -401,7 +421,27 @@ const DashboardMensagens = () => {
                 </div>
                 {filtroEstados.length > 0 && cidadesDisponiveis.length > 0 && (
                   <>
-                    <p className="text-xs text-slate-500">Cidades em {filtroEstados[0]}:</p>
+                    <div className="flex items-center justify-between">
+                      <p className="text-xs text-slate-500">Cidades em {filtroEstados[0]}:</p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setFiltroCidades([...cidadesDisponiveis])}
+                          className="text-xs text-emerald-600 hover:text-emerald-700 font-medium hover:underline"
+                          data-testid="filtro-cidade-selecionar-todas"
+                        >
+                          Selecionar Todas
+                        </button>
+                        {filtroCidades.length > 0 && (
+                          <button
+                            onClick={() => setFiltroCidades([])}
+                            className="text-xs text-red-500 hover:text-red-600 font-medium hover:underline"
+                            data-testid="filtro-cidade-limpar"
+                          >
+                            Limpar
+                          </button>
+                        )}
+                      </div>
+                    </div>
                     <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto">
                       {cidadesDisponiveis.map(cidade => (
                         <label key={cidade} className="flex items-center gap-2 cursor-pointer bg-white dark:bg-slate-800 px-3 py-1.5 rounded-md border border-slate-200 dark:border-slate-600 hover:border-emerald-400 transition-colors">
