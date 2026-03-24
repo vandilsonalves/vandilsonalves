@@ -18,6 +18,11 @@ const ICON_MAP_NAMES = {
  */
 export const generateShareCardImage = async ({ data, badges, atleta }) => {
   try {
+      // Extrair sub-objetos de data
+      const score = data?.score || {};
+      const evolucao = data?.evolucao || {};
+      const records = data?.records || {};
+
       // Formato 9:16 para Stories (540x960)
       const width = 540;
       const height = 960;

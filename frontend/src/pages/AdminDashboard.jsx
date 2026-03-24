@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -10,28 +10,19 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  CheckCircle, XCircle, ExternalLink, Calendar, MapPin, Trophy, Clock, 
-  Users, AlertCircle, TrendingUp, BarChart3, PieChart, Shield,
-  Activity, Home, Settings, FileText, Bell, ChevronRight, Award, Database,
-  UserPlus, Edit, Trash2, Eye, Download, Plus, Minus, Search, Image, X,
-  Cake, Send, Gift, ChevronLeft, ArrowRightLeft, RefreshCw, Loader2,
+  Trophy, Users, AlertCircle, BarChart3, Shield,
+  Activity, Home, Settings, FileText,
+  Edit, Download, Plus, X,
+  Cake, Send, ArrowRightLeft, RefreshCw, Loader2,
   Crown, MessageSquare
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { 
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
-  PieChart as RechartsPie, Pie, Cell, LineChart, Line, AreaChart, Area,
-  RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar
-} from 'recharts';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-
-const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
 const ESTADOS_BR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
@@ -39,8 +30,7 @@ const ESTADOS_BR = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
-// Menu items para sidebar com permissões necessárias
-import { Instagram, Radar, Star } from 'lucide-react';
+import { Instagram, Star } from 'lucide-react';
 
 // Import dos novos dashboards modulares
 import { 
@@ -58,6 +48,7 @@ import {
 } from './admin';
 import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
 import DashboardMensagens from './admin/DashboardMensagens';
+import DashboardEngajamento from './admin/DashboardEngajamento';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 
 // Definição dos itens do menu organizados em seções
@@ -77,6 +68,7 @@ const menuSections = [
       { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
       { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
+      { id: 'engajamento', label: 'Engajamento', icon: BarChart3, permissoes: [] },
     ]
   },
   {
@@ -171,32 +163,16 @@ const AdminDashboard = () => {
   const [showTransferModal, setShowTransferModal] = useState(false);
   const [atletaTransferindo, setAtletaTransferindo] = useState(null);
   const [transferLoading, setTransferLoading] = useState(false);
-  
-  // Submeter Resultado (Admin) - Novo formato completo
 
-  
-  // Form para nova corrida (admin)
-
-  
-  // Modal
-  const [showReprovarModal, setShowReprovarModal] = useState(false);
-  const [selectedResultado, setSelectedResultado] = useState(null);
-  const [motivoReprovacao, setMotivoReprovacao] = useState('');
+  // Ações gerais
   const [actionLoading, setActionLoading] = useState(false);
 
   // Form para novo atleta
   const [novoAtleta, setNovoAtleta] = useState({
     nome: '', email: '', password: 'atleta123', equipe: '',
     cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
-    data_nascimento: '', etnia: '', apelido: ''
+    data_nascimento: ''
   });
-
-  // Aniversariantes
-
-
-
-  // Instagram Analytics (Ranking Run Inside)
-
 
   // Liga de Assessorias (ROE-RR)
   const [ligaRanking, setLigaRanking] = useState([]);
@@ -210,14 +186,7 @@ const AdminDashboard = () => {
   const [assessoriaDetalhe, setAssessoriaDetalhe] = useState(null);
   const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
 
-  // Regulamento
-
-
-  // Autorizações
-
-  
-  // Seleção múltipla de autorizações
-
+  // Regulamento / Autorizações: gerenciados pelos sub-componentes
 
   // Promover Dono de Assessoria
   const [showPromoverModal, setShowPromoverModal] = useState(false);
@@ -546,34 +515,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const renderStarsAdmin = (rating) => {
-    const stars = [];
-    for (let i = 0; i < 5; i++) {
-      stars.push(
-        <Star key={i} className={`w-4 h-4 ${i < Math.floor(rating) ? 'fill-yellow-400 text-yellow-400' : 'text-slate-300'}`} />
-      );
-    }
-    return <div className="flex">{stars}</div>;
-  };
-
-  const getSeloIcon = (selo) => {
-    switch(selo) {
-      case 'ouro': return '🥇';
-      case 'prata': return '🥈';
-      case 'bronze': return '🥉';
-      default: return '🏅';
-    }
-  };
-
-  const getSeloColor = (selo) => {
-    switch(selo) {
-      case 'ouro': return 'bg-gradient-to-r from-yellow-500 to-amber-600 text-white';
-      case 'prata': return 'bg-gradient-to-r from-slate-400 to-slate-500 text-white';
-      case 'bronze': return 'bg-gradient-to-r from-amber-700 to-orange-800 text-white';
-      default: return 'bg-slate-600 text-white';
-    }
-  };
-
   const handleAprovar = async (resultadoId) => {
     setActionLoading(true);
     try {
@@ -822,42 +763,6 @@ const AdminDashboard = () => {
     }
   };
 
-  // Filtrar atletas por busca, modalidade e ordenar A-Z
-  const filteredAtletas = atletas
-    .filter(a => {
-      const matchSearch = a.nome.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.equipe?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.cidade?.toLowerCase().includes(searchQuery.toLowerCase());
-      
-      const matchModalidade = filtroModalidade === 'all' || 
-        a.modalidade_usuario === filtroModalidade ||
-        (filtroModalidade === 'profissional_amador' && !a.modalidade_usuario); // Default é profissional
-      
-      return matchSearch && matchModalidade;
-    })
-    .sort((a, b) => a.nome.localeCompare(b.nome));
-
-  // Preparar dados para gráficos
-  const prepareCategoriasData = () => {
-    if (!statsCategorias) return [];
-    return [
-      { name: 'Normal M', value: statsCategorias.normal_m || 0, color: '#10B981' },
-      { name: 'Normal F', value: statsCategorias.normal_f || 0, color: '#3B82F6' },
-      { name: 'PCD M', value: statsCategorias.pcd_m || 0, color: '#F59E0B' },
-      { name: 'PCD F', value: statsCategorias.pcd_f || 0, color: '#EF4444' },
-      { name: 'Cadeirante M', value: statsCategorias.cadeirante_m || 0, color: '#8B5CF6' },
-      { name: 'Cadeirante F', value: statsCategorias.cadeirante_f || 0, color: '#EC4899' }
-    ];
-  };
-
-  const prepareGeneroData = () => {
-    if (!stats) return [];
-    return [
-      { name: 'Masculino', value: stats.total_homens || 0, color: '#3B82F6' },
-      { name: 'Feminino', value: stats.total_mulheres || 0, color: '#EC4899' }
-    ];
-  };
-
   // Mostrar loading enquanto carrega o usuário
   if (loading) {
     return (
@@ -1087,6 +992,11 @@ const AdminDashboard = () => {
         {/* Mensagens View */}
         {activeMenu === 'mensagens' && (
           <DashboardMensagens />
+        )}
+
+        {/* Engajamento View */}
+        {activeMenu === 'engajamento' && (
+          <DashboardEngajamento />
         )}
 
 

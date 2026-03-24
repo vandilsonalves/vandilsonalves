@@ -400,6 +400,60 @@ async def cidades_disponiveis(
     return {"cidades": sorted(cidades)}
 
 
+@router.get("/admin/mensagens/engajamento")
+async def dashboard_engajamento(admin: dict = Depends(get_admin_user)):
+    """Dashboard de engajamento: métricas de abertura de mensagens ao longo do tempo"""
+    mensagens = await db.mensagens_admin.find(
+        {"status": {"$in": ["enviada", None]}},
+        {"_id": 0, "id": 1, "titulo": 1, "data_envio": 1, "data_criacao": 1, "total_enviados": 1, "filtro_tipo": 1}
+    ).sort("data_criacao", -1).to_list(None)
+
+    timeline = []
+    total_geral_enviados = 0
+    total_geral_lidas = 0
+    melhor_msg = None
+    melhor_taxa = 0
+
+    for msg in mensagens:
+        msg_id = msg.get("id")
+        total = await db.notificacoes.count_documents({"mensagem_id": msg_id, "tipo": "mensagem_admin"})
+        lidas = await db.notificacoes.count_documents({"mensagem_id": msg_id, "tipo": "mensagem_admin", "lida": True})
+        taxa = round((lidas / total * 100) if total > 0 else 0, 1)
+
+        total_geral_enviados += total
+        total_geral_lidas += lidas
+
+        entry = {
+            "id": msg_id,
+            "titulo": msg.get("titulo", "Sem título"),
+            "data": msg.get("data_envio") or msg.get("data_criacao", ""),
+            "total_enviados": total,
+            "total_lidas": lidas,
+            "total_nao_lidas": total - lidas,
+            "taxa_leitura": taxa,
+            "filtro_tipo": msg.get("filtro_tipo", "todos")
+        }
+        timeline.append(entry)
+
+        if taxa > melhor_taxa and total >= 5:
+            melhor_taxa = taxa
+            melhor_msg = entry
+
+    taxa_media = round((total_geral_lidas / total_geral_enviados * 100) if total_geral_enviados > 0 else 0, 1)
+
+    return {
+        "resumo": {
+            "total_mensagens": len(mensagens),
+            "total_enviados": total_geral_enviados,
+            "total_lidas": total_geral_lidas,
+            "taxa_media_leitura": taxa_media
+        },
+        "melhor_mensagem": melhor_msg,
+        "timeline": timeline
+    }
+
+
+
 @router.get("/admin/mensagens/{mensagem_id}/leitura")
 async def stats_leitura_mensagem(mensagem_id: str, admin: dict = Depends(get_admin_user)):
     """Retorna estatísticas de leitura de uma mensagem específica"""
@@ -515,6 +569,9 @@ async def reenviar_como_splash(
         "total_reenviados": reenviados,
         "splash_id": splash_id
     }
+
+
+
 
 
 
