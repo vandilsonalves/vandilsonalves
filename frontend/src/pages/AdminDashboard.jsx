@@ -324,8 +324,8 @@ const AdminDashboard = () => {
       
       // Calcular estatísticas de equipes a partir dos atletas
       try {
-        const atletasRes = await axios.get(`${API}/admin/atletas`, { headers: { Authorization: `Bearer ${token}` } });
-        const atletas = atletasRes.data;
+        const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers: { Authorization: `Bearer ${token}` } });
+        const atletas = Array.isArray(atletasRes.data) ? atletasRes.data : (atletasRes.data.atletas || []);
         
         // Contar por equipe
         const equipesCount = {};
