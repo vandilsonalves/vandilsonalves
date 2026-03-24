@@ -16,12 +16,6 @@ import ComoSerVerificadoPage from "@/pages/ComoSerVerificadoPage.jsx";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import SplashScreen from "@/components/SplashScreen";
 import { useAuth } from "@/context/AuthContext";
-
-function SplashScreenWrapper() {
-  const { token, user } = useAuth();
-  if (!token || !user || user.role === 'admin') return null;
-  return <SplashScreen token={token} />;
-}
 import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
 import FeedPage from "@/pages/FeedPage";
 import RegrasPage from "@/pages/RegrasPage";
@@ -30,6 +24,12 @@ import RankingCidadePage from "@/pages/RankingCidadePage";
 import StravaAtividadesPage from "@/pages/StravaAtividadesPage";
 import RaioXPage from "@/pages/RaioXPage";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+
+function SplashScreenWrapper() {
+  const { token, user } = useAuth();
+  if (!token || !user || user.role === 'admin') return null;
+  return <SplashScreen token={token} />;
+}
 
 function App() {
   return (

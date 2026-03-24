@@ -93,6 +93,37 @@ async def enviar_mensagem(request: EnviarMensagemRequest, current_user: dict = D
     }
 
 
+@router.get("/notificacoes/splash-pendente")
+async def splash_pendente(current_user: dict = Depends(get_current_user)):
+    """Retorna splash screen pendente do usuário (não lido)"""
+    splash = await db.notificacoes.find_one(
+        {"usuario_id": current_user["id"], "tipo": "splash_admin", "lida": False},
+        {"_id": 0}
+    )
+    return {"splash": splash}
+
+
+@router.post("/notificacoes/splash/{notificacao_id}/confirmar")
+async def confirmar_splash(notificacao_id: str, current_user: dict = Depends(get_current_user)):
+    """Marca splash screen como lido/confirmado"""
+    result = await db.notificacoes.update_one(
+        {"id": notificacao_id, "usuario_id": current_user["id"], "tipo": "splash_admin"},
+        {"$set": {"lida": True, "data_leitura": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Splash não encontrado")
+
+    # Also mark the original notification as read
+    splash = await db.notificacoes.find_one({"id": notificacao_id}, {"_id": 0, "mensagem_id": 1, "usuario_id": 1})
+    if splash and splash.get("mensagem_id"):
+        await db.notificacoes.update_many(
+            {"mensagem_id": splash["mensagem_id"], "usuario_id": current_user["id"], "tipo": "mensagem_admin"},
+            {"$set": {"lida": True}}
+        )
+
+    return {"message": "Splash confirmado"}
+
+
 @router.post("/notificacoes/{notificacao_id}/ler")
 async def marcar_notificacao_lida(notificacao_id: str, current_user: dict = Depends(get_current_user)):
     """Marca notificação como lida"""

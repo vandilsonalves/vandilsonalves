@@ -1,0 +1,86 @@
+{
+  "summary": "Iteration 67: Splash Screen and Reading Stats System - ALL TESTS PASSED. Backend APIs (splash-pendente, confirmar, leitura stats, reenviar-splash) and Frontend UI (Admin Mensagens with Ver Leitura panel, Enviar Splash button) working correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "pre_existing_issues": [
+      {"component": "WebSocket", "issue": "WebSocket connection failing with 403 - pre-existing issue"},
+      {"component": "AdminDashboard", "issue": "atletas.forEach is not a function error in fetchStats - pre-existing from iteration 64"}
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter67_splash_leitura.py",
+    "/app/test_reports/pytest/pytest_iter67_splash_leitura.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [],
+  "updated_files": [
+    "/app/backend/tests/test_iter67_splash_leitura.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all features working)"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Splash Screen and Reading Stats system fully implemented and tested. Key endpoints: GET /api/notificacoes/splash-pendente (returns pending splash for logged-in atleta), POST /api/notificacoes/splash/{id}/confirmar (marks splash as read), GET /api/admin/mensagens/{id}/leitura (returns reading stats with total, lidas, não lidas, percentual, and lists of atletas), POST /api/admin/mensagens/{id}/reenviar-splash (creates splash_admin notifications for unread users). Frontend: SplashScreenWrapper in App.js shows blocking modal for atletas with pending splash. Admin Mensagens has 'Ver Leitura' button that expands to show reading stats panel with 'Enviar Splash para estes' button.",
+  "features_tested": {
+    "backend_splash_pendente": {
+      "status": "PASS",
+      "endpoint": "GET /api/notificacoes/splash-pendente",
+      "details": "Returns pending splash for logged-in atleta, null if none"
+    },
+    "backend_confirmar_splash": {
+      "status": "PASS",
+      "endpoint": "POST /api/notificacoes/splash/{id}/confirmar",
+      "details": "Marks splash as read, also marks original mensagem_admin notification as read"
+    },
+    "backend_leitura_stats": {
+      "status": "PASS",
+      "endpoint": "GET /api/admin/mensagens/{id}/leitura",
+      "details": "Returns total_enviados, total_lidas, total_nao_lidas, percentual_leitura, atletas_nao_leram, atletas_leram"
+    },
+    "backend_reenviar_splash": {
+      "status": "PASS",
+      "endpoint": "POST /api/admin/mensagens/{id}/reenviar-splash",
+      "details": "Creates splash_admin notifications for users who haven't read. Tested: sent to 38 atletas"
+    },
+    "frontend_admin_mensagens": {
+      "status": "PASS",
+      "details": "Admin > Mensagens shows Nova Mensagem composer, Mensagens Agendadas, and Histórico de Mensagens"
+    },
+    "frontend_historico_ver_leitura": {
+      "status": "PASS",
+      "details": "Clicking 'Ver Leitura' expands Status de Leitura panel showing Total/Leram/Não Leram stats with progress bar"
+    },
+    "frontend_enviar_splash_button": {
+      "status": "PASS",
+      "details": "'Enviar Splash para estes' button in leitura panel sends splash to unread users with confirmation dialog"
+    },
+    "frontend_splash_screen_component": {
+      "status": "PASS",
+      "details": "SplashScreen.jsx component with data-testid attributes (splash-screen-overlay, splash-confirm-btn) properly integrated in App.js"
+    },
+    "frontend_navigation": {
+      "status": "PASS",
+      "details": "App.js navigation between routes (/, /ranking-cidade, /perfil, /raio-x) working without errors"
+    }
+  },
+  "test_data": {
+    "admin_credentials": "admin@runpro.com / admin",
+    "atleta_credentials": "teste.dono@teste.com / 123456",
+    "sample_leitura_stats": {
+      "total": 39,
+      "leram": 1,
+      "nao_leram": 38,
+      "percentual": "2.6%"
+    },
+    "splash_sent_count": 38
+  }
+}
