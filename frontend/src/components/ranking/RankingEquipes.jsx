@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +18,7 @@ const API = `${BACKEND_URL}/api`;
 
 const RankingEquipes = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [ligaRanking, setLigaRanking] = useState([]);
   const [ligaStats, setLigaStats] = useState(null);
   const [ligaTipo, setLigaTipo] = useState('nacional');
