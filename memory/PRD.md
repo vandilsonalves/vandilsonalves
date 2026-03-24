@@ -39,6 +39,11 @@ Plataforma full-stack de ranking fitness para corridas. O sistema possui ranking
   - Backend: Adicionado filtro por gênero nos 3 caminhos (povão, profissional, fallback) em ranking_routes.py
   - Frontend: Seletor de Gênero visível para ambas as modalidades (profissional E galera)
   - Testado: 100% backend (12/12) e 100% frontend - iteration_60.json
+- Feature: Compartilhar Ranking da Cidade nas Redes Sociais
+  - Share Card via Canvas API (9:16 / 1080x1920) com top 10 atletas, cidade, estado, modalidade e gênero
+  - Modal com WhatsApp, Facebook, Twitter/X, Copiar Link e Download para Instagram
+  - Botão só aparece quando há ranking carregado
+  - Testado: 100% frontend (12/12) - iteration_61.json
 
 ## Backlog (P2 - Refatoração)
 - [ ] Refatoração RankingPage.js (~2.200 linhas) - componentização
