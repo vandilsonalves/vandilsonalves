@@ -44,6 +44,11 @@ Plataforma full-stack de ranking fitness para corridas. O sistema possui ranking
   - Modal com WhatsApp, Facebook, Twitter/X, Copiar Link e Download para Instagram
   - Botão só aparece quando há ranking carregado
   - Testado: 100% frontend (12/12) - iteration_61.json
+- Bug Fix: Distinção entre Profissional/Amador e Galera no Ranking por Cidade
+  - Backend: Exclusão cruzada entre ranking_anual e ranking_povao (profissional tem prioridade)
+  - Galera exclui IDs de ranking_anual; Profissional fallback exclui IDs de ranking_povao
+  - Frontend: Corrigido ano de 2026 para 2025 (dados existentes)
+  - Testado: 100% (10/10) em 6 cidades sem overlap - iteration_62.json
 
 ## Backlog (P2 - Refatoração)
 - [ ] Refatoração RankingPage.js (~2.200 linhas) - componentização
