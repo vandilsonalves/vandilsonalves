@@ -67,6 +67,13 @@ Plataforma full-stack de ranking fitness para corridas. O sistema possui ranking
   - Frontend: 10+ arquivos atualizados (RankingPage, CadastroPage, SubmeterResultado, RegrasPage, AdminDashboard, etc.)
   - Backend: configuracoes_routes.py, admin_routes.py, auth_routes.py, ranking_routes.py, services/__init__.py
   - Zero ocorrências de "Povão" ou "Pace Livre" em textos visíveis ao usuário
+- Feature: Aba "Mensagens" no Admin > Gestão
+  - Backend: 4 endpoints (enviar, contagem, histórico, upload) em mensagens_admin_routes.py
+  - Frontend: DashboardMensagens.jsx com filtros (Todos, Modalidade, Gênero, Especiais)
+  - Destinatários: Todos (449), Profissional (301), Galera (122), Donos Assessoria (58), Individuais (10)
+  - Notificações chegam no sininho com suporte a links e anexos
+  - NotificacoesBell atualizado para exibir links clicáveis e download de anexos
+  - Testado: 100% (15/15 backend + 15/15 frontend) - iteration_63.json
 
 ## Backlog (P2 - Refatoração)
 - [ ] Refatoração RankingPage.js (~2.200 linhas) - componentização
