@@ -763,8 +763,7 @@ async def get_ranking_por_cidade(
     
     if modalidade.lower() == "povao":
         # Ranking da Galera - usar coleção ranking_povao
-        # O ranking_povao usa ano 2025 fixo por enquanto
-        ano_povao = 2025  # Dados atuais estão em 2025
+        ano_povao = 2025
         
         # Filtrar usuários por gênero
         usuarios_filtrados = [u for u in usuarios_cidade if u.get("sexo") == genero or u.get("genero") == genero]
@@ -778,26 +777,58 @@ async def get_ranking_por_cidade(
             {"_id": 0}
         ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).limit(limit).to_list(None)
         
-        # Enriquecer com dados do usuário
-        for idx, rank in enumerate(ranking_data, 1):
-            usuario = next((u for u in usuarios_filtrados if u["id"] == rank["usuario_id"]), None)
-            if usuario:
+        # Excluir atletas que também estão no ranking_anual (profissional tem prioridade)
+        anual_entries = await db.ranking_anual.find(
+            {"usuario_id": {"$in": usuario_ids_filtrados}, "ano": ano_povao},
+            {"_id": 0, "usuario_id": 1}
+        ).to_list(None)
+        ids_no_ranking_anual = {e["usuario_id"] for e in anual_entries}
+        ranking_data = [r for r in ranking_data if r["usuario_id"] not in ids_no_ranking_anual]
+        
+        if ranking_data:
+            for idx, rank in enumerate(ranking_data, 1):
+                usuario = next((u for u in usuarios_filtrados if u["id"] == rank["usuario_id"]), None)
+                if usuario:
+                    result.append({
+                        "colocacao": idx,
+                        "id": rank["usuario_id"],
+                        "nome": usuario.get("nome", ""),
+                        "foto_url": usuario.get("foto_url", ""),
+                        "equipe": usuario.get("equipe", ""),
+                        "cidade": usuario.get("cidade", ""),
+                        "estado": usuario.get("estado", ""),
+                        "faixa_etaria": usuario.get("faixa_etaria", ""),
+                        "pontos": rank.get("pontos_total", 0),
+                        "total_corridas": rank.get("total_corridas", 0),
+                        "distancia_total": rank.get("distancia_acumulada", 0),
+                        "is_elite": rank.get("pontos_total", 0) >= 100
+                    })
+        else:
+            # Fallback galera: usar pontos_total do usuário, excluindo quem está no ranking_anual
+            usuarios_galera = [u for u in usuarios_filtrados if u["id"] not in ids_no_ranking_anual]
+            usuarios_ordenados = sorted(
+                usuarios_galera,
+                key=lambda x: (x.get("pontos_total", 0), x.get("total_corridas", 0)),
+                reverse=True
+            )[:limit]
+            
+            for idx, usuario in enumerate(usuarios_ordenados, 1):
                 result.append({
                     "colocacao": idx,
-                    "id": rank["usuario_id"],
+                    "id": usuario["id"],
                     "nome": usuario.get("nome", ""),
                     "foto_url": usuario.get("foto_url", ""),
                     "equipe": usuario.get("equipe", ""),
                     "cidade": usuario.get("cidade", ""),
                     "estado": usuario.get("estado", ""),
                     "faixa_etaria": usuario.get("faixa_etaria", ""),
-                    "pontos": rank.get("pontos_total", 0),
-                    "total_corridas": rank.get("total_corridas", 0),
-                    "distancia_total": rank.get("distancia_acumulada", 0),
-                    "is_elite": rank.get("pontos_total", 0) >= 100
+                    "pontos": usuario.get("pontos_total", 0),
+                    "total_corridas": usuario.get("total_corridas", 0),
+                    "distancia_total": 0,
+                    "is_elite": usuario.get("pontos_total", 0) >= 100
                 })
     else:
-        # Ranking Profissional/Amador - primeiro tenta ranking_anual, depois usa pontos_total do usuário
+        # Ranking Profissional/Amador
         ranking_query = {
             "usuario_id": {"$in": usuario_ids},
             "ano": ano,
@@ -811,7 +842,6 @@ async def get_ranking_por_cidade(
         ).sort([("pontos_total", -1), ("total_corridas", -1)]).limit(limit).to_list(None)
         
         if ranking_data:
-            # Usar dados do ranking_anual
             for idx, rank in enumerate(ranking_data, 1):
                 usuario = next((u for u in usuarios_cidade if u["id"] == rank["usuario_id"]), None)
                 if usuario:
@@ -829,11 +859,20 @@ async def get_ranking_por_cidade(
                         "is_elite": rank.get("pontos_total", 0) >= 100
                     })
         else:
-            # Fallback: usar pontos_total diretamente do usuário (ordenado por pontos)
-            # Filtrar por gênero
+            # Fallback profissional: usar pontos_total do usuário, excluindo quem está no ranking_povao
             usuarios_filtrados = [u for u in usuarios_cidade if u.get("sexo") == genero or u.get("genero") == genero]
+            usuario_ids_filtrados = [u["id"] for u in usuarios_filtrados]
+            
+            ids_no_ranking_povao = set()
+            povao_entries = await db.ranking_povao.find(
+                {"usuario_id": {"$in": usuario_ids_filtrados}, "ano": ano},
+                {"_id": 0, "usuario_id": 1}
+            ).to_list(None)
+            ids_no_ranking_povao = {e["usuario_id"] for e in povao_entries}
+            
+            usuarios_prof = [u for u in usuarios_filtrados if u["id"] not in ids_no_ranking_povao]
             usuarios_ordenados = sorted(
-                [u for u in usuarios_filtrados if u.get("pontos_total", 0) > 0],
+                [u for u in usuarios_prof if u.get("pontos_total", 0) > 0],
                 key=lambda x: (x.get("pontos_total", 0), x.get("total_corridas", 0)),
                 reverse=True
             )[:limit]
