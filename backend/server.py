@@ -16,6 +16,8 @@ import random
 from jose import JWTError, jwt
 import csv
 import io
+
+ANO_ATUAL = datetime.now().year
 import re
 import httpx
 from bs4 import BeautifulSoup
@@ -397,7 +399,7 @@ async def admin_ajustar_pontos(dados: dict, admin: dict = Depends(get_admin_user
         local="Administrativo",
         distancia="N/A",
         data=datetime.now().strftime("%Y-%m-%d"),
-        ano=2025
+        ano=ANO_ATUAL
     )
     
     await db.corridas.insert_one(corrida.model_dump())
@@ -437,7 +439,7 @@ async def admin_adicionar_corrida(dados: dict, admin: dict = Depends(get_admin_u
         local=f"{dados.get('cidade_competicao', '')}/{dados.get('estado_competicao', '')}",
         distancia=dados.get("distancia", ""),
         data=dados.get("data_competicao", datetime.now().strftime("%Y-%m-%d")),
-        ano=2025
+        ano=ANO_ATUAL
     )
     
     await db.corridas.insert_one(corrida.model_dump())
@@ -507,7 +509,7 @@ async def admin_delete_corrida(corrida_id: str, admin: dict = Depends(get_admin_
 
 async def calcular_ranking():
     """Calcula o ranking anual agregando corridas (apenas Profissional/Amador)"""
-    ano_atual = 2025
+    ano_atual = ANO_ATUAL
     
     await db.ranking_anual.delete_many({"ano": ano_atual})
     
@@ -577,7 +579,7 @@ async def calcular_ranking():
 
 async def calcular_ranking_povao():
     """Calcula ranking para modalidade Povão - Pace Livre"""
-    await db.ranking_povao.delete_many({"ano": 2025})
+    await db.ranking_povao.delete_many({"ano": ANO_ATUAL})
     
     # Buscar usuários da modalidade Povão (excluindo PCD e Cadeirante)
     usuarios_povao = await db.usuarios.find({
@@ -591,7 +593,7 @@ async def calcular_ranking_povao():
     for usuario in usuarios_povao:
         corridas = await db.corridas.find({
             "usuario_id": usuario["id"],
-            "ano": 2025,
+            "ano": ANO_ATUAL,
             "modalidade": "povao_pace_livre"
         }, {"_id": 0}).to_list(None)
         
@@ -604,7 +606,7 @@ async def calcular_ranking_povao():
         
         ranking_docs.append(RankingPovao(
             usuario_id=usuario["id"],
-            ano=2025,
+            ano=ANO_ATUAL,
             pontos_total=pontos_total,
             total_corridas=total_corridas,
             distancia_acumulada=distancia_acumulada,
@@ -693,7 +695,7 @@ async def export_ranking_csv(categoria: str = "masculino", todas_modalidades: bo
             writer.writerow(["Colocação", "Nome", "Equipe", "Cidade", "UF", "Faixa", "Corridas", "Pontos"])
             
             ranking_list = await db.ranking_anual.find(
-                {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+                {"ano": ANO_ATUAL, "categoria": cat_db, "genero": gen_db},
                 {"_id": 0}
             ).sort("pontos_total", -1).to_list(None)
             
@@ -725,7 +727,7 @@ async def export_ranking_csv(categoria: str = "masculino", todas_modalidades: bo
         cat_db, gen_db = cat_map.get(categoria, ("normal", "M"))
         
         ranking_list = await db.ranking_anual.find(
-            {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+            {"ano": ANO_ATUAL, "categoria": cat_db, "genero": gen_db},
             {"_id": 0}
         ).sort("pontos_total", -1).to_list(None)
         
@@ -791,7 +793,7 @@ async def export_ranking_excel(categoria: str = "masculino", todas_modalidades: 
                 cell.alignment = Alignment(horizontal="center")
             
             ranking_list = await db.ranking_anual.find(
-                {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+                {"ano": ANO_ATUAL, "categoria": cat_db, "genero": gen_db},
                 {"_id": 0}
             ).sort("pontos_total", -1).to_list(None)
             
@@ -833,7 +835,7 @@ async def export_ranking_excel(categoria: str = "masculino", todas_modalidades: 
             cell.alignment = Alignment(horizontal="center")
         
         ranking_list = await db.ranking_anual.find(
-            {"ano": 2025, "categoria": cat_db, "genero": gen_db},
+            {"ano": ANO_ATUAL, "categoria": cat_db, "genero": gen_db},
             {"_id": 0}
         ).sort("pontos_total", -1).to_list(None)
         
@@ -876,13 +878,13 @@ async def get_atleta_detalhes(atleta_id: str):
     
     # Buscar ranking de acordo com a modalidade
     if modalidade_usuario == "povao_pace_livre":
-        ranking = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+        ranking = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
         # Para Povão, mostrar a posição no ranking
         melhor_colocacao = ranking.get("ranking_genero", 0) if ranking else 0
         total_corridas = ranking["total_corridas"] if ranking else 0
         pontos_carreira = ranking["pontos_total"] if ranking else 0
     else:
-        ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+        ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
         # Para Profissional/Amador, mostrar a posição no ranking (não a melhor colocação em corrida)
         melhor_colocacao = ranking.get("ranking_categoria", 0) if ranking else 0
         total_corridas = ranking["total_corridas"] if ranking else 0
@@ -960,7 +962,7 @@ async def get_atleta_corridas(atleta_id: str):
 async def get_evolucao_atleta(atleta_id: str):
     """Retorna evolução mensal do atleta para gráficos"""
     corridas = await db.corridas.find(
-        {"usuario_id": atleta_id, "ano": 2025},
+        {"usuario_id": atleta_id, "ano": ANO_ATUAL},
         {"_id": 0}
     ).sort("data", 1).to_list(None)
     
@@ -986,7 +988,7 @@ async def get_compartilhar_atleta(atleta_id: str):
     if not usuario:
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
-    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
     
     categoria_nome = {
         "normal": "Normal",
@@ -996,7 +998,7 @@ async def get_compartilhar_atleta(atleta_id: str):
     
     genero_nome = "Masculino" if usuario["genero"] == "M" else "Feminino"
     
-    texto_compartilhar = "🏆 Ranking Run Pró 2025\n\n"
+    texto_compartilhar = f"🏆 Ranking Run Pró {ANO_ATUAL}\n\n"
     texto_compartilhar += f"👤 {usuario['nome']}\n"
     texto_compartilhar += f"🏅 {ranking['ranking_categoria'] if ranking else 0}º lugar - {categoria_nome} {genero_nome}\n"
     texto_compartilhar += f"⭐ {ranking['pontos_total'] if ranking else 0} pontos\n"
@@ -1017,7 +1019,7 @@ async def get_compartilhar_atleta(atleta_id: str):
 # ==================== OUTROS ====================
 
 @api_router.get("/ranking/nacional", response_model=List[RankingResponse])
-async def get_ranking_nacional(ano: int = Query(2025)):
+async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
     ranking_list = await db.ranking_anual.find(
         {"ano": ano},
         {"_id": 0}
@@ -1270,7 +1272,7 @@ async def popular_ranking_dados_teste():
                 meses_usados.append(mes)
                 
                 dia = random.randint(1, 28)
-                data_corrida = f"2025-{mes:02d}-{dia:02d}"
+                data_corrida = f"{ANO_ATUAL}-{mes:02d}-{dia:02d}"
                 
                 colocacao = random.randint(1, max_colocacao)
                 pontos = calcular_pontos_colocacao(colocacao, cat)
@@ -1294,7 +1296,7 @@ async def popular_ranking_dados_teste():
                     local=f"{random.choice(list(cidades_por_estado.values())[0])}/{random.choice(estados)}",
                     distancia=distancia,
                     data=data_corrida,
-                    ano=2025
+                    ano=ANO_ATUAL
                 )
                 
                 await db.corridas.insert_one(corrida.model_dump())
