@@ -18,7 +18,7 @@ import {
   DialogFooter,
   DialogDescription,
 } from '@/components/ui/dialog';
-import { Bell, Check, CheckCheck, Trophy, XCircle, Award, Trash2, ExternalLink, X, Image, Loader2 } from 'lucide-react';
+import { Bell, Check, CheckCheck, Trophy, XCircle, Award, Trash2, ExternalLink, X, Image, Loader2, FileText, Download } from 'lucide-react';
 import axios from 'axios';
 import { toast } from 'sonner';
 
@@ -269,6 +269,45 @@ const NotificacoesBell = () => {
                     </span>
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* Link da mensagem admin */}
+            {selectedNotificacao?.link && (
+              <div className="mt-3 p-3 bg-slate-800 rounded-lg">
+                <a 
+                  href={selectedNotificacao.link} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-blue-400 hover:underline text-sm flex items-center gap-2"
+                >
+                  <ExternalLink className="w-4 h-4 flex-shrink-0" />
+                  {selectedNotificacao.link}
+                </a>
+              </div>
+            )}
+
+            {/* Anexos da mensagem admin */}
+            {selectedNotificacao?.anexos?.length > 0 && (
+              <div className="mt-3 space-y-2">
+                <p className="text-xs text-slate-400">Anexos:</p>
+                {selectedNotificacao.anexos.map((anexo, idx) => (
+                  <a
+                    key={idx}
+                    href={`${BACKEND_URL}${anexo.url}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 p-2 bg-slate-800 rounded-lg hover:bg-slate-700 transition-colors"
+                  >
+                    {anexo.tipo === 'imagem' ? (
+                      <Image className="w-4 h-4 text-blue-400 flex-shrink-0" />
+                    ) : (
+                      <FileText className="w-4 h-4 text-amber-400 flex-shrink-0" />
+                    )}
+                    <span className="text-sm text-slate-300 truncate">{anexo.original_name}</span>
+                    <Download className="w-4 h-4 text-slate-500 ml-auto flex-shrink-0" />
+                  </a>
+                ))}
               </div>
             )}
             

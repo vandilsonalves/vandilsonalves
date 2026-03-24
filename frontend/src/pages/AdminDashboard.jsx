@@ -52,6 +52,7 @@ import {
   DashboardRBAC
 } from './admin';
 import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
+import DashboardMensagens from './admin/DashboardMensagens';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 
 // Definição dos itens do menu organizados em seções
@@ -70,6 +71,7 @@ const menuSections = [
       { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
       { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
       { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
+      { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
     ]
   },
   {
@@ -1697,6 +1699,12 @@ const AdminDashboard = () => {
             token={token}
           />
         )}
+
+        {/* Mensagens View */}
+        {activeMenu === 'mensagens' && (
+          <DashboardMensagens />
+        )}
+
 
         {/* Ranking Corridas View - Usando componente modular */}
         {activeMenu === 'ranking-corridas' && (
