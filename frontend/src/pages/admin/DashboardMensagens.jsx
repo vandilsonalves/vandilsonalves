@@ -7,7 +7,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import {
   Send, Paperclip, Link2, Image, X, Loader2, CheckCircle2,
-  Users, Clock, FileText, Download, ChevronDown, ChevronUp
+  Users, Clock, FileText, Download, ChevronDown, ChevronUp,
+  Calendar, XCircle, Timer
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -43,6 +44,10 @@ const DashboardMensagens = () => {
   const [contagem, setContagem] = useState(null);
   const [historico, setHistorico] = useState([]);
   const [showHistorico, setShowHistorico] = useState(false);
+  const [agendadas, setAgendadas] = useState([]);
+  const [modoAgendar, setModoAgendar] = useState(false);
+  const [dataAgendamento, setDataAgendamento] = useState('');
+  const [horaAgendamento, setHoraAgendamento] = useState('09:00');
 
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroModalidades, setFiltroModalidades] = useState([]);
@@ -61,6 +66,10 @@ const DashboardMensagens = () => {
   useEffect(() => {
     if (showHistorico) fetchHistorico();
   }, [showHistorico]);
+
+  useEffect(() => {
+    fetchAgendadas();
+  }, []);
 
   const fetchContagem = async () => {
     try {
@@ -89,6 +98,37 @@ const DashboardMensagens = () => {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const fetchAgendadas = async () => {
+    try {
+      const res = await fetch(`${API}/admin/mensagens/agendadas`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setAgendadas(data.agendadas || []);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  const cancelarAgendada = async (id) => {
+    if (!window.confirm('Cancelar esta mensagem agendada?')) return;
+    try {
+      const res = await fetch(`${API}/admin/mensagens/agendada/${id}`, {
+        method: 'DELETE',
+        headers
+      });
+      if (res.ok) {
+        toast.success('Mensagem agendada cancelada');
+        fetchAgendadas();
+        if (showHistorico) fetchHistorico();
+      } else {
+        toast.error('Erro ao cancelar');
+      }
+    } catch (e) {
+      toast.error('Erro de conexão');
     }
   };
 
@@ -138,8 +178,24 @@ const DashboardMensagens = () => {
       return;
     }
 
-    const confirma = window.confirm(`Enviar mensagem para ${contagem} atleta(s)?`);
-    if (!confirma) return;
+    let agendarPara = '';
+    if (modoAgendar) {
+      if (!dataAgendamento) {
+        toast.error('Selecione a data do agendamento');
+        return;
+      }
+      agendarPara = `${dataAgendamento}T${horaAgendamento}:00`;
+      const agendaDate = new Date(agendarPara);
+      if (agendaDate <= new Date()) {
+        toast.error('A data de agendamento deve ser no futuro');
+        return;
+      }
+    }
+
+    const actionText = modoAgendar
+      ? `Agendar mensagem para ${dataAgendamento} às ${horaAgendamento}?`
+      : `Enviar mensagem para ${contagem} atleta(s)?`;
+    if (!window.confirm(actionText)) return;
 
     setEnviando(true);
     try {
@@ -152,6 +208,7 @@ const DashboardMensagens = () => {
       formData.append('filtro_modalidades', JSON.stringify(filtroModalidades));
       formData.append('filtro_generos', JSON.stringify(filtroGeneros));
       formData.append('filtro_especial', JSON.stringify(filtroEspecial));
+      formData.append('agendar_para', agendarPara);
 
       const res = await fetch(`${API}/admin/mensagens/enviar`, {
         method: 'POST',
@@ -161,11 +218,18 @@ const DashboardMensagens = () => {
 
       if (res.ok) {
         const data = await res.json();
-        toast.success(`Mensagem enviada para ${data.total_enviados} atleta(s)!`);
+        if (data.status === 'agendada') {
+          toast.success(`Mensagem agendada para ${dataAgendamento} às ${horaAgendamento}`);
+          fetchAgendadas();
+        } else {
+          toast.success(`Mensagem enviada para ${data.total_enviados} atleta(s)!`);
+        }
         setTitulo('');
         setMensagem('');
         setLink('');
         setAnexos([]);
+        setDataAgendamento('');
+        setModoAgendar(false);
         if (showHistorico) fetchHistorico();
       } else {
         const err = await res.json().catch(() => ({}));
@@ -404,6 +468,56 @@ const DashboardMensagens = () => {
             )}
           </div>
 
+          {/* Agendamento */}
+          <div className="space-y-3">
+            <div className="flex items-center gap-3">
+              <Button
+                variant={!modoAgendar ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setModoAgendar(false)}
+                className={!modoAgendar ? 'bg-emerald-600 hover:bg-emerald-700 text-white' : 'dark:border-slate-600 dark:text-slate-300'}
+                data-testid="btn-enviar-agora"
+              >
+                <Send className="w-4 h-4 mr-1" /> Enviar Agora
+              </Button>
+              <Button
+                variant={modoAgendar ? 'default' : 'outline'}
+                size="sm"
+                onClick={() => setModoAgendar(true)}
+                className={modoAgendar ? 'bg-blue-600 hover:bg-blue-700 text-white' : 'dark:border-slate-600 dark:text-slate-300'}
+                data-testid="btn-agendar"
+              >
+                <Calendar className="w-4 h-4 mr-1" /> Agendar
+              </Button>
+            </div>
+
+            {modoAgendar && (
+              <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                <Calendar className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <div className="flex items-center gap-2 flex-wrap">
+                  <Input
+                    type="date"
+                    value={dataAgendamento}
+                    onChange={e => setDataAgendamento(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-44 dark:bg-slate-700 dark:border-slate-600"
+                    data-testid="input-data-agendamento"
+                  />
+                  <Input
+                    type="time"
+                    value={horaAgendamento}
+                    onChange={e => setHoraAgendamento(e.target.value)}
+                    className="w-32 dark:bg-slate-700 dark:border-slate-600"
+                    data-testid="input-hora-agendamento"
+                  />
+                  <span className="text-sm text-blue-700 dark:text-blue-300">
+                    A mensagem será enviada automaticamente neste horário
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+
           {/* Botão enviar */}
           <div className="flex items-center justify-between pt-2 border-t dark:border-slate-700">
             <span className="text-xs text-slate-400">
@@ -412,11 +526,13 @@ const DashboardMensagens = () => {
             <Button
               onClick={handleEnviar}
               disabled={enviando || (!mensagem.trim() && !link.trim())}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white px-8"
+              className={modoAgendar ? 'bg-blue-600 hover:bg-blue-700 text-white px-8' : 'bg-emerald-600 hover:bg-emerald-700 text-white px-8'}
               data-testid="btn-enviar-mensagem"
             >
               {enviando ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> Enviando...</>
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" /> {modoAgendar ? 'Agendando...' : 'Enviando...'}</>
+              ) : modoAgendar ? (
+                <><Calendar className="w-4 h-4 mr-2" /> Agendar Mensagem</>
               ) : (
                 <><Send className="w-4 h-4 mr-2" /> Enviar Mensagem</>
               )}
@@ -424,6 +540,55 @@ const DashboardMensagens = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Mensagens Agendadas */}
+      {agendadas.length > 0 && (
+        <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 border-l-4 border-l-blue-500">
+          <CardHeader className="border-b dark:border-slate-700 pb-3">
+            <CardTitle className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                <Timer className="w-5 h-5 text-blue-500" />
+              </div>
+              <div>
+                <h3 className="font-bold">Mensagens Agendadas</h3>
+                <p className="text-sm text-slate-500 font-normal">{agendadas.length} mensagem(ns) aguardando envio</p>
+              </div>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-4">
+            <div className="space-y-3">
+              {agendadas.map((msg, idx) => (
+                <div key={idx} className="p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex items-start justify-between mb-1">
+                    <div>
+                      <h4 className="font-semibold text-sm text-slate-800 dark:text-white">{msg.titulo}</h4>
+                      <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2 mt-1">{msg.mensagem}</p>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => cancelarAgendada(msg.id)}
+                      className="text-red-500 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20 flex-shrink-0"
+                      data-testid={`btn-cancelar-agendada-${idx}`}
+                    >
+                      <XCircle className="w-4 h-4 mr-1" /> Cancelar
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-3 mt-2">
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300">
+                      <Calendar className="w-3 h-3 mr-1" />
+                      {formatDate(msg.agendar_para)}
+                    </Badge>
+                    <Badge variant="outline" className="text-xs">
+                      {msg.filtro_tipo === 'todos' ? 'Todos' : getFiltroLabel(msg.filtro_tipo)}
+                    </Badge>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Histórico */}
       <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
@@ -455,11 +620,26 @@ const DashboardMensagens = () => {
                     <div className="flex items-start justify-between mb-1">
                       <h4 className="font-semibold text-sm text-slate-800 dark:text-white">{msg.titulo}</h4>
                       <div className="flex items-center gap-2">
+                        {msg.status === 'agendada' && (
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 text-xs">
+                            <Calendar className="w-3 h-3 mr-1" /> Agendada
+                          </Badge>
+                        )}
+                        {msg.status === 'cancelada' && (
+                          <Badge className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300 text-xs">
+                            <XCircle className="w-3 h-3 mr-1" /> Cancelada
+                          </Badge>
+                        )}
+                        {(!msg.status || msg.status === 'enviada') && (
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300 text-xs">
+                            <CheckCircle2 className="w-3 h-3 mr-1" /> Enviada
+                          </Badge>
+                        )}
                         <Badge variant="secondary" className="text-xs">
                           <Users className="w-3 h-3 mr-1" />
                           {msg.total_enviados}
                         </Badge>
-                        <span className="text-xs text-slate-400">{formatDate(msg.data_envio)}</span>
+                        <span className="text-xs text-slate-400">{formatDate(msg.data_envio || msg.data_criacao)}</span>
                       </div>
                     </div>
                     <p className="text-sm text-slate-600 dark:text-slate-300 line-clamp-2">{msg.mensagem}</p>

@@ -17,7 +17,7 @@ import sys
 # Add backend to path for direct function testing
 sys.path.insert(0, '/app/backend')
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://fitness-ranking-dev.preview.emergentagent.com').rstrip('/')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://admin-mensagens.preview.emergentagent.com').rstrip('/')
 
 
 class TestCalcularPontosColocacao:

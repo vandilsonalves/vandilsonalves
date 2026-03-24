@@ -76,14 +76,12 @@ async def enviar_mensagem_admin(
     filtro_modalidades: str = Form("[]"),
     filtro_generos: str = Form("[]"),
     filtro_especial: str = Form("[]"),
+    agendar_para: str = Form(""),
     admin: dict = Depends(get_admin_user)
 ):
     """
-    Envia mensagem para atletas com filtros.
-    filtro_tipo: todos | modalidade | genero | especial | individual
-    filtro_modalidades: ["profissional_amador", "povao_pace_livre"]
-    filtro_generos: ["M", "F", "pcd_m", "pcd_f", "cadeirante_m", "cadeirante_f"]
-    filtro_especial: ["donos_assessoria", "individual_sem_assessoria"]
+    Envia mensagem imediatamente ou agenda para envio futuro.
+    agendar_para: ISO datetime string (ex: "2026-03-25T10:00") ou vazio para envio imediato
     """
     import json
 
@@ -95,13 +93,61 @@ async def enviar_mensagem_admin(
     especiais = json.loads(filtro_especial) if filtro_especial != "[]" else []
     anexos_list = json.loads(anexos) if anexos != "[]" else []
 
-    # Build query for target users
+    agora = datetime.now(timezone.utc).isoformat()
+    mensagem_id = str(uuid.uuid4())
+    is_agendada = bool(agendar_para and agendar_para.strip())
+
+    # Save message record
+    registro = {
+        "id": mensagem_id,
+        "titulo": titulo or "Mensagem da Administração",
+        "mensagem": mensagem,
+        "link": link if link.strip() else None,
+        "anexos": anexos_list,
+        "filtro_tipo": filtro_tipo,
+        "filtro_modalidades": modalidades,
+        "filtro_generos": generos,
+        "filtro_especial": especiais,
+        "total_enviados": 0,
+        "admin_id": admin["id"],
+        "admin_nome": admin.get("nome", "Admin"),
+        "data_criacao": agora,
+        "data_envio": None if is_agendada else agora,
+        "agendar_para": agendar_para.strip() if is_agendada else None,
+        "status": "agendada" if is_agendada else "enviada"
+    }
+
+    if is_agendada:
+        await db.mensagens_admin.insert_one(registro)
+        return {
+            "message": f"Mensagem agendada para {agendar_para}",
+            "total_enviados": 0,
+            "mensagem_id": mensagem_id,
+            "status": "agendada"
+        }
+
+    # Envio imediato - build query and send
+    total = await _enviar_notificacoes(mensagem_id, titulo, mensagem, link, anexos_list,
+                                         filtro_tipo, modalidades, generos, especiais, admin)
+
+    registro["total_enviados"] = total
+    await db.mensagens_admin.insert_one(registro)
+
+    return {
+        "message": f"Mensagem enviada para {total} atleta(s)",
+        "total_enviados": total,
+        "mensagem_id": mensagem_id,
+        "status": "enviada"
+    }
+
+
+async def _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais):
+    """Constrói a query MongoDB para filtrar destinatários"""
     query = {"role": {"$in": ["atleta", "dono_assessoria"]}}
 
     if filtro_tipo == "todos":
-        pass  # No additional filter
+        pass
     elif filtro_tipo == "modalidade" and modalidades:
-        # Determine users by which ranking collection they belong to
         modalidade_ids = set()
         if "profissional_amador" in modalidades:
             anual_ids = await db.ranking_anual.distinct("usuario_id", {"ano": ANO_ATUAL})
@@ -112,7 +158,7 @@ async def enviar_mensagem_admin(
         if modalidade_ids:
             query["id"] = {"$in": list(modalidade_ids)}
         else:
-            return {"ranking": [], "total": 0} if "contagem" not in str(type(query)) else query
+            return None
     elif filtro_tipo == "genero" and generos:
         genero_conditions = []
         for g in generos:
@@ -139,17 +185,23 @@ async def enviar_mensagem_admin(
         if conditions:
             query = {"$or": conditions}
 
-    # Get target users
+    return query
+
+
+async def _enviar_notificacoes(mensagem_id, titulo, mensagem, link, anexos_list,
+                                filtro_tipo, modalidades, generos, especiais, admin):
+    """Cria notificações para todos os destinatários que correspondem ao filtro"""
+    query = await _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais)
+    if not query:
+        return 0
+
     destinatarios = await db.usuarios.find(query, {"_id": 0, "id": 1}).to_list(None)
     destinatario_ids = [d["id"] for d in destinatarios]
 
     if not destinatario_ids:
-        raise HTTPException(status_code=400, detail="Nenhum destinatário encontrado com os filtros selecionados")
+        return 0
 
-    # Create notifications for each user
     agora = datetime.now(timezone.utc).isoformat()
-    mensagem_id = str(uuid.uuid4())
-
     notificacoes_criadas = 0
     for uid in destinatario_ids:
         notificacao = {
@@ -159,50 +211,89 @@ async def enviar_mensagem_admin(
             "tipo": "mensagem_admin",
             "titulo": titulo or "Mensagem da Administração",
             "mensagem": mensagem,
-            "link": link if link.strip() else None,
+            "link": link if link else None,
             "anexos": anexos_list,
             "lida": False,
             "data_criacao": agora,
-            "remetente_id": admin["id"],
+            "remetente_id": admin.get("id", "system"),
             "remetente_nome": "Ranking Run"
         }
         await db.notificacoes.insert_one(notificacao)
         notificacoes_criadas += 1
 
-    # Save message record for history
-    registro = {
-        "id": mensagem_id,
-        "titulo": titulo or "Mensagem da Administração",
-        "mensagem": mensagem,
-        "link": link if link.strip() else None,
-        "anexos": anexos_list,
-        "filtro_tipo": filtro_tipo,
-        "filtro_modalidades": modalidades,
-        "filtro_generos": generos,
-        "filtro_especial": especiais,
-        "total_enviados": notificacoes_criadas,
-        "admin_id": admin["id"],
-        "admin_nome": admin.get("nome", "Admin"),
-        "data_envio": agora
-    }
-    await db.mensagens_admin.insert_one(registro)
-
-    return {
-        "message": f"Mensagem enviada para {notificacoes_criadas} atleta(s)",
-        "total_enviados": notificacoes_criadas,
-        "mensagem_id": mensagem_id
-    }
+    return notificacoes_criadas
 
 
 @router.get("/admin/mensagens/historico")
 async def historico_mensagens(admin: dict = Depends(get_admin_user)):
-    """Lista histórico de mensagens enviadas"""
+    """Lista histórico de mensagens enviadas e agendadas"""
     mensagens = await db.mensagens_admin.find(
         {},
         {"_id": 0}
-    ).sort("data_envio", -1).limit(50).to_list(None)
+    ).sort("data_criacao", -1).limit(50).to_list(None)
 
     return {"mensagens": mensagens}
+
+
+@router.get("/admin/mensagens/agendadas")
+async def listar_agendadas(admin: dict = Depends(get_admin_user)):
+    """Lista mensagens agendadas pendentes"""
+    agendadas = await db.mensagens_admin.find(
+        {"status": "agendada"},
+        {"_id": 0}
+    ).sort("agendar_para", 1).to_list(None)
+
+    return {"agendadas": agendadas}
+
+
+@router.delete("/admin/mensagens/agendada/{mensagem_id}")
+async def cancelar_agendada(mensagem_id: str, admin: dict = Depends(get_admin_user)):
+    """Cancela uma mensagem agendada"""
+    result = await db.mensagens_admin.update_one(
+        {"id": mensagem_id, "status": "agendada"},
+        {"$set": {"status": "cancelada", "data_cancelamento": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Mensagem agendada não encontrada")
+
+    return {"message": "Mensagem agendada cancelada"}
+
+
+@router.post("/admin/mensagens/processar-agendadas")
+async def processar_agendadas():
+    """
+    Processa mensagens agendadas cujo horário já passou.
+    Chamado pelo Celery beat ou manualmente.
+    """
+    agora = datetime.now(timezone.utc).isoformat()
+
+    agendadas = await db.mensagens_admin.find(
+        {"status": "agendada", "agendar_para": {"$lte": agora}},
+        {"_id": 0}
+    ).to_list(None)
+
+    processadas = 0
+    for msg in agendadas:
+        admin_fake = {"id": msg.get("admin_id", "system"), "nome": msg.get("admin_nome", "Admin")}
+        total = await _enviar_notificacoes(
+            msg["id"], msg.get("titulo", ""), msg.get("mensagem", ""),
+            msg.get("link", ""), msg.get("anexos", []),
+            msg.get("filtro_tipo", "todos"), msg.get("filtro_modalidades", []),
+            msg.get("filtro_generos", []), msg.get("filtro_especial", []),
+            admin_fake
+        )
+
+        await db.mensagens_admin.update_one(
+            {"id": msg["id"]},
+            {"$set": {
+                "status": "enviada",
+                "total_enviados": total,
+                "data_envio": agora
+            }}
+        )
+        processadas += 1
+
+    return {"processadas": processadas}
 
 
 @router.get("/admin/mensagens/contagem-destinatarios")

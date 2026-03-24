@@ -1,61 +1,63 @@
 <analysis>**original_problem_statement:**
-O usuário solicitou a finalização da exportação de PDF e Excel da página RAIO-X, adição de compartilhamento nas redes sociais e integração da aba de Conquistas (insígnias). Em seguida, pediu diversas melhorias no RAIO-X: correção do cálculo de distância (que estava 0 km), adição de seletores de meses para comparativo personalizado, inclusão de nomes de corridas nos recordes e remoção do gráfico Dias Favoritos. Para o compartilhamento, exigiu que a imagem gerada fosse no formato vertical (9:16) para Stories, contendo as métricas e os desenhos 3D reais das insígnias conquistadas. Por fim, relatou um bug no Ranking por Cidade onde o filtro de Gênero e Modalidade estava misturando os nomes dos atletas.
+O usuário solicitou inicialmente a validação do filtro de Gênero/Modalidade do Ranking por Cidade. Em seguida, pediu: 
+1. Adição de compartilhamento nas redes sociais para o Ranking da Cidade.
+2. Correção de um bug em que atletas do ranking Profissional/Amador também apareciam no ranking da Galera.
+3. Correção do erro de conexão com o Strava ( invalid).
+4. Correção de inconsistência de dados (pontos e corridas) de alguns atletas entre o Ranking e o Histórico.
+5. Renomeação global do termo Ranking do Povão ou Pace Livre para Ranking da Galera.
+6. Criação de um endpoint no painel admin para recalcular/sincronizar os rankings automaticamente.
+7. Atualização de todas as datas de corridas de 2025 para janeiro, fevereiro e março de 2026.
+8. Criação de uma aba Mensagens no painel de Gestão Admin para envio de comunicados em massa com filtros avançados (por modalidade, gênero, status de assessoria) com suporte a links e anexos.
+9. Adição de funcionalidade de agendamento dessas mensagens.
 
 **User's preferred language**: **Português (Brasil)**. INSTRUCT next agent to respond in the user's preferred language only.
 
 **what currently exists?** 
-Uma aplicação full-stack (React/FastAPI/MongoDB) de ranking fitness. O sistema possui o painel avançado RAIO-X, que renderiza gráficos de performance, permite exportação robusta para PDF/Excel e gera Share Cards customizados (via HTML5 Canvas API) no formato 9:16 com desenhos de insígnias 3D. A integração com Strava e cálculos de pace, recordes e consistência estão 100% operacionais.
+Uma aplicação full-stack (React/FastAPI/MongoDB) de ranking fitness esportivo. O sistema possui rankings por categorias e cidades, painel RAIO-X avançado, integração com Strava, geração nativa de share cards 9:16 via Canvas API e um robusto painel de administração (Admin Dashboard) agora equipado com sistema de mensagens em massa e background jobs via Celery+Redis para agendamento.
 
 **Last working item**:
-- **Last item agent was working:** Corrigindo o bug no Ranking por Cidade onde os filtros de Gênero e Modalidade não estavam funcionando corretamente. O agente editou o arquivo  para incluir a filtragem por  nas queries de fallback e povão.
-- **Status:** TESTING PENDING
-- **Agent Testing Done:** N (A sessão encerrou logo após o  ser executado).
-- **Which testing method agent to use?** Both (Backend via curl/python-c para verificar o endpoint  e Frontend via screenshot testando os dropdowns de gênero/modalidade).
+- **Last item agent was working:** Implementação do sistema de agendamento de mensagens do painel Admin (criação da task no Celery , endpoint e toggle no UI do frontend).
+- **Status:** USER VERIFICATION PENDING / TESTING PENDING
+- **Agent Testing Done:** Y (Backend testado via Curl com sucesso).
+- **Which testing method agent to use?** Frontend testing agent ou screenshot tool (Para validar se a interface de toggle Enviar Agora / Agendar e a lista de Mensagens Agendadas estão renderizando corretamente no ).
 - **User Testing Done:** N
 
 **All Pending/In progress Issue list**:
-- Issue 1 (P0): Validar e testar a correção do filtro de Gênero/Modalidade no Ranking por Cidade.
-  - Attempted fixes: O agente adicionou a condição  nos dicionários de busca das linhas de fallback e ranking povão no .
-  - Next debug checklist: 
-    - Fazer restart do backend (backend: stopped
-backend: started).
-    - Testar via API ou UI se a troca de Gênero ('M'/'F') e Modalidade ('profissional'/'povao') atualiza a lista corretamente sem misturar os nomes.
-  - Why fix this issue and what will be achieved with the fix? O usuário relatou que os nomes estavam sendo listados incorretamente (misturando gêneros).
-  - Status: TESTING PENDING
-  - Is recurring issue? N
-  - Should Test frontend/backend/both after fix? Both
+- Issue 1 (P1): Instabilidade do serviço Redis.
+  - Attempted fixes: O serviço do Redis frequentemente cai ( ou ), exigindo reinstalação/restart via terminal.
+  - Next debug checklist: Investigar os logs do Redis e supervisor para identificar a causa raiz das quedas repetitivas e aplicar uma correção permanente de memória/configuração.
+  - Why fix this issue and what will be achieved with the fix? O Redis é essencial agora não só para cache, mas também como broker do Celery para o novo sistema de agendamento de mensagens. Se o Redis cair, as mensagens não serão enviadas.
+  - Status: IN PROGRESS
+  - Is recurring issue? Y
+  - Should Test frontend/backend/both after fix? Backend
   - Blocked on other issue: None
 
 **In progress Task List**:
-Nenhuma (apenas o Issue P0 acima).
+Nenhuma (apenas a verificação visual da feature de agendamento concluída por último).
 
 **Upcoming and Future Tasks**
-- **P2 - Refatoração do **: Arquivo possui mais de 2.200 linhas. Precisa ser quebrado em componentes menores.
+- **P2 - Refatoração do **: Arquivo possui mais de 2.200 linhas. Precisa ser componentizado.
 - **P2 - Refatoração do **: Arquivo possui quase 3.900 linhas. Necessita forte componentização.
-- **P2 - Refatoração do **: Após as implementações de Canvas API e lógicas de exportação, o arquivo passou de 2.300 linhas. Necessita extração da lógica do Canvas para arquivos utilitários.
+- **P2 - Refatoração do **: Após as implementações de Canvas API, o arquivo passou de 2.300 linhas. A lógica do Canvas deve ser extraída para utilitários ().
 
 **Completed work in this session**
-- Finalização da Exportação PDF/Excel no RAIO-X (incluindo todas as abas) (DONE)
-- Implementação de Compartilhamento em Redes Sociais via Geração de Imagem (DONE)
-- Adição da aba de Conquistas (Badges) visuais no RAIO-X (DONE)
-- Inclusão do botão RAIO-X na barra de navegação principal (DONE)
-- Correção do cálculo de Distância Total (Tratamento de strings KM maiúsculas/minúsculas no DB) (DONE)
-- Criação de comparativo dinâmico de performance Mês a Mês com seletores (DONE)
-- Inclusão dos nomes das corridas na tabela de Records (RPs) (DONE)
-- Remoção da métrica Dias Favoritos do App (DONE)
-- Refatoração profunda do Share Card para formato Vertical 9:16 via **Canvas API** direta (Substituindo html2canvas) (DONE)
-- Desenho de ícones reais 3D (medalha, play) no Share Card do Canvas (DONE)
-- Troubleshooting e atualização do Redis que caía constantemente (DONE)
+- Teste e validação do filtro de Gênero/Modalidade no Ranking por Cidade (DONE)
+- Funcionalidade Compartilhar Ranking da Cidade com card 9:16 no Canvas (DONE)
+- Bug Fix: Exclusão cruzada entre Profissional e Galera no ranking (Zero Overlap) (DONE)
+- Bug Fix: Atualização do  na integração do Strava (DONE)
+- Bug Fix: Sincronização dos pontos/corridas (Remoção de dados inflados no ) (DONE)
+- Renomeação: Ranking do Povão / Pace Livre substituído por Ranking da Galera no UI (DONE)
+- Feature: Endpoint admin para recalcular/sincronizar rankings manualmente (DONE)
+- Data Update: Migração de todas as corridas de 2025 para Jan/Fev/Mar de 2026 e substituição do hardcode  por  dinâmico no código (DONE)
+- Feature: Aba Mensagens no Admin com notificações diretas ao atleta e filtros de destinatários (DONE)
+- Feature: Celery task e UI para Agendamento de Mensagens Admin (DONE)
 
 **Earlier issues found/mentioned but not fixed**
-Nenhum.
-
-**Known issue recurrence from previous fork**
-- Issue recurrence in previous fork: Serviço do Redis trava constantemente ( no supervisor ou ).
-- Recurrence count: Alta (ocorreu várias vezes nesta sessão).
-- Status: RESOLVED / WORKAROUND (O agente contornou reinstalando o redis: Reading package lists...
+- O serviço Redis pode cair silenciosamente. A solução temporária aplicada no meio da sessão foi Reading package lists...
 Building dependency tree...
 Reading state information...
+The following additional packages will be installed:
+  libjemalloc2 liblzf1
 Suggested packages:
   ruby-redis
 The following NEW packages will be installed:
@@ -63,89 +65,68 @@ The following NEW packages will be installed:
 0 upgraded, 4 newly installed, 0 to remove and 0 not upgraded.
 Need to get 1198 kB of archives.
 After this operation, 7125 kB of additional disk space will be used.
-Get:1 https://cloudfront.debian.net/debian bookworm/main arm64 libjemalloc2 arm64 5.3.0-1 [217 kB]
-Get:2 https://cloudfront.debian.net/debian bookworm/main arm64 liblzf1 arm64 3.6-3 [9860 B]
-Get:3 https://cloudfront.debian.net/debian bookworm/main arm64 redis-tools arm64 5:7.0.15-1~deb12u6 [898 kB]
-Get:4 https://cloudfront.debian.net/debian bookworm/main arm64 redis-server arm64 5:7.0.15-1~deb12u6 [73.1 kB]
-Fetched 1198 kB in 0s (9272 kB/s)
-Selecting previously unselected package libjemalloc2:arm64.
-(Reading database ... (Reading database ... 5%(Reading database ... 10%(Reading database ... 15%(Reading database ... 20%(Reading database ... 25%(Reading database ... 30%(Reading database ... 35%(Reading database ... 40%(Reading database ... 45%(Reading database ... 50%(Reading database ... 55%(Reading database ... 60%(Reading database ... 65%(Reading database ... 70%(Reading database ... 75%(Reading database ... 80%(Reading database ... 85%(Reading database ... 90%(Reading database ... 95%(Reading database ... 100%(Reading database ... 46697 files and directories currently installed.)
-Preparing to unpack .../libjemalloc2_5.3.0-1_arm64.deb ...
-Unpacking libjemalloc2:arm64 (5.3.0-1) ...
-Selecting previously unselected package liblzf1:arm64.
-Preparing to unpack .../liblzf1_3.6-3_arm64.deb ...
-Unpacking liblzf1:arm64 (3.6-3) ...
-Selecting previously unselected package redis-tools.
-Preparing to unpack .../redis-tools_5%3a7.0.15-1~deb12u6_arm64.deb ...
-Unpacking redis-tools (5:7.0.15-1~deb12u6) ...
-Selecting previously unselected package redis-server.
-Preparing to unpack .../redis-server_5%3a7.0.15-1~deb12u6_arm64.deb ...
-Unpacking redis-server (5:7.0.15-1~deb12u6) ...
-Setting up libjemalloc2:arm64 (5.3.0-1) ...
-Setting up liblzf1:arm64 (3.6-3) ...
-Setting up redis-tools (5:7.0.15-1~deb12u6) ...
-Setting up redis-server (5:7.0.15-1~deb12u6) ...
-invoke-rc.d: could not determine current runlevel
-invoke-rc.d: policy-rc.d denied execution of start.
-Created symlink /etc/systemd/system/redis.service → /lib/systemd/system/redis-server.service.
-Created symlink /etc/systemd/system/multi-user.target.wants/redis-server.service → /lib/systemd/system/redis-server.service.
-Processing triggers for libc-bin (2.36-9+deb12u13) ... e depois iniciando o serviço). Fique atento caso a API fique lenta.
+Do you want to continue? [Y/n] Abort. e reinício.
+
+**Known issue recurrence from previous fork**
+- Issue recurrence in previous fork: Redis service crashes / Error 99 connecting.
+- Recurrence count: Múltiplas (Caiu novamente no meio desta sessão).
+- Status: IN PROGRESS / WORKAROUND APPLIED
 
 **Code Architecture**
 
 
 **Key Technical Concepts**
-- **HTML5 Canvas API Direta**: Devido a problemas de renderização e posicionamento CSS com , a geração da imagem de compartilhamento (Share Card 9:16) no  é feita 100% via código Canvas nativo (, , ). 
-- Métodos do Canvas como  e  foram removidos em prol de compatibilidade cruzada, substituídos por lógicas de arcos básicas.
+- **HTML5 Canvas API**: Renderização de share cards para evitar bugs do .
+- **Celery + Redis Background Tasks**: A funcionalidade de agendamento de mensagens introduziu uso ativo do Celery. Há uma task que roda em intervalos para verificar mensagens pendentes.
+- **Dynamic Year Parsing**: O ano  foi removido estaticamente. Agora o sistema roda com base em .
 
 **key DB schema**
-- : Atenção especial ao campo . Ele armazena dados de forma inconsistente no banco (às vezes  10, às vezes  10KM, às vezes 10km). O backend agora trata isso com .
+-  e : Controlam quem é Profissional e quem é da Galera. Houve adição de exclusão mútua nas queries para evitar atletas nas duas coleções ao mesmo tempo.
+- : Fonte da verdade. O admin agora pode forçar o recálculo dos pontos com base nesta coleção via .
+-  (Nova): Armazena as mensagens disparadas pelo admin com campo  e .
 
 **changes in tech stack**
-- Abandono de dependência estrita do  em favor do uso nativo de Canvas Context 2D para estabilidade na geração de cards de redes sociais.
+- Introdução de Tasks assíncronas no Celery () para gerenciar fila de mensagens no painel admin.
 
 **All files of reference**
--  (Local do bug pendente de teste).
--  (Arquivo central de todas as novas features de performance).
--  (Cálculos de performance refatorados).
+-  (Lógica central de envios/agendamentos).
+-  (Nova UI do painel admin pendente de inspeção visual do modo de agendamento).
+-  (Cronjob Celery).
+-  (Arquivos onde as queries cruzadas foram atualizadas e  implementado).
 
 **Areas that need refactoring**:
--  (A lógica da função  ocupa centenas de linhas e deveria ser movida para um utilitário ).
+- , , e  continuam imensos e precisam de componentização estrutural.
 
 **key api endpoints**
-- : Atualizado com filtros dinâmicos.
-- : Novo endpoint para comparar quaisquer dois meses do ano.
+-  (Agora suporta o campo ).
+-  (Endpoint vital para corrigir dessincronização pontual no DB).
+-  (Possui exclusões para impedir intersecção Profissional/Galera).
 
 **Critical Info for New Agent**
-- Se for editar o desenho do Share Card no futuro, **não use**  ou  no , pois quebra no ambiente de teste do usuário. Use  ou desenhe as primitivas.
-- O Redis pode cair. Se isso acontecer, os endpoints demorarão muito e ocorrerá Timeout no Playwright/Test Agent. Sempre verifique o status do Redis com backend                          RUNNING   pid 201, uptime 0:00:03
-celery                           RUNNING   pid 48, uptime 0:00:40
-code-server                      STOPPED   Not started
-frontend                         RUNNING   pid 220, uptime 0:00:03
-mongodb                          RUNNING   pid 55, uptime 0:00:40
-nginx-code-proxy                 RUNNING   pid 46, uptime 0:00:40
-redis                            FATAL     can't find command '/usr/bin/redis-server' ou via logs se houver lentidão.
+- **Nomenclaturas:** O termo Povão foi substituído visivelmente por Galera na UI, mas no Backend/DB a coleção ainda se chama  e as chaves ainda podem conter  para evitar quebras estruturais.
+- **Tempo e Datas:** NUNCA force  ou . Todo o projeto agora obedece a constante dinâmica  no backend e  no Frontend.
+- **Redis:** Se o Celery falhar ao agendar mensagens, ou APIs derem timeout, a causa mais provável é o Redis que caiu. Restaure-o imediatamente.
 
 **documents and test reports created in this job**
-- /app/memory/PRD.md
-- /app/test_reports/iteration_57.json
-- /app/test_reports/iteration_58.json
-- /app/test_reports/iteration_59.json
+- 
+-  (Teste Filtro de Gênero)
+-  (Teste Compartilhamento Cidade)
+-  (Teste Zero Overlap Modalidades)
+-  (Teste Mensagens Admin)
 
 **Last 10 User Messages and any pending HUMAN messages** 
-1. **user**: atualizar redis . está meio lento (Concluído)
-2. **user**: Não está aparecendo a aba RAIO-X pra nenhum Atleta (Concluído)
-3. **user**: Aponta erro de cálculo Distância Total=0, PDF não baixando todas abas e Share do Instagram travado. (Concluído)
-4. **user**: atualizar redis (Concluído)
-5. **user**: Solicita senha de um usuário de teste (Fornecida 123456 via reset) (Concluído)
-6. **user**: Solicita setas de comparação de meses no RAIO-X e inclusão de nome da corrida nos recordes. (Concluído)
-7. **user**: exclua os dados e gráfico Dias Favoritos... a imagem deve ser gerada no formato 9:16... tenha insígnias (Concluído)
-8. **user**: atualizar redis (Concluído)
-9. **user**: Pede que as insígnias sejam os desenhos 3D verdadeiros na imagem, e depois reportou erro de geração (corrigido removendo roundRect/ellipse do canvas). (Concluído)
-10. **user**: na primeira imagem em anexo, quando selecionamos a modalidade e o Genero, estão ficando errado, tá misturando os nomes. Corriga isso. atualize os redis *(PENDENTE DE TESTE)*
+1. **user**: Chat, o aplicativo não está conseguindo fazer a distinção entre os atletas do ranking profissional amador e o ranking da galera... (Concluído - Zero Overlap aplicado).
+2. **user**: está apresentando falha ao conectar com o Strava (Concluído -  alterado para o domínio correto).
+3. **user**: Na parte de basquete, esse atleta consta ter cento e cinquenta pontos. Quando se clica, ele tem oitenta e nove... (Concluído - Sincronização e recalculo de DB feitos).
+4. **user**: lembrando chat que não temos mais ranking_povao . certifique em todo aplicativo e substitua pelo Ranking da Galera (Concluído).
+5. **user**: Criar endpoint admin para recalcular/sincronizar rankings automaticamente (Concluído).
+6. **user**: quero que atualize as datas de resultados enviados de todos os atletas. Quero que conste nos resultados aprovados... referentes a Janeiro, Fevereiro, e Março de 2026. Não pode ter nenhum resultado de 2025 (Concluído - DB alterado e código dinâmico  implementado).
+7. **user**: atualizar redis (Concluído).
+8. **user**: Chat, na aba Gestão do Painel do Admin... quero que você crie uma nova aba chamada Mensagens... para ser disparado para todos os atletas de uma só vez... (Concluído).
+9. **user**: adicionar a opção de agendar mensagens (Implementado, backend testado via curl, pendente validação frontend UI).
 
 **Project Health Check:**
-- Broken: Ranking por Cidade (Filtro) - Editado pelo agente anterior mas pendente de teste/restart do backend.
+- Broken: Redis (Possui instabilidade crônica, preste atenção aos logs do Celery/Redis).
 - Mocked: Nenhum.
 
 **3rd Party Integrations** 
@@ -153,10 +134,10 @@ redis                            FATAL     can't find command '/usr/bin/redis-se
 - Resend (E-mails) — requires User API Key
 
 **Testing status**
-- Testing agent used after significant changes: YES (Usado nas iterations 57, 58, 59).
+- Testing agent used after significant changes: YES (iterations 60-63).
 - Troubleshoot agent used after agent stuck in loop: NO
 - Test files created: None
-- Known regressions: Nenhuma conhecida, exceto o bug recente do ranking por cidade sendo resolvido agora.
+- Known regressions: Nenhuma.
 
 **Credentials to test flow:**
 - Admin:  / 
@@ -164,4 +145,4 @@ redis                            FATAL     can't find command '/usr/bin/redis-se
 - Atleta Teste:  / 
 
 **What agent forgot to execute**
-O agente localizou o erro no filtro de Gênero do Ranking por Cidade, aplicou a substituição com  no arquivo do backend (), mas a sessão terminou **antes** dele conseguir dar restart no backend, rodar o lint, ou testar se os filtros do frontend voltaram a funcionar perfeitamente sem misturar as listas. O próximo passo imediato é validar essa correção (Issue 1).</analysis>
+O agente completou o desenvolvimento da Opção de Agendar Mensagens alterando o backend, criando rotas Celery e modificando o componente . O backend foi testado com sucesso via CURL e as mensagens agendadas foram confirmadas na rota. No entanto, o agente **esqueceu** de executar o  ou o screenshot tool no final para verificar visualmente se a UI (toggle Enviar Agora/Agendar e os inputs de data) estão renderizando corretamente na tela Mensagens do painel de Admin.</analysis>

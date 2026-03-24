@@ -15,7 +15,7 @@ celery_app = Celery(
     'ranking_run_pro',
     broker=REDIS_URL,
     backend=REDIS_URL,
-    include=['tasks.ranking_tasks', 'tasks.email_tasks', 'tasks.report_tasks']
+    include=['tasks.ranking_tasks', 'tasks.email_tasks', 'tasks.report_tasks', 'tasks.mensagens_tasks']
 )
 
 # Configurações do Celery
@@ -63,6 +63,10 @@ celery_app.conf.update(
         'limpar-cache-expirado-1h': {
             'task': 'tasks.ranking_tasks.cleanup_expired_cache',
             'schedule': 3600.0,  # 1 hora
+        },
+        'processar-mensagens-agendadas-1min': {
+            'task': 'tasks.mensagens_tasks.processar_mensagens_agendadas',
+            'schedule': 60.0,  # 1 minuto
         },
     }
 )
