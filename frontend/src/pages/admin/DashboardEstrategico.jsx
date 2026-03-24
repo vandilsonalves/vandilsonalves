@@ -322,7 +322,7 @@ const DashboardEstrategico = () => {
               title="Pace Médio Galera"
               value={visaoGeral?.pace_medio_povao || 'N/A'}
               icon={Clock}
-              subtitle="Pace Livre"
+              subtitle="Galera"
             />
           </div>
         </div>

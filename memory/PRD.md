@@ -49,6 +49,13 @@ Plataforma full-stack de ranking fitness para corridas. O sistema possui ranking
   - Galera exclui IDs de ranking_anual; Profissional fallback exclui IDs de ranking_povao
   - Frontend: Corrigido ano de 2026 para 2025 (dados existentes)
   - Testado: 100% (10/10) em 6 cidades sem overlap - iteration_62.json
+- Bug Fix: Conexão Strava - redirect_uri atualizado para assessoria-ranking.preview.emergentagent.com
+- Bug Fix: Dados inconsistentes no Ranking (6 atletas com pontos inflados em ranking_anual e 5 em ranking_povao)
+  - Auditoria e sincronização de 301 entradas no ranking_anual e 122 no ranking_povao
+- Renomeação: Substituição global de "Ranking do Povão / Pace Livre" por "Ranking da Galera"
+  - Frontend: 10+ arquivos atualizados (RankingPage, CadastroPage, SubmeterResultado, RegrasPage, AdminDashboard, etc.)
+  - Backend: configuracoes_routes.py, admin_routes.py, auth_routes.py, ranking_routes.py, services/__init__.py
+  - Zero ocorrências de "Povão" ou "Pace Livre" em textos visíveis ao usuário
 
 ## Backlog (P2 - Refatoração)
 - [ ] Refatoração RankingPage.js (~2.200 linhas) - componentização

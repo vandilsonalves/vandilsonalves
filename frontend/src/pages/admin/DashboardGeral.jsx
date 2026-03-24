@@ -46,7 +46,7 @@ const DashboardGeral = ({
   // Preparar dados para gráficos
   const modalidadeData = [
     { name: 'Profissional/Amador', value: statsModalidade?.profissional || 0 },
-    { name: 'Galera (Pace Livre)', value: statsModalidade?.povao || 0 }
+    { name: 'Galera', value: statsModalidade?.povao || 0 }
   ];
 
   const categoriaData = statsCategorias ? [

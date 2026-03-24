@@ -923,7 +923,7 @@ async def transferir_modalidade(
         usuario_id=atleta_id,
         tipo="sistema",
         titulo="Modalidade Alterada",
-        mensagem=f"Sua modalidade foi alterada para {'Ranking da Galera - Pace Livre' if nova_modalidade == 'povao_pace_livre' else 'Profissional/Amador'}.",
+        mensagem=f"Sua modalidade foi alterada para {'Ranking da Galera' if nova_modalidade == 'povao_pace_livre' else 'Profissional/Amador'}.",
         dados_extras={"nova_modalidade": nova_modalidade}
     )
     

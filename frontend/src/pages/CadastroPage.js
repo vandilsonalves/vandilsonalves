@@ -780,7 +780,7 @@ const CadastroPage = () => {
                         </div>
                         <div className="flex-1">
                           <h4 className="font-semibold text-slate-800 dark:text-slate-200">
-                            Ranking da Galera - Pace Livre
+                            Ranking da Galera
                           </h4>
                           <p className="text-sm text-slate-500 mt-1">
                             Pontuação baseada apenas na distância percorrida
@@ -959,14 +959,14 @@ const CadastroPage = () => {
               <section>
                 <h4 className="font-semibold text-emerald-600">3. MODALIDADES DE PARTICIPAÇÃO</h4>
                 <p>3.1. RANKING PROFISSIONAL/AMADOR: Pontuação baseada na colocação em provas oficiais (1º ao 10º lugar).</p>
-                <p>3.2. RANKING DO POVÃO - PACE LIVRE: Pontuação baseada exclusivamente na distância percorrida, independente da colocação.</p>
+                <p>3.2. RANKING DA GALERA: Pontuação baseada exclusivamente na distância percorrida, independente da colocação.</p>
                 <p>3.3. RANKING DE EQUIPES/ASSESSORIAS: Pontuação coletiva baseada nos resultados dos atletas vinculados.</p>
               </section>
 
               <section>
                 <h4 className="font-semibold text-emerald-600">4. SISTEMA DE PONTUAÇÃO</h4>
                 <p>4.1. PROFISSIONAL/AMADOR: 1º lugar = 10pts, 2º = 9pts, 3º = 8pts, até 10º = 1pt.</p>
-                <p>4.2. POVÃO: 5km a 9km = 5pts, 10km a 20km = 10pts, 21km ou mais = distância em pts.</p>
+                <p>4.2. GALERA: 5km a 9km = 5pts, 10km a 20km = 10pts, 21km ou mais = distância em pts.</p>
                 <p>4.3. EQUIPES: Atleta cadastrado = +0,5pt, Resultado lançado = +1,0pt, Pódio (2º-5º) = +0,5pt, 1º lugar = +1,0pt.</p>
                 <p>4.4. Os pontos são acumulados por período (mensal, anual e histórico).</p>
               </section>

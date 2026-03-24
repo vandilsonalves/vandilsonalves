@@ -207,7 +207,7 @@ const RegrasPage = () => {
                 <CardHeader>
                   <CardTitle className="flex items-center gap-3 text-purple-700">
                     <Users className="w-6 h-6" />
-                    {regras?.ranking_povao?.titulo || 'RANKING DO POVÃO'}
+                    {regras?.ranking_povao?.titulo || 'RANKING DA GALERA'}
                   </CardTitle>
                 </CardHeader>
                 <CardContent>

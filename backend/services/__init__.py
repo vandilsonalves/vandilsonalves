@@ -74,7 +74,7 @@ def get_min_corridas_categoria(categoria: str) -> int:
 
 
 def calcular_pontos_povao(distancia: str) -> int:
-    """Calcula pontos para a modalidade Povão - Pace Livre
+    """Calcula pontos para a modalidade Galera
     
     Regras:
     - 5km até 9km: 5 pontos

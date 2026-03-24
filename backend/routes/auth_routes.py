@@ -163,7 +163,7 @@ async def register_atleta(dados: UsuarioRegister):
     if dados.modalidade_usuario == "povao_pace_livre" and dados.categoria in ["pcd", "cadeirante"]:
         raise HTTPException(
             status_code=400, 
-            detail="A modalidade 'Ranking da Galera - Pace Livre' não está disponível para atletas PCD ou Cadeirantes."
+            detail="A modalidade 'Ranking da Galera' não está disponível para atletas PCD ou Cadeirantes."
         )
     
     faixa = calcular_faixa_etaria(dados.data_nascimento)

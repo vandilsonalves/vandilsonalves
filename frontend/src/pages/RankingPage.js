@@ -492,7 +492,7 @@ const RankingPage = () => {
                 <div className="text-left">
                   <p className="font-semibold text-sm">Ranking da Galera</p>
                   <p className={`text-xs ${tipoRanking === 'povao' ? 'text-purple-100' : 'text-slate-400'}`}>
-                    Pace Livre - Pontuação por distância
+                    Pontuação por distância
                   </p>
                 </div>
               </button>

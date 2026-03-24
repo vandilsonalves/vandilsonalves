@@ -23,7 +23,7 @@ router = APIRouter(tags=["Ranking"])
 @router.get("/ranking/povao")
 @cached(prefix='ranking', ttl_key='ranking_povao')
 async def get_ranking_povao(genero: str = "M"):
-    """Retorna o ranking da Galera - Pace Livre"""
+    """Retorna o ranking da Galera"""
     ranking_list = await db.ranking_povao.find(
         {"ano": 2025, "genero": genero},
         {"_id": 0}
