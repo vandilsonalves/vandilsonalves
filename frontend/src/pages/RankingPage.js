@@ -122,7 +122,7 @@ const RankingPage = () => {
     const fetchRanking = async () => {
       setLoading(true);
       try {
-        let url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=2025`;
+        let url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=${new Date().getFullYear()}`;
         
         // Adicionar filtros à URL
         if (filtroFaixa) url += `&faixa=${filtroFaixa}`;

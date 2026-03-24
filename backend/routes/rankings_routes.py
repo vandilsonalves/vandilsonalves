@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import Optional
 from datetime import datetime, timezone
 
+ANO_ATUAL = datetime.now(timezone.utc).year
+
 from config import db
 from routes.auth_routes import get_current_user, get_admin_user
 
@@ -12,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("/ranking-nacional")
-async def get_ranking_nacional(ano: int = Query(2025)):
+async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
     """Retorna o ranking nacional de atletas"""
     
     pipeline = [
@@ -43,7 +45,7 @@ async def get_ranking_nacional(ano: int = Query(2025)):
 
 
 @router.get("/estados-disponiveis")
-async def get_estados_disponiveis(ano: int = Query(2025)):
+async def get_estados_disponiveis(ano: int = Query(ANO_ATUAL)):
     """Retorna lista de estados com atletas cadastrados"""
     
     estados = await db.usuarios.distinct("estado", {"role": "atleta", "estado": {"$ne": None}})

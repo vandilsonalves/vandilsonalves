@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
+
+ANO_ATUAL = datetime.now(timezone.utc).year
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font
 from pathlib import Path
@@ -34,7 +36,7 @@ async def get_meu_perfil(current_user: dict = Depends(get_current_user)):
     if not usuario:
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
-    ranking = await db.ranking_anual.find_one({"usuario_id": current_user["id"], "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": current_user["id"], "ano": ANO_ATUAL}, {"_id": 0})
     
     return {
         **usuario,
@@ -132,7 +134,7 @@ async def export_meu_ranking(current_user: dict = Depends(get_current_user)):
         {"_id": 0}
     ).sort("data", -1).to_list(None)
     
-    ranking = await db.ranking_anual.find_one({"usuario_id": current_user["id"], "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": current_user["id"], "ano": ANO_ATUAL}, {"_id": 0})
     
     wb = Workbook()
     ws = wb.active

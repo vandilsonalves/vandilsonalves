@@ -58,7 +58,12 @@ Plataforma full-stack de ranking fitness para corridas. O sistema possui ranking
   - Retorna relatório detalhado de divergências corrigidas
   - Botão no painel Admin > Monitoramento > "Sincronizar Rankings"
   - Testado via API: 391 atletas verificados, 33 rankings galera recalculados
-- Renomeação: Substituição global de "Ranking do Povão / Pace Livre" por "Ranking da Galera"
+- Atualização de datas: Todas as 944 corridas migradas para Jan/Fev/Mar 2026 (distribuição: 312/309/323)
+  - ranking_anual (301) e ranking_povao (122) atualizados de ano 2025 → 2026
+  - resultados_pendentes (29) atualizados
+  - Código backend: 22 substituições de ano hardcoded 2025 → ANO_ATUAL dinâmico em 7 arquivos
+  - Código frontend: RankingPage.js e RankingCidadePage.jsx agora usam new Date().getFullYear()
+  - Zero referências a 2025 em código e banco de dados
   - Frontend: 10+ arquivos atualizados (RankingPage, CadastroPage, SubmeterResultado, RegrasPage, AdminDashboard, etc.)
   - Backend: configuracoes_routes.py, admin_routes.py, auth_routes.py, ranking_routes.py, services/__init__.py
   - Zero ocorrências de "Povão" ou "Pace Livre" em textos visíveis ao usuário

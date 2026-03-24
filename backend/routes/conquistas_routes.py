@@ -2,6 +2,9 @@
 # Módulo de Conquistas e Selos
 
 from fastapi import APIRouter, HTTPException, Depends
+from datetime import datetime, timezone
+
+ANO_ATUAL = datetime.now(timezone.utc).year
 
 from config import db
 from models import ConquistaAtleta
@@ -142,7 +145,7 @@ async def verificar_conquistas(usuario_id: str):
         return
     
     corridas = await db.corridas.find({"usuario_id": usuario_id}, {"_id": 0}).to_list(None)
-    ranking = await db.ranking_anual.find_one({"usuario_id": usuario_id, "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": usuario_id, "ano": ANO_ATUAL}, {"_id": 0})
     
     # Buscar total de resultados do atleta
     total_resultados = usuario.get("total_corridas", len(corridas))

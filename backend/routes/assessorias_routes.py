@@ -4,6 +4,8 @@
 from fastapi import APIRouter, HTTPException, Depends, Query
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
+
+ANO_ATUAL = datetime.now(timezone.utc).year
 import uuid
 
 from config import db
@@ -521,11 +523,11 @@ async def get_detalhes_assessoria(nome_equipe: str):
         # Se não tiver pontos no usuário, buscar nos rankings como fallback
         if pontos_atleta == 0:
             ranking_atleta = await db.ranking_anual.find_one(
-                {"usuario_id": atleta["id"], "ano": 2025},
+                {"usuario_id": atleta["id"], "ano": ANO_ATUAL},
                 {"_id": 0, "pontos_total": 1, "total_corridas": 1}
             )
             ranking_povao = await db.ranking_povao.find_one(
-                {"usuario_id": atleta["id"], "ano": 2025},
+                {"usuario_id": atleta["id"], "ano": ANO_ATUAL},
                 {"_id": 0, "pontos_total": 1, "total_corridas": 1}
             )
             
@@ -551,11 +553,11 @@ async def get_detalhes_assessoria(nome_equipe: str):
         # Fallback para rankings
         if pontos_dono == 0:
             ranking_dono = await db.ranking_anual.find_one(
-                {"usuario_id": dono_atleta["id"], "ano": 2025},
+                {"usuario_id": dono_atleta["id"], "ano": ANO_ATUAL},
                 {"_id": 0, "pontos_total": 1, "total_corridas": 1}
             )
             ranking_povao_dono = await db.ranking_povao.find_one(
-                {"usuario_id": dono_atleta["id"], "ano": 2025},
+                {"usuario_id": dono_atleta["id"], "ano": ANO_ATUAL},
                 {"_id": 0, "pontos_total": 1, "total_corridas": 1}
             )
             

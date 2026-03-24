@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
+
+ANO_ATUAL = datetime.now(timezone.utc).year
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 import io
@@ -25,7 +27,7 @@ router = APIRouter(tags=["Ranking"])
 async def get_ranking_povao(genero: str = "M"):
     """Retorna o ranking da Galera"""
     ranking_list = await db.ranking_povao.find(
-        {"ano": 2025, "genero": genero},
+        {"ano": ANO_ATUAL, "genero": genero},
         {"_id": 0}
     ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).to_list(None)
     
@@ -59,11 +61,11 @@ async def get_ranking_povao(genero: str = "M"):
 @cached(prefix='ranking', ttl_key='stats')
 async def get_povao_stats():
     """Retorna estatísticas do ranking da Galera"""
-    total_atletas_m = await db.ranking_povao.count_documents({"ano": 2025, "genero": "M"})
-    total_atletas_f = await db.ranking_povao.count_documents({"ano": 2025, "genero": "F"})
+    total_atletas_m = await db.ranking_povao.count_documents({"ano": ANO_ATUAL, "genero": "M"})
+    total_atletas_f = await db.ranking_povao.count_documents({"ano": ANO_ATUAL, "genero": "F"})
     
     pipeline = [
-        {"$match": {"modalidade": "povao_pace_livre", "ano": 2025}},
+        {"$match": {"modalidade": "povao_pace_livre", "ano": ANO_ATUAL}},
         {"$group": {
             "_id": None,
             "total_provas": {"$sum": 1},
@@ -591,7 +593,7 @@ async def get_destaque_mes(mes: int = None, ano: int = None):
 async def get_ranking_por_categoria(
     categoria: str,
     genero: str,
-    ano: int = 2025,
+    ano: int = ANO_ATUAL,
     limit: int = 100,
     faixa: str = None,
     equipe: str = None,
@@ -739,7 +741,7 @@ async def get_ranking_por_cidade(
     modalidade: str = "profissional",  # profissional ou povao
     genero: str = "M",
     categoria: str = "normal",
-    ano: int = 2025,
+    ano: int = ANO_ATUAL,
     limit: int = 100
 ):
     """
@@ -763,7 +765,7 @@ async def get_ranking_por_cidade(
     
     if modalidade.lower() == "povao":
         # Ranking da Galera - usar coleção ranking_povao
-        ano_povao = 2025
+        ano_povao = ANO_ATUAL
         
         # Filtrar usuários por gênero
         usuarios_filtrados = [u for u in usuarios_cidade if u.get("sexo") == genero or u.get("genero") == genero]

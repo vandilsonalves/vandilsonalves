@@ -96,7 +96,7 @@ const RankingCidadePage = () => {
       const params = new URLSearchParams({
         modalidade,
         genero,
-        ano: 2025  // Fixed to 2025 - ranking data year
+        ano: new Date().getFullYear()  // Ano atual dinâmico
       });
       
       const response = await axios.get(

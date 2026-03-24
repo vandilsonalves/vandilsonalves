@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, 
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from datetime import datetime, timezone, timedelta
+
+ANO_ATUAL = datetime.now(timezone.utc).year
 from openpyxl import Workbook
 from openpyxl.styles import PatternFill, Font, Alignment
 import io
@@ -133,7 +135,7 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             local=f"{cidade_competicao}/{estado_competicao}",
             distancia=resultado.get("distancia", "0"),
             data=data_competicao,
-            ano=2025,
+            ano=ANO_ATUAL,
             modalidade="povao_pace_livre"
         )
         
@@ -149,12 +151,12 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
         
         # Atualizar ranking da Galera
         await db.ranking_povao.update_one(
-            {"usuario_id": resultado["usuario_id"], "ano": 2025},
+            {"usuario_id": resultado["usuario_id"], "ano": ANO_ATUAL},
             {
                 "$inc": {"pontos_total": pontos_povao, "total_corridas": 1},
                 "$setOnInsert": {
                     "usuario_id": resultado["usuario_id"],
-                    "ano": 2025,
+                    "ano": ANO_ATUAL,
                     "categoria": usuario.get("categoria", "normal"),
                     "genero": usuario.get("genero", "M")
                 }
@@ -220,7 +222,7 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             local=f"{cidade_competicao}/{estado_competicao}",
             distancia=resultado.get("distancia", 0),
             data=data_competicao,
-            ano=2025,
+            ano=ANO_ATUAL,
             modalidade="profissional_amador"
         )
         
@@ -236,12 +238,12 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
         
         # Atualizar ranking anual
         await db.ranking_anual.update_one(
-            {"usuario_id": resultado["usuario_id"], "ano": 2025},
+            {"usuario_id": resultado["usuario_id"], "ano": ANO_ATUAL},
             {
                 "$inc": {"pontos_total": pontos, "total_corridas": 1},
                 "$setOnInsert": {
                     "usuario_id": resultado["usuario_id"],
-                    "ano": 2025,
+                    "ano": ANO_ATUAL,
                     "categoria": usuario.get("categoria", "normal"),
                     "genero": usuario.get("genero", "M")
                 }
@@ -907,7 +909,7 @@ async def transferir_modalidade(
         # Zerar pontuação na modalidade anterior
         if modalidade_atual == "profissional_amador":
             await db.ranking_anual.update_one(
-                {"usuario_id": atleta_id, "ano": 2025},
+                {"usuario_id": atleta_id, "ano": ANO_ATUAL},
                 {"$set": {"pontos_total": 0, "total_corridas": 0}}
             )
         else:

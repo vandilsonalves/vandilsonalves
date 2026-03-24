@@ -5,6 +5,8 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
 from datetime import datetime, timezone
+
+ANO_ATUAL = datetime.now(timezone.utc).year
 from pydantic import BaseModel
 import io
 
@@ -214,8 +216,8 @@ async def verificar_badges_atleta(atleta_id: str) -> List[dict]:
         return []
     
     # Buscar dados do atleta
-    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
-    ranking_povao = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
+    ranking_povao = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
     
     corridas = await db.corridas.find({"usuario_id": atleta_id}, {"_id": 0}).to_list(None)
     
@@ -367,8 +369,8 @@ async def get_badges_atleta(atleta_id: str):
         badges = [b for b in badges if b["id"] not in badges_exclusivos]
     
     # Calcular pontos e corridas
-    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
-    ranking_povao = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
+    ranking_povao = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
     
     pontos = ranking.get("pontos_total", 0) if ranking else 0
     total_corridas = ranking.get("total_corridas", 0) if ranking else 0
@@ -411,8 +413,8 @@ async def gerar_card_compartilhamento(atleta_id: str):
     badges_conquistados = [b for b in badges if b["conquistado"]]
     
     # Buscar ranking
-    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
-    ranking_povao = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": 2025}, {"_id": 0})
+    ranking = await db.ranking_anual.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
+    ranking_povao = await db.ranking_povao.find_one({"usuario_id": atleta_id, "ano": ANO_ATUAL}, {"_id": 0})
     
     pontos = ranking.get("pontos_total", 0) if ranking else 0
     colocacao = ranking.get("ranking_categoria", 0) if ranking else 0
