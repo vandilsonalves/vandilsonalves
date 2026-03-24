@@ -511,6 +511,130 @@ const DashboardMonitoramento = () => {
           </div>
         </CardContent>
       </Card>
+
+      {/* Sincronizar Rankings */}
+      <Card className="bg-white dark:bg-slate-800 shadow-lg border-0">
+        <CardHeader className="border-b dark:border-slate-700">
+          <CardTitle className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-amber-500/20 flex items-center justify-center">
+              <RefreshCw className="w-5 h-5 text-amber-500" />
+            </div>
+            <div>
+              <h3 className="font-bold">Sincronizar Rankings</h3>
+              <p className="text-sm text-slate-500 font-normal">Recalcula pontos e corridas a partir dos dados reais</p>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pt-4">
+          <SyncRankingsPanel />
+        </CardContent>
+      </Card>
+    </div>
+  );
+};
+
+const SyncRankingsPanel = () => {
+  const [syncing, setSyncing] = useState(false);
+  const [result, setResult] = useState(null);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    setResult(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`${API_URL}/api/admin/recalcular-rankings`, {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setResult(data.resultados);
+        toast.success(`Rankings sincronizados! ${data.resultados.usuarios_divergentes} divergências corrigidas.`);
+      } else {
+        toast.error('Erro ao sincronizar rankings');
+      }
+    } catch (error) {
+      toast.error('Erro de conexão');
+    } finally {
+      setSyncing(false);
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center gap-3 p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+        <AlertTriangle className="w-5 h-5 text-amber-600 flex-shrink-0" />
+        <p className="text-sm text-amber-800 dark:text-amber-200">
+          Recalcula <strong>pontos</strong> e <strong>total de corridas</strong> de todos os atletas a partir 
+          das corridas registradas. Atualiza: usuarios, ranking_anual e ranking da galera.
+        </p>
+      </div>
+
+      <Button
+        onClick={handleSync}
+        disabled={syncing}
+        className="bg-amber-600 hover:bg-amber-700 text-white"
+        data-testid="btn-recalcular-rankings"
+      >
+        {syncing ? (
+          <>
+            <RefreshCw className="w-4 h-4 mr-2 animate-spin" />
+            Recalculando...
+          </>
+        ) : (
+          <>
+            <RefreshCw className="w-4 h-4 mr-2" />
+            Recalcular Rankings
+          </>
+        )}
+      </Button>
+
+      {result && (
+        <div className="space-y-3 mt-4">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-slate-800 dark:text-white">{result.usuarios_atualizados}</p>
+              <p className="text-xs text-slate-500">Atletas verificados</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-amber-600">{result.usuarios_divergentes}</p>
+              <p className="text-xs text-slate-500">Divergências corrigidas</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-blue-600">{result.ranking_anual_atualizados}</p>
+              <p className="text-xs text-slate-500">Ranking anual atualizados</p>
+            </div>
+            <div className="bg-slate-50 dark:bg-slate-700 p-3 rounded-lg text-center">
+              <p className="text-2xl font-bold text-purple-600">{result.ranking_povao_atualizados}</p>
+              <p className="text-xs text-slate-500">Ranking galera atualizados</p>
+            </div>
+          </div>
+
+          {result.detalhes_divergencias?.length > 0 && (
+            <div className="bg-slate-50 dark:bg-slate-700 rounded-lg p-3">
+              <h4 className="font-semibold text-sm mb-2 text-slate-700 dark:text-slate-300">Divergências encontradas:</h4>
+              <div className="space-y-1 max-h-48 overflow-y-auto">
+                {result.detalhes_divergencias.map((d, idx) => (
+                  <div key={idx} className="flex items-center justify-between text-xs py-1 border-b border-slate-200 dark:border-slate-600 last:border-0">
+                    <span className="font-medium text-slate-700 dark:text-slate-300">{d.nome}</span>
+                    <span className="text-slate-500">
+                      {d.antes.pontos}pts/{d.antes.corridas}corr → {d.depois.pontos}pts/{d.depois.corridas}corr
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {result.usuarios_divergentes === 0 && (
+            <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+              <CheckCircle2 className="w-5 h-5 text-green-600" />
+              <p className="text-sm text-green-700 dark:text-green-300">Todos os rankings estão sincronizados!</p>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

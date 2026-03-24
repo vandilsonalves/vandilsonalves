@@ -52,6 +52,12 @@ Plataforma full-stack de ranking fitness para corridas. O sistema possui ranking
 - Bug Fix: Conexão Strava - redirect_uri atualizado para assessoria-ranking.preview.emergentagent.com
 - Bug Fix: Dados inconsistentes no Ranking (6 atletas com pontos inflados em ranking_anual e 5 em ranking_povao)
   - Auditoria e sincronização de 301 entradas no ranking_anual e 122 no ranking_povao
+- Feature: Endpoint admin para recalcular/sincronizar rankings automaticamente
+  - POST /api/admin/recalcular-rankings - Recalcula pontos e corridas de TODOS atletas a partir da coleção corridas
+  - Atualiza usuarios, ranking_anual e ranking_povao automaticamente
+  - Retorna relatório detalhado de divergências corrigidas
+  - Botão no painel Admin > Monitoramento > "Sincronizar Rankings"
+  - Testado via API: 391 atletas verificados, 33 rankings galera recalculados
 - Renomeação: Substituição global de "Ranking do Povão / Pace Livre" por "Ranking da Galera"
   - Frontend: 10+ arquivos atualizados (RankingPage, CadastroPage, SubmeterResultado, RegrasPage, AdminDashboard, etc.)
   - Backend: configuracoes_routes.py, admin_routes.py, auth_routes.py, ranking_routes.py, services/__init__.py

@@ -1262,3 +1262,122 @@ async def resetar_contador_senha_emergencia(
         "message": f"Contador resetado para {atleta['nome']}",
         "usos_removidos": result.deleted_count
     }
+
+
+# ==================== RECALCULAR RANKINGS ====================
+
+@router.post("/admin/recalcular-rankings")
+async def recalcular_rankings(admin: dict = Depends(get_admin_user)):
+    """
+    Recalcula e sincroniza pontos e corridas de TODOS os atletas
+    a partir da coleção 'corridas' (fonte da verdade).
+    Atualiza: usuarios, ranking_anual, ranking_povao.
+    """
+    import re
+
+    # 1. Agregar dados reais de corridas por usuario_id
+    pipeline = [
+        {"$group": {
+            "_id": "$usuario_id",
+            "total_corridas": {"$sum": 1},
+            "total_pontos": {"$sum": "$pontos"},
+            "distancias": {"$push": "$distancia"}
+        }}
+    ]
+    corridas_agg = await db.corridas.aggregate(pipeline).to_list(None)
+    corridas_map = {c["_id"]: c for c in corridas_agg}
+
+    def parse_distancia(d):
+        if isinstance(d, (int, float)):
+            return float(d)
+        if isinstance(d, str):
+            nums = re.findall(r'[\d.]+', d.upper().replace("KM", ""))
+            return float(nums[0]) if nums else 0
+        return 0
+
+    stats = {
+        "usuarios_atualizados": 0,
+        "usuarios_divergentes": 0,
+        "ranking_anual_atualizados": 0,
+        "ranking_povao_atualizados": 0,
+        "detalhes_divergencias": []
+    }
+
+    # 2. Atualizar usuarios
+    all_users = await db.usuarios.find(
+        {"role": "atleta"},
+        {"_id": 0, "id": 1, "nome": 1, "pontos_total": 1, "total_corridas": 1}
+    ).to_list(None)
+
+    for user in all_users:
+        uid = user["id"]
+        real = corridas_map.get(uid, {"total_corridas": 0, "total_pontos": 0})
+        real_pts = real["total_pontos"]
+        real_corr = real["total_corridas"]
+        curr_pts = user.get("pontos_total", 0)
+        curr_corr = user.get("total_corridas", 0)
+
+        if curr_pts != real_pts or curr_corr != real_corr:
+            await db.usuarios.update_one(
+                {"id": uid},
+                {"$set": {
+                    "pontos_total": real_pts,
+                    "total_corridas": real_corr
+                }}
+            )
+            stats["usuarios_divergentes"] += 1
+            stats["detalhes_divergencias"].append({
+                "nome": user.get("nome", "?"),
+                "antes": {"pontos": curr_pts, "corridas": curr_corr},
+                "depois": {"pontos": real_pts, "corridas": real_corr}
+            })
+        stats["usuarios_atualizados"] += 1
+
+    # 3. Atualizar ranking_anual
+    all_anual = await db.ranking_anual.find({}, {"_id": 0, "usuario_id": 1, "pontos_total": 1, "total_corridas": 1}).to_list(None)
+    for entry in all_anual:
+        uid = entry["usuario_id"]
+        real = corridas_map.get(uid, {"total_corridas": 0, "total_pontos": 0})
+        if entry.get("pontos_total", 0) != real["total_pontos"] or entry.get("total_corridas", 0) != real["total_corridas"]:
+            await db.ranking_anual.update_many(
+                {"usuario_id": uid},
+                {"$set": {
+                    "pontos_total": real["total_pontos"],
+                    "total_corridas": real["total_corridas"],
+                    "atualizado_em": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            stats["ranking_anual_atualizados"] += 1
+
+    # 4. Atualizar ranking_povao
+    all_povao = await db.ranking_povao.find({}, {"_id": 0, "usuario_id": 1, "pontos_total": 1, "total_corridas": 1, "distancia_acumulada": 1}).to_list(None)
+    for entry in all_povao:
+        uid = entry["usuario_id"]
+        real = corridas_map.get(uid, {"total_corridas": 0, "total_pontos": 0, "distancias": []})
+        real_dist = sum(parse_distancia(d) for d in real.get("distancias", []))
+
+        needs_update = (
+            entry.get("pontos_total", 0) != real["total_pontos"] or
+            entry.get("total_corridas", 0) != real["total_corridas"] or
+            abs(entry.get("distancia_acumulada", 0) - real_dist) > 0.1
+        )
+        if needs_update:
+            await db.ranking_povao.update_one(
+                {"usuario_id": uid},
+                {"$set": {
+                    "pontos_total": real["total_pontos"],
+                    "total_corridas": real["total_corridas"],
+                    "distancia_acumulada": real_dist,
+                    "distancia_total": real_dist,
+                    "atualizado_em": datetime.now(timezone.utc).isoformat()
+                }}
+            )
+            stats["ranking_povao_atualizados"] += 1
+
+    # Limitar detalhes a 20 para não sobrecarregar a resposta
+    stats["detalhes_divergencias"] = stats["detalhes_divergencias"][:20]
+
+    return {
+        "message": "Rankings recalculados com sucesso",
+        "resultados": stats
+    }
