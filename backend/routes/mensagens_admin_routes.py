@@ -398,3 +398,151 @@ async def cidades_disponiveis(
         filtro["estado"] = estado
     cidades = await db.usuarios.distinct("cidade", filtro)
     return {"cidades": sorted(cidades)}
+
+
+@router.get("/admin/mensagens/{mensagem_id}/leitura")
+async def stats_leitura_mensagem(mensagem_id: str, admin: dict = Depends(get_admin_user)):
+    """Retorna estatísticas de leitura de uma mensagem específica"""
+    msg = await db.mensagens_admin.find_one({"id": mensagem_id}, {"_id": 0})
+    if not msg:
+        raise HTTPException(status_code=404, detail="Mensagem não encontrada")
+
+    # Count read/unread notifications
+    total = await db.notificacoes.count_documents({"mensagem_id": mensagem_id, "tipo": "mensagem_admin"})
+    lidas = await db.notificacoes.count_documents({"mensagem_id": mensagem_id, "tipo": "mensagem_admin", "lida": True})
+    nao_lidas = total - lidas
+
+    # Get list of unread users with their names
+    nao_lidos_notifs = await db.notificacoes.find(
+        {"mensagem_id": mensagem_id, "tipo": "mensagem_admin", "lida": False},
+        {"_id": 0, "usuario_id": 1, "id": 1}
+    ).to_list(None)
+
+    nao_lidos_ids = [n["usuario_id"] for n in nao_lidos_notifs]
+
+    # Fetch user details
+    atletas_nao_leram = []
+    if nao_lidos_ids:
+        usuarios = await db.usuarios.find(
+            {"id": {"$in": nao_lidos_ids}},
+            {"_id": 0, "id": 1, "nome": 1, "email": 1, "equipe": 1, "estado": 1, "cidade": 1}
+        ).to_list(None)
+        atletas_nao_leram = usuarios
+
+    # Get list of read users
+    lidos_notifs = await db.notificacoes.find(
+        {"mensagem_id": mensagem_id, "tipo": "mensagem_admin", "lida": True},
+        {"_id": 0, "usuario_id": 1}
+    ).to_list(None)
+    lidos_ids = [n["usuario_id"] for n in lidos_notifs]
+    atletas_leram = []
+    if lidos_ids:
+        usuarios_lidos = await db.usuarios.find(
+            {"id": {"$in": lidos_ids}},
+            {"_id": 0, "id": 1, "nome": 1, "email": 1, "equipe": 1}
+        ).to_list(None)
+        atletas_leram = usuarios_lidos
+
+    return {
+        "mensagem_id": mensagem_id,
+        "titulo": msg.get("titulo", ""),
+        "total_enviados": total,
+        "total_lidas": lidas,
+        "total_nao_lidas": nao_lidas,
+        "percentual_leitura": round((lidas / total * 100) if total > 0 else 0, 1),
+        "atletas_nao_leram": atletas_nao_leram,
+        "atletas_leram": atletas_leram
+    }
+
+
+@router.post("/admin/mensagens/{mensagem_id}/reenviar-splash")
+async def reenviar_como_splash(
+    mensagem_id: str,
+    admin: dict = Depends(get_admin_user)
+):
+    """
+    Reenvia a mensagem como splash screen para todos que NÃO leram.
+    O splash bloqueia a tela do atleta até ele confirmar a leitura.
+    """
+    msg = await db.mensagens_admin.find_one({"id": mensagem_id}, {"_id": 0})
+    if not msg:
+        raise HTTPException(status_code=404, detail="Mensagem não encontrada")
+
+    # Find users who haven't read
+    nao_lidos_notifs = await db.notificacoes.find(
+        {"mensagem_id": mensagem_id, "tipo": "mensagem_admin", "lida": False},
+        {"_id": 0, "usuario_id": 1, "id": 1}
+    ).to_list(None)
+
+    if not nao_lidos_notifs:
+        return {"message": "Todos já leram esta mensagem!", "total_reenviados": 0}
+
+    agora = datetime.now(timezone.utc).isoformat()
+    splash_id = str(uuid.uuid4())
+    reenviados = 0
+
+    for notif in nao_lidos_notifs:
+        # Create splash notification
+        splash_notif = {
+            "id": str(uuid.uuid4()),
+            "mensagem_id": mensagem_id,
+            "splash_id": splash_id,
+            "usuario_id": notif["usuario_id"],
+            "tipo": "splash_admin",
+            "titulo": msg.get("titulo", "Mensagem Importante"),
+            "mensagem": msg.get("mensagem", ""),
+            "link": msg.get("link"),
+            "anexos": msg.get("anexos", []),
+            "lida": False,
+            "data_criacao": agora,
+            "remetente_id": admin.get("id", "system"),
+            "remetente_nome": "Ranking Run"
+        }
+        await db.notificacoes.insert_one(splash_notif)
+        reenviados += 1
+
+    # Update mensagem_admin record
+    await db.mensagens_admin.update_one(
+        {"id": mensagem_id},
+        {"$set": {
+            "ultimo_reenvio_splash": agora,
+            "total_splash_reenviados": reenviados
+        }}
+    )
+
+    return {
+        "message": f"Splash screen enviado para {reenviados} atleta(s) que não leram",
+        "total_reenviados": reenviados,
+        "splash_id": splash_id
+    }
+
+
+@router.get("/notificacoes/splash-pendente")
+async def splash_pendente(current_user: dict = Depends(get_current_user)):
+    """Retorna splash screen pendente do usuário (não lido)"""
+    splash = await db.notificacoes.find_one(
+        {"usuario_id": current_user["id"], "tipo": "splash_admin", "lida": False},
+        {"_id": 0}
+    )
+    return {"splash": splash}
+
+
+@router.post("/notificacoes/splash/{notificacao_id}/confirmar")
+async def confirmar_splash(notificacao_id: str, current_user: dict = Depends(get_current_user)):
+    """Marca splash screen como lido/confirmado"""
+    result = await db.notificacoes.update_one(
+        {"id": notificacao_id, "usuario_id": current_user["id"], "tipo": "splash_admin"},
+        {"$set": {"lida": True, "data_leitura": datetime.now(timezone.utc).isoformat()}}
+    )
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Splash não encontrado")
+
+    # Also mark the original notification as read
+    splash = await db.notificacoes.find_one({"id": notificacao_id}, {"_id": 0, "mensagem_id": 1, "usuario_id": 1})
+    if splash and splash.get("mensagem_id"):
+        await db.notificacoes.update_many(
+            {"mensagem_id": splash["mensagem_id"], "usuario_id": current_user["id"], "tipo": "mensagem_admin"},
+            {"$set": {"lida": True}}
+        )
+
+    return {"message": "Splash confirmado"}

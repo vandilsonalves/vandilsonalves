@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   Send, Paperclip, Link2, Image, X, Loader2, CheckCircle2,
   Users, Clock, FileText, Download, ChevronDown, ChevronUp,
-  Calendar, XCircle, Timer, MapPin, Building2
+  Calendar, XCircle, Timer, MapPin, Building2, Eye, EyeOff, RefreshCw, Zap
 } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
@@ -49,6 +49,9 @@ const DashboardMensagens = () => {
   const [modoAgendar, setModoAgendar] = useState(false);
   const [dataAgendamento, setDataAgendamento] = useState('');
   const [horaAgendamento, setHoraAgendamento] = useState('09:00');
+  const [leituraStats, setLeituraStats] = useState(null);
+  const [loadingLeitura, setLoadingLeitura] = useState(false);
+  const [reenviandoSplash, setReenviandoSplash] = useState(false);
 
   const [filtroTipo, setFiltroTipo] = useState('todos');
   const [filtroModalidades, setFiltroModalidades] = useState([]);
@@ -168,6 +171,48 @@ const DashboardMensagens = () => {
       }
     } catch (e) {
       toast.error('Erro de conexão');
+    }
+  };
+
+
+  const fetchLeituraStats = async (mensagemId) => {
+    setLoadingLeitura(true);
+    try {
+      const res = await fetch(`${API}/admin/mensagens/${mensagemId}/leitura`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        setLeituraStats(data);
+      } else {
+        toast.error('Erro ao buscar dados de leitura');
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Erro ao buscar dados de leitura');
+    } finally {
+      setLoadingLeitura(false);
+    }
+  };
+
+  const handleReenviarSplash = async (mensagemId) => {
+    if (!window.confirm('Enviar splash screen para todos que NÃO leram esta mensagem?')) return;
+    setReenviandoSplash(true);
+    try {
+      const res = await fetch(`${API}/admin/mensagens/${mensagemId}/reenviar-splash`, {
+        method: 'POST',
+        headers
+      });
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(data.message);
+        fetchLeituraStats(mensagemId);
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Erro ao reenviar');
+      }
+    } catch (e) {
+      toast.error('Erro ao reenviar como splash');
+    } finally {
+      setReenviandoSplash(false);
     }
   };
 
@@ -830,6 +875,125 @@ const DashboardMensagens = () => {
                         {msg.filtro_tipo === 'todos' ? 'Todos' : getFiltroLabel(msg.filtro_tipo)}
                       </Badge>
                     </div>
+                    {/* Botões de ação */}
+                    {(!msg.status || msg.status === 'enviada') && (
+                      <div className="flex items-center gap-2 mt-3 pt-2 border-t border-slate-200 dark:border-slate-600">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => fetchLeituraStats(msg.id)}
+                          className="text-xs h-7"
+                          data-testid={`btn-ver-leitura-${idx}`}
+                        >
+                          <Eye className="w-3 h-3 mr-1" /> Ver Leitura
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => handleReenviarSplash(msg.id)}
+                          disabled={reenviandoSplash}
+                          className="text-xs h-7 text-amber-600 border-amber-300 hover:bg-amber-50"
+                          data-testid={`btn-splash-${idx}`}
+                        >
+                          <Zap className="w-3 h-3 mr-1" /> Reenviar como Splash
+                        </Button>
+                      </div>
+                    )}
+                    {/* Painel de Leitura */}
+                    {leituraStats && leituraStats.mensagem_id === msg.id && (
+                      <div className="mt-3 p-3 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-600 space-y-3" data-testid="painel-leitura">
+                        <div className="flex items-center justify-between">
+                          <h5 className="font-semibold text-sm flex items-center gap-2">
+                            <Eye className="w-4 h-4 text-blue-500" /> Status de Leitura
+                          </h5>
+                          <button onClick={() => setLeituraStats(null)} className="text-slate-400 hover:text-slate-600">
+                            <X className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        {loadingLeitura ? (
+                          <div className="text-center py-4"><Loader2 className="w-5 h-5 animate-spin mx-auto text-blue-500" /></div>
+                        ) : (
+                          <>
+                            {/* Stats bar */}
+                            <div className="grid grid-cols-3 gap-3">
+                              <div className="text-center p-2 bg-blue-50 dark:bg-blue-900/30 rounded-lg">
+                                <div className="text-lg font-bold text-blue-600">{leituraStats.total_enviados}</div>
+                                <div className="text-xs text-slate-500">Total</div>
+                              </div>
+                              <div className="text-center p-2 bg-green-50 dark:bg-green-900/30 rounded-lg">
+                                <div className="text-lg font-bold text-green-600">{leituraStats.total_lidas}</div>
+                                <div className="text-xs text-slate-500">Leram</div>
+                              </div>
+                              <div className="text-center p-2 bg-red-50 dark:bg-red-900/30 rounded-lg">
+                                <div className="text-lg font-bold text-red-600">{leituraStats.total_nao_lidas}</div>
+                                <div className="text-xs text-slate-500">Não Leram</div>
+                              </div>
+                            </div>
+
+                            {/* Progress bar */}
+                            <div>
+                              <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
+                                <span>Taxa de leitura</span>
+                                <span className="font-semibold">{leituraStats.percentual_leitura}%</span>
+                              </div>
+                              <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                <div
+                                  className="bg-gradient-to-r from-emerald-500 to-green-500 rounded-full h-2 transition-all"
+                                  style={{ width: `${leituraStats.percentual_leitura}%` }}
+                                />
+                              </div>
+                            </div>
+
+                            {/* List of unread users */}
+                            {leituraStats.total_nao_lidas > 0 && (
+                              <div>
+                                <div className="flex items-center justify-between mb-2">
+                                  <p className="text-xs font-semibold text-red-600 flex items-center gap-1">
+                                    <EyeOff className="w-3 h-3" /> Não leram ({leituraStats.total_nao_lidas})
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    onClick={() => handleReenviarSplash(msg.id)}
+                                    disabled={reenviandoSplash}
+                                    className="text-xs h-6 bg-amber-500 hover:bg-amber-600 text-white"
+                                    data-testid="btn-splash-leitura"
+                                  >
+                                    {reenviandoSplash ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <Zap className="w-3 h-3 mr-1" />}
+                                    Enviar Splash para estes
+                                  </Button>
+                                </div>
+                                <div className="max-h-40 overflow-y-auto space-y-1">
+                                  {leituraStats.atletas_nao_leram.map((atleta, i) => (
+                                    <div key={i} className="flex items-center justify-between text-xs p-1.5 bg-red-50 dark:bg-red-900/20 rounded">
+                                      <span className="font-medium text-slate-700 dark:text-slate-300">{atleta.nome}</span>
+                                      <span className="text-slate-400">{atleta.equipe || 'Individual'}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* List of read users (collapsed) */}
+                            {leituraStats.total_lidas > 0 && (
+                              <details className="text-xs">
+                                <summary className="cursor-pointer text-green-600 font-semibold flex items-center gap-1">
+                                  <Eye className="w-3 h-3 inline" /> Leram ({leituraStats.total_lidas})
+                                </summary>
+                                <div className="max-h-32 overflow-y-auto space-y-1 mt-1">
+                                  {leituraStats.atletas_leram.map((atleta, i) => (
+                                    <div key={i} className="flex items-center justify-between p-1.5 bg-green-50 dark:bg-green-900/20 rounded">
+                                      <span className="font-medium text-slate-700 dark:text-slate-300">{atleta.nome}</span>
+                                      <span className="text-slate-400">{atleta.equipe || 'Individual'}</span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </details>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>

@@ -14,6 +14,14 @@ import DonoAssessoriaDashboard from "@/pages/DonoAssessoriaDashboard.jsx";
 import RankingCorridasPage from "@/pages/RankingCorridasPage.jsx";
 import ComoSerVerificadoPage from "@/pages/ComoSerVerificadoPage.jsx";
 import BirthdayPopup from "@/components/BirthdayPopup";
+import SplashScreen from "@/components/SplashScreen";
+import { useAuth } from "@/context/AuthContext";
+
+function SplashScreenWrapper() {
+  const { token, user } = useAuth();
+  if (!token || !user || user.role === 'admin') return null;
+  return <SplashScreen token={token} />;
+}
 import DashboardEstrategico from "@/pages/admin/DashboardEstrategico";
 import FeedPage from "@/pages/FeedPage";
 import RegrasPage from "@/pages/RegrasPage";
@@ -29,6 +37,7 @@ function App() {
       <div className="App">
         <BrowserRouter>
           <BirthdayPopup />
+          <SplashScreenWrapper />
           <Routes>
             <Route path="/" element={<RankingPage />} />
             <Route path="/login" element={<LoginPage />} />
