@@ -50,6 +50,7 @@ import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
 import DashboardMensagens from './admin/DashboardMensagens';
 import DashboardEngajamento from './admin/DashboardEngajamento';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
+import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 
 // Definição dos itens do menu organizados em seções
 const menuSections = [
@@ -174,6 +175,10 @@ const AdminDashboard = () => {
     data_nascimento: '', telefone: '', tipo_corredor: '', terreno_preferido: '',
     modalidade_usuario: 'profissional_amador'
   });
+
+  // Cidades via IBGE para modais de atleta
+  const { cidades: cidadesNovoAtleta, loading: loadingCidadesNovo } = useCidadesIBGE(novoAtleta.estado);
+  const { cidades: cidadesEditAtleta, loading: loadingCidadesEdit } = useCidadesIBGE(atletaEditando?.estado);
 
   // Liga de Assessorias (ROE-RR)
   const [ligaRanking, setLigaRanking] = useState([]);
@@ -1113,17 +1118,26 @@ const AdminDashboard = () => {
                   <Input value={atletaEditando.equipe} onChange={(e) => setAtletaEditando({...atletaEditando, equipe: e.target.value})} />
                 </div>
                 <div className="space-y-2">
-                  <Label>Cidade</Label>
-                  <Input value={atletaEditando.cidade} onChange={(e) => setAtletaEditando({...atletaEditando, cidade: e.target.value})} />
-                </div>
-                <div className="space-y-2">
                   <Label>UF</Label>
-                  <Select value={atletaEditando.estado} onValueChange={(v) => setAtletaEditando({...atletaEditando, estado: v})}>
+                  <Select value={atletaEditando.estado} onValueChange={(v) => setAtletaEditando({...atletaEditando, estado: v, cidade: ''})}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
                       {ESTADOS_BR.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
                     </SelectContent>
                   </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Cidade</Label>
+                  {atletaEditando.estado ? (
+                    <Select value={atletaEditando.cidade} onValueChange={(v) => setAtletaEditando({...atletaEditando, cidade: v})} disabled={loadingCidadesEdit}>
+                      <SelectTrigger data-testid="edit-select-cidade"><SelectValue placeholder={loadingCidadesEdit ? "Carregando..." : "Selecione a cidade"} /></SelectTrigger>
+                      <SelectContent className="max-h-[200px]">
+                        {cidadesEditAtleta.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <Input disabled placeholder="Selecione o estado primeiro" className="bg-slate-100" />
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label>Categoria</Label>
@@ -1179,17 +1193,26 @@ const AdminDashboard = () => {
                 <Input value={novoAtleta.equipe} onChange={(e) => setNovoAtleta({...novoAtleta, equipe: e.target.value})} />
               </div>
               <div className="space-y-2">
-                <Label>Cidade *</Label>
-                <Input value={novoAtleta.cidade} onChange={(e) => setNovoAtleta({...novoAtleta, cidade: e.target.value})} />
-              </div>
-              <div className="space-y-2">
                 <Label>UF</Label>
-                <Select value={novoAtleta.estado} onValueChange={(v) => setNovoAtleta({...novoAtleta, estado: v})}>
+                <Select value={novoAtleta.estado} onValueChange={(v) => setNovoAtleta({...novoAtleta, estado: v, cidade: ''})}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
                     {ESTADOS_BR.map((uf) => <SelectItem key={uf} value={uf}>{uf}</SelectItem>)}
                   </SelectContent>
                 </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Cidade *</Label>
+                {novoAtleta.estado ? (
+                  <Select value={novoAtleta.cidade} onValueChange={(v) => setNovoAtleta({...novoAtleta, cidade: v})} disabled={loadingCidadesNovo}>
+                    <SelectTrigger data-testid="admin-select-cidade"><SelectValue placeholder={loadingCidadesNovo ? "Carregando..." : "Selecione a cidade"} /></SelectTrigger>
+                    <SelectContent className="max-h-[200px]">
+                      {cidadesNovoAtleta.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input disabled placeholder="Selecione o estado primeiro" className="bg-slate-100" />
+                )}
               </div>
               <div className="space-y-2">
                 <Label>Categoria</Label>
