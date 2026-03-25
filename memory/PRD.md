@@ -29,11 +29,15 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 - [x] Fix performance (indices MongoDB, lazy loading Admin)
 - [x] Fix ano hardcoded (2025 -> dinamico)
 - [x] Fix WebSocket 403, navigate not defined, KeyError categoria
-- [x] Dropdown de cidades via API IBGE (CadastroPage + Admin modais) - Iteration 71
-- [x] CidadeCombobox com busca por texto em TODOS os dropdowns de cidade do app - Iteration 72
-  - Componente reutilizavel: `/app/frontend/src/components/CidadeCombobox.jsx`
-  - Usa Popover + Command (cmdk) para filtrar cidades enquanto digita
-  - Substituido em 11 locais: CadastroPage (2x), AdminDashboard (2x), DashboardCorridas (2x), DashboardAtletas (1x), DashboardAssessorias (1x), SubmeterResultadoPage (1x), RankingCorridasPage (1x), CriarAssessoria (1x)
+- [x] CidadeCombobox com busca por texto em TODOS os dropdowns de cidade - Iteration 72
+- [x] Upload de FOTOS no Feed Social - Iteration 73
+  - Upload 1 foto por vez (max 5MB, formatos: jpg/png/webp/heic/heif)
+  - Limite de 2 fotos por dia (24h) por atleta
+  - Foto acompanhada de texto (opcional)
+  - Preview da foto antes de publicar
+  - Contador de fotos restantes visivel
+  - Badge "Foto" nos posts com imagem
+  - Backend: POST /api/feed/posts/com-foto + GET /api/feed/fotos-restantes
 
 ### Backlog
 - [ ] Limpeza de codigo morto no AdminDashboard.jsx (P3)
@@ -41,13 +45,15 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 - [ ] Relatorios semanais automaticos para donos de assessoria (P3)
 
 ## Endpoints Chave
+- `POST /api/feed/posts/com-foto` - Upload de foto no feed (Form: foto + texto)
+- `GET /api/feed/fotos-restantes` - Fotos restantes no dia
+- `GET /api/feed` - Feed social paginado
+- `POST /api/feed/posts` - Post de texto
+- `POST /api/feed/posts/{id}/reagir` - Reagir a um post
+- `POST /api/feed/posts/{id}/comentarios` - Comentar em um post
 - `GET /api/admin/mensagens/engajamento` - Dashboard de engajamento
-- `GET /api/admin/stats/categorias` - Stats por categoria
-- `GET /api/admin/atletas?limit=1000` - Lista atletas com estado/cidade
 - `GET /api/raio-x/completo` - Dados completos do Raio-X
 - `WS /api/ws/notifications?token=JWT` - WebSocket tempo real
-- `POST /api/register` - Registro com campos de perfil
-- `POST /api/admin/atletas` - Criar atleta via admin
 - IBGE: `https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf}/municipios`
 
 ## Credenciais de Teste
@@ -57,4 +63,6 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 ## Notas
 - **Redis:** Pode cair no preview. Reinstalar se Celery falhar.
 - **Ano Dinamico:** `ANO_ATUAL = datetime.now().year` em server.py.
-- **CidadeCombobox:** Componente reutilizavel em `/app/frontend/src/components/CidadeCombobox.jsx`. Props: cidades, value, onValueChange, loading, disabled, placeholder, allOption, triggerClassName, data-testid.
+- **CidadeCombobox:** Componente reutilizavel com busca por texto.
+- **Upload Fotos:** Salvas em /app/uploads/feed/, servidas via /api/uploads/feed/{nome}. Limite 2/dia via _contar_fotos_hoje().
+- **Form vs Query:** Ao usar UploadFile com campos de texto, use Form("") nao str = "".

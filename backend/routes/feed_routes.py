@@ -1,7 +1,7 @@
 # /app/backend/routes/feed_routes.py
 # Feed Social da plataforma com sistema de reações e posts automáticos de conquistas
 
-from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File
+from fastapi import APIRouter, HTTPException, Depends, Query, UploadFile, File, Form
 from typing import Optional, List
 from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
@@ -287,7 +287,7 @@ async def criar_post(
 # Endpoint de upload de foto no feed
 @router.post("/feed/posts/com-foto")
 async def criar_post_com_foto(
-    texto: str = "",
+    texto: str = Form(""),
     foto: UploadFile = File(...),
     current_user: dict = Depends(get_current_user)
 ):
