@@ -1161,7 +1161,7 @@ const AdminDashboard = () => {
 
         {/* Modal Adicionar Atleta */}
         <Dialog open={showAddAtletaModal} onOpenChange={setShowAddAtletaModal}>
-          <DialogContent className="max-w-2xl">
+          <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>Cadastrar Novo Atleta</DialogTitle>
             </DialogHeader>
@@ -1220,55 +1220,56 @@ const AdminDashboard = () => {
                 <Label>Telefone *</Label>
                 <Input value={novoAtleta.telefone} onChange={(e) => setNovoAtleta({...novoAtleta, telefone: e.target.value})} placeholder="(00) 00000-0000" data-testid="admin-input-telefone" />
               </div>
-              <div className="space-y-2">
-                <Label>Tipo de Corredor *</Label>
-                <Select value={novoAtleta.tipo_corredor} onValueChange={(v) => setNovoAtleta({...novoAtleta, tipo_corredor: v})}>
-                  <SelectTrigger data-testid="admin-select-tipo-corredor">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="velocista"><span><strong className="uppercase">VELOCISTA</strong> <span className="text-xs text-slate-500">- provas curtas até 5km</span></span></SelectItem>
-                    <SelectItem value="resistencia"><span><strong className="uppercase">RESISTÊNCIA</strong> <span className="text-xs text-slate-500">- provas mais longas até 21km</span></span></SelectItem>
-                    <SelectItem value="endurance"><span><strong className="uppercase">ENDURANCE</strong> <span className="text-xs text-slate-500">- provas acima de 42km</span></span></SelectItem>
-                    <SelectItem value="pace_leve"><span><strong className="uppercase">PACE LEVE</strong> <span className="text-xs text-slate-500">- Corro por Diversão</span></span></SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>Terreno Preferido *</Label>
-                <Select value={novoAtleta.terreno_preferido} onValueChange={(v) => setNovoAtleta({...novoAtleta, terreno_preferido: v})}>
-                  <SelectTrigger data-testid="admin-select-terreno">
-                    <SelectValue placeholder="Selecione" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="rua_asfalto">Rua - Asfalto</SelectItem>
-                    <SelectItem value="trilha">Trilha</SelectItem>
-                    <SelectItem value="esteira">Esteira</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Tipo de Corredor *</Label>
+                  <Select value={novoAtleta.tipo_corredor} onValueChange={(v) => setNovoAtleta({...novoAtleta, tipo_corredor: v})}>
+                    <SelectTrigger data-testid="admin-select-tipo-corredor">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="velocista"><span><strong className="uppercase">VELOCISTA</strong> <span className="text-xs text-slate-500">- até 5km</span></span></SelectItem>
+                      <SelectItem value="resistencia"><span><strong className="uppercase">RESISTÊNCIA</strong> <span className="text-xs text-slate-500">- até 21km</span></span></SelectItem>
+                      <SelectItem value="endurance"><span><strong className="uppercase">ENDURANCE</strong> <span className="text-xs text-slate-500">- acima de 42km</span></span></SelectItem>
+                      <SelectItem value="pace_leve"><span><strong className="uppercase">PACE LEVE</strong> <span className="text-xs text-slate-500">- Diversão</span></span></SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Terreno Preferido *</Label>
+                  <Select value={novoAtleta.terreno_preferido} onValueChange={(v) => setNovoAtleta({...novoAtleta, terreno_preferido: v})}>
+                    <SelectTrigger data-testid="admin-select-terreno">
+                      <SelectValue placeholder="Selecione" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rua_asfalto">Rua - Asfalto</SelectItem>
+                      <SelectItem value="trilha">Trilha</SelectItem>
+                      <SelectItem value="esteira">Esteira</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
             </div>
 
             {/* Modalidade de Participação */}
             <div className="pt-3 border-t">
-              <Label className="text-base font-semibold">Modalidade de Participação *</Label>
-              <p className="text-xs text-slate-500 mb-3">Escolha como o atleta irá competir no Ranking Run Pró</p>
-              <div className="grid grid-cols-2 gap-3">
+              <Label className="text-sm font-semibold">Modalidade de Participação *</Label>
+              <div className="grid grid-cols-2 gap-3 mt-2">
                 <div
                   onClick={() => setNovoAtleta({...novoAtleta, modalidade_usuario: 'profissional_amador'})}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-lg border-2 cursor-pointer transition-all ${
                     novoAtleta.modalidade_usuario === 'profissional_amador'
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                       : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
                   }`}
                   data-testid="admin-modalidade-profissional"
                 >
-                  <p className="font-bold text-sm">Atleta Profissional / Amador</p>
-                  <p className="text-xs text-slate-500 mt-1">Pontuação baseada em colocação (1° a 10° lugar)</p>
+                  <p className="font-bold text-sm">Profissional / Amador</p>
+                  <p className="text-xs text-slate-500">Pontuação por colocação</p>
                 </div>
                 <div
                   onClick={() => setNovoAtleta({...novoAtleta, modalidade_usuario: 'povao_pace_livre'})}
-                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                  className={`p-2.5 rounded-lg border-2 cursor-pointer transition-all ${
                     novoAtleta.modalidade_usuario === 'povao_pace_livre'
                       ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
                       : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
@@ -1276,7 +1277,7 @@ const AdminDashboard = () => {
                   data-testid="admin-modalidade-galera"
                 >
                   <p className="font-bold text-sm">Ranking da Galera</p>
-                  <p className="text-xs text-slate-500 mt-1">Pontuação baseada apenas na distância percorrida</p>
+                  <p className="text-xs text-slate-500">Pontuação por distância</p>
                 </div>
               </div>
             </div>
