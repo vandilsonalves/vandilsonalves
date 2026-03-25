@@ -7,6 +7,8 @@ from datetime import datetime, timezone, timedelta
 from pydantic import BaseModel
 import uuid
 from pathlib import Path
+from io import BytesIO
+from PIL import Image as PILImage
 
 from config import db
 from routes.auth_routes import get_current_user
@@ -61,6 +63,59 @@ EXTENSOES_PERMITIDAS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
 
 STORIES_DIR = Path("/app/uploads/stories")
 STORIES_DIR.mkdir(parents=True, exist_ok=True)
+
+MAX_IMG_WIDTH = 1200  # largura máxima em pixels
+MAX_IMG_HEIGHT = 1200
+JPEG_QUALITY = 82
+
+
+def _comprimir_imagem(conteudo: bytes, ext: str) -> tuple[bytes, str]:
+    """Redimensiona e comprime a imagem para tamanho adequado."""
+    try:
+        img = PILImage.open(BytesIO(conteudo))
+
+        # Converter RGBA/palette para RGB
+        if img.mode in ('RGBA', 'P', 'LA'):
+            bg = PILImage.new('RGB', img.size, (255, 255, 255))
+            if img.mode == 'RGBA' or (img.mode == 'P' and 'transparency' in img.info):
+                bg.paste(img, mask=img.convert('RGBA').split()[-1])
+            else:
+                bg.paste(img)
+            img = bg
+        elif img.mode != 'RGB':
+            img = img.convert('RGB')
+
+        # Corrigir orientação EXIF
+        try:
+            from PIL import ExifTags
+            for orientation in ExifTags.TAGS.keys():
+                if ExifTags.TAGS[orientation] == 'Orientation':
+                    break
+            exif = img._getexif()
+            if exif and orientation in exif:
+                if exif[orientation] == 3:
+                    img = img.rotate(180, expand=True)
+                elif exif[orientation] == 6:
+                    img = img.rotate(270, expand=True)
+                elif exif[orientation] == 8:
+                    img = img.rotate(90, expand=True)
+        except Exception:
+            pass
+
+        # Redimensionar se necessário
+        w, h = img.size
+        if w > MAX_IMG_WIDTH or h > MAX_IMG_HEIGHT:
+            ratio = min(MAX_IMG_WIDTH / w, MAX_IMG_HEIGHT / h)
+            new_size = (int(w * ratio), int(h * ratio))
+            img = img.resize(new_size, PILImage.LANCZOS)
+
+        # Salvar como JPEG comprimido
+        buffer = BytesIO()
+        img.save(buffer, format='JPEG', quality=JPEG_QUALITY, optimize=True)
+        return buffer.getvalue(), '.jpg'
+    except Exception:
+        # Se falhar a compressão, retorna original
+        return conteudo, ext
 
 
 async def _contar_fotos_hoje(usuario_id: str) -> int:
@@ -354,11 +409,12 @@ async def criar_post_com_foto(
                 "educativo": feedback_educativo
             })
 
-    # 6. Salvar arquivo
-    nome_arquivo = f"{uuid.uuid4()}{ext}"
+    # 6. Comprimir e salvar arquivo
+    conteudo_final, ext_final = _comprimir_imagem(conteudo, ext)
+    nome_arquivo = f"{uuid.uuid4()}{ext_final}"
     caminho_arquivo = UPLOAD_DIR / nome_arquivo
     with open(caminho_arquivo, "wb") as f:
-        f.write(conteudo)
+        f.write(conteudo_final)
 
     imagem_url = f"/uploads/feed/{nome_arquivo}"
 
@@ -1326,9 +1382,10 @@ async def criar_story(
     if texto.strip() and len(texto) > 200:
         raise HTTPException(status_code=400, detail="Texto do story máximo 200 caracteres")
 
-    nome_arquivo = f"{uuid.uuid4()}{ext}"
+    conteudo_final, ext_final = _comprimir_imagem(conteudo, ext)
+    nome_arquivo = f"{uuid.uuid4()}{ext_final}"
     with open(STORIES_DIR / nome_arquivo, "wb") as f:
-        f.write(conteudo)
+        f.write(conteudo_final)
 
     story = {
         "id": str(uuid.uuid4()),

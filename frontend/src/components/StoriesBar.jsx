@@ -27,7 +27,7 @@ const StoryViewer = ({ autores, startIndex, token, userId, onClose }) => {
 
   const autor = autores[autorIdx];
   const story = autor?.stories[storyIdx];
-  const DURACAO = 5000; // 5 segundos por story
+  const DURACAO = 10000; // 10 segundos por story
 
   // Marcar como visualizado
   useEffect(() => {
@@ -142,7 +142,7 @@ const StoryViewer = ({ autores, startIndex, token, userId, onClose }) => {
           <img
             src={`${API.replace('/api', '')}/api${story.imagem_url}`}
             alt="Story"
-            className="w-full h-full object-cover"
+            className="w-full h-full object-contain"
             data-testid="story-image"
           />
 

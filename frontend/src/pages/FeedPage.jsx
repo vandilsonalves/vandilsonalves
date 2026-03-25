@@ -922,7 +922,7 @@ const FeedPage = () => {
                         <img 
                           src={`${BACKEND_URL}/api${post.imagem_url}`} 
                           alt="Post" 
-                          className="rounded-xl max-h-[500px] w-full object-cover border border-slate-700"
+                          className="rounded-xl max-h-[350px] w-full object-contain bg-slate-900/50 border border-slate-700"
                           data-testid={`post-image-${post.id}`}
                           loading="lazy"
                           draggable={false}
