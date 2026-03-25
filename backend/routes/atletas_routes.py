@@ -16,7 +16,7 @@ import io
 from config import db
 from models import PerfilUpdate, Notificacao
 from services import calcular_faixa_etaria, verify_password, get_password_hash
-from routes.auth_routes import get_current_user
+from routes.auth_routes import get_current_user, require_premium_access
 
 router = APIRouter(tags=["Atletas"])
 
@@ -46,7 +46,7 @@ async def get_meu_perfil(current_user: dict = Depends(get_current_user)):
 
 
 @router.patch("/atletas/perfil")
-async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get_current_user)):
+async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(require_premium_access)):
     """Atleta atualiza seu próprio perfil"""
     update_data = {}
     
@@ -184,7 +184,7 @@ async def export_meu_ranking(current_user: dict = Depends(get_current_user)):
 @router.post("/atletas/foto")
 async def upload_foto_perfil(
     foto: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """Upload de foto de perfil"""
     foto_filename = f"perfil_{current_user['id']}_{uuid.uuid4()}.jpg"

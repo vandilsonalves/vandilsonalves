@@ -5,6 +5,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 import jwt
 from motor.motor_asyncio import AsyncIOMotorClient
+from datetime import datetime, timezone, timedelta
 import os
 
 # Configurações
@@ -63,3 +64,50 @@ async def get_optional_user(credentials: HTTPAuthorizationCredentials = Depends(
     except:
         pass
     return None
+
+
+async def require_premium_access(current_user: dict = Depends(get_current_user)):
+    """Bloqueia usuários expirados. Permite admin, em_teste e autorizado."""
+    if current_user.get("role") in ["admin", "super_admin"]:
+        return current_user
+
+    agora = datetime.now(timezone.utc)
+
+    # Verificar autorizacao ativa
+    auth = await db.autorizacoes.find_one({
+        "atleta_id": current_user["id"],
+        "status": "ativa"
+    }, {"_id": 0})
+
+    if auth:
+        try:
+            exp_str = auth["data_expiracao"].replace("Z", "+00:00")
+            if "+" not in exp_str and "T" in exp_str:
+                exp_str = exp_str + "+00:00"
+            data_exp = datetime.fromisoformat(exp_str)
+            if data_exp.tzinfo is None:
+                data_exp = data_exp.replace(tzinfo=timezone.utc)
+            if data_exp > agora:
+                return current_user
+        except Exception:
+            pass
+
+    # Verificar periodo de teste
+    data_criacao_str = current_user.get("data_criacao", agora.isoformat())
+    try:
+        dc = data_criacao_str.replace("Z", "+00:00")
+        if "+" not in dc and "T" in dc:
+            dc = dc + "+00:00"
+        data_criacao = datetime.fromisoformat(dc)
+        if data_criacao.tzinfo is None:
+            data_criacao = data_criacao.replace(tzinfo=timezone.utc)
+    except Exception:
+        data_criacao = agora
+
+    if (agora - data_criacao).days <= 30:
+        return current_user
+
+    raise HTTPException(
+        status_code=403,
+        detail="Acesso expirado. Assine o plano Atleta Premium para continuar."
+    )

@@ -169,6 +169,8 @@ from routes.historico_routes import router as historico_router
 from routes.strava_routes import router as strava_router
 from routes.strava_atividades_routes import router as strava_atividades_router
 from routes.raio_x_routes import router as raio_x_router
+from routes.pagamentos_routes import router as pagamentos_router
+from routes.webhook_stripe_routes import router as webhook_stripe_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -200,6 +202,8 @@ api_router.include_router(historico_router)
 api_router.include_router(strava_router)
 api_router.include_router(strava_atividades_router)
 api_router.include_router(raio_x_router)
+api_router.include_router(pagamentos_router)
+api_router.include_router(webhook_stripe_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:
@@ -1029,20 +1033,20 @@ async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
     for rank in ranking_list:
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
-            min_corridas = get_min_corridas_categoria(rank["categoria"])
+            min_corridas = get_min_corridas_categoria(rank.get("categoria", "normal"))
             response.append(RankingResponse(
                 id=usuario["id"],
-                colocacao=rank["ranking_nacional"],
-                uf=rank["estado"],
-                foto_url=usuario["foto_url"],
-                nome=usuario["nome"],
-                cidade=f"{usuario['cidade']}/{usuario['estado']}",
-                equipe=usuario["equipe"],
-                faixa_etaria=rank["faixa_etaria"],
-                total_corridas=rank["total_corridas"],
-                pontos=rank["pontos_total"],
-                is_elite=(rank["pontos_total"] >= 100),
-                is_pendente=(rank["total_corridas"] < min_corridas)
+                colocacao=rank.get("ranking_nacional", 0),
+                uf=rank.get("estado", ""),
+                foto_url=usuario.get("foto_url", ""),
+                nome=usuario.get("nome", ""),
+                cidade=f"{usuario.get('cidade', '')}/{usuario.get('estado', '')}",
+                equipe=usuario.get("equipe", ""),
+                faixa_etaria=rank.get("faixa_etaria", ""),
+                total_corridas=rank.get("total_corridas", 0),
+                pontos=rank.get("pontos_total", 0),
+                is_elite=(rank.get("pontos_total", 0) >= 100),
+                is_pendente=(rank.get("total_corridas", 0) < min_corridas)
             ))
     
     return response

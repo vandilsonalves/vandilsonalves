@@ -11,7 +11,7 @@ from io import BytesIO
 from PIL import Image as PILImage
 
 from config import db
-from routes.auth_routes import get_current_user
+from routes.auth_routes import get_current_user, require_premium_access
 from routes.notificacoes_routes import criar_notificacao
 from services.moderacao_service import (
     analisar_conteudo, NivelInfracao, registrar_infracao,
@@ -277,7 +277,7 @@ async def get_meus_posts(
 @router.post("/feed/posts")
 async def criar_post(
     dados: PostCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """Cria um novo post no feed"""
     
@@ -357,7 +357,7 @@ async def criar_post(
 async def criar_post_com_foto(
     texto: str = Form(""),
     foto: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """Cria um post com foto no feed. Limite de 2 fotos por dia (24h)."""
 
@@ -488,7 +488,7 @@ async def get_reacoes_disponiveis():
 async def reagir_post(
     post_id: str,
     dados: ReacaoCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """Adiciona ou altera reação a um post"""
     
@@ -625,7 +625,7 @@ async def get_reacoes_post(post_id: str):
 async def comentar_post(
     post_id: str,
     dados: ComentarioCreate,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """Adiciona um comentário em um post com sistema de moderação"""
     
@@ -989,7 +989,7 @@ async def criar_post_corrida_aprovada(
 @router.post("/feed/posts/{post_id}/parabens")
 async def dar_parabens(
     post_id: str,
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """
     Atalho para dar parabéns em um post de conquista ou resultado.
@@ -1359,7 +1359,7 @@ async def listar_usuarios_bloqueados(
 async def criar_story(
     texto: str = Form(""),
     foto: UploadFile = File(...),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """Cria um story (foto temporária de 24h). Limite: 1 por dia."""
 
@@ -1449,7 +1449,7 @@ async def visualizar_story(story_id: str, current_user: dict = Depends(get_curre
 
 
 @router.post("/feed/stories/{story_id}/reagir")
-async def reagir_story(story_id: str, reacao: ReacaoCreate, current_user: dict = Depends(get_current_user)):
+async def reagir_story(story_id: str, reacao: ReacaoCreate, current_user: dict = Depends(require_premium_access)):
     """Reage a um story com emoji."""
     if reacao.tipo_reacao not in REACOES_DISPONIVEIS:
         raise HTTPException(status_code=400, detail="Reação inválida")

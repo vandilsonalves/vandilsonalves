@@ -5,7 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, Query
 from datetime import datetime, timezone, timedelta
 from typing import Optional, List, Dict
 from config import db
-from routes.auth_routes import get_current_user
+from routes.auth_routes import get_current_user, require_premium_access
 import statistics
 
 router = APIRouter()
@@ -85,7 +85,7 @@ def minutos_para_tempo(minutos: float) -> str:
 @router.get("/raio-x/evolucao")
 async def get_evolucao_atleta(
     periodo: str = Query("12_meses", description="6_meses, 12_meses, all"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """
     Retorna dados de evolução do atleta para gráficos.
@@ -168,7 +168,7 @@ async def get_evolucao_atleta(
 
 
 @router.get("/raio-x/records")
-async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
+async def get_records_pessoais(current_user: dict = Depends(require_premium_access)):
     """
     Retorna os Records Pessoais (RPs) do atleta.
     Melhor pace, maior distância, melhores tempos por categoria.
@@ -267,7 +267,7 @@ async def get_records_pessoais(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/raio-x/comparativo")
-async def get_comparativo_mensal(current_user: dict = Depends(get_current_user)):
+async def get_comparativo_mensal(current_user: dict = Depends(require_premium_access)):
     """
     Compara performance do mês atual vs mês anterior.
     Você vs Você do mês passado.
@@ -386,7 +386,7 @@ async def get_comparativo_mensal(current_user: dict = Depends(get_current_user))
 async def get_comparativo_meses_personalizados(
     mes1: str = Query(..., description="Primeiro mês no formato YYYY-MM"),
     mes2: str = Query(..., description="Segundo mês no formato YYYY-MM"),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(require_premium_access)
 ):
     """
     Compara performance entre dois meses específicos escolhidos pelo atleta.
@@ -483,7 +483,7 @@ async def get_comparativo_meses_personalizados(
 
 
 @router.get("/raio-x/previsoes")
-async def get_previsoes_ia(current_user: dict = Depends(get_current_user)):
+async def get_previsoes_ia(current_user: dict = Depends(require_premium_access)):
     """
     Previsões inteligentes baseadas no histórico do atleta.
     Tempo estimado para diferentes distâncias.
@@ -578,7 +578,7 @@ async def get_previsoes_ia(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/raio-x/score")
-async def get_score_consistencia(current_user: dict = Depends(get_current_user)):
+async def get_score_consistencia(current_user: dict = Depends(require_premium_access)):
     """
     Calcula o Score de Consistência do atleta (0-100%).
     Baseado em participações no mês (máx 4 = 100%).
@@ -646,7 +646,7 @@ async def get_score_consistencia(current_user: dict = Depends(get_current_user))
 
 
 @router.get("/raio-x/heatmap")
-async def get_heatmap_corridas(current_user: dict = Depends(get_current_user)):
+async def get_heatmap_corridas(current_user: dict = Depends(require_premium_access)):
     """
     Retorna dados para heatmap de corridas (dias da semana e meses).
     """
@@ -694,7 +694,7 @@ async def get_heatmap_corridas(current_user: dict = Depends(get_current_user)):
 
 
 @router.get("/raio-x/completo")
-async def get_raio_x_completo(current_user: dict = Depends(get_current_user)):
+async def get_raio_x_completo(current_user: dict = Depends(require_premium_access)):
     """
     Retorna TODOS os dados do RAIO-X em uma única chamada.
     Otimizado para carregar a página completa.

@@ -9,7 +9,7 @@ import os
 import uuid
 
 from config import db
-from routes.auth_routes import get_current_user
+from routes.auth_routes import get_current_user, require_premium_access
 from services.strava_service import (
     get_authorization_url,
     exchange_code_for_token,
@@ -25,7 +25,7 @@ FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://geo-filtered-admin.previe
 
 
 @router.get("/strava/authorize")
-async def strava_authorize(current_user: dict = Depends(get_current_user)):
+async def strava_authorize(current_user: dict = Depends(require_premium_access)):
     """
     Inicia o fluxo de autenticação OAuth2 do Strava.
     Redireciona o usuário para a página de autorização do Strava.
