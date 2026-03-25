@@ -1367,10 +1367,7 @@ async def criar_story(
     if bloqueado:
         raise HTTPException(status_code=403, detail=f"Bloqueado até {data_desbloqueio[:10]}.")
 
-    stories_hoje = await _contar_stories_hoje(current_user["id"])
-    if stories_hoje >= MAX_STORIES_DIA:
-        raise HTTPException(status_code=429, detail="Você já postou seu story hoje. Tente novamente amanhã!")
-
+    # Stories não tem limite diário
     ext = Path(foto.filename or "").suffix.lower()
     if ext not in EXTENSOES_PERMITIDAS:
         raise HTTPException(status_code=400, detail=f"Formato não permitido. Use: {', '.join(EXTENSOES_PERMITIDAS)}")
@@ -1477,10 +1474,10 @@ async def reagir_story(story_id: str, reacao: ReacaoCreate, current_user: dict =
 
 @router.get("/feed/stories/restantes")
 async def stories_restantes(current_user: dict = Depends(get_current_user)):
-    """Retorna quantos stories o atleta ainda pode postar hoje."""
-    stories_hoje = await _contar_stories_hoje(current_user["id"])
+    """Stories não têm limite diário."""
     return {
-        "stories_hoje": stories_hoje,
-        "limite_diario": MAX_STORIES_DIA,
-        "restantes": max(0, MAX_STORIES_DIA - stories_hoje)
+        "stories_hoje": 0,
+        "limite_diario": -1,
+        "restantes": 999,
+        "ilimitado": True
     }

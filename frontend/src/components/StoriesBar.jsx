@@ -234,7 +234,6 @@ const StoriesBar = ({ token, userId }) => {
   useEffect(() => {
     if (token) {
       fetchStories();
-      fetchRestantes();
     }
   }, [token]);
 
@@ -261,7 +260,6 @@ const StoriesBar = ({ token, userId }) => {
       });
       toast.success('Story publicado!');
       fetchStories();
-      setPodePostar(false);
     } catch (err) {
       const detail = err.response?.data?.detail;
       toast.error(typeof detail === 'string' ? detail : 'Erro ao publicar story');
