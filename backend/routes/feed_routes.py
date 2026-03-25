@@ -56,7 +56,11 @@ class ComentarioCreate(BaseModel):
 
 MAX_FOTOS_DIA = 2
 MAX_FOTO_SIZE_MB = 5
+MAX_STORIES_DIA = 1
 EXTENSOES_PERMITIDAS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
+
+STORIES_DIR = Path("/app/uploads/stories")
+STORIES_DIR.mkdir(parents=True, exist_ok=True)
 
 
 async def _contar_fotos_hoje(usuario_id: str) -> int:
@@ -66,6 +70,15 @@ async def _contar_fotos_hoje(usuario_id: str) -> int:
         "autor_id": usuario_id,
         "tipo": "foto",
         "status": "ativo",
+        "data_criacao": {"$gte": data_limite}
+    })
+
+
+async def _contar_stories_hoje(usuario_id: str) -> int:
+    """Conta quantos stories o usuário postou nas últimas 24h"""
+    data_limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    return await db.stories.count_documents({
+        "autor_id": usuario_id,
         "data_criacao": {"$gte": data_limite}
     })
 
@@ -1279,3 +1292,138 @@ async def listar_usuarios_bloqueados(
     ).sort("data_bloqueio", -1).to_list(100)
     
     return {"usuarios_bloqueados": bloqueados, "total": len(bloqueados)}
+
+
+
+# ============================================================
+# STORIES - Fotos temporárias (24h) no topo do Feed
+# ============================================================
+
+@router.post("/feed/stories")
+async def criar_story(
+    texto: str = Form(""),
+    foto: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Cria um story (foto temporária de 24h). Limite: 1 por dia."""
+
+    bloqueado, data_desbloqueio = await verificar_usuario_bloqueado(db, current_user["id"])
+    if bloqueado:
+        raise HTTPException(status_code=403, detail=f"Bloqueado até {data_desbloqueio[:10]}.")
+
+    stories_hoje = await _contar_stories_hoje(current_user["id"])
+    if stories_hoje >= MAX_STORIES_DIA:
+        raise HTTPException(status_code=429, detail="Você já postou seu story hoje. Tente novamente amanhã!")
+
+    ext = Path(foto.filename or "").suffix.lower()
+    if ext not in EXTENSOES_PERMITIDAS:
+        raise HTTPException(status_code=400, detail=f"Formato não permitido. Use: {', '.join(EXTENSOES_PERMITIDAS)}")
+
+    conteudo = await foto.read()
+    if len(conteudo) / (1024 * 1024) > MAX_FOTO_SIZE_MB:
+        raise HTTPException(status_code=400, detail=f"Imagem muito grande. Máximo: {MAX_FOTO_SIZE_MB}MB")
+
+    if texto.strip() and len(texto) > 200:
+        raise HTTPException(status_code=400, detail="Texto do story máximo 200 caracteres")
+
+    nome_arquivo = f"{uuid.uuid4()}{ext}"
+    with open(STORIES_DIR / nome_arquivo, "wb") as f:
+        f.write(conteudo)
+
+    story = {
+        "id": str(uuid.uuid4()),
+        "autor_id": current_user["id"],
+        "autor_nome": current_user.get("nome", ""),
+        "imagem_url": f"/uploads/stories/{nome_arquivo}",
+        "texto": texto.strip(),
+        "data_criacao": datetime.now(timezone.utc).isoformat(),
+        "visualizacoes": [],
+        "reacoes": []
+    }
+
+    await db.stories.insert_one(story)
+
+    return {"message": "Story publicado!", "story_id": story["id"], "imagem_url": story["imagem_url"]}
+
+
+@router.get("/feed/stories")
+async def listar_stories(current_user: dict = Depends(get_current_user)):
+    """Lista todos os stories ativos (últimas 24h), agrupados por autor."""
+    data_limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+
+    stories = await db.stories.find(
+        {"data_criacao": {"$gte": data_limite}},
+        {"_id": 0}
+    ).sort("data_criacao", -1).to_list(100)
+
+    # Agrupar por autor
+    autores = {}
+    for s in stories:
+        aid = s["autor_id"]
+        if aid not in autores:
+            autores[aid] = {
+                "autor_id": aid,
+                "autor_nome": s["autor_nome"],
+                "stories": [],
+                "tem_nao_visto": False
+            }
+        visto = current_user["id"] in s.get("visualizacoes", [])
+        s["visto"] = visto
+        if not visto:
+            autores[aid]["tem_nao_visto"] = True
+        autores[aid]["stories"].append(s)
+
+    # Ordenar: não vistos primeiro, depois vistos
+    resultado = sorted(autores.values(), key=lambda a: (not a["tem_nao_visto"], a["stories"][0]["data_criacao"]), reverse=False)
+    # Colocar não vistos primeiro
+    nao_vistos = [a for a in resultado if a["tem_nao_visto"]]
+    vistos = [a for a in resultado if not a["tem_nao_visto"]]
+
+    return {"autores": nao_vistos + vistos, "total": len(stories)}
+
+
+@router.post("/feed/stories/{story_id}/visualizar")
+async def visualizar_story(story_id: str, current_user: dict = Depends(get_current_user)):
+    """Marca um story como visualizado pelo usuário."""
+    result = await db.stories.update_one(
+        {"id": story_id},
+        {"$addToSet": {"visualizacoes": current_user["id"]}}
+    )
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Story não encontrado")
+    return {"ok": True}
+
+
+@router.post("/feed/stories/{story_id}/reagir")
+async def reagir_story(story_id: str, reacao: ReacaoCreate, current_user: dict = Depends(get_current_user)):
+    """Reage a um story com emoji."""
+    if reacao.tipo_reacao not in REACOES_DISPONIVEIS:
+        raise HTTPException(status_code=400, detail="Reação inválida")
+
+    # Remove reação anterior do mesmo tipo e adiciona nova
+    await db.stories.update_one(
+        {"id": story_id},
+        {"$pull": {"reacoes": {"usuario_id": current_user["id"], "tipo": reacao.tipo_reacao}}}
+    )
+    await db.stories.update_one(
+        {"id": story_id},
+        {"$push": {"reacoes": {
+            "usuario_id": current_user["id"],
+            "usuario_nome": current_user.get("nome", ""),
+            "tipo": reacao.tipo_reacao,
+            "emoji": REACOES_DISPONIVEIS[reacao.tipo_reacao]["emoji"],
+            "data": datetime.now(timezone.utc).isoformat()
+        }}}
+    )
+    return {"ok": True, "emoji": REACOES_DISPONIVEIS[reacao.tipo_reacao]["emoji"]}
+
+
+@router.get("/feed/stories/restantes")
+async def stories_restantes(current_user: dict = Depends(get_current_user)):
+    """Retorna quantos stories o atleta ainda pode postar hoje."""
+    stories_hoje = await _contar_stories_hoje(current_user["id"])
+    return {
+        "stories_hoje": stories_hoje,
+        "limite_diario": MAX_STORIES_DIA,
+        "restantes": max(0, MAX_STORIES_DIA - stories_hoje)
+    }

@@ -2,6 +2,7 @@
 // Feed Social da Plataforma com Reações, Comentários e Posts Automáticos de Conquistas
 
 import React, { useState, useEffect } from 'react';
+import StoriesBar from '@/components/StoriesBar';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -710,6 +711,9 @@ const FeedPage = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Feed Principal */}
           <div className="lg:col-span-2 space-y-4">
+            {/* Stories Bar */}
+            <StoriesBar token={token} userId={user?.id} />
+
             {/* Criar Post */}
             <Card className="bg-slate-800 border-slate-700">
               <CardContent className="p-4">
