@@ -1,19 +1,19 @@
 # RunPro - Fitness Ranking Platform
 
 ## Problema Original
-Plataforma de ranking fitness esportivo com rankings por categorias e cidades, painel "RAIO-X" avançado, integração com Strava, geração de share cards via Canvas API e painel de administração completo.
+Plataforma de ranking fitness esportivo com rankings por categorias e cidades, painel "RAIO-X" avancado, integracao com Strava, geracao de share cards via Canvas API e painel de administracao completo.
 
-## Stack Tecnológico
+## Stack Tecnologico
 - **Frontend:** React (CRA) + Tailwind CSS + Shadcn/UI + Recharts
 - **Backend:** FastAPI + MongoDB + WebSocket
 - **Background Jobs:** Celery + Redis
-- **Integrações:** Strava, Resend (e-mails), IBGE Localidades API (cidades)
+- **Integracoes:** Strava, Resend (e-mails), IBGE Localidades API (cidades)
 
 ## Funcionalidades Implementadas
 
 ### Concluido
 - [x] Rankings (Profissional, Galera, Equipes, Por Cidade)
-- [x] Compartilhamento Ranking/RaioX (Canvas 9:16 completo: Score, Metricas, Evolucao, Records, Comparativo, Previsoes IA, Badges)
+- [x] Compartilhamento Ranking/RaioX (Canvas 9:16 completo)
 - [x] Exportar PDF/Excel no Raio-X
 - [x] Integracao Strava
 - [x] Painel Admin completo com RBAC
@@ -22,19 +22,18 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 - [x] Stats de leitura de mensagens (Lidas/Nao Lidas)
 - [x] Dashboard de Engajamento (KPIs, graficos, tabela)
 - [x] WebSocket para notificacoes em tempo real
-- [x] Filtros Estado/Cidade na pagina de Atletas (Admin)
-- [x] Filtros Estado/Cidade na pagina de Mensagens (Admin)
-- [x] Fix distancia total 0 km no Raio-X (extrair_distancia helper)
+- [x] Filtros Estado/Cidade em Atletas, Mensagens, Corridas, Assessorias (Admin)
+- [x] Fix distancia total 0 km no Raio-X
 - [x] Refatoracao massiva (AdminDashboard, RankingPage, RaioXPage)
-- [x] Fix stats/categorias KeyError
-- [x] data-testid nos componentes criticos
 - [x] Novos campos de cadastro (telefone, tipo_corredor, terreno_preferido)
 - [x] Fix performance (indices MongoDB, lazy loading Admin)
 - [x] Fix ano hardcoded (2025 -> dinamico)
-- [x] Fix WebSocket 403 (SECRET_KEY unificada)
-- [x] Fix navigate not defined (RankingEquipes)
-- [x] Dropdown de cidades via API IBGE no CadastroPage
-- [x] Dropdown de cidades via API IBGE nos modais Admin (Criar/Editar Atleta) - Iteration 71
+- [x] Fix WebSocket 403, navigate not defined, KeyError categoria
+- [x] Dropdown de cidades via API IBGE (CadastroPage + Admin modais) - Iteration 71
+- [x] CidadeCombobox com busca por texto em TODOS os dropdowns de cidade do app - Iteration 72
+  - Componente reutilizavel: `/app/frontend/src/components/CidadeCombobox.jsx`
+  - Usa Popover + Command (cmdk) para filtrar cidades enquanto digita
+  - Substituido em 11 locais: CadastroPage (2x), AdminDashboard (2x), DashboardCorridas (2x), DashboardAtletas (1x), DashboardAssessorias (1x), SubmeterResultadoPage (1x), RankingCorridasPage (1x), CriarAssessoria (1x)
 
 ### Backlog
 - [ ] Limpeza de codigo morto no AdminDashboard.jsx (P3)
@@ -54,11 +53,8 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta: teste.dono@teste.com / 123456
-- Atleta (resetado): beatriz_araujo_643@email.com / 123456
 
 ## Notas
-- **Redis:** Pode cair no preview. Reinstalar se Celery falhar. (`sudo service redis-server restart`)
-- **Rotas Splash:** Em `notificacoes_routes.py` para evitar conflito path params.
-- **Distancia:** Funcao `extrair_distancia()` em raio_x_routes.py trata int, float, string (KM, K), None.
+- **Redis:** Pode cair no preview. Reinstalar se Celery falhar.
 - **Ano Dinamico:** `ANO_ATUAL = datetime.now().year` em server.py.
-- **Hook IBGE:** `useCidadesIBGE.js` reutilizavel para buscar cidades por UF.
+- **CidadeCombobox:** Componente reutilizavel em `/app/frontend/src/components/CidadeCombobox.jsx`. Props: cidades, value, onValueChange, loading, disabled, placeholder, allOption, triggerClassName, data-testid.
