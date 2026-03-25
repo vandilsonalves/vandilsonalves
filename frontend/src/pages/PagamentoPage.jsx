@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap } from 'lucide-react';
+import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -89,6 +89,13 @@ export default function PagamentoPage() {
   const pv = planoInfo?.plano_vigente;
   const isLancamento = pv?.id === 'atleta_premium_lancamento';
 
+  // Contagem regressiva ate 14/12/2026
+  const dataLimite = new Date('2026-12-14T23:59:59Z');
+  const agora = new Date();
+  const diffMs = dataLimite - agora;
+  const diasRestantesOferta = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+  const mostrarContagem = isLancamento && diasRestantesOferta <= 30 && diasRestantesOferta > 0;
+
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-testid="pagamento-page">
       <div className="max-w-2xl mx-auto px-4 py-12">
@@ -105,6 +112,25 @@ export default function PagamentoPage() {
             Acesso completo a todas as funcionalidades do Ranking Run Pro
           </p>
         </div>
+
+        {/* Banner contagem regressiva */}
+        {mostrarContagem && (
+          <div className="mb-8 rounded-xl overflow-hidden" data-testid="banner-contagem">
+            <div className="bg-gradient-to-r from-red-600 to-orange-500 p-4 flex items-center justify-center gap-3">
+              <Timer className="w-5 h-5 text-white animate-pulse" />
+              <p className="text-white font-bold text-sm sm:text-base">
+                {diasRestantesOferta === 1
+                  ? 'Ultimo dia! A oferta encerra amanha!'
+                  : `Faltam ${diasRestantesOferta} dias para o fim da oferta!`}
+              </p>
+            </div>
+            <div className="bg-gray-900 border border-t-0 border-orange-500/30 px-4 py-2.5 text-center">
+              <p className="text-xs text-gray-400">
+                Apos 14/12/2026, o valor sera de <span className="text-white font-semibold">12x R$ 119,00</span>
+              </p>
+            </div>
+          </div>
+        )}
 
         {/* Status atual */}
         {planoInfo && (
