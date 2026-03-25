@@ -42,15 +42,14 @@ class UsuarioRegister(BaseModel):
     genero: str
     categoria: str
     data_nascimento: str
-    # Novos campos
     etnia: str = ""
     apelido: str = ""
-    # Modalidade obrigatória
     modalidade_usuario: str = "profissional_amador"
-    # Campos para dono de assessoria (3ª Tarefa)
+    telefone: str = ""
+    tipo_corredor: str = ""
+    terreno_preferido: str = ""
     is_dono_assessoria: bool = False
     assessoria_data: Optional[dict] = None
-    # Campo para código de indicação de amigo
     codigo_indicacao: Optional[str] = None
 
 class UsuarioLogin(BaseModel):

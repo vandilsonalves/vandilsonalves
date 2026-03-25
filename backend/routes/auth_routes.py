@@ -220,6 +220,9 @@ async def register_atleta(dados: UsuarioRegister):
     )
     
     doc = usuario.model_dump()
+    doc["telefone"] = dados.telefone
+    doc["tipo_corredor"] = dados.tipo_corredor
+    doc["terreno_preferido"] = dados.terreno_preferido
     
     # Se for dono, adicionar campos extras
     if dados.is_dono_assessoria and dados.assessoria_data:

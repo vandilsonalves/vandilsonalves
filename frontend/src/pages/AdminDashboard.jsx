@@ -171,7 +171,7 @@ const AdminDashboard = () => {
   const [novoAtleta, setNovoAtleta] = useState({
     nome: '', email: '', password: 'atleta123', equipe: '',
     cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
-    data_nascimento: ''
+    data_nascimento: '', telefone: '', tipo_corredor: '', terreno_preferido: ''
   });
 
   // Liga de Assessorias (ROE-RR)
@@ -1213,6 +1213,37 @@ const AdminDashboard = () => {
               <div className="space-y-2">
                 <Label>Data de Nascimento *</Label>
                 <Input type="date" value={novoAtleta.data_nascimento} onChange={(e) => setNovoAtleta({...novoAtleta, data_nascimento: e.target.value})} />
+              </div>
+              <div className="space-y-2">
+                <Label>Telefone *</Label>
+                <Input value={novoAtleta.telefone} onChange={(e) => setNovoAtleta({...novoAtleta, telefone: e.target.value})} placeholder="(00) 00000-0000" data-testid="admin-input-telefone" />
+              </div>
+              <div className="space-y-2">
+                <Label>Tipo de Corredor *</Label>
+                <Select value={novoAtleta.tipo_corredor} onValueChange={(v) => setNovoAtleta({...novoAtleta, tipo_corredor: v})}>
+                  <SelectTrigger data-testid="admin-select-tipo-corredor">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="velocista"><span><strong className="uppercase">VELOCISTA</strong> <span className="text-xs text-slate-500">- provas curtas até 5km</span></span></SelectItem>
+                    <SelectItem value="resistencia"><span><strong className="uppercase">RESISTÊNCIA</strong> <span className="text-xs text-slate-500">- provas mais longas até 21km</span></span></SelectItem>
+                    <SelectItem value="endurance"><span><strong className="uppercase">ENDURANCE</strong> <span className="text-xs text-slate-500">- provas acima de 42km</span></span></SelectItem>
+                    <SelectItem value="pace_leve"><span><strong className="uppercase">PACE LEVE</strong> <span className="text-xs text-slate-500">- Corro por Diversão</span></span></SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Terreno Preferido *</Label>
+                <Select value={novoAtleta.terreno_preferido} onValueChange={(v) => setNovoAtleta({...novoAtleta, terreno_preferido: v})}>
+                  <SelectTrigger data-testid="admin-select-terreno">
+                    <SelectValue placeholder="Selecione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="rua_asfalto">Rua - Asfalto</SelectItem>
+                    <SelectItem value="trilha">Trilha</SelectItem>
+                    <SelectItem value="esteira">Esteira</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             <p className="text-sm text-slate-500">Senha padrão: atleta123</p>

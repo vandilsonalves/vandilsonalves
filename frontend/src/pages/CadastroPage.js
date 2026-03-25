@@ -78,7 +78,10 @@ const CadastroPage = () => {
     etnia: '',
     apelido: '',
     modalidade_usuario: 'profissional_amador',
-    codigo_indicacao: ''
+    codigo_indicacao: '',
+    telefone: '',
+    tipo_corredor: '',
+    terreno_preferido: ''
   });
 
   // Estados do Termo de Aceite
@@ -576,6 +579,53 @@ const CadastroPage = () => {
                     placeholder="Como você quer ser chamado"
                     data-testid="input-apelido"
                   />
+                </div>
+
+                <div>
+                  <Label>Telefone *</Label>
+                  <Input
+                    value={formData.telefone}
+                    onChange={(e) => handleChange('telefone', e.target.value)}
+                    placeholder="(00) 00000-0000"
+                    data-testid="input-telefone"
+                  />
+                </div>
+
+                <div>
+                  <Label>Tipo de Corredor *</Label>
+                  <Select value={formData.tipo_corredor} onValueChange={(value) => handleChange('tipo_corredor', value)}>
+                    <SelectTrigger data-testid="select-tipo-corredor">
+                      <SelectValue placeholder="Selecione seu tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="velocista">
+                        <span><strong className="uppercase">VELOCISTA</strong> <span className="text-xs text-slate-500">- provas curtas até 5km</span></span>
+                      </SelectItem>
+                      <SelectItem value="resistencia">
+                        <span><strong className="uppercase">RESISTÊNCIA</strong> <span className="text-xs text-slate-500">- provas mais longas até 21km</span></span>
+                      </SelectItem>
+                      <SelectItem value="endurance">
+                        <span><strong className="uppercase">ENDURANCE</strong> <span className="text-xs text-slate-500">- provas acima de 42km. Maratonista, Ironman, triatlo</span></span>
+                      </SelectItem>
+                      <SelectItem value="pace_leve">
+                        <span><strong className="uppercase">PACE LEVE</strong> <span className="text-xs text-slate-500">- Corro por Diversão</span></span>
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>Seu Terreno Preferido *</Label>
+                  <Select value={formData.terreno_preferido} onValueChange={(value) => handleChange('terreno_preferido', value)}>
+                    <SelectTrigger data-testid="select-terreno-preferido">
+                      <SelectValue placeholder="Selecione seu terreno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rua_asfalto">Rua - Asfalto</SelectItem>
+                      <SelectItem value="trilha">Trilha</SelectItem>
+                      <SelectItem value="esteira">Esteira</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 {/* Seção Dono de Assessoria - Aparece APENAS quando selecionou INDIVIDUAL */}

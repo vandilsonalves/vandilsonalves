@@ -750,7 +750,12 @@ async def criar_atleta(dados: dict, admin: dict = Depends(get_admin_user)):
         role="atleta"
     )
     
-    await db.usuarios.insert_one(usuario.model_dump())
+    doc = usuario.model_dump()
+    doc["telefone"] = dados.get("telefone", "")
+    doc["tipo_corredor"] = dados.get("tipo_corredor", "")
+    doc["terreno_preferido"] = dados.get("terreno_preferido", "")
+    
+    await db.usuarios.insert_one(doc)
     
     return {"message": "Atleta criado com sucesso!", "id": usuario.id}
 
@@ -764,7 +769,8 @@ async def atualizar_atleta(atleta_id: str, dados: dict, admin: dict = Depends(ge
     
     campos_permitidos = ["nome", "email", "equipe", "cidade", "estado", "genero", 
                          "categoria", "data_nascimento", "faixa_etaria", "is_active",
-                         "modalidade_usuario", "etnia", "apelido"]
+                         "modalidade_usuario", "etnia", "apelido", "telefone",
+                         "tipo_corredor", "terreno_preferido"]
     
     update_data = {k: v for k, v in dados.items() if k in campos_permitidos}
     
