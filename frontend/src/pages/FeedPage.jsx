@@ -1,7 +1,7 @@
 // /app/frontend/src/pages/FeedPage.jsx
 // Feed Social da Plataforma com Reações, Comentários e Posts Automáticos de Conquistas
 
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Send, Loader2, ArrowLeft, MoreHorizontal,
   TrendingUp, Clock, Trash2, Users, Smile, MessageCircle,
-  Trophy, Medal, PartyPopper, Star, Zap, Shield, Camera, X, Image as ImageIcon
+  Trophy, Medal, PartyPopper, Star, Zap, Shield, Camera, X, Image as ImageIcon, Heart
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -79,6 +79,10 @@ const FeedPage = () => {
   
   // Parabéns
   const [enviandoParabens, setEnviandoParabens] = useState(null);
+
+  // Double-tap like
+  const [heartAnimation, setHeartAnimation] = useState({});
+  const lastTapRef = React.useRef({});
 
   useEffect(() => {
     if (!user) {
@@ -216,6 +220,23 @@ const FeedPage = () => {
       }
     } finally {
       setEnviandoPost(false);
+    }
+  };
+
+  const handleDoubleTap = (postId) => {
+    const now = Date.now();
+    const lastTap = lastTapRef.current[postId] || 0;
+
+    if (now - lastTap < 350) {
+      // Double tap detected
+      setHeartAnimation(prev => ({ ...prev, [postId]: true }));
+      handleReagir(postId, 'coracao');
+      setTimeout(() => {
+        setHeartAnimation(prev => ({ ...prev, [postId]: false }));
+      }, 1000);
+      lastTapRef.current[postId] = 0;
+    } else {
+      lastTapRef.current[postId] = now;
     }
   };
 
@@ -654,6 +675,16 @@ const FeedPage = () => {
 
   return (
     <div className="min-h-screen bg-slate-900 text-white" data-testid="feed-page">
+      <style>{`
+        @keyframes heartBurst {
+          0% { transform: scale(0); opacity: 0; }
+          15% { transform: scale(1.3); opacity: 1; }
+          30% { transform: scale(0.95); opacity: 1; }
+          45% { transform: scale(1.1); opacity: 1; }
+          80% { transform: scale(1); opacity: 0.8; }
+          100% { transform: scale(1); opacity: 0; }
+        }
+      `}</style>
       {/* Header */}
       <div className="sticky top-0 z-50 bg-slate-900/95 backdrop-blur border-b border-slate-800">
         <div className="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
@@ -873,15 +904,33 @@ const FeedPage = () => {
                       <p className="text-slate-200 whitespace-pre-wrap">{post.texto}</p>
                     )}
                     
-                    {/* Imagem do post */}
+                    {/* Imagem do post com duplo-toque para curtir */}
                     {post.imagem_url && (
-                      <img 
-                        src={`${BACKEND_URL}/api${post.imagem_url}`} 
-                        alt="Post" 
-                        className="rounded-xl max-h-[500px] w-full object-cover border border-slate-700"
-                        data-testid={`post-image-${post.id}`}
-                        loading="lazy"
-                      />
+                      <div
+                        className="relative cursor-pointer select-none"
+                        onClick={() => handleDoubleTap(post.id)}
+                        data-testid={`post-image-wrapper-${post.id}`}
+                      >
+                        <img 
+                          src={`${BACKEND_URL}/api${post.imagem_url}`} 
+                          alt="Post" 
+                          className="rounded-xl max-h-[500px] w-full object-cover border border-slate-700"
+                          data-testid={`post-image-${post.id}`}
+                          loading="lazy"
+                          draggable={false}
+                        />
+                        {/* Animação de coração no duplo-toque */}
+                        {heartAnimation[post.id] && (
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none" data-testid={`heart-animation-${post.id}`}>
+                            <Heart
+                              className="w-24 h-24 text-red-500 fill-red-500 drop-shadow-lg"
+                              style={{
+                                animation: 'heartBurst 1s ease-out forwards',
+                              }}
+                            />
+                          </div>
+                        )}
+                      </div>
                     )}
                     
                     {/* Reações Display */}
