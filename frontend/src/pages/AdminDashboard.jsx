@@ -171,7 +171,8 @@ const AdminDashboard = () => {
   const [novoAtleta, setNovoAtleta] = useState({
     nome: '', email: '', password: 'atleta123', equipe: '',
     cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
-    data_nascimento: '', telefone: '', tipo_corredor: '', terreno_preferido: ''
+    data_nascimento: '', telefone: '', tipo_corredor: '', terreno_preferido: '',
+    modalidade_usuario: 'profissional_amador'
   });
 
   // Liga de Assessorias (ROE-RR)
@@ -640,7 +641,8 @@ const AdminDashboard = () => {
       setNovoAtleta({
         nome: '', email: '', password: 'atleta123', equipe: '',
         cidade: '', estado: 'SP', genero: 'M', categoria: 'normal',
-        data_nascimento: ''
+        data_nascimento: '', telefone: '', tipo_corredor: '', terreno_preferido: '',
+        modalidade_usuario: 'profissional_amador'
       });
       toast.success('Ação Concluída', { description: 'Atleta cadastrado com sucesso!' });
       fetchAtletas();
@@ -1246,6 +1248,39 @@ const AdminDashboard = () => {
                 </Select>
               </div>
             </div>
+
+            {/* Modalidade de Participação */}
+            <div className="pt-3 border-t">
+              <Label className="text-base font-semibold">Modalidade de Participação *</Label>
+              <p className="text-xs text-slate-500 mb-3">Escolha como o atleta irá competir no Ranking Run Pró</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div
+                  onClick={() => setNovoAtleta({...novoAtleta, modalidade_usuario: 'profissional_amador'})}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    novoAtleta.modalidade_usuario === 'profissional_amador'
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                  data-testid="admin-modalidade-profissional"
+                >
+                  <p className="font-bold text-sm">Atleta Profissional / Amador</p>
+                  <p className="text-xs text-slate-500 mt-1">Pontuação baseada em colocação (1° a 10° lugar)</p>
+                </div>
+                <div
+                  onClick={() => setNovoAtleta({...novoAtleta, modalidade_usuario: 'povao_pace_livre'})}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    novoAtleta.modalidade_usuario === 'povao_pace_livre'
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/20'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300'
+                  }`}
+                  data-testid="admin-modalidade-galera"
+                >
+                  <p className="font-bold text-sm">Ranking da Galera</p>
+                  <p className="text-xs text-slate-500 mt-1">Pontuação baseada apenas na distância percorrida</p>
+                </div>
+              </div>
+            </div>
+
             <p className="text-sm text-slate-500">Senha padrão: atleta123</p>
             <DialogFooter>
               <Button variant="outline" onClick={() => setShowAddAtletaModal(false)}>Cancelar</Button>
