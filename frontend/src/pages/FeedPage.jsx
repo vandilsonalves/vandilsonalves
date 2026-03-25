@@ -94,6 +94,9 @@ const FeedPage = () => {
     fetchFeed();
     fetchTrending();
     fetchFotosRestantes();
+    // Timeout de segurança: se loading travar por 10s, desbloqueia
+    const timeout = setTimeout(() => setLoading(false), 10000);
+    return () => clearTimeout(timeout);
   }, [user, authLoading]);
 
   const fetchFeed = async (pag = 1, append = false) => {

@@ -14,53 +14,52 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 ### Concluido
 - [x] Rankings (Profissional, Galera, Equipes, Por Cidade)
 - [x] Compartilhamento Ranking/RaioX (Canvas 9:16 completo)
-- [x] Exportar PDF/Excel no Raio-X
 - [x] Integracao Strava
-- [x] Painel Admin completo com RBAC
-- [x] Sistema de Mensagens em massa (filtros geograficos, agendamento Celery/Redis)
-- [x] Splash Screen global para mensagens urgentes
-- [x] Stats de leitura de mensagens (Lidas/Nao Lidas)
-- [x] Dashboard de Engajamento (KPIs, graficos, tabela)
+- [x] Painel Admin completo com RBAC e lazy loading
+- [x] Sistema de Mensagens em massa (filtros geograficos, agendamento, splash screen)
+- [x] Dashboard de Engajamento
 - [x] WebSocket para notificacoes em tempo real
-- [x] Filtros Estado/Cidade em Atletas, Mensagens, Corridas, Assessorias (Admin)
-- [x] Refatoracao massiva (AdminDashboard, RankingPage, RaioXPage)
-- [x] Novos campos de cadastro (telefone, tipo_corredor, terreno_preferido)
-- [x] Fix performance (indices MongoDB, lazy loading Admin)
-- [x] CidadeCombobox com busca por texto em TODOS os dropdowns de cidade - Iteration 72
-- [x] Upload de FOTOS no Feed Social - Iteration 73
-  - Upload 1 foto por vez (max 5MB, jpg/png/webp/heic/heif)
-  - Limite de 2 fotos por dia (24h) por atleta
-  - Foto com texto opcional (legenda)
-  - Preview antes de publicar, botao remover, contador restantes
-  - Badge "Foto" nos posts com imagem
-- [x] Duplo-toque para curtir fotos (estilo Instagram) - Iteration 74-75
-  - 2 cliques rapidos (<350ms) na imagem dispara reacao 'coracao'
-  - Animacao de coracao grande com fade-out sobre a foto
-  - Clique unico nao dispara reacao
-- [x] Fix race condition authLoading no FeedPage - Iteration 75
+- [x] CidadeCombobox com busca por texto em TODOS dropdowns de cidade (Iteration 72)
+- [x] Upload de FOTOS no Feed Social (Iteration 73)
+  - 1 foto por vez, limite 2/dia, texto opcional, preview, badge "Foto"
+- [x] Duplo-toque para curtir fotos estilo Instagram (Iteration 74-75)
+  - Animacao de coracao grande com fade-out
+- [x] Stories no Feed Social (Iteration 76) - NOVO
+  - Barra de stories no topo com circulos de avatar
+  - Anel colorido gradiente = story nao visto, cinza = visto
+  - Botao + para adicionar story (1 por dia)
+  - Viewer fullscreen: barra de progresso, texto overlay, reacoes rapidas
+  - Ordenacao: nao vistos primeiro
+  - Auto-expira em 24h
 
 ### Backlog
 - [ ] Limpeza de codigo morto no AdminDashboard.jsx (P3)
-- [ ] Notificacoes push por email (Resend) para mensagens urgentes (P3)
-- [ ] Relatorios semanais automaticos para donos de assessoria (P3)
+- [ ] Notificacoes push por email (Resend) (P3)
+- [ ] Relatorios semanais para assessorias (P3)
 
-## Endpoints Chave
+## Endpoints Chave - Stories
+- `POST /api/feed/stories` - Cria story (Form: foto + texto)
+- `GET /api/feed/stories` - Lista stories ativos (24h) agrupados por autor
+- `POST /api/feed/stories/{id}/visualizar` - Marca como visto
+- `POST /api/feed/stories/{id}/reagir` - Reacao rapida com emoji
+- `GET /api/feed/stories/restantes` - Stories restantes no dia (limite: 1)
+
+## Endpoints Chave - Feed
 - `POST /api/feed/posts/com-foto` - Upload de foto (Form: foto + texto)
-- `GET /api/feed/fotos-restantes` - Fotos restantes no dia
+- `GET /api/feed/fotos-restantes` - Fotos restantes no dia (limite: 2)
 - `GET /api/feed` - Feed social paginado
-- `POST /api/feed/posts/{id}/reagir` - Reagir a um post (coracao, aplausos, etc)
-- `POST /api/feed/posts/{id}/comentarios` - Comentar em um post
-- `GET /api/admin/mensagens/engajamento` - Dashboard de engajamento
-- `GET /api/raio-x/completo` - Dados completos do Raio-X
-- IBGE: `https://servicodados.ibge.gov.br/api/v1/localidades/estados/{uf}/municipios`
+- `POST /api/feed/posts/{id}/reagir` - Reagir a um post
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta: teste.dono@teste.com / 123456
 
+## DB Collections - Stories
+- `stories`: id, autor_id, autor_nome, imagem_url, texto, data_criacao, visualizacoes[], reacoes[]
+- Imagens salvas em /app/uploads/stories/
+
 ## Notas
-- **Redis:** Instavel no preview. Reinstalar se Celery falhar.
-- **Ano Dinamico:** `ANO_ATUAL = datetime.now().year` em server.py.
-- **Upload Fotos:** Salvas em /app/uploads/feed/, servidas via /api/uploads/feed/{nome}. Limite 2/dia.
-- **Form vs Query:** Ao usar UploadFile + campos texto, usar Form("") nao str = "".
-- **Auth Race Condition:** FeedPage precisa checar authLoading antes de user null.
+- **Redis:** Instavel no preview. Restart manual se Celery falhar.
+- **Upload Fotos/Stories:** Form() obrigatorio para campos texto com UploadFile.
+- **Auth Race Condition:** FeedPage checa authLoading antes de user null + timeout de seguranca 10s.
+- **Stories Auto-Expire:** Filtro por data_criacao >= 24h no query, sem cronjob.
