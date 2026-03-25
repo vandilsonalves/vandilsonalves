@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity } from 'lucide-react';
+import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 
@@ -76,7 +76,6 @@ export default function PagamentoPage() {
     { icon: Users, label: 'Feed social: curtir, comentar e postar' },
     { icon: Star, label: 'Stories e compartilhamento' },
     { icon: Shield, label: 'Edicao completa do perfil' },
-    { icon: CreditCard, label: 'Acesso ate 31/12/2026' },
   ];
 
   if (loadingPlano) {
@@ -86,6 +85,9 @@ export default function PagamentoPage() {
       </div>
     );
   }
+
+  const pv = planoInfo?.plano_vigente;
+  const isLancamento = pv?.id === 'atleta_premium_lancamento';
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-testid="pagamento-page">
@@ -136,12 +138,37 @@ export default function PagamentoPage() {
         )}
 
         {/* Card de preco */}
-        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden mb-8" data-testid="plano-card">
-          <div className="p-8 text-center border-b border-gray-800">
-            <div className="text-5xl font-bold mb-1">
-              R$ 97<span className="text-lg text-gray-400 font-normal">,00</span>
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden mb-8 relative" data-testid="plano-card">
+          {/* Badge de oferta */}
+          {isLancamento && (
+            <div className="absolute top-0 right-0 bg-red-500 text-white text-xs font-bold px-3 py-1.5 rounded-bl-xl" data-testid="badge-oferta">
+              OFERTA
             </div>
-            <p className="text-gray-400 text-sm">Pagamento unico - Valido ate 31/12/2026</p>
+          )}
+
+          <div className="p-8 text-center border-b border-gray-800">
+            {isLancamento ? (
+              <>
+                <p className="text-gray-500 line-through text-lg mb-1" data-testid="preco-original">
+                  De R$ 197,00
+                </p>
+                <div className="text-5xl font-bold mb-1" data-testid="preco-atual">
+                  R$ 97<span className="text-lg text-gray-400 font-normal">,00</span>
+                </div>
+                <p className="text-gray-400 text-sm">Pagamento unico - Valido ate 31/12/2026</p>
+                <div className="inline-flex items-center gap-1.5 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
+                  <Clock className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-xs text-amber-400 font-medium">Oferta valida ate 14/12/2026</span>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="text-5xl font-bold mb-1" data-testid="preco-atual">
+                  12x R$ 119<span className="text-lg text-gray-400 font-normal">,00</span>
+                </div>
+                <p className="text-gray-400 text-sm">Plano anual - Acesso completo por 12 meses</p>
+              </>
+            )}
           </div>
 
           <div className="p-6">
@@ -155,6 +182,14 @@ export default function PagamentoPage() {
                   <span className="text-sm text-gray-200">{r.label}</span>
                 </li>
               ))}
+              <li className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
+                  <CreditCard className="w-4 h-4 text-emerald-400" />
+                </div>
+                <span className="text-sm text-gray-200">
+                  {isLancamento ? 'Acesso ate 31/12/2026' : 'Acesso por 12 meses'}
+                </span>
+              </li>
             </ul>
           </div>
 
@@ -181,7 +216,7 @@ export default function PagamentoPage() {
                   </span>
                 ) : (
                   <span className="flex items-center gap-2">
-                    <CreditCard className="w-4 h-4" /> Assinar Atleta Premium
+                    <Zap className="w-4 h-4" /> {isLancamento ? 'Aproveitar Oferta - R$ 97,00' : 'Assinar por 12x R$ 119,00'}
                   </span>
                 )}
               </Button>

@@ -25,6 +25,7 @@ import RankingCidadePage from "@/pages/RankingCidadePage";
 import StravaAtividadesPage from "@/pages/StravaAtividadesPage";
 import RaioXPage from "@/pages/RaioXPage";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
+import PrintProtection from "@/components/PrintProtection";
 import PagamentoPage from "@/pages/PagamentoPage";
 import PagamentoSucessoPage from "@/pages/PagamentoSucessoPage";
 import PagamentoCanceladoPage from "@/pages/PagamentoCanceladoPage";
@@ -35,6 +36,12 @@ function SplashScreenWrapper() {
   return <SplashScreen token={token} />;
 }
 
+function PrintProtectionWrapper({ children }) {
+  const { token, user } = useAuth();
+  if (!token || !user) return children;
+  return <PrintProtection>{children}</PrintProtection>;
+}
+
 function App() {
   return (
     <AuthProvider>
@@ -42,29 +49,31 @@ function App() {
         <BrowserRouter>
           <BirthdayPopup />
           <SplashScreenWrapper />
-          <Routes>
-            <Route path="/" element={<RankingPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/cadastro" element={<CadastroPage />} />
-            <Route path="/atleta/:id" element={<AtletaDetalhes />} />
-            <Route path="/assessoria/:nome" element={<AssessoriaPage />} />
-            <Route path="/minha-assessoria" element={<DonoAssessoriaDashboard />} />
-            <Route path="/ranking-corridas" element={<RankingCorridasPage />} />
-            <Route path="/submeter-resultado" element={<SubmeterResultadoPage />} />
-            <Route path="/como-ser-verificado" element={<ComoSerVerificadoPage />} />
-            <Route path="/admin" element={<AdminDashboard />} />
-            <Route path="/admin/estrategico" element={<DashboardEstrategico />} />
-            <Route path="/perfil" element={<AccessGate recurso="Edicao de Perfil"><PerfilAtletaPage /></AccessGate>} />
-            <Route path="/feed" element={<AccessGate recurso="Feed Social"><FeedPage /></AccessGate>} />
-            <Route path="/regras" element={<RegrasPage />} />
-            <Route path="/historico" element={<HistoricoSubmissoesPage />} />
-            <Route path="/ranking-cidade" element={<RankingCidadePage />} />
-            <Route path="/strava-clube" element={<AccessGate recurso="Integracao Strava"><StravaAtividadesPage /></AccessGate>} />
-            <Route path="/raio-x" element={<AccessGate recurso="Raio-X do Atleta"><RaioXPage /></AccessGate>} />
-            <Route path="/pagamento" element={<PagamentoPage />} />
-            <Route path="/pagamento/sucesso" element={<PagamentoSucessoPage />} />
-            <Route path="/pagamento/cancelado" element={<PagamentoCanceladoPage />} />
-          </Routes>
+          <PrintProtectionWrapper>
+            <Routes>
+              <Route path="/" element={<RankingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route path="/cadastro" element={<CadastroPage />} />
+              <Route path="/atleta/:id" element={<AtletaDetalhes />} />
+              <Route path="/assessoria/:nome" element={<AssessoriaPage />} />
+              <Route path="/minha-assessoria" element={<DonoAssessoriaDashboard />} />
+              <Route path="/ranking-corridas" element={<RankingCorridasPage />} />
+              <Route path="/submeter-resultado" element={<SubmeterResultadoPage />} />
+              <Route path="/como-ser-verificado" element={<ComoSerVerificadoPage />} />
+              <Route path="/admin" element={<AdminDashboard />} />
+              <Route path="/admin/estrategico" element={<DashboardEstrategico />} />
+              <Route path="/perfil" element={<AccessGate recurso="Edicao de Perfil"><PerfilAtletaPage /></AccessGate>} />
+              <Route path="/feed" element={<AccessGate recurso="Feed Social"><FeedPage /></AccessGate>} />
+              <Route path="/regras" element={<RegrasPage />} />
+              <Route path="/historico" element={<HistoricoSubmissoesPage />} />
+              <Route path="/ranking-cidade" element={<RankingCidadePage />} />
+              <Route path="/strava-clube" element={<AccessGate recurso="Integracao Strava"><StravaAtividadesPage /></AccessGate>} />
+              <Route path="/raio-x" element={<AccessGate recurso="Raio-X do Atleta"><RaioXPage /></AccessGate>} />
+              <Route path="/pagamento" element={<PagamentoPage />} />
+              <Route path="/pagamento/sucesso" element={<PagamentoSucessoPage />} />
+              <Route path="/pagamento/cancelado" element={<PagamentoCanceladoPage />} />
+            </Routes>
+          </PrintProtectionWrapper>
         </BrowserRouter>
         <PWAInstallPrompt />
         <Toaster position="top-right" />

@@ -16,15 +16,40 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/pagamentos", tags=["pagamentos"])
 
-# Plano fixo - NÃO aceitar valores do frontend
-PLANO_PREMIUM = {
-    "id": "atleta_premium_2026",
+# Planos disponíveis
+PLANO_LANCAMENTO = {
+    "id": "atleta_premium_lancamento",
     "nome": "Atleta Premium",
     "valor": 97.00,
+    "valor_original": 197.00,
     "moeda": "brl",
+    "tipo": "pagamento_unico",
     "validade": "2026-12-31",
-    "descricao": "Acesso completo ao Ranking Run Pro ate 31/12/2026"
+    "disponivel_ate": "2026-12-14",
+    "descricao": "De R$ 197,00 por R$ 97,00 - Acesso completo ate 31/12/2026"
 }
+
+PLANO_ANUAL = {
+    "id": "atleta_premium_anual",
+    "nome": "Atleta Premium Anual",
+    "valor": 119.00,
+    "moeda": "brl",
+    "tipo": "mensal",
+    "parcelas": 12,
+    "valor_total": 1428.00,
+    "validade": "2027-12-31",
+    "disponivel_a_partir": "2026-12-15",
+    "descricao": "12x de R$ 119,00 - Acesso completo por 12 meses"
+}
+
+
+def get_plano_vigente():
+    """Retorna o plano vigente com base na data atual"""
+    agora = datetime.now(timezone.utc)
+    limite_lancamento = datetime(2026, 12, 14, 23, 59, 59, tzinfo=timezone.utc)
+    if agora <= limite_lancamento:
+        return PLANO_LANCAMENTO
+    return PLANO_ANUAL
 
 
 class CheckoutRequest(BaseModel):
@@ -35,9 +60,25 @@ class CheckoutStatusRequest(BaseModel):
     session_id: str
 
 
+@router.get("/planos")
+async def listar_planos():
+    """Retorna os planos disponiveis baseado na data atual"""
+    plano_atual = get_plano_vigente()
+    agora = datetime.now(timezone.utc)
+    limite_lancamento = datetime(2026, 12, 14, 23, 59, 59, tzinfo=timezone.utc)
+
+    return {
+        "plano_vigente": plano_atual,
+        "plano_lancamento": PLANO_LANCAMENTO if agora <= limite_lancamento else None,
+        "plano_anual": PLANO_ANUAL if agora > limite_lancamento else None,
+        "data_transicao": "2026-12-15",
+        "eh_periodo_lancamento": agora <= limite_lancamento
+    }
+
+
 @router.post("/checkout")
 async def criar_checkout(dados: CheckoutRequest, request: Request, current_user: dict = Depends(get_current_user)):
-    """Cria sessao de checkout Stripe para o plano Atleta Premium"""
+    """Cria sessao de checkout Stripe para o plano vigente"""
     from emergentintegrations.payments.stripe.checkout import (
         StripeCheckout, CheckoutSessionRequest, CheckoutSessionResponse
     )
@@ -66,6 +107,8 @@ async def criar_checkout(dados: CheckoutRequest, request: Request, current_user:
         except Exception:
             pass
 
+    plano = get_plano_vigente()
+
     origin = dados.origin_url.rstrip("/")
     success_url = f"{origin}/pagamento/sucesso?session_id={{CHECKOUT_SESSION_ID}}"
     cancel_url = f"{origin}/pagamento/cancelado"
@@ -76,15 +119,15 @@ async def criar_checkout(dados: CheckoutRequest, request: Request, current_user:
     stripe_checkout = StripeCheckout(api_key=api_key, webhook_url=webhook_url)
 
     checkout_request = CheckoutSessionRequest(
-        amount=PLANO_PREMIUM["valor"],
-        currency=PLANO_PREMIUM["moeda"],
+        amount=plano["valor"],
+        currency=plano["moeda"],
         success_url=success_url,
         cancel_url=cancel_url,
         metadata={
             "user_id": current_user["id"],
             "user_email": current_user.get("email", ""),
-            "plano": PLANO_PREMIUM["id"],
-            "validade": PLANO_PREMIUM["validade"]
+            "plano": plano["id"],
+            "validade": plano["validade"]
         }
     )
 
@@ -96,16 +139,16 @@ async def criar_checkout(dados: CheckoutRequest, request: Request, current_user:
         "session_id": session.session_id,
         "user_id": current_user["id"],
         "user_email": current_user.get("email", ""),
-        "plano": PLANO_PREMIUM["id"],
-        "plano_nome": PLANO_PREMIUM["nome"],
-        "amount": PLANO_PREMIUM["valor"],
-        "currency": PLANO_PREMIUM["moeda"],
+        "plano": plano["id"],
+        "plano_nome": plano["nome"],
+        "amount": plano["valor"],
+        "currency": plano["moeda"],
         "payment_status": "pending",
         "status": "initiated",
         "metadata": {
             "user_id": current_user["id"],
-            "plano": PLANO_PREMIUM["id"],
-            "validade": PLANO_PREMIUM["validade"]
+            "plano": plano["id"],
+            "validade": plano["validade"]
         },
         "data_criacao": datetime.now(timezone.utc).isoformat(),
         "data_atualizacao": datetime.now(timezone.utc).isoformat()
@@ -115,7 +158,7 @@ async def criar_checkout(dados: CheckoutRequest, request: Request, current_user:
     return {
         "url": session.url,
         "session_id": session.session_id,
-        "plano": PLANO_PREMIUM
+        "plano": plano
     }
 
 
@@ -141,11 +184,12 @@ async def verificar_status_pagamento(session_id: str, request: Request, current_
 
     # Se ja foi processada com sucesso, retornar direto
     if transaction.get("payment_status") == "paid":
+        plano = get_plano_vigente()
         return {
             "status": "complete",
             "payment_status": "paid",
-            "plano": PLANO_PREMIUM["nome"],
-            "validade": PLANO_PREMIUM["validade"],
+            "plano": transaction.get("plano_nome", plano["nome"]),
+            "validade": transaction.get("metadata", {}).get("validade", plano["validade"]),
             "ja_processado": True
         }
 
@@ -178,14 +222,16 @@ async def verificar_status_pagamento(session_id: str, request: Request, current_
         "payment_status": checkout_status.payment_status,
         "amount_total": checkout_status.amount_total,
         "currency": checkout_status.currency,
-        "plano": PLANO_PREMIUM["nome"],
-        "validade": PLANO_PREMIUM["validade"]
+        "plano": transaction.get("plano_nome", get_plano_vigente()["nome"]),
+        "validade": transaction.get("metadata", {}).get("validade", get_plano_vigente()["validade"])
     }
 
 
 @router.get("/meu-plano")
 async def meu_plano(current_user: dict = Depends(get_current_user)):
     """Retorna informacoes do plano do usuario"""
+    plano = get_plano_vigente()
+
     # Admin sempre Premium
     if current_user.get("role") in ["admin", "super_admin"]:
         return {
@@ -194,7 +240,8 @@ async def meu_plano(current_user: dict = Depends(get_current_user)):
             "plano": "Admin",
             "expira_em": None,
             "dias_restantes": None,
-            "tem_acesso_premium": True
+            "tem_acesso_premium": True,
+            "plano_vigente": plano
         }
 
     # Verificar autorizacao ativa
@@ -220,10 +267,11 @@ async def meu_plano(current_user: dict = Depends(get_current_user)):
             return {
                 "status": "autorizado",
                 "tipo": auth.get("tipo", "premium"),
-                "plano": PLANO_PREMIUM["nome"],
+                "plano": auth.get("plano_nome", plano["nome"]),
                 "expira_em": data_exp.isoformat(),
                 "dias_restantes": (data_exp - agora).days,
-                "tem_acesso_premium": True
+                "tem_acesso_premium": True,
+                "plano_vigente": plano
             }
 
     # Verificar periodo de teste (30 dias)
@@ -247,7 +295,8 @@ async def meu_plano(current_user: dict = Depends(get_current_user)):
             "plano": "Periodo de Teste",
             "expira_em": (data_criacao + timedelta(days=30)).isoformat(),
             "dias_restantes": 30 - dias_desde_criacao,
-            "tem_acesso_premium": True
+            "tem_acesso_premium": True,
+            "plano_vigente": plano
         }
 
     return {
@@ -257,15 +306,20 @@ async def meu_plano(current_user: dict = Depends(get_current_user)):
         "expira_em": None,
         "dias_restantes": 0,
         "tem_acesso_premium": False,
-        "valor_plano": PLANO_PREMIUM["valor"],
-        "moeda_plano": PLANO_PREMIUM["moeda"]
+        "plano_vigente": plano
     }
 
 
 async def _ativar_acesso_premium(user_id: str, session_id: str):
     """Ativa o acesso premium para o usuario apos pagamento confirmado"""
     agora = datetime.now(timezone.utc)
-    data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    plano = get_plano_vigente()
+
+    # Definir data de expiracao baseado no plano
+    if plano["id"] == "atleta_premium_lancamento":
+        data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    else:
+        data_expiracao = datetime(2027, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
     # Desativar autorizacoes anteriores
     await db.autorizacoes.update_many(
@@ -278,12 +332,14 @@ async def _ativar_acesso_premium(user_id: str, session_id: str):
         "id": str(uuid.uuid4()),
         "atleta_id": user_id,
         "tipo": "premium",
+        "plano_id": plano["id"],
+        "plano_nome": plano["nome"],
         "duracao_dias": (data_expiracao - agora).days,
         "data_criacao": agora.isoformat(),
         "data_expiracao": data_expiracao.isoformat(),
         "criado_por": "stripe",
         "criado_por_nome": "Pagamento Stripe",
-        "observacao": f"Plano Atleta Premium - Sessao {session_id}",
+        "observacao": f"{plano['nome']} - Sessao {session_id}",
         "status": "ativa",
         "origem_pagamento": session_id
     }
@@ -300,4 +356,4 @@ async def _ativar_acesso_premium(user_id: str, session_id: str):
         }}
     )
 
-    logger.info(f"Acesso Premium ativado para usuario {user_id} via sessao {session_id}")
+    logger.info(f"Acesso Premium ativado para usuario {user_id} via sessao {session_id} - Plano: {plano['id']}")

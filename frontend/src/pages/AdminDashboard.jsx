@@ -136,8 +136,6 @@ const AdminDashboard = () => {
   const [statsEquipes, setStatsEquipes] = useState([]);
   const [statsPovao, setStatsPovao] = useState(null);
   const [statsModalidade, setStatsModalidade] = useState({ profissional: 0, povao: 0 });
-  const [statsEtnia, setStatsEtnia] = useState([]);
-  const [statsEquipesPorEstado, setStatsEquipesPorEstado] = useState([]);
   const [statsDonosPorEstado, setStatsDonosPorEstado] = useState([]);
   const [statsAssessoriasVerificadas, setStatsAssessoriasVerificadas] = useState(null);
   const [statsInsignias, setStatsInsignias] = useState([]);
@@ -297,20 +295,16 @@ const AdminDashboard = () => {
         axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/etnia`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/equipes-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/donos-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/assessorias-verificadas`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/insignias`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
-      const [categoriasRes, faixaRes, corridasRes, etniaRes, equipesPorEstadoRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = results;
+      const [categoriasRes, faixaRes, corridasRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = results;
       
       if (categoriasRes.status === 'fulfilled') setStatsCategorias(categoriasRes.value.data);
       if (faixaRes.status === 'fulfilled') setStatsFaixa(faixaRes.value.data);
       if (corridasRes.status === 'fulfilled') setCorridasPorMes(corridasRes.value.data);
-      if (etniaRes.status === 'fulfilled') setStatsEtnia(etniaRes.value.data);
-      if (equipesPorEstadoRes.status === 'fulfilled') setStatsEquipesPorEstado(equipesPorEstadoRes.value.data);
       if (donosEstadoRes.status === 'fulfilled') setStatsDonosPorEstado(donosEstadoRes.value.data);
       if (assessoriasVerificadasRes.status === 'fulfilled') setStatsAssessoriasVerificadas(assessoriasVerificadasRes.value.data);
       if (insigniasRes.status === 'fulfilled') setStatsInsignias(insigniasRes.value.data);
@@ -1051,7 +1045,6 @@ const AdminDashboard = () => {
           <ConfiguracoesSistemaTab token={token} />
         )}
 
-        {/* Regulamento View */}
         {/* Regulamento View - Componentizado */}
         {activeMenu === 'regulamento' && (
           <DashboardRegulamento token={token} />
@@ -1087,7 +1080,6 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Aniversariantes View */}
         {/* Aniversariantes View - Componentizado */}
         {activeMenu === 'aniversariantes' && (
           <DashboardAniversariantes token={token} />
