@@ -1949,6 +1949,25 @@ async def startup_event():
     scheduler.start()
     logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza comentários domingo 23:59, Strava sync a cada 1h")
 
+    # Criar índices MongoDB para performance
+    try:
+        await db.usuarios.create_index("id", unique=True)
+        await db.usuarios.create_index("email")
+        await db.usuarios.create_index([("estado", 1), ("cidade", 1)])
+        await db.usuarios.create_index("role")
+        await db.corridas.create_index("usuario_id")
+        await db.corridas.create_index([("usuario_id", 1), ("status", 1)])
+        await db.ranking_anual.create_index([("ano", 1), ("usuario_id", 1)])
+        await db.ranking_anual.create_index([("ano", 1), ("categoria", 1), ("genero", 1)])
+        await db.ranking_povao.create_index([("ano", 1), ("usuario_id", 1)])
+        await db.notificacoes.create_index([("usuario_id", 1), ("tipo", 1), ("lida", 1)])
+        await db.notificacoes.create_index([("mensagem_id", 1), ("tipo", 1)])
+        await db.mensagens_admin.create_index("id")
+        await db.resultados.create_index("usuario_id")
+        logger.info("📊 Índices MongoDB criados/verificados")
+    except Exception as e:
+        logger.warning(f"Erro ao criar índices: {e}")
+
 
 async def check_and_send_alerts():
     """Verifica alertas e envia emails se necessário"""

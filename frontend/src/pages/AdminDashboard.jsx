@@ -248,12 +248,16 @@ const AdminDashboard = () => {
       fetchRankingCorridasDashboard();
       fetchCorridasEventos();
     }
+    if (activeMenu === 'geral' && !statsCategorias) {
+      fetchExtraStats();
+      fetchEquipesStats();
+    }
   }, [activeMenu, filtroCategoria, filtroEquipe, ligaTipo, ligaEstado, ligaCidade]);
 
 
 
   const fetchAllData = async () => {
-    // Executar de forma independente para não bloquear um ao outro
+    // Carregar apenas stats essenciais no startup (visão geral)
     fetchStats();
     fetchPendentes();
   };
@@ -261,14 +265,31 @@ const AdminDashboard = () => {
   const fetchStats = async () => {
     setLoadingStats(true);
     try {
-      // Usar Promise.allSettled para não bloquear se uma requisição falhar
+      // Apenas 3 requests essenciais no startup (os outros carregam sob demanda)
       const results = await Promise.allSettled([
         axios.get(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/estados`, { headers: { Authorization: `Bearer ${token}` } }),
+        axios.get(`${API}/ranking/povao/stats`)
+      ]);
+      
+      const [statsRes, estadosRes, povaoRes] = results;
+      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+      if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
+      if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
+
+    } catch (err) {
+      console.error('Erro ao buscar stats:', err);
+    } finally {
+      setLoadingStats(false);
+    }
+  };
+
+  const fetchExtraStats = async () => {
+    try {
+      const results = await Promise.allSettled([
         axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/ranking/povao/stats`),
         axios.get(`${API}/admin/stats/etnia`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/equipes-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
         axios.get(`${API}/admin/stats/donos-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
@@ -276,59 +297,18 @@ const AdminDashboard = () => {
         axios.get(`${API}/admin/stats/insignias`, { headers: { Authorization: `Bearer ${token}` } })
       ]);
       
-      // Extrair dados apenas de requisições bem-sucedidas
-      const [statsRes, estadosRes, categoriasRes, faixaRes, corridasRes, povaoRes, etniaRes, equipesPorEstadoRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = results;
+      const [categoriasRes, faixaRes, corridasRes, etniaRes, equipesPorEstadoRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = results;
       
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
-      if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
       if (categoriasRes.status === 'fulfilled') setStatsCategorias(categoriasRes.value.data);
       if (faixaRes.status === 'fulfilled') setStatsFaixa(faixaRes.value.data);
       if (corridasRes.status === 'fulfilled') setCorridasPorMes(corridasRes.value.data);
-      if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
       if (etniaRes.status === 'fulfilled') setStatsEtnia(etniaRes.value.data);
       if (equipesPorEstadoRes.status === 'fulfilled') setStatsEquipesPorEstado(equipesPorEstadoRes.value.data);
       if (donosEstadoRes.status === 'fulfilled') setStatsDonosPorEstado(donosEstadoRes.value.data);
       if (assessoriasVerificadasRes.status === 'fulfilled') setStatsAssessoriasVerificadas(assessoriasVerificadasRes.value.data);
       if (insigniasRes.status === 'fulfilled') setStatsInsignias(insigniasRes.value.data);
-      
-      // Calcular estatísticas de equipes a partir dos atletas
-      try {
-        const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers: { Authorization: `Bearer ${token}` } });
-        const atletas = Array.isArray(atletasRes.data) ? atletasRes.data : (atletasRes.data.atletas || []);
-        
-        // Contar por equipe
-        const equipesCount = {};
-        let profissionalCount = 0;
-        let povaoCount = 0;
-        
-        atletas.forEach(a => {
-          const equipe = a.equipe || 'Sem equipe';
-          equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
-          
-          // Contar modalidades
-          if (a.modalidade_usuario === 'povao_pace_livre') {
-            povaoCount++;
-          } else {
-            profissionalCount++;
-          }
-        });
-        
-        // Converter para array e ordenar por quantidade
-        const equipesArray = Object.entries(equipesCount)
-          .map(([equipe, total]) => ({ equipe, total }))
-          .sort((a, b) => b.total - a.total)
-          .slice(0, 10); // Top 10 equipes
-        
-        setStatsEquipes(equipesArray);
-        setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
-      } catch (err) {
-        console.error('Erro ao processar atletas:', err);
-      }
-      
     } catch (error) {
-      console.error('Erro ao buscar estatísticas:', error);
-    } finally {
-      setLoadingStats(false);
+      console.error('Erro ao buscar stats extras:', error);
     }
   };
 
@@ -343,6 +323,25 @@ const AdminDashboard = () => {
       console.error('Erro ao buscar pendentes:', error);
     } finally {
       setLoadingPendentes(false);
+    }
+  };
+
+  const fetchEquipesStats = async () => {
+    try {
+      const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers: { Authorization: `Bearer ${token}` } });
+      const atletasList = Array.isArray(atletasRes.data) ? atletasRes.data : (atletasRes.data.atletas || []);
+      const equipesCount = {};
+      let profissionalCount = 0;
+      let povaoCount = 0;
+      atletasList.forEach(a => {
+        const equipe = a.equipe || 'Sem equipe';
+        equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
+        if (a.modalidade_usuario === 'povao_pace_livre') { povaoCount++; } else { profissionalCount++; }
+      });
+      setStatsEquipes(Object.entries(equipesCount).map(([equipe, total]) => ({ equipe, total })).sort((a, b) => b.total - a.total).slice(0, 10));
+      setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
+    } catch (err) {
+      console.error('Erro ao processar equipes:', err);
     }
   };
 
