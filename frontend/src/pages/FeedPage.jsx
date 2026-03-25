@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Send, Loader2, ArrowLeft, MoreHorizontal,
   TrendingUp, Clock, Trash2, Users, Smile, MessageCircle,
-  Trophy, Medal, PartyPopper, Star, Zap, Shield
+  Trophy, Medal, PartyPopper, Star, Zap, Shield, Camera, X, Image as ImageIcon
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -47,6 +47,7 @@ const REACOES = {
 // Tipos de posts automáticos
 const TIPOS_POST = {
   texto: { label: "Texto", cor: "bg-slate-600" },
+  foto: { label: "Foto", cor: "bg-teal-600", icone: Camera },
   conquista: { label: "Conquista", cor: "bg-purple-600", icone: Trophy },
   corrida_aprovada: { label: "Resultado", cor: "bg-green-600", icone: Medal },
   resultado: { label: "Resultado", cor: "bg-blue-600", icone: Zap }
@@ -66,6 +67,11 @@ const FeedPage = () => {
   const [novoPost, setNovoPost] = useState('');
   const [enviandoPost, setEnviandoPost] = useState(false);
   
+  // Foto do post
+  const [fotoSelecionada, setFotoSelecionada] = useState(null);
+  const [fotoPreview, setFotoPreview] = useState(null);
+  const [fotosRestantes, setFotosRestantes] = useState(2);
+  
   // Comentários
   const [comentarioTexto, setComentarioTexto] = useState({});
   const [enviandoComentario, setEnviandoComentario] = useState(null);
@@ -81,6 +87,7 @@ const FeedPage = () => {
     }
     fetchFeed();
     fetchTrending();
+    fetchFotosRestantes();
   }, [user]);
 
   const fetchFeed = async (pag = 1, append = false) => {
@@ -120,43 +127,92 @@ const FeedPage = () => {
     }
   };
 
+  const fetchFotosRestantes = async () => {
+    try {
+      const response = await axios.get(`${API}/feed/fotos-restantes`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setFotosRestantes(response.data.restantes);
+    } catch (error) {
+      console.error('Erro ao buscar fotos restantes:', error);
+    }
+  };
+
+  const handleSelecionarFoto = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (!['jpg','jpeg','png','webp','heic','heif'].includes(ext)) {
+      toast.error('Formato não suportado. Use JPG, PNG ou WebP.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Imagem muito grande. Máximo: 5MB');
+      return;
+    }
+
+    setFotoSelecionada(file);
+    const reader = new FileReader();
+    reader.onload = (ev) => setFotoPreview(ev.target.result);
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoverFoto = () => {
+    setFotoSelecionada(null);
+    setFotoPreview(null);
+  };
+
   const handleCriarPost = async () => {
-    if (!novoPost.trim()) return;
+    if (!novoPost.trim() && !fotoSelecionada) return;
     
     setEnviandoPost(true);
     try {
-      await axios.post(
-        `${API}/feed/posts`,
-        { texto: novoPost, tipo: 'texto' },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      if (fotoSelecionada) {
+        // Post com foto
+        const formData = new FormData();
+        formData.append('foto', fotoSelecionada);
+        formData.append('texto', novoPost);
+        
+        const response = await axios.post(
+          `${API}/feed/posts/com-foto`,
+          formData,
+          { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } }
+        );
+        
+        toast.success('Foto publicada!');
+        setFotosRestantes(response.data.fotos_restantes_hoje);
+      } else {
+        // Post só texto
+        await axios.post(
+          `${API}/feed/posts`,
+          { texto: novoPost, tipo: 'texto' },
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        toast.success('Post publicado!');
+      }
       
-      toast.success('Post publicado!');
       setNovoPost('');
+      handleRemoverFoto();
       fetchFeed();
     } catch (error) {
       const errorData = error.response?.data?.detail;
       
-      // Verificar se é erro de moderação (objeto com detalhes)
-      if (errorData && typeof errorData === 'object' && errorData.message) {
+      if (error.response?.status === 429) {
+        toast.error(typeof errorData === 'string' ? errorData : 'Limite de fotos diário atingido!');
+      } else if (errorData && typeof errorData === 'object' && errorData.message) {
         const { message, nivel, educativo } = errorData;
-        
         if (nivel === 'grave') {
-          toast.error(`🚫 ${message}`, { duration: 8000 });
-          if (educativo) {
-            toast.warning(`💡 ${educativo}`, { duration: 10000 });
-          }
+          toast.error(message, { duration: 8000 });
+          if (educativo) toast.warning(educativo, { duration: 10000 });
         } else if (nivel === 'medio') {
-          toast.warning(`⚠️ ${message}`, { duration: 6000 });
-          if (educativo) {
-            toast.info(`💡 ${educativo}`, { duration: 8000 });
-          }
+          toast.warning(message, { duration: 6000 });
+          if (educativo) toast.info(educativo, { duration: 8000 });
         } else {
-          toast.info(`ℹ️ ${message}`, { duration: 5000 });
+          toast.info(message, { duration: 5000 });
         }
       } else {
-        // Erro comum (string)
-        toast.error(typeof errorData === 'string' ? errorData : 'Erro ao publicar post');
+        toast.error(typeof errorData === 'string' ? errorData : 'Erro ao publicar');
       }
     } finally {
       setEnviandoPost(false);
@@ -633,33 +689,85 @@ const FeedPage = () => {
                   </Avatar>
                   <div className="flex-1 space-y-3">
                     <Textarea
-                      placeholder="O que você quer compartilhar?"
+                      placeholder={fotoSelecionada ? "Adicione uma legenda..." : "O que você quer compartilhar?"}
                       value={novoPost}
                       onChange={(e) => setNovoPost(e.target.value)}
                       className="bg-slate-700 border-slate-600 min-h-[80px] resize-none text-white font-semibold placeholder:text-slate-400 placeholder:font-normal"
                       maxLength={1000}
                       data-testid="new-post-input"
                     />
+
+                    {/* Preview da foto selecionada */}
+                    {fotoPreview && (
+                      <div className="relative inline-block">
+                        <img
+                          src={fotoPreview}
+                          alt="Preview"
+                          className="rounded-lg max-h-60 object-cover border border-slate-600"
+                          data-testid="foto-preview"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="absolute top-2 right-2 bg-black/60 hover:bg-black/80 text-white h-7 w-7 rounded-full"
+                          onClick={handleRemoverFoto}
+                          data-testid="remover-foto-btn"
+                        >
+                          <X className="w-4 h-4" />
+                        </Button>
+                      </div>
+                    )}
                     
                     <div className="flex items-center justify-between">
-                      <span className="text-xs text-slate-400">
-                        {novoPost.length}/1000
-                      </span>
-                      <Button
-                        onClick={handleCriarPost}
-                        disabled={!novoPost.trim() || enviandoPost}
-                        className="bg-amber-500 hover:bg-amber-600 text-black"
-                        data-testid="publish-post-btn"
-                      >
-                        {enviandoPost ? (
-                          <Loader2 className="w-4 h-4 animate-spin" />
-                        ) : (
-                          <>
-                            <Send className="w-4 h-4 mr-1" />
-                            Publicar
-                          </>
-                        )}
-                      </Button>
+                      <div className="flex items-center gap-3">
+                        {/* Botão de foto */}
+                        <input
+                          type="file"
+                          id="foto-input"
+                          accept="image/jpeg,image/png,image/webp,image/heic,image/heif"
+                          className="hidden"
+                          onChange={handleSelecionarFoto}
+                          data-testid="foto-file-input"
+                        />
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className={`text-slate-400 hover:text-green-400 hover:bg-slate-700/50 ${fotosRestantes === 0 ? 'opacity-40 cursor-not-allowed' : ''}`}
+                          onClick={() => fotosRestantes > 0 && document.getElementById('foto-input').click()}
+                          disabled={fotosRestantes === 0 || !!fotoSelecionada}
+                          data-testid="add-foto-btn"
+                        >
+                          <Camera className="w-5 h-5 mr-1" />
+                          Foto
+                        </Button>
+                        <span className="text-xs text-slate-500">
+                          {fotoSelecionada
+                            ? `${fotosRestantes} foto${fotosRestantes !== 1 ? 's' : ''} restante${fotosRestantes !== 1 ? 's' : ''} hoje`
+                            : `${fotosRestantes}/${2} fotos hoje`
+                          }
+                        </span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-slate-400">
+                          {novoPost.length}/1000
+                        </span>
+                        <Button
+                          onClick={handleCriarPost}
+                          disabled={(!novoPost.trim() && !fotoSelecionada) || enviandoPost}
+                          className="bg-amber-500 hover:bg-amber-600 text-black"
+                          data-testid="publish-post-btn"
+                        >
+                          {enviandoPost ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <>
+                              <Send className="w-4 h-4 mr-1" />
+                              Publicar
+                            </>
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -704,6 +812,12 @@ const FeedPage = () => {
                               <Badge className="bg-green-600/80 text-xs py-0">
                                 <Medal className="w-3 h-3 mr-1" />
                                 Resultado
+                              </Badge>
+                            )}
+                            {post.tipo === 'foto' && (
+                              <Badge className="bg-teal-600/80 text-xs py-0">
+                                <ImageIcon className="w-3 h-3 mr-1" />
+                                Foto
                               </Badge>
                             )}
                           </div>
@@ -754,17 +868,19 @@ const FeedPage = () => {
                     {/* Conteúdo especial para posts automáticos */}
                     <PostConteudoEspecial post={post} />
                     
-                    {/* Texto do post (sempre exibido, mas pode ser o texto automático) */}
-                    {!post.auto_gerado && (
+                    {/* Texto do post */}
+                    {post.texto && !post.auto_gerado && (
                       <p className="text-slate-200 whitespace-pre-wrap">{post.texto}</p>
                     )}
                     
-                    {/* Imagens existentes ainda são exibidas */}
+                    {/* Imagem do post */}
                     {post.imagem_url && (
                       <img 
-                        src={`${BACKEND_URL}${post.imagem_url}`} 
+                        src={`${BACKEND_URL}/api${post.imagem_url}`} 
                         alt="Post" 
-                        className="rounded-lg max-h-96 w-full object-cover"
+                        className="rounded-xl max-h-[500px] w-full object-cover border border-slate-700"
+                        data-testid={`post-image-${post.id}`}
+                        loading="lazy"
                       />
                     )}
                     

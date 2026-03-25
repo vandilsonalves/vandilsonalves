@@ -54,6 +54,22 @@ class ComentarioCreate(BaseModel):
     texto: str
 
 
+MAX_FOTOS_DIA = 2
+MAX_FOTO_SIZE_MB = 5
+EXTENSOES_PERMITIDAS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif"}
+
+
+async def _contar_fotos_hoje(usuario_id: str) -> int:
+    """Conta quantas fotos o usuário postou nas últimas 24h"""
+    data_limite = (datetime.now(timezone.utc) - timedelta(hours=24)).isoformat()
+    return await db.feed_posts.count_documents({
+        "autor_id": usuario_id,
+        "tipo": "foto",
+        "status": "ativo",
+        "data_criacao": {"$gte": data_limite}
+    })
+
+
 @router.get("/feed")
 async def get_feed(
     pagina: int = Query(1, ge=1),
@@ -268,7 +284,106 @@ async def criar_post(
     }
 
 
-# Endpoint de upload de imagem removido - usuários só podem criar posts de texto
+# Endpoint de upload de foto no feed
+@router.post("/feed/posts/com-foto")
+async def criar_post_com_foto(
+    texto: str = "",
+    foto: UploadFile = File(...),
+    current_user: dict = Depends(get_current_user)
+):
+    """Cria um post com foto no feed. Limite de 2 fotos por dia (24h)."""
+
+    # 1. Verificar bloqueio de moderação
+    bloqueado, data_desbloqueio = await verificar_usuario_bloqueado(db, current_user["id"])
+    if bloqueado:
+        raise HTTPException(
+            status_code=403,
+            detail=f"Você está temporariamente bloqueado de postar até {data_desbloqueio[:10]}."
+        )
+
+    # 2. Verificar limite diário de fotos
+    fotos_hoje = await _contar_fotos_hoje(current_user["id"])
+    if fotos_hoje >= MAX_FOTOS_DIA:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Você já atingiu o limite de {MAX_FOTOS_DIA} fotos por dia. Tente novamente amanhã!"
+        )
+
+    # 3. Validar extensão
+    ext = Path(foto.filename or "").suffix.lower()
+    if ext not in EXTENSOES_PERMITIDAS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Formato não permitido. Use: {', '.join(EXTENSOES_PERMITIDAS)}"
+        )
+
+    # 4. Ler e validar tamanho
+    conteudo = await foto.read()
+    tamanho_mb = len(conteudo) / (1024 * 1024)
+    if tamanho_mb > MAX_FOTO_SIZE_MB:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Imagem muito grande ({tamanho_mb:.1f}MB). Máximo: {MAX_FOTO_SIZE_MB}MB"
+        )
+
+    # 5. Moderar texto (se houver)
+    if texto.strip():
+        if len(texto) > 1000:
+            raise HTTPException(status_code=400, detail="O texto não pode ter mais de 1000 caracteres")
+        bloqueado_mod, categoria, nivel, mensagem_feedback = analisar_conteudo(texto)
+        if bloqueado_mod and nivel:
+            await registrar_infracao(db, current_user["id"], nivel, categoria, texto)
+            feedback_educativo = gerar_feedback_educativo(nivel, categoria)
+            raise HTTPException(status_code=400, detail={
+                "message": mensagem_feedback,
+                "nivel": nivel.value,
+                "categoria": categoria,
+                "educativo": feedback_educativo
+            })
+
+    # 6. Salvar arquivo
+    nome_arquivo = f"{uuid.uuid4()}{ext}"
+    caminho_arquivo = UPLOAD_DIR / nome_arquivo
+    with open(caminho_arquivo, "wb") as f:
+        f.write(conteudo)
+
+    imagem_url = f"/uploads/feed/{nome_arquivo}"
+
+    # 7. Criar post
+    post = {
+        "id": str(uuid.uuid4()),
+        "autor_id": current_user["id"],
+        "autor_nome": current_user.get("nome", ""),
+        "texto": texto.strip(),
+        "tipo": "foto",
+        "resultado_dados": None,
+        "conquista_dados": None,
+        "imagem_url": imagem_url,
+        "status": "ativo",
+        "data_criacao": datetime.now(timezone.utc).isoformat()
+    }
+
+    await db.feed_posts.insert_one(post)
+
+    restantes = MAX_FOTOS_DIA - fotos_hoje - 1
+
+    return {
+        "message": "Foto publicada com sucesso!",
+        "post_id": post["id"],
+        "imagem_url": imagem_url,
+        "fotos_restantes_hoje": restantes
+    }
+
+
+@router.get("/feed/fotos-restantes")
+async def fotos_restantes_hoje(current_user: dict = Depends(get_current_user)):
+    """Retorna quantas fotos o atleta ainda pode postar hoje"""
+    fotos_hoje = await _contar_fotos_hoje(current_user["id"])
+    return {
+        "fotos_hoje": fotos_hoje,
+        "limite_diario": MAX_FOTOS_DIA,
+        "restantes": max(0, MAX_FOTOS_DIA - fotos_hoje)
+    }
 
 
 @router.delete("/feed/posts/{post_id}")
