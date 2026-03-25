@@ -7,59 +7,53 @@ Plataforma de ranking fitness esportivo com rankings por categorias e cidades, p
 - **Frontend:** React (CRA) + Tailwind CSS + Shadcn/UI + Recharts
 - **Backend:** FastAPI + MongoDB + WebSocket
 - **Background Jobs:** Celery + Redis
-- **Integracoes:** Strava, Resend (e-mails), IBGE Localidades API (cidades)
+- **Integracoes:** Strava, Resend, IBGE Localidades API
 
 ## Funcionalidades Implementadas
 
 ### Concluido
 - [x] Rankings (Profissional, Galera, Equipes, Por Cidade)
-- [x] Compartilhamento Ranking/RaioX (Canvas 9:16 completo)
+- [x] Compartilhamento Ranking/RaioX (Canvas 9:16)
 - [x] Integracao Strava
 - [x] Painel Admin completo com RBAC e lazy loading
-- [x] Sistema de Mensagens em massa (filtros geograficos, agendamento, splash screen)
-- [x] Dashboard de Engajamento
-- [x] WebSocket para notificacoes em tempo real
-- [x] CidadeCombobox com busca por texto em TODOS dropdowns de cidade (Iteration 72)
-- [x] Upload de FOTOS no Feed Social (Iteration 73)
-  - 1 foto por vez, limite 2/dia, texto opcional, preview, badge "Foto"
-- [x] Duplo-toque para curtir fotos estilo Instagram (Iteration 74-75)
-  - Animacao de coracao grande com fade-out
-- [x] Stories no Feed Social (Iteration 76) - NOVO
-  - Barra de stories no topo com circulos de avatar
-  - Anel colorido gradiente = story nao visto, cinza = visto
-  - Botao + para adicionar story (1 por dia)
-  - Viewer fullscreen: barra de progresso, texto overlay, reacoes rapidas
-  - Ordenacao: nao vistos primeiro
-  - Auto-expira em 24h
+- [x] Sistema de Mensagens em massa (filtros, agendamento, splash)
+- [x] CidadeCombobox com busca IBGE em todos dropdowns
+- [x] Upload de fotos no Feed + Duplo-toque para curtir
+- [x] Stories no Feed (fotos temporarias 24h, sem limite, 10s por story)
+- [x] Compressao automatica de imagens no upload (max 1200x1200, JPEG 82%)
+- [x] **Sistema de Mensagens em Autorizacoes (NOVO - Iteration 77)**
+  - Envio segmentado por status: Em Teste, Autorizados, Expirados
+  - Filtros: Estado, Cidade (IBGE), Genero (6 categorias)
+  - Formulario: Titulo, Mensagem, Link, Anexar Arquivo/Imagem
+  - Envio Splash (popup bloqueante para atletas)
+  - Agendamento de mensagens (datetime-local)
+  - Historico de mensagens enviadas
+  - Tabela de atletas com Autorizar/Revogar
+  - Stats cards: Em Teste (278), Autorizados (27), Expirados (144), Total (449)
 
 ### Backlog
+- [ ] Sistema de pagamentos (Stripe/Pix) para Premium/Membro Oficial (P1 - proximo)
 - [ ] Limpeza de codigo morto no AdminDashboard.jsx (P3)
 - [ ] Notificacoes push por email (Resend) (P3)
 - [ ] Relatorios semanais para assessorias (P3)
 
-## Endpoints Chave - Stories
-- `POST /api/feed/stories` - Cria story (Form: foto + texto)
-- `GET /api/feed/stories` - Lista stories ativos (24h) agrupados por autor
-- `POST /api/feed/stories/{id}/visualizar` - Marca como visto
-- `POST /api/feed/stories/{id}/reagir` - Reacao rapida com emoji
-- `GET /api/feed/stories/restantes` - Stories restantes no dia (limite: 1)
-
-## Endpoints Chave - Feed
-- `POST /api/feed/posts/com-foto` - Upload de foto (Form: foto + texto)
-- `GET /api/feed/fotos-restantes` - Fotos restantes no dia (limite: 2)
-- `GET /api/feed` - Feed social paginado
-- `POST /api/feed/posts/{id}/reagir` - Reagir a um post
+## Endpoints - Autorizacoes
+- `GET /api/admin/autorizacoes/atletas-completo` - Lista atletas com status_periodo
+- `POST /api/admin/autorizacoes/mensagens/enviar` - Envia mensagem filtrada
+- `POST /api/admin/autorizacoes/mensagens/upload` - Upload de arquivo/imagem
+- `GET /api/admin/autorizacoes/mensagens/arquivo/{filename}` - Serve arquivo
+- `GET /api/admin/autorizacoes/mensagens/historico` - Historico de mensagens
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta: teste.dono@teste.com / 123456
 
-## DB Collections - Stories
-- `stories`: id, autor_id, autor_nome, imagem_url, texto, data_criacao, visualizacoes[], reacoes[]
-- Imagens salvas em /app/uploads/stories/
+## DB Collections
+- `autorizacoes`: atleta_id, tipo, status, data_criacao, data_expiracao
+- `mensagens_admin`: id, titulo, mensagem, status_filtro, origem("autorizacoes"), splash, total_enviados
+- `notificacoes`: usuario_id, mensagem_admin_id, lida, splash
 
 ## Notas
+- **Status Periodo**: em_teste (< 30 dias sem autorizacao), autorizado (autorizacao ativa nao expirada), expirado (> 30 dias ou autorizacao expirada)
+- **Datetime**: Sempre usar timezone.utc e tratar tanto naive quanto aware datetimes do MongoDB
 - **Redis:** Instavel no preview. Restart manual se Celery falhar.
-- **Upload Fotos/Stories:** Form() obrigatorio para campos texto com UploadFile.
-- **Auth Race Condition:** FeedPage checa authLoading antes de user null + timeout de seguranca 10s.
-- **Stories Auto-Expire:** Filtro por data_criacao >= 24h no query, sem cronjob.
