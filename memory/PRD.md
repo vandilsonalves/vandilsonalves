@@ -1,59 +1,100 @@
-# RunPro - Fitness Ranking Platform
+# PRD - Ranking Run Pro
 
 ## Problema Original
-Plataforma de ranking fitness esportivo com rankings por categorias e cidades, painel "RAIO-X" avancado, integracao com Strava, geracao de share cards via Canvas API e painel de administracao completo.
+Plataforma de ranking de corridas completa com sistema de ranking profissional/amador, feed social, stories, sistema de mensagens admin, Raio-X do atleta, integracoes com Strava e sistema de monetizacao via Stripe.
 
-## Stack Tecnologico
-- **Frontend:** React (CRA) + Tailwind CSS + Shadcn/UI + Recharts
-- **Backend:** FastAPI + MongoDB + WebSocket
-- **Background Jobs:** Celery + Redis
-- **Integracoes:** Strava, Resend, IBGE Localidades API
+## Arquitetura
+- **Frontend**: React + TailwindCSS + Shadcn UI
+- **Backend**: FastAPI + MongoDB (Motor)
+- **Pagamentos**: Stripe (via emergentintegrations)
+- **Messaging**: Celery + Redis (broker)
+- **Integracoes**: Strava API, Resend (email)
 
 ## Funcionalidades Implementadas
 
-### Concluido
-- [x] Rankings (Profissional, Galera, Equipes, Por Cidade)
-- [x] Compartilhamento Ranking/RaioX (Canvas 9:16)
-- [x] Integracao Strava
-- [x] Painel Admin completo com RBAC e lazy loading
-- [x] Sistema de Mensagens em massa (filtros, agendamento, splash)
-- [x] CidadeCombobox com busca IBGE em todos dropdowns
-- [x] Upload de fotos no Feed + Duplo-toque para curtir
-- [x] Stories no Feed (fotos temporarias 24h, sem limite, 10s por story)
-- [x] Compressao automatica de imagens no upload (max 1200x1200, JPEG 82%)
-- [x] **Sistema de Mensagens em Autorizacoes (NOVO - Iteration 77)**
-  - Envio segmentado por status: Em Teste, Autorizados, Expirados
-  - Filtros: Estado, Cidade (IBGE), Genero (6 categorias)
-  - Formulario: Titulo, Mensagem, Link, Anexar Arquivo/Imagem
-  - Envio Splash (popup bloqueante para atletas)
-  - Agendamento de mensagens (datetime-local)
-  - Historico de mensagens enviadas
-  - Tabela de atletas com Autorizar/Revogar
-  - Stats cards: Em Teste (278), Autorizados (27), Expirados (144), Total (449)
+### Core
+- [x] Sistema de autenticacao JWT (login/registro)
+- [x] RBAC (admin, super_admin, atleta, dono_assessoria)
+- [x] Rankings: Nacional, Estadual, Cidade, Povao, Semanal, Mensal
+- [x] Perfil do atleta com foto e bio
+- [x] Submissao e aprovacao de resultados
+- [x] Historico de corridas
+- [x] Conquistas e badges
 
-### Backlog
-- [ ] Sistema de pagamentos (Stripe/Pix) para Premium/Membro Oficial (P1 - proximo)
-- [ ] Limpeza de codigo morto no AdminDashboard.jsx (P3)
-- [ ] Notificacoes push por email (Resend) (P3)
-- [ ] Relatorios semanais para assessorias (P3)
+### Admin Dashboard
+- [x] Gestao de atletas (CRUD)
+- [x] Aprovacao/reprovacao de resultados
+- [x] Sistema de mensagens em massa (com filtros geograficos/demograficos)
+- [x] Mensagens com modo Splash Screen
+- [x] Dashboard de autorizacoes (por status: em_teste, autorizado, expirado)
+- [x] Estatisticas e metricas
 
-## Endpoints - Autorizacoes
-- `GET /api/admin/autorizacoes/atletas-completo` - Lista atletas com status_periodo
-- `POST /api/admin/autorizacoes/mensagens/enviar` - Envia mensagem filtrada
-- `POST /api/admin/autorizacoes/mensagens/upload` - Upload de arquivo/imagem
-- `GET /api/admin/autorizacoes/mensagens/arquivo/{filename}` - Serve arquivo
-- `GET /api/admin/autorizacoes/mensagens/historico` - Historico de mensagens
+### Feed Social
+- [x] Posts de texto e fotos (limite 2 fotos/dia)
+- [x] Stories (24h, fullscreen viewer)
+- [x] Reacoes com emojis
+- [x] Comentarios com moderacao
+- [x] Double-tap to like (estilo Instagram)
+- [x] Compressao automatica de imagens (Pillow)
+
+### Integracao Strava
+- [x] Autenticacao OAuth2
+- [x] Sincronizacao de atividades
+- [x] Stats do atleta
+
+### Raio-X do Atleta
+- [x] Evolucao de performance
+- [x] Records pessoais
+- [x] Comparativo mensal
+- [x] Score de consistencia
+- [x] Heatmap de corridas
+- [x] Previsoes
+
+### Sistema de Pagamento (NOVO - 25/03/2026)
+- [x] Integracao Stripe via emergentintegrations
+- [x] Plano Atleta Premium: R$97,00 (pagamento unico ate 31/12/2026)
+- [x] Checkout session com redirect para Stripe
+- [x] Webhook para confirmar pagamento
+- [x] Polling de status no frontend
+- [x] Pagina de pagamento com plano detalhado
+- [x] Pagina de sucesso com polling
+- [x] Pagina de cancelamento
+
+### Bloqueio de Acesso para Expirados (NOVO - 25/03/2026)
+- [x] Dependency `require_premium_access` no backend
+- [x] Bloqueio no Raio-X (todas as rotas)
+- [x] Bloqueio na edicao de perfil e upload de foto
+- [x] Bloqueio no Strava (authorize)
+- [x] Bloqueio no Feed (postar, reagir, comentar)
+- [x] Bloqueio nos Stories (criar, reagir)
+- [x] Componente AccessGate no frontend
+- [x] Ranking publico continua acessivel
+- [x] Login e navegacao basica liberados
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
-- Atleta: teste.dono@teste.com / 123456
+- Atleta (em teste): teste.dono@teste.com / 123456
+- Atleta (expirado): expirado@teste.com / 123456
 
-## DB Collections
-- `autorizacoes`: atleta_id, tipo, status, data_criacao, data_expiracao
-- `mensagens_admin`: id, titulo, mensagem, status_filtro, origem("autorizacoes"), splash, total_enviados
-- `notificacoes`: usuario_id, mensagem_admin_id, lida, splash
+## Endpoints Chave
+- POST /api/pagamentos/checkout - Cria sessao Stripe
+- GET /api/pagamentos/status/{session_id} - Status do pagamento
+- GET /api/pagamentos/meu-plano - Status do plano do usuario
+- POST /api/webhook/stripe - Webhook Stripe
 
-## Notas
-- **Status Periodo**: em_teste (< 30 dias sem autorizacao), autorizado (autorizacao ativa nao expirada), expirado (> 30 dias ou autorizacao expirada)
-- **Datetime**: Sempre usar timezone.utc e tratar tanto naive quanto aware datetimes do MongoDB
-- **Redis:** Instavel no preview. Restart manual se Celery falhar.
+## Backlog Priorizado
+
+### P1
+- Preparar logica para cobranca anual (12x R$119,00 a partir de 15/12/2026)
+
+### P2
+- Exportar Raio-X como PDF
+- Prevencao de print de tela para expirados
+
+### P3
+- Limpeza de estado morto no AdminDashboard.jsx
+- Notificacoes push por email (Resend) para mensagens urgentes
+
+## Issues Conhecidas
+- Redis instavel (requer restarts manuais intermitentes)
+- Race condition no AuthContext durante testes E2E Playwright
