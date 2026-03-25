@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { UserPlus, Search, ScrollText, CheckCircle2, HelpCircle, Building2, Upload, FileImage, Users, Gift } from 'lucide-react';
+import CidadeCombobox from '@/components/CidadeCombobox';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -494,22 +495,14 @@ const CadastroPage = () => {
                 <div>
                   <Label>Cidade *</Label>
                   {formData.estado ? (
-                    <Select 
-                      value={formData.cidade} 
+                    <CidadeCombobox
+                      cidades={cidades}
+                      value={formData.cidade}
                       onValueChange={(value) => handleChange('cidade', value)}
-                      disabled={loadingCidades || cidades.length === 0}
-                    >
-                      <SelectTrigger data-testid="select-cidade">
-                        <SelectValue placeholder={loadingCidades ? "Carregando..." : "Selecione a cidade"} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {cidades.map((cidade) => (
-                          <SelectItem key={cidade} value={cidade}>
-                            {cidade}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      loading={loadingCidades}
+                      disabled={cidades.length === 0}
+                      data-testid="select-cidade"
+                    />
                   ) : (
                     <Input
                       disabled
@@ -702,20 +695,14 @@ const CadastroPage = () => {
 
                           <div>
                             <Label className="text-orange-800">Cidade *</Label>
-                            <Select 
-                              value={assessoriaData.cidade_assessoria} 
+                            <CidadeCombobox
+                              cidades={cidadesAssessoria}
+                              value={assessoriaData.cidade_assessoria}
                               onValueChange={(v) => setAssessoriaData({...assessoriaData, cidade_assessoria: v})}
-                              disabled={!assessoriaData.estado_assessoria || loadingCidadesAssessoria}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder={loadingCidadesAssessoria ? "Carregando..." : "Selecione a cidade"} />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {cidadesAssessoria.map(cidade => (
-                                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                              loading={loadingCidadesAssessoria}
+                              disabled={!assessoriaData.estado_assessoria}
+                              triggerClassName="bg-white"
+                            />
                           </div>
                         </div>
 

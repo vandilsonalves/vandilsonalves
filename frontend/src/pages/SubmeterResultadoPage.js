@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Upload, CheckCircle, ArrowLeft, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import CidadeCombobox from '@/components/CidadeCombobox';
 
 // Lista de Estados Brasileiros
 const ESTADOS_BRASIL = [
@@ -410,21 +411,12 @@ const SubmeterResultadoPage = () => {
                       <span className="text-sm text-slate-500">Carregando cidades...</span>
                     </div>
                   ) : formData.estado_competicao && cidades.length > 0 ? (
-                    <Select 
-                      value={formData.cidade_competicao} 
+                    <CidadeCombobox
+                      cidades={cidades}
+                      value={formData.cidade_competicao}
                       onValueChange={(value) => handleChange('cidade_competicao', value)}
-                    >
-                      <SelectTrigger data-testid="cidade-select">
-                        <SelectValue placeholder="Selecione a cidade" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {cidades.map(cidade => (
-                          <SelectItem key={cidade} value={cidade}>
-                            {cidade}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      data-testid="cidade-select"
+                    />
                   ) : (
                     <Input
                       value={formData.cidade_competicao}

@@ -16,6 +16,7 @@ import {
   Building2, MapPin, Users, Save, Loader2, Trophy, Sparkles, CheckCircle, AlertCircle, X
 } from 'lucide-react';
 import { toast } from 'sonner';
+import CidadeCombobox from '@/components/CidadeCombobox';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -213,19 +214,14 @@ const AssessoriaForm = memo(({ token, onSuccess }) => {
           </div>
         ) : cidades.length > 0 ? (
           <>
-            <select
-              id="cidade"
+            <CidadeCombobox
+              cidades={cidades}
               value={cidade}
-              onChange={(e) => setCidade(e.target.value)}
+              onValueChange={setCidade}
               disabled={!estado}
-              className="flex h-10 w-full rounded-md border-2 border-slate-200 bg-white px-3 py-2 text-sm focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              placeholder={estado ? "Selecione a cidade" : "Selecione o estado primeiro"}
               data-testid="select-cidade-assessoria"
-            >
-              <option value="">{estado ? "Selecione a cidade" : "Selecione o estado primeiro"}</option>
-              {cidades.map(c => (
-                <option key={c} value={c}>{c}</option>
-              ))}
-            </select>
+            />
             <p className="text-xs text-slate-500">
               {cidades.length} cidades disponíveis
             </p>

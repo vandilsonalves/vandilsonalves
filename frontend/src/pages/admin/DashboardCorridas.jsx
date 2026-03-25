@@ -13,6 +13,7 @@ import {
   Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle,
   ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square, FileText
 } from 'lucide-react';
+import CidadeCombobox from '@/components/CidadeCombobox';
 import { Checkbox } from '@/components/ui/checkbox';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, Legend
@@ -985,21 +986,15 @@ const DashboardCorridas = ({
 
                   {/* Filtro por Cidade */}
                   <div>
-                    <Select 
-                      value={filtroCidade || "__all__"} 
+                    <CidadeCombobox
+                      cidades={cidadesFiltro}
+                      value={filtroCidade || "__all__"}
                       onValueChange={(v) => setFiltroCidade(v === "__all__" ? "" : v)}
                       disabled={!filtroEstado}
-                    >
-                      <SelectTrigger className="w-[180px]">
-                        <SelectValue placeholder={filtroEstado ? "Cidade" : "Selecione UF"} />
-                      </SelectTrigger>
-                      <SelectContent className="max-h-60">
-                        <SelectItem value="__all__">Todas</SelectItem>
-                        {cidadesFiltro.map(cidade => (
-                          <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                      placeholder={filtroEstado ? "Cidade" : "Selecione UF"}
+                      allOption={{ value: "__all__", label: "Todas" }}
+                      triggerClassName="w-[180px]"
+                    />
                   </div>
 
                   {/* Filtro por Período/Data */}
@@ -1292,20 +1287,13 @@ const DashboardCorridas = ({
               </div>
               <div>
                 <Label>Cidade *</Label>
-                <Select 
-                  value={corridaFormData.cidade} 
+                <CidadeCombobox
+                  cidades={cidadesIBGE}
+                  value={corridaFormData.cidade}
                   onValueChange={(v) => setCorridaFormData({...corridaFormData, cidade: v})}
-                  disabled={!corridaFormData.estado || loadingCidadesIBGE}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingCidadesIBGE ? "Carregando..." : "Selecione a cidade"} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {cidadesIBGE.map(cidade => (
-                      <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  loading={loadingCidadesIBGE}
+                  disabled={!corridaFormData.estado}
+                />
                 {!corridaFormData.estado && (
                   <p className="text-xs text-slate-500 mt-1">Selecione o estado primeiro</p>
                 )}

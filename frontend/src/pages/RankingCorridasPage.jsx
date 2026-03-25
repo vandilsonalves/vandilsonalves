@@ -19,6 +19,7 @@ import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { RankingAvaliadores } from '@/components/ReputacaoAvaliador';
+import CidadeCombobox from '@/components/CidadeCombobox';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -994,20 +995,13 @@ const RankingCorridasPage = () => {
               </div>
               <div>
                 <Label>Cidade *</Label>
-                <Select 
-                  value={formData.cidade} 
+                <CidadeCombobox
+                  cidades={cidadesIBGE}
+                  value={formData.cidade}
                   onValueChange={(v) => setFormData({...formData, cidade: v})}
-                  disabled={!formData.estado || loadingCidadesIBGE}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder={loadingCidadesIBGE ? "Carregando..." : "Selecione a cidade"} />
-                  </SelectTrigger>
-                  <SelectContent className="max-h-60">
-                    {cidadesIBGE.map(cidade => (
-                      <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  loading={loadingCidadesIBGE}
+                  disabled={!formData.estado}
+                />
                 {!formData.estado && (
                   <p className="text-xs text-slate-500 mt-1">Selecione o estado primeiro</p>
                 )}

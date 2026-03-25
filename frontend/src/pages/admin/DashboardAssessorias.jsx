@@ -19,6 +19,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
+import CidadeCombobox from '@/components/CidadeCombobox';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -662,21 +663,15 @@ const DashboardAssessorias = ({
 
               {/* Filtro Cidade */}
               <div className="flex items-center gap-2">
-                <Select 
-                  value={filtroCidadeLocal || "__all__"} 
+                <CidadeCombobox
+                  cidades={cidadesFiltroLocal}
+                  value={filtroCidadeLocal || "__all__"}
                   onValueChange={(v) => setFiltroCidadeLocal(v === "__all__" ? "" : v)}
                   disabled={!filtroEstadoLocal}
-                >
-                  <SelectTrigger className="w-[160px]">
-                    <SelectValue placeholder={filtroEstadoLocal ? "Cidade" : "Selecione UF"} />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__all__">Todas</SelectItem>
-                    {cidadesFiltroLocal.map(cidade => (
-                      <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                  placeholder={filtroEstadoLocal ? "Cidade" : "Selecione UF"}
+                  allOption={{ value: "__all__", label: "Todas" }}
+                  triggerClassName="w-[160px]"
+                />
               </div>
 
               {/* Limpar Filtros */}

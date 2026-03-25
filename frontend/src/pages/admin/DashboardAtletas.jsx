@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import CidadeCombobox from '@/components/CidadeCombobox';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -237,17 +238,16 @@ const DashboardAtletas = ({
             </Select>
 
             {/* Por Cidade */}
-            <Select value={filtroCidade} onValueChange={setFiltroCidade} disabled={filtroEstado === 'all'}>
-              <SelectTrigger className="w-full md:w-48" data-testid="atletas-filtro-cidade">
-                <SelectValue placeholder={filtroEstado === 'all' ? 'Selecione Estado' : 'Cidade'} />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Todas Cidades</SelectItem>
-                {cidadesDisponiveis.map(cidade => (
-                  <SelectItem key={cidade} value={cidade}>{cidade}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <CidadeCombobox
+              cidades={cidadesDisponiveis}
+              value={filtroCidade}
+              onValueChange={setFiltroCidade}
+              disabled={filtroEstado === 'all'}
+              placeholder={filtroEstado === 'all' ? 'Selecione Estado' : 'Cidade'}
+              allOption={{ value: "all", label: "Todas Cidades" }}
+              triggerClassName="w-full md:w-48"
+              data-testid="atletas-filtro-cidade"
+            />
 
             {temFiltrosAtivos && (
               <Button variant="ghost" size="sm" onClick={limparFiltrosGeo} className="text-red-500 hover:text-red-700">

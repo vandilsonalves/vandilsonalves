@@ -51,6 +51,7 @@ import DashboardMensagens from './admin/DashboardMensagens';
 import DashboardEngajamento from './admin/DashboardEngajamento';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
+import CidadeCombobox from '@/components/CidadeCombobox';
 
 // Definição dos itens do menu organizados em seções
 const menuSections = [
@@ -1129,12 +1130,13 @@ const AdminDashboard = () => {
                 <div className="space-y-2">
                   <Label>Cidade</Label>
                   {atletaEditando.estado ? (
-                    <Select value={atletaEditando.cidade} onValueChange={(v) => setAtletaEditando({...atletaEditando, cidade: v})} disabled={loadingCidadesEdit}>
-                      <SelectTrigger data-testid="edit-select-cidade"><SelectValue placeholder={loadingCidadesEdit ? "Carregando..." : "Selecione a cidade"} /></SelectTrigger>
-                      <SelectContent className="max-h-[200px]">
-                        {cidadesEditAtleta.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
+                    <CidadeCombobox
+                      cidades={cidadesEditAtleta}
+                      value={atletaEditando.cidade}
+                      onValueChange={(v) => setAtletaEditando({...atletaEditando, cidade: v})}
+                      loading={loadingCidadesEdit}
+                      data-testid="edit-select-cidade"
+                    />
                   ) : (
                     <Input disabled placeholder="Selecione o estado primeiro" className="bg-slate-100" />
                   )}
@@ -1204,12 +1206,13 @@ const AdminDashboard = () => {
               <div className="space-y-2">
                 <Label>Cidade *</Label>
                 {novoAtleta.estado ? (
-                  <Select value={novoAtleta.cidade} onValueChange={(v) => setNovoAtleta({...novoAtleta, cidade: v})} disabled={loadingCidadesNovo}>
-                    <SelectTrigger data-testid="admin-select-cidade"><SelectValue placeholder={loadingCidadesNovo ? "Carregando..." : "Selecione a cidade"} /></SelectTrigger>
-                    <SelectContent className="max-h-[200px]">
-                      {cidadesNovoAtleta.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                    </SelectContent>
-                  </Select>
+                  <CidadeCombobox
+                    cidades={cidadesNovoAtleta}
+                    value={novoAtleta.cidade}
+                    onValueChange={(v) => setNovoAtleta({...novoAtleta, cidade: v})}
+                    loading={loadingCidadesNovo}
+                    data-testid="admin-select-cidade"
+                  />
                 ) : (
                   <Input disabled placeholder="Selecione o estado primeiro" className="bg-slate-100" />
                 )}
