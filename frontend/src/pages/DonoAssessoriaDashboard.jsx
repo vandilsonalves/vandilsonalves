@@ -16,7 +16,7 @@ import {
   Download, Send, Settings, LogOut, Plus, Eye, BarChart3, Loader2, 
   MessageSquare, Calendar, Target, Medal, ArrowUpRight, ArrowDownRight, Minus, PieChart,
   BadgeCheck, Crown, X, ShieldCheck, UserPlus, UserCheck, UserX, Clock, Upload, Camera, Trash2, Image,
-  FileSpreadsheet, FileText
+  FileSpreadsheet, FileText, Menu
 } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
@@ -46,6 +46,7 @@ const DonoAssessoriaDashboard = () => {
   const [rankingAnual, setRankingAnual] = useState(null);
   const [comparacaoMensal, setComparacaoMensal] = useState(null);
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [showMobileSidebar, setShowMobileSidebar] = useState(false);
   const [showMensagemModal, setShowMensagemModal] = useState(false);
   const [mensagem, setMensagem] = useState('');
   const [atletasSelecionados, setAtletasSelecionados] = useState([]);
@@ -483,23 +484,56 @@ const DonoAssessoriaDashboard = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex">
-      {/* Sidebar */}
-      <div className="w-64 bg-slate-950 p-4 flex flex-col">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
-            <Award className="w-6 h-6 text-white" />
+      {/* Mobile Header */}
+      <div className="md:hidden fixed top-0 left-0 right-0 z-50 bg-slate-950 border-b border-slate-800 px-4 py-3 flex items-center justify-between">
+        <button
+          onClick={() => setShowMobileSidebar(true)}
+          className="p-2 rounded-lg text-white hover:bg-slate-800"
+          data-testid="btn-sidebar-toggle"
+        >
+          <Menu className="w-5 h-5" />
+        </button>
+        <h1 className="font-bold text-white text-sm truncate">{assessoria?.nome || 'Assessoria'}</h1>
+        <div className="w-9" />
+      </div>
+
+      {/* Overlay mobile */}
+      {showMobileSidebar && (
+        <div
+          className="fixed inset-0 z-[60] bg-black/60 backdrop-blur-sm md:hidden"
+          onClick={() => setShowMobileSidebar(false)}
+        />
+      )}
+
+      {/* Sidebar - hidden on mobile, drawer on mobile when open */}
+      <div className={`
+        fixed md:sticky top-0 left-0 z-[61] md:z-auto h-full w-64 bg-slate-950 p-4 flex flex-col
+        transition-transform duration-300 ease-out
+        ${showMobileSidebar ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}
+      `}>
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-500 rounded-lg flex items-center justify-center">
+              <Award className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h1 className="font-bold text-white text-sm">Painel da Assessoria</h1>
+              <p className="text-xs text-slate-400 truncate">{user?.equipe}</p>
+            </div>
           </div>
-          <div>
-            <h1 className="font-bold text-white text-sm">Painel da Assessoria</h1>
-            <p className="text-xs text-slate-400 truncate">{user?.equipe}</p>
-          </div>
+          <button
+            onClick={() => setShowMobileSidebar(false)}
+            className="md:hidden p-1 rounded-lg text-slate-400 hover:text-white"
+          >
+            <X className="w-5 h-5" />
+          </button>
         </div>
 
         <nav className="flex-1 space-y-2">
           {menuItems.map((item) => (
             <button
               key={item.id}
-              onClick={() => setActiveTab(item.id)}
+              onClick={() => { setActiveTab(item.id); setShowMobileSidebar(false); }}
               data-testid={`menu-${item.id}`}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-all ${
                 activeTab === item.id
@@ -539,7 +573,7 @@ const DonoAssessoriaDashboard = () => {
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 p-8 overflow-auto">
+      <div className="flex-1 p-4 md:p-8 overflow-auto pt-16 md:pt-8">
         {/* Dashboard Tab */}
         {activeTab === 'dashboard' && (
           <div className="space-y-6">

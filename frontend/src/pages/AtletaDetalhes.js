@@ -84,14 +84,30 @@ const AtletaDetalhes = () => {
       const element = shareCardRef.current;
       if (!element) return;
 
+      // Pre-carregar foto do atleta para evitar CORS no html2canvas
+      const fotoUrl = getFotoUrl();
+      if (fotoUrl) {
+        try {
+          const img = new window.Image();
+          img.crossOrigin = 'anonymous';
+          img.src = fotoUrl;
+          await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = resolve; // Continue mesmo se falhar
+            setTimeout(resolve, 3000);
+          });
+        } catch {}
+      }
+
       const canvas = await html2canvas(element, {
-        scale: 2,
+        scale: 3,
         backgroundColor: '#0f172a',
         useCORS: true,
+        allowTaint: true,
         logging: false
       });
 
-      const imageUrl = canvas.toDataURL('image/png');
+      const imageUrl = canvas.toDataURL('image/png', 1.0);
       setShareImageUrl(imageUrl);
     } catch (error) {
       console.error('Erro ao gerar imagem:', error);
@@ -218,18 +234,26 @@ const AtletaDetalhes = () => {
                     <div className="h-full flex flex-col justify-between">
                       {/* Header */}
                       <div className="text-center">
-                        <p className="text-emerald-400 text-sm font-semibold mb-1">RANKING RUN PRÓ 2025</p>
+                        <p className="text-emerald-400 text-sm font-semibold mb-1">RANKING RUN PRO 2026</p>
                         <div className="w-16 h-1 bg-emerald-500 mx-auto rounded-full" />
                       </div>
 
                       {/* Atleta Info */}
                       <div className="text-center flex-1 flex flex-col justify-center">
-                        <Avatar className="h-20 w-20 mx-auto mb-3 ring-4 ring-emerald-500">
-                          <AvatarImage src={getFotoUrl()} alt={atleta.nome} />
-                          <AvatarFallback className="bg-emerald-600 text-white text-xl">
+                        <div className="w-20 h-20 mx-auto mb-3 rounded-full ring-4 ring-emerald-500 overflow-hidden bg-emerald-600 flex items-center justify-center">
+                          {getFotoUrl() ? (
+                            <img
+                              src={getFotoUrl()}
+                              alt={atleta.nome}
+                              crossOrigin="anonymous"
+                              className="w-full h-full object-cover"
+                              onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                            />
+                          ) : null}
+                          <span className={`text-white text-xl font-bold ${getFotoUrl() ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
                             {atleta.nome.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
+                          </span>
+                        </div>
                         <h2 className="text-xl font-bold mb-1">{atleta.nome}</h2>
                         <p className="text-emerald-300 text-sm mb-4">{atleta.equipe}</p>
                         
