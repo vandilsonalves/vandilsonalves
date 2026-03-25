@@ -55,7 +55,7 @@ const TIPOS_POST = {
 
 const FeedPage = () => {
   const navigate = useNavigate();
-  const { user, token, isAdmin } = useAuth();
+  const { user, token, isAdmin, loading: authLoading } = useAuth();
   const [loading, setLoading] = useState(true);
   const [posts, setPosts] = useState([]);
   const [trending, setTrending] = useState([]);
@@ -85,6 +85,7 @@ const FeedPage = () => {
   const lastTapRef = React.useRef({});
 
   useEffect(() => {
+    if (authLoading) return;
     if (!user) {
       navigate('/login');
       return;
@@ -92,7 +93,7 @@ const FeedPage = () => {
     fetchFeed();
     fetchTrending();
     fetchFotosRestantes();
-  }, [user]);
+  }, [user, authLoading]);
 
   const fetchFeed = async (pag = 1, append = false) => {
     if (pag === 1) setLoading(true);
