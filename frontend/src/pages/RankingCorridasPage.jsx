@@ -387,44 +387,44 @@ const RankingCorridasPage = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-8">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
+      <div className="container mx-auto px-4 py-4 md:py-8">
         {/* Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="flex items-center gap-4">
-            <Button onClick={() => navigate('/')} variant="outline" size="sm">
-              <ArrowLeft className="w-4 h-4 mr-2" />
-              Voltar
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+          <div className="flex items-center gap-3">
+            <Button onClick={() => navigate('/')} variant="outline" size="sm" className="flex-shrink-0">
+              <ArrowLeft className="w-4 h-4 mr-1" />
+              <span className="hidden sm:inline">Voltar</span>
             </Button>
-            <div>
-              <h1 className="text-2xl md:text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-3">
-                <Trophy className="w-8 h-8 text-yellow-500" />
-                Ranking das Corridas
+            <div className="min-w-0">
+              <h1 className="text-xl md:text-3xl font-bold text-slate-800 dark:text-white flex items-center gap-2">
+                <Trophy className="w-6 h-6 md:w-8 md:h-8 text-yellow-500 flex-shrink-0" />
+                <span className="truncate">Ranking das Corridas</span>
               </h1>
-              <p className="text-slate-500 text-sm mt-1">
-                Avaliações de corridas de rua por atletas
+              <p className="text-slate-500 text-xs md:text-sm mt-0.5 truncate">
+                Avaliacoes de corridas de rua por atletas
               </p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button 
               onClick={() => setShowRankingAvaliadores(!showRankingAvaliadores)}
               variant={showRankingAvaliadores ? "default" : "outline"}
-              size="default"
+              size="sm"
               className={showRankingAvaliadores ? "bg-amber-500 hover:bg-amber-600" : "text-amber-600 border-amber-500/30"}
             >
-              <Award className="w-4 h-4 mr-2" />
-              Top Avaliadores
+              <Award className="w-4 h-4 mr-1" />
+              <span className="text-xs md:text-sm">Top Avaliadores</span>
             </Button>
             <RegulamentoButton 
               className="bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-600 border-emerald-500/30"
               variant="outline"
-              size="default"
+              size="sm"
             />
             {canCadastrar && (
-              <Button onClick={() => setShowCadastroModal(true)} className="bg-emerald-500 hover:bg-emerald-600">
-                <Plus className="w-4 h-4 mr-2" />
-                Cadastrar Corrida
+              <Button onClick={() => setShowCadastroModal(true)} size="sm" className="bg-emerald-500 hover:bg-emerald-600">
+                <Plus className="w-4 h-4 mr-1" />
+                <span className="text-xs md:text-sm">Cadastrar</span>
               </Button>
             )}
           </div>

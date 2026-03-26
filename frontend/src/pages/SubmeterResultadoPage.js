@@ -234,26 +234,27 @@ const SubmeterResultadoPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 py-8 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-green-50 py-4 md:py-8 px-4 overflow-x-hidden">
       <div className="container mx-auto max-w-3xl">
         <Button
           onClick={() => navigate('/')}
           variant="outline"
           className="mb-4"
+          size="sm"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
+          <ArrowLeft className="w-4 h-4 mr-1" />
           Voltar
         </Button>
 
         <Card className="shadow-xl">
-          <CardHeader className="text-center">
-            <CardTitle className={`text-3xl font-bold ${isPovao ? 'text-purple-600' : 'text-emerald-600'}`}>
+          <CardHeader className="text-center px-4 md:px-6">
+            <CardTitle className={`text-xl md:text-3xl font-bold ${isPovao ? 'text-purple-600' : 'text-emerald-600'}`}>
               Submeter Resultado
             </CardTitle>
-            <p className="text-slate-600 mt-2">
+            <p className="text-slate-600 text-sm md:text-base mt-2">
               {isPovao 
-                ? 'Ranking da Galera (Pontuação por distância)'
-                : 'Preencha os dados da sua corrida (Prazo: até 30 dias após o evento)'
+                ? 'Ranking da Galera (Pontuacao por distancia)'
+                : 'Preencha os dados da corrida (Prazo: ate 30 dias apos o evento)'
               }
             </p>
             {isPovao && (
@@ -476,12 +477,14 @@ const SubmeterResultadoPage = () => {
                 <div className="md:col-span-2">
                   <Label className="flex items-center gap-2 mb-2">
                     <Upload className="w-4 h-4" />
-                    Foto do Pódio ou sua no Evento (opcional)
+                    Foto do Podio ou sua no Evento (opcional)
                   </Label>
-                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-6 text-center hover:border-emerald-400 transition-colors">
+                  <div className="border-2 border-dashed border-slate-300 rounded-lg p-4 md:p-6 text-center hover:border-emerald-400 transition-colors">
                     {fotoPodio ? (
                       <div>
-                        <p className="text-sm text-emerald-600 mb-2">✓ {fotoPodio.name}</p>
+                        <p className="text-sm text-emerald-600 mb-2 break-all">
+                          {fotoPodio.name}
+                        </p>
                         <div className="flex gap-2 justify-center">
                           <Button
                             type="button"
@@ -495,15 +498,16 @@ const SubmeterResultadoPage = () => {
                       </div>
                     ) : (
                       <div>
-                        <Upload className="w-12 h-12 mx-auto mb-3 text-slate-400" />
+                        <Upload className="w-10 h-10 md:w-12 md:h-12 mx-auto mb-3 text-slate-400" />
                         <label className="cursor-pointer">
                           <Button
                             type="button"
                             variant="outline"
-                            className="mb-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50"
+                            size="sm"
+                            className="mb-2 border-emerald-500 text-emerald-600 hover:bg-emerald-50 text-xs md:text-sm px-3"
                             onClick={() => document.getElementById('foto-podio-input').click()}
                           >
-                            Adicionar uma Foto do Pódio ou sua no Evento
+                            Adicionar Foto do Podio
                           </Button>
                           <Input
                             id="foto-podio-input"
@@ -514,7 +518,7 @@ const SubmeterResultadoPage = () => {
                           />
                         </label>
                         <p className="text-xs text-slate-500">
-                          Formatos aceitos: JPG, PNG, GIF (máx. 5MB)
+                          JPG, PNG, GIF (max. 5MB)
                         </p>
                       </div>
                     )}

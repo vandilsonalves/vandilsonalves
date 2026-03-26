@@ -19,7 +19,7 @@ const RankingPage = () => {
   const [tipoRanking, setTipoRanking] = useState('profissional');
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
       {/* Header Mobile - fundo verde, compacto */}
       <div className="md:hidden bg-emerald-600 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         {user && <MobileNav />}

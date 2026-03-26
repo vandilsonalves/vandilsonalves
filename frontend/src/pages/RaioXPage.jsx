@@ -861,40 +861,40 @@ const RaioXPage = () => {
   const { evolucao, records, comparativo, previsoes, score, heatmap, atleta } = data;
 
   return (
-    <div className="min-h-screen bg-slate-900" data-testid="raio-x-page">
+    <div className="min-h-screen bg-slate-900 overflow-x-hidden" data-testid="raio-x-page">
       {/* Header */}
       <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+        <div className="container mx-auto px-4 py-4 md:py-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+            <div className="flex items-center gap-3">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => navigate('/perfil')}
-                className="text-white hover:bg-white/20"
+                className="text-white hover:bg-white/20 flex-shrink-0"
                 data-testid="raio-x-back-btn"
               >
                 <ChevronLeft className="w-6 h-6" />
               </Button>
-              <div>
-                <h1 className="text-2xl font-bold flex items-center gap-2">
-                  <Zap className="w-7 h-7" />
-                  RAIO-X do Atleta
+              <div className="min-w-0">
+                <h1 className="text-lg md:text-2xl font-bold flex items-center gap-2">
+                  <Zap className="w-5 h-5 md:w-7 md:h-7 flex-shrink-0" />
+                  <span className="truncate">RAIO-X do Atleta</span>
                 </h1>
-                <p className="text-white/80">Análise completa de performance - {atleta?.nome}</p>
+                <p className="text-white/80 text-xs md:text-sm truncate">Analise de performance - {atleta?.nome}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={handleOpenShare} className="border-white/30 text-white hover:bg-white/20" data-testid="raio-x-share-btn">
-                <Share2 className="w-4 h-4 mr-2" />
+            <div className="flex items-center gap-2 ml-9 md:ml-0">
+              <Button variant="outline" size="sm" onClick={handleOpenShare} className="border-white/30 text-white hover:bg-white/20 text-xs md:text-sm" data-testid="raio-x-share-btn">
+                <Share2 className="w-4 h-4 mr-1" />
                 Compartilhar
               </Button>
-              <Button variant="outline" size="sm" onClick={exportToPDF} className="border-white/30 text-white hover:bg-white/20" data-testid="raio-x-pdf-btn">
-                <Download className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={exportToPDF} className="border-white/30 text-white hover:bg-white/20 text-xs md:text-sm" data-testid="raio-x-pdf-btn">
+                <Download className="w-4 h-4 mr-1" />
                 PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={exportToExcel} className="border-white/30 text-white hover:bg-white/20" data-testid="raio-x-excel-btn">
-                <Download className="w-4 h-4 mr-2" />
+              <Button variant="outline" size="sm" onClick={exportToExcel} className="border-white/30 text-white hover:bg-white/20 text-xs md:text-sm" data-testid="raio-x-excel-btn">
+                <Download className="w-4 h-4 mr-1" />
                 Excel
               </Button>
             </div>

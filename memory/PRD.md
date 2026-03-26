@@ -7,32 +7,26 @@ Plataforma de ranking de corridas completa com sistema de ranking profissional/a
 - **Frontend**: React + TailwindCSS + Shadcn UI
 - **Backend**: FastAPI + MongoDB (Motor)
 - **Pagamentos**: Stripe (via emergentintegrations)
-- **Messaging**: Celery + Redis (broker)
-- **Integracoes**: Strava API, Resend (email)
 
 ## Funcionalidades Implementadas
 
 ### Sistema de Pagamento
 - [x] Plano Lancamento: R$97 (de R$197) ate 14/12/2026
-- [x] Plano Anual (preparado): 12x R$119 a partir de 15/12/2026
-- [x] get_plano_vigente() alterna automaticamente por data
-- [x] Checkout Stripe + Webhook + Polling
-- [x] Banner contagem regressiva (ultimos 30 dias da oferta)
+- [x] Plano Anual: 12x R$119 a partir de 15/12/2026
+- [x] Checkout Stripe + Webhook + Polling + Banner contagem regressiva
 
 ### Bloqueio de Acesso Expirados
-- [x] require_premium_access no backend (Raio-X, perfil, feed, strava)
-- [x] AccessGate + PrintProtection no frontend
+- [x] require_premium_access + AccessGate + PrintProtection
 
-### Mobile Responsiveness (25/03/2026)
-- [x] Menu hamburger com drawer lateral (MobileNav.jsx)
-- [x] Header mobile compacto verde com logo + hamburger + notificacoes
-- [x] Seletor de ranking em grid 2x2 no mobile, 4 colunas no desktop
-- [x] Sidebar da Assessoria como drawer mobile
-- [x] Share card com crossOrigin, scale 3, foto corrigida
-- [x] Ano corrigido para 2026 no share card
-
-### Admin, Feed, Strava, Raio-X
-- [x] Todas funcionalidades completas
+### Mobile Responsiveness (25-26/03/2026)
+- [x] MobileNav drawer lateral (hamburger menu)
+- [x] Header mobile compacto em todas as paginas
+- [x] Grid 2x2 ranking + botoes compactos
+- [x] Sidebar Assessoria responsiva com drawer
+- [x] Share card: crossOrigin, scale 3, foto corrigida, ano 2026
+- [x] overflow-x: hidden global (App.css)
+- [x] Headers responsivos: RaioX, Perfil, Corridas, Submeter
+- [x] Campo upload de foto compacto no mobile (Submeter)
 
 ## Credenciais
 - Admin: admin@runpro.com / admin
@@ -45,4 +39,3 @@ Plataforma de ranking de corridas completa com sistema de ranking profissional/a
 
 ## Issues Conhecidas
 - Redis instavel (restarts manuais)
-- Race condition AuthContext em testes Playwright

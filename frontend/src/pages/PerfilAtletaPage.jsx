@@ -499,32 +499,33 @@ const PerfilAtletaPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-6 px-4">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 py-4 md:py-6 px-4 overflow-x-hidden">
       <div className="container mx-auto max-w-5xl">
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-3xl font-bold text-white mb-1" data-testid="perfil-title">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-6 md:mb-8">
+          <div className="min-w-0">
+            <h1 className="text-2xl md:text-3xl font-bold text-white mb-0.5" data-testid="perfil-title">
               Meu Perfil
             </h1>
-            <p className="text-slate-400">Gerencie suas informações de atleta</p>
+            <p className="text-slate-400 text-sm">Gerencie suas informacoes de atleta</p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex gap-2 flex-shrink-0">
             <Button 
               onClick={handleExportData} 
               disabled={exportingData}
               variant="outline" 
-              className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/20"
+              size="sm"
+              className="border-emerald-600 text-emerald-400 hover:bg-emerald-600/20 text-xs md:text-sm"
             >
               {exportingData ? (
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                <Loader2 className="w-4 h-4 mr-1 animate-spin" />
               ) : (
-                <Download className="w-4 h-4 mr-2" />
+                <Download className="w-4 h-4 mr-1" />
               )}
-              Exportar Meus Dados
+              Exportar
             </Button>
-            <Button onClick={() => navigate('/')} variant="outline" className="border-slate-600 text-slate-300 hover:bg-slate-700">
-              <ArrowLeft className="w-4 h-4 mr-2" />
+            <Button onClick={() => navigate('/')} variant="outline" size="sm" className="border-slate-600 text-slate-300 hover:bg-slate-700 text-xs md:text-sm">
+              <ArrowLeft className="w-4 h-4 mr-1" />
               Voltar
             </Button>
           </div>
