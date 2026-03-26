@@ -12,6 +12,7 @@ ANO_ATUAL = datetime.now(timezone.utc).year
 
 from config import db
 from routes.auth_routes import get_current_user
+from routes.email_routes import enviar_email_mensagem_admin
 
 router = APIRouter(tags=["Mensagens Admin"])
 
@@ -79,6 +80,7 @@ async def enviar_mensagem_admin(
     filtro_estados: str = Form("[]"),
     filtro_cidades: str = Form("[]"),
     agendar_para: str = Form(""),
+    enviar_email: str = Form("false"),
     admin: dict = Depends(get_admin_user)
 ):
     """
@@ -96,6 +98,8 @@ async def enviar_mensagem_admin(
     estados = json.loads(filtro_estados) if filtro_estados != "[]" else []
     cidades = json.loads(filtro_cidades) if filtro_cidades != "[]" else []
     anexos_list = json.loads(anexos) if anexos != "[]" else []
+
+    should_email = enviar_email.lower() == "true"
 
     agora = datetime.now(timezone.utc).isoformat()
     mensagem_id = str(uuid.uuid4())
@@ -120,7 +124,8 @@ async def enviar_mensagem_admin(
         "data_criacao": agora,
         "data_envio": None if is_agendada else agora,
         "agendar_para": agendar_para.strip() if is_agendada else None,
-        "status": "agendada" if is_agendada else "enviada"
+        "status": "agendada" if is_agendada else "enviada",
+        "enviar_email": should_email
     }
 
     if is_agendada:
@@ -140,11 +145,33 @@ async def enviar_mensagem_admin(
     registro["total_enviados"] = total
     await db.mensagens_admin.insert_one(registro)
 
+    # Enviar emails em background se solicitado (nao bloqueia a resposta)
+    if should_email:
+        import asyncio
+        async def _enviar_emails_bg():
+            try:
+                query = await _build_destinatarios_query(filtro_tipo, modalidades, generos, especiais, estados, cidades)
+                atletas = await db.usuarios.find(query, {"_id": 0, "email": 1, "nome": 1}).to_list(None)
+                result = await enviar_email_mensagem_admin(
+                    atletas,
+                    titulo or "Mensagem da Administracao",
+                    mensagem,
+                    link if link.strip() else None
+                )
+                await db.mensagens_admin.update_one(
+                    {"id": mensagem_id},
+                    {"$set": {"email_resultado": result}}
+                )
+            except Exception as e:
+                logger.error(f"Erro ao enviar emails em background: {e}")
+        asyncio.create_task(_enviar_emails_bg())
+
     return {
         "message": f"Mensagem enviada para {total} atleta(s)",
         "total_enviados": total,
         "mensagem_id": mensagem_id,
-        "status": "enviada"
+        "status": "enviada",
+        "email": {"status": "enviando_em_background"} if should_email else None
     }
 
 

@@ -171,6 +171,7 @@ from routes.strava_atividades_routes import router as strava_atividades_router
 from routes.raio_x_routes import router as raio_x_router
 from routes.pagamentos_routes import router as pagamentos_router
 from routes.webhook_stripe_routes import router as webhook_stripe_router
+from routes.email_routes import router as email_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -204,6 +205,7 @@ api_router.include_router(strava_atividades_router)
 api_router.include_router(raio_x_router)
 api_router.include_router(pagamentos_router)
 api_router.include_router(webhook_stripe_router)
+api_router.include_router(email_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:

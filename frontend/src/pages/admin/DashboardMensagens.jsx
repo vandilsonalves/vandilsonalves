@@ -61,6 +61,7 @@ const DashboardMensagens = () => {
   const [filtroCidades, setFiltroCidades] = useState([]);
   const [estadosDisponiveis, setEstadosDisponiveis] = useState([]);
   const [cidadesDisponiveis, setCidadesDisponiveis] = useState([]);
+  const [enviarEmail, setEnviarEmail] = useState(false);
 
   const fileInputRef = useRef(null);
 
@@ -295,6 +296,7 @@ const DashboardMensagens = () => {
       formData.append('filtro_estados', JSON.stringify(filtroEstados));
       formData.append('filtro_cidades', JSON.stringify(filtroCidades));
       formData.append('agendar_para', agendarPara);
+      formData.append('enviar_email', enviarEmail ? 'true' : 'false');
 
       const res = await fetch(`${API}/admin/mensagens/enviar`, {
         method: 'POST',
@@ -308,7 +310,8 @@ const DashboardMensagens = () => {
           toast.success(`Mensagem agendada para ${dataAgendamento} às ${horaAgendamento}`);
           fetchAgendadas();
         } else {
-          toast.success(`Mensagem enviada para ${data.total_enviados} atleta(s)!`);
+          const emailMsg = data.email?.enviados ? ` (${data.email.enviados} email(s) enviado(s))` : '';
+          toast.success(`Mensagem enviada para ${data.total_enviados} atleta(s)!${emailMsg}`);
         }
         setTitulo('');
         setMensagem('');
@@ -316,6 +319,7 @@ const DashboardMensagens = () => {
         setAnexos([]);
         setDataAgendamento('');
         setModoAgendar(false);
+        setEnviarEmail(false);
         if (showHistorico) fetchHistorico();
       } else {
         const err = await res.json().catch(() => ({}));
@@ -728,6 +732,24 @@ const DashboardMensagens = () => {
                   </span>
                 </div>
               </div>
+            )}
+          </div>
+
+          {/* Opcao enviar por email */}
+          <div className="flex items-center gap-2 pt-2">
+            <input
+              type="checkbox"
+              id="enviar-email"
+              checked={enviarEmail}
+              onChange={(e) => setEnviarEmail(e.target.checked)}
+              className="w-4 h-4 rounded border-slate-300 text-emerald-600 focus:ring-emerald-500"
+              data-testid="checkbox-enviar-email"
+            />
+            <label htmlFor="enviar-email" className="text-sm text-slate-600 dark:text-slate-300 cursor-pointer">
+              Enviar tambem por email
+            </label>
+            {enviarEmail && (
+              <span className="text-xs text-amber-500 ml-1">(remetente: onboarding@resend.dev)</span>
             )}
           </div>
 

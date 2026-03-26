@@ -1,41 +1,44 @@
 # PRD - Ranking Run Pro
 
 ## Problema Original
-Plataforma de ranking de corridas completa com sistema de ranking profissional/amador, feed social, stories, sistema de mensagens admin, Raio-X do atleta, integracoes com Strava e sistema de monetizacao via Stripe.
+Plataforma de ranking de corridas completa com monetizacao, feed social, Raio-X, Strava e notificacoes por email.
 
 ## Arquitetura
-- **Frontend**: React + TailwindCSS + Shadcn UI
-- **Backend**: FastAPI + MongoDB (Motor)
-- **Pagamentos**: Stripe (via emergentintegrations)
+- Frontend: React + TailwindCSS + Shadcn UI
+- Backend: FastAPI + MongoDB (Motor)
+- Pagamentos: Stripe (emergentintegrations)
+- Emails: Resend
+- Messaging: Celery + Redis
 
 ## Funcionalidades Implementadas
 
-### Sistema de Pagamento
-- [x] Plano Lancamento: R$97 (de R$197) ate 14/12/2026
-- [x] Plano Anual: 12x R$119 a partir de 15/12/2026
-- [x] Checkout Stripe + Webhook + Polling + Banner contagem regressiva
+### Pagamento + Bloqueio
+- [x] Plano Lancamento R$97 (de R$197) ate 14/12/2026
+- [x] Plano Anual 12x R$119 a partir de 15/12/2026
+- [x] AccessGate + PrintProtection + require_premium_access
 
-### Bloqueio de Acesso Expirados
-- [x] require_premium_access + AccessGate + PrintProtection
+### Mobile Responsiveness
+- [x] MobileNav drawer hamburger
+- [x] Headers responsivos em todas as paginas
+- [x] overflow-x: hidden global
 
-### Mobile Responsiveness (25-26/03/2026)
-- [x] MobileNav drawer lateral (hamburger menu)
-- [x] Header mobile compacto em todas as paginas
-- [x] Grid 2x2 ranking + botoes compactos
-- [x] Sidebar Assessoria responsiva com drawer
-- [x] Share card: crossOrigin, scale 3, foto corrigida, ano 2026
-- [x] overflow-x: hidden global (App.css)
-- [x] Headers responsivos: RaioX, Perfil, Corridas, Submeter
-- [x] Campo upload de foto compacto no mobile (Submeter)
+### Notificacoes por Email (26/03/2026)
+- [x] Integracao Resend (API key configurada)
+- [x] Checkbox "Enviar tambem por email" no painel de mensagens admin
+- [x] Envio em background (nao bloqueia resposta)
+- [x] Template HTML profissional (inline CSS)
+- [x] Endpoints: POST /api/email/enviar, POST /api/email/teste
+- [x] NOTA: Dominio rankingrun.com.br NAO verificado ainda. Emails so vao para vandy1250@gmail.com ate verificar DNS
 
 ## Credenciais
 - Admin: admin@runpro.com / admin
-- Atleta (teste): teste.dono@teste.com / 123456
-- Atleta (expirado): expirado@teste.com / 123456
+- Atleta: teste.dono@teste.com / 123456
+- Expirado: expirado@teste.com / 123456
 
 ## Backlog
 - P2: Exportar Raio-X como PDF
-- P3: Notificacoes push por email (Resend)
+- P1: Verificar DNS do dominio rankingrun.com.br no Resend para enviar emails reais
 
 ## Issues Conhecidas
 - Redis instavel (restarts manuais)
+- Resend: dominio nao verificado (apenas vandy1250@gmail.com recebe por enquanto)
