@@ -126,6 +126,18 @@ export default function DashboardFinanceiro() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Auto-refresh quando receber notificacao de pagamento via WebSocket
+  useEffect(() => {
+    const handlePaymentAlert = (e) => {
+      const alert = e.detail;
+      if (alert?.alert_type?.includes('pagamento')) {
+        fetchData();
+      }
+    };
+    window.addEventListener('admin-alert', handlePaymentAlert);
+    return () => window.removeEventListener('admin-alert', handlePaymentAlert);
+  }, []);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-20" data-testid="financeiro-loading">

@@ -15,6 +15,7 @@ import hashlib
 
 from config import db
 from routes.auth_routes import get_current_user, get_admin_user
+from services.websocket_service import ws_manager, notify_user, notify_admin_alert
 
 logger = logging.getLogger(__name__)
 
@@ -456,6 +457,35 @@ async def _ativar_acesso_efi(user_id: str, txid: str):
             "data_atualizacao": agora.isoformat(),
             "autorizacao_id": autorizacao["id"],
         }}
+    )
+
+    # Buscar dados do usuario para notificacao
+    usuario = await db.usuarios.find_one({"id": user_id}, {"_id": 0, "nome": 1, "email": 1})
+    nome = usuario.get("nome", "Atleta") if usuario else "Atleta"
+    email = usuario.get("email", "") if usuario else ""
+
+    # Notificacao push para o ATLETA
+    await notify_user(
+        user_id=user_id,
+        notification_type="pagamento_confirmado",
+        title="Pagamento Confirmado!",
+        message="Seu acesso Atleta Premium foi ativado com sucesso! Aproveite todos os recursos.",
+        data={"plano": "Atleta Premium", "validade": data_expiracao.isoformat(), "gateway": "pix"}
+    )
+
+    # Notificacao push para TODOS OS ADMINS
+    await notify_admin_alert(
+        alert_type="novo_pagamento_pix",
+        message=f"Novo pagamento PIX confirmado! {nome} ({email}) - R$ 97,00",
+        details={
+            "user_id": user_id,
+            "user_nome": nome,
+            "user_email": email,
+            "txid": txid,
+            "valor": 97.00,
+            "gateway": "efi_bank",
+            "plano": "Atleta Premium",
+        }
     )
 
     logger.info(f"[EFI] Acesso Premium ativado para {user_id} via PIX txid={txid}")

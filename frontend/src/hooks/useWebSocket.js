@@ -152,9 +152,37 @@ export const useWebSocket = (token) => {
               break;
 
             case 'admin_alert':
-              // Alerta de admin
+              // Alerta de admin - mostrar toast
+              const alert = data.alert || {};
+              const alertMsg = alert.message || 'Novo alerta do sistema';
+              const alertType = alert.alert_type || '';
+              
+              // Toast visual
+              if (alertType.includes('pagamento')) {
+                toast.success(alertMsg, {
+                  duration: 8000,
+                  description: alertType.includes('pix') ? 'Pagamento PIX' : 'Pagamento Cartao',
+                });
+              } else {
+                toast.info(alertMsg, { duration: 6000 });
+              }
+
+              // Browser Notification (push)
+              if ('Notification' in window && Notification.permission === 'granted') {
+                try {
+                  new Notification('Ranking Run Pro', {
+                    body: alertMsg,
+                    icon: '/favicon.ico',
+                    tag: `alert-${Date.now()}`,
+                  });
+                } catch (e) { /* silent */ }
+              }
+
+              playNotificationSound();
+
+              // Disparar evento customizado para outros componentes
               window.dispatchEvent(new CustomEvent('admin-alert', { 
-                detail: data.alert 
+                detail: alert 
               }));
               break;
 

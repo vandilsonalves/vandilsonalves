@@ -237,6 +237,11 @@ const AdminDashboard = () => {
       return;
     }
     
+    // Solicitar permissao de notificacao push
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+
     fetchAllData();
   }, [isAdmin, token, loading, navigate]);
 
