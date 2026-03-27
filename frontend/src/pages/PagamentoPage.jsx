@@ -1,13 +1,128 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap, Timer, Copy, QrCode, RefreshCw } from 'lucide-react';
+import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap, Timer, Copy, QrCode, RefreshCw, Trophy, PartyPopper, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
+import confetti from 'canvas-confetti';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
-function PixCheckout({ token, planoInfo }) {
+function fireConfetti() {
+  const duration = 4000;
+  const end = Date.now() + duration;
+  const colors = ['#10b981', '#14b8a6', '#fbbf24', '#f59e0b', '#ffffff'];
+
+  // Burst inicial
+  confetti({ particleCount: 100, spread: 80, origin: { y: 0.6 }, colors });
+
+  // Chuva continua
+  const frame = () => {
+    confetti({
+      particleCount: 3,
+      angle: 60,
+      spread: 55,
+      origin: { x: 0 },
+      colors,
+    });
+    confetti({
+      particleCount: 3,
+      angle: 120,
+      spread: 55,
+      origin: { x: 1 },
+      colors,
+    });
+    if (Date.now() < end) requestAnimationFrame(frame);
+  };
+  frame();
+
+  // Burst final
+  setTimeout(() => {
+    confetti({ particleCount: 80, spread: 100, origin: { y: 0.4 }, colors });
+  }, 1500);
+}
+
+
+function ConfirmacaoPagamento({ navigate }) {
+  useEffect(() => {
+    fireConfetti();
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center px-4" data-testid="confirmacao-pagamento">
+      <div className="max-w-md w-full text-center">
+        {/* Icone animado */}
+        <div className="relative mx-auto mb-8 w-28 h-28">
+          <div className="absolute inset-0 bg-emerald-500/20 rounded-full animate-ping" />
+          <div className="relative w-28 h-28 bg-gradient-to-br from-emerald-500 to-teal-400 rounded-full flex items-center justify-center shadow-lg shadow-emerald-500/30">
+            <CheckCircle className="w-14 h-14 text-white" strokeWidth={2.5} />
+          </div>
+        </div>
+
+        {/* Texto principal */}
+        <h1 className="text-3xl sm:text-4xl font-bold mb-3 bg-gradient-to-r from-emerald-400 to-teal-300 bg-clip-text text-transparent" data-testid="confirmacao-titulo">
+          Pagamento Confirmado!
+        </h1>
+        <p className="text-gray-400 text-base mb-8">
+          Seu acesso <span className="text-emerald-400 font-semibold">Atleta Premium</span> foi ativado com sucesso.
+        </p>
+
+        {/* Card de resumo */}
+        <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 mb-8 text-left" data-testid="confirmacao-resumo">
+          <div className="flex items-center gap-3 mb-4 pb-4 border-b border-gray-800">
+            <div className="w-10 h-10 bg-emerald-500/10 rounded-xl flex items-center justify-center">
+              <Trophy className="w-5 h-5 text-emerald-400" />
+            </div>
+            <div>
+              <p className="font-semibold text-white text-sm">Plano Atleta Premium</p>
+              <p className="text-xs text-gray-500">Acesso completo ate 31/12/2026</p>
+            </div>
+          </div>
+          <ul className="space-y-2.5">
+            {[
+              'Raio-X completo do atleta',
+              'Integracao Strava',
+              'Feed social: curtir, comentar e postar',
+              'Stories e compartilhamento',
+              'Edicao completa do perfil',
+            ].map((item, i) => (
+              <li key={i} className="flex items-center gap-2.5 text-sm text-gray-300">
+                <CheckCircle className="w-4 h-4 text-emerald-500 flex-shrink-0" />
+                {item}
+              </li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Botoes */}
+        <div className="space-y-3">
+          <Button
+            onClick={() => navigate('/raio-x')}
+            className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 text-base font-medium"
+            data-testid="btn-ir-raio-x"
+          >
+            Ver meu Raio-X <ArrowRight className="w-4 h-4 ml-2" />
+          </Button>
+          <Button
+            onClick={() => navigate('/')}
+            variant="outline"
+            className="w-full border-gray-700 text-gray-300 hover:bg-gray-800 h-11"
+            data-testid="btn-ir-ranking"
+          >
+            Voltar ao Ranking
+          </Button>
+        </div>
+
+        <p className="text-xs text-gray-600 mt-6">
+          Pagamento via PIX processado com sucesso
+        </p>
+      </div>
+    </div>
+  );
+}
+
+
+function PixCheckout({ token, planoInfo, onPaid }) {
   const [gerando, setGerando] = useState(false);
   const [pixData, setPixData] = useState(null);
   const [polling, setPolling] = useState(false);
@@ -54,8 +169,7 @@ function PixCheckout({ token, planoInfo }) {
           if (data.payment_status === 'paid') {
             clearInterval(pollingRef.current);
             setPolling(false);
-            toast.success('Pagamento confirmado! Bem-vindo ao Premium!');
-            setTimeout(() => window.location.reload(), 2000);
+            onPaid();
           }
         }
       } catch {}
@@ -152,6 +266,7 @@ export default function PagamentoPage() {
   const [planoInfo, setPlanoInfo] = useState(null);
   const [loadingPlano, setLoadingPlano] = useState(true);
   const [metodo, setMetodo] = useState('pix');
+  const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
 
   useEffect(() => {
     if (!token) {
@@ -177,6 +292,10 @@ export default function PagamentoPage() {
       setLoadingPlano(false);
     }
   };
+
+  const handlePixPaid = useCallback(() => {
+    setPagamentoConfirmado(true);
+  }, []);
 
   const iniciarPagamentoStripe = async () => {
     setLoading(true);
@@ -221,6 +340,11 @@ export default function PagamentoPage() {
         <div className="animate-pulse text-gray-400">Carregando...</div>
       </div>
     );
+  }
+
+  // Tela de confirmacao com confetti
+  if (pagamentoConfirmado) {
+    return <ConfirmacaoPagamento navigate={navigate} />;
   }
 
   const dataLimite = new Date('2026-12-14T23:59:59Z');
@@ -378,7 +502,7 @@ export default function PagamentoPage() {
 
                 {/* Conteudo do metodo selecionado */}
                 {metodo === 'pix' ? (
-                  <PixCheckout token={token} planoInfo={planoInfo} />
+                  <PixCheckout token={token} planoInfo={planoInfo} onPaid={handlePixPaid} />
                 ) : (
                   <div data-testid="cartao-checkout">
                     <Button
