@@ -26,6 +26,7 @@ cryptography==46.0.5
 distro==1.9.0
 dnspython==2.8.0
 ecdsa==0.19.1
+efipay @ git+https://github.com/efipay/sdk-python-apis-efi.git@9a91cff56ad7d0443b2d587c897157d0e21ba01d
 email-validator==2.3.0
 emergentintegrations==0.1.0
 et_xmlfile==2.0.0
@@ -126,6 +127,7 @@ reportlab==4.4.10
 requests==2.32.5
 requests-oauthlib==2.0.0
 resend==2.23.0
+responses==0.13.2
 rich==14.3.2
 rpds-py==0.30.0
 rsa==4.9.1
