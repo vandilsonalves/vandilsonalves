@@ -70,7 +70,7 @@ const menuSections = [
       { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
       { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
       { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
-      { id: 'financeiro', label: 'Financeiro', icon: CreditCard, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+      { id: 'financeiro', label: 'Financeiro', icon: CreditCard, permissoes: [] },
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
       { id: 'engajamento', label: 'Engajamento', icon: BarChart3, permissoes: [] },
     ]

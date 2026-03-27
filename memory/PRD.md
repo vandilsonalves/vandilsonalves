@@ -16,39 +16,38 @@ Plataforma de ranking de corridas com monetizacao, feed social, Raio-X, Strava e
 - [x] Plano Lancamento: De R$197 por 5x R$19,40 (R$97 total)
 - [x] AccessGate + PrintProtection + require_premium_access
 - [x] Checkout Stripe (Cartao) + Efi Bank (PIX QR Code)
-- [x] Webhook PIX skip-mTLS + HMAC + mTLS Nginx config producao
+- [x] Webhook PIX skip-mTLS + HMAC + config Nginx mTLS producao
 - [x] Tela confirmacao PIX com confetti
 - [x] Polling frontend 5s + ativacao automatica Premium
 
 ### Dashboard Financeiro Admin (27/03/2026)
 - [x] KPIs: Receita total, PIX, Cartao, Ticket medio
-- [x] Grafico barras receita diaria (30 dias) / mensal (12 meses) com toggle
+- [x] Grafico barras receita diaria/mensal com toggle
 - [x] Donut chart distribuicao PIX vs Cartao
-- [x] Tabela transacoes recentes (20 ultimas) com status/gateway/valor
-- [x] Botao atualizar, superAdminOnly
-- [x] API: GET /api/admin/financeiro/resumo
+- [x] Tabela transacoes recentes com status/gateway/valor
 
-### Raio-X do Atleta
-- [x] Exportar PDF/Excel + Share Card Canvas
+### Navegacao
+- [x] Botao "Atleta Premium" no header desktop (RankingPage.js) - 27/03/2026
+- [x] Botao "Atleta Premium" no MobileNav
+- [x] Menu "Financeiro" visivel para todos admins - 27/03/2026
 
-### Mobile
+### Raio-X, Mobile, Emails
+- [x] Exportar PDF/Excel + Share Card
 - [x] MobileNav drawer, overflow-x: hidden
-
-### Emails
 - [x] Integracao Resend + Celery background
 
-### Deploy Producao mTLS
-- [x] nginx-mtls.conf + docker-compose.mtls.yml + deploy-mtls.sh
-- [x] Certificados CA Efi Bank (prod + homolog)
+### DNS Resend (27/03/2026)
+- [x] DKIM verificado
+- [ ] SPF MX e TXT pendentes (DNS propagado, aguardando Resend detectar)
+- [x] Remetente atualizado: noreply@send.rankingrun.com.br
 
 ## Credenciais
 - Admin: admin@runpro.com / admin
 - Atleta: teste.dono@teste.com / 123456
 
 ## Backlog
-- P1: Verificar DNS rankingrun.com.br no Resend
-- P2: fullchain.pem + privkey.pem para mTLS real em producao
+- Verificacao SPF no Resend (aguardando auto-detect)
+- Deploy producao: fullchain.pem + privkey.pem + deploy-mtls.sh
 
 ## Issues Conhecidas
 - Redis instavel (restarts manuais)
-- Resend: dominio nao verificado

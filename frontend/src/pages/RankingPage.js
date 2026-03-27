@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NotificacoesBell from '@/components/NotificacoesBell';
 import MobileNav from '@/components/MobileNav';
-import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquare, HelpCircle, Award, Star, Activity, History, MapPin, RefreshCw, Zap } from 'lucide-react';
+import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquare, HelpCircle, Award, Star, Activity, History, MapPin, RefreshCw, Zap, CreditCard } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -102,6 +102,10 @@ const RankingPage = () => {
                 <Button onClick={() => navigate('/raio-x')} variant="ghost" size="sm" className="text-purple-500 hover:text-purple-600" data-testid="btn-raio-x">
                   <Zap className="w-4 h-4 mr-1" />
                   RAIO-X
+                </Button>
+                <Button onClick={() => navigate('/pagamento')} variant="ghost" size="sm" className="text-amber-500 hover:text-amber-600" data-testid="btn-premium-desktop">
+                  <CreditCard className="w-4 h-4 mr-1" />
+                  Atleta Premium
                 </Button>
                 <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
                   <User className="w-4 h-4 mr-2" />
