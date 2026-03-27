@@ -309,9 +309,13 @@ async def efi_webhook_pix(request: Request, hmac_token: Optional[str] = Query(No
     return {"status": "ok"}
 
 
+class WebhookRegistroRequest(BaseModel):
+    modo: str = "skip_mtls"  # "skip_mtls" ou "mtls"
+
+
 @router.post("/admin/webhook/registrar")
-async def registrar_webhook_efi(admin_user: dict = Depends(get_admin_user)):
-    """Registra ou atualiza o webhook PIX no Efi Bank (skip-mTLS)"""
+async def registrar_webhook_efi(dados: WebhookRegistroRequest = WebhookRegistroRequest(), admin_user: dict = Depends(get_admin_user)):
+    """Registra ou atualiza o webhook PIX no Efi Bank"""
     pix_key = os.environ.get("EFI_PIX_KEY")
     if not pix_key:
         raise HTTPException(status_code=500, detail="Chave PIX nao configurada")
@@ -320,23 +324,21 @@ async def registrar_webhook_efi(admin_user: dict = Depends(get_admin_user)):
     if not base_url:
         raise HTTPException(status_code=500, detail="EFI_WEBHOOK_URL nao configurada no .env")
 
-    webhook_url = f"{base_url}?hmac={_WEBHOOK_HMAC_SECRET}"
+    use_skip_mtls = dados.modo != "mtls"
+    webhook_url = f"{base_url}?hmac={_WEBHOOK_HMAC_SECRET}" if use_skip_mtls else base_url
+    headers = {"x-skip-mtls-checking": "true"} if use_skip_mtls else {}
 
     try:
         efi = get_efi_client()
         body = {"webhookUrl": webhook_url}
         params = {"chave": pix_key}
-        resp = efi.pix_config_webhook(
-            body=body,
-            params=params,
-            headers={"x-skip-mtls-checking": "true"}
-        )
+        resp = efi.pix_config_webhook(body=body, params=params, headers=headers)
 
         if not isinstance(resp, dict):
             error_msg = getattr(resp, 'msg', str(resp))
             raise HTTPException(status_code=502, detail=f"Erro Efi: {error_msg}")
 
-        logger.info(f"[EFI] Webhook registrado: {resp}")
+        logger.info(f"[EFI] Webhook registrado ({dados.modo}): {resp}")
 
         # Salvar config no banco
         await db.efi_config.update_one(
@@ -345,7 +347,8 @@ async def registrar_webhook_efi(admin_user: dict = Depends(get_admin_user)):
                 "tipo": "webhook",
                 "webhook_url": webhook_url,
                 "pix_key": pix_key,
-                "hmac_secret": _WEBHOOK_HMAC_SECRET,
+                "hmac_secret": _WEBHOOK_HMAC_SECRET if use_skip_mtls else None,
+                "modo": dados.modo,
                 "data_registro": datetime.now(timezone.utc).isoformat(),
                 "response": resp,
             }},
@@ -355,8 +358,8 @@ async def registrar_webhook_efi(admin_user: dict = Depends(get_admin_user)):
         return {
             "status": "ok",
             "webhook_url": resp.get("webhookUrl"),
-            "metodo": "skip-mTLS",
-            "seguranca": "HMAC + IP validation",
+            "modo": dados.modo,
+            "seguranca": "HMAC + IP validation" if use_skip_mtls else "mTLS (certificado CA Efi)",
         }
 
     except HTTPException:

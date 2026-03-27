@@ -1,0 +1,56 @@
+version: '3.8'
+
+# ================================================================
+# Docker Compose - mTLS Webhook Efi Bank + Ranking Run Pro
+# ================================================================
+# Uso: docker-compose -f docker-compose.mtls.yml up -d
+#
+# Pre-requisitos:
+#   1. Colocar fullchain.pem e privkey.pem em ./backend/certs/
+#   2. efi-ca-prod.crt ja esta incluido
+#   3. Ajustar DOMAIN no .env
+# ================================================================
+
+services:
+  nginx-mtls:
+    image: nginx:alpine
+    container_name: rankingrun-mtls-proxy
+    ports:
+      - "443:443"
+      - "80:80"
+    volumes:
+      - ./backend/nginx/nginx-mtls.conf:/etc/nginx/nginx.conf:ro
+      - ./backend/certs/efi-ca-prod.crt:/etc/nginx/certs/efi-ca-prod.crt:ro
+      - ./backend/certs/efi-ca-homolog.crt:/etc/nginx/certs/efi-ca-homolog.crt:ro
+      # === COLOQUE SEUS CERTIFICADOS SSL AQUI ===
+      # - /etc/letsencrypt/live/rankingrun.com.br/fullchain.pem:/etc/nginx/certs/fullchain.pem:ro
+      # - /etc/letsencrypt/live/rankingrun.com.br/privkey.pem:/etc/nginx/certs/privkey.pem:ro
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - rankingrun
+
+  backend:
+    build: ./backend
+    container_name: rankingrun-backend
+    env_file: ./backend/.env
+    ports:
+      - "8001:8001"
+    restart: unless-stopped
+    networks:
+      - rankingrun
+
+  frontend:
+    build: ./frontend
+    container_name: rankingrun-frontend
+    env_file: ./frontend/.env
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+    networks:
+      - rankingrun
+
+networks:
+  rankingrun:
+    driver: bridge

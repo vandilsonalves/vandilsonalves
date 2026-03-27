@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -188,8 +188,6 @@ const AdminDashboard = () => {
   const [loadingLiga, setLoadingLiga] = useState(false);
   const [estadosComAssessorias, setEstadosComAssessorias] = useState([]);
   const [cidadesComAssessorias, setCidadesComAssessorias] = useState([]);
-  const [assessoriaDetalhe, setAssessoriaDetalhe] = useState(null);
-  const [showAssessoriaModal, setShowAssessoriaModal] = useState(false);
 
   // Regulamento / Autorizações: gerenciados pelos sub-componentes
 
