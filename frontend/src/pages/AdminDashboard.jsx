@@ -16,7 +16,7 @@ import {
   Activity, Home, Settings, FileText,
   Edit, Download, Plus, X,
   Cake, Send, ArrowRightLeft, RefreshCw, Loader2,
-  Crown, MessageSquare
+  Crown, MessageSquare, CreditCard
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -49,6 +49,7 @@ import {
 import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
 import DashboardMensagens from './admin/DashboardMensagens';
 import DashboardEngajamento from './admin/DashboardEngajamento';
+import DashboardFinanceiro from './admin/DashboardFinanceiro';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 import CidadeCombobox from '@/components/CidadeCombobox';
@@ -69,6 +70,7 @@ const menuSections = [
       { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
       { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
       { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
+      { id: 'financeiro', label: 'Financeiro', icon: CreditCard, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
       { id: 'engajamento', label: 'Engajamento', icon: BarChart3, permissoes: [] },
     ]
@@ -996,6 +998,11 @@ const AdminDashboard = () => {
         {/* Engajamento View */}
         {activeMenu === 'engajamento' && (
           <DashboardEngajamento />
+        )}
+
+        {/* Financeiro View */}
+        {activeMenu === 'financeiro' && (
+          <DashboardFinanceiro />
         )}
 
 
