@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap, Timer, Copy, QrCode, RefreshCw, Trophy, PartyPopper, ArrowRight } from 'lucide-react';
+import { Shield, CheckCircle, Lock, CreditCard, Star, BarChart3, Users, Activity, Clock, Zap, Timer, Copy, QrCode, RefreshCw, Trophy, PartyPopper, ArrowRight, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
 import confetti from 'canvas-confetti';
+import EfiPay from 'payment-token-efi';
 
 const API = process.env.REACT_APP_BACKEND_URL;
 
@@ -259,6 +260,308 @@ function PixCheckout({ token, planoInfo, onPaid }) {
   );
 }
 
+function CartaoCheckout({ token, onPaid }) {
+  const [efiConfig, setEfiConfig] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [detectingBrand, setDetectingBrand] = useState(false);
+  const [cardBrand, setCardBrand] = useState('');
+  const [form, setForm] = useState({
+    numero: '',
+    cvv: '',
+    mes: '',
+    ano: '',
+    titular: '',
+    cpf: '',
+    email: '',
+    telefone: '',
+  });
+  const [erro, setErro] = useState('');
+
+  useEffect(() => {
+    fetchConfig();
+  }, []);
+
+  const fetchConfig = async () => {
+    try {
+      const res = await fetch(`${API}/api/efi/config`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setEfiConfig(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar config Efi:', err);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setForm(prev => ({ ...prev, [field]: value }));
+    setErro('');
+
+    // Auto-detect brand when card number has 6+ digits
+    if (field === 'numero') {
+      const limpo = value.replace(/\D/g, '');
+      if (limpo.length >= 6 && !detectingBrand) {
+        detectBrand(limpo);
+      } else if (limpo.length < 6) {
+        setCardBrand('');
+      }
+    }
+  };
+
+  const detectBrand = async (numero) => {
+    setDetectingBrand(true);
+    try {
+      const brand = await EfiPay.CreditCard
+        .setCardNumber(numero)
+        .verifyCardBrand();
+      if (brand && brand !== 'undefined' && brand !== 'unsupported') {
+        setCardBrand(brand);
+      } else {
+        setCardBrand('');
+      }
+    } catch {
+      setCardBrand('');
+    } finally {
+      setDetectingBrand(false);
+    }
+  };
+
+  const formatCardNumber = (value) => {
+    const limpo = value.replace(/\D/g, '');
+    const groups = limpo.match(/.{1,4}/g);
+    return groups ? groups.join(' ') : limpo;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErro('');
+
+    if (!efiConfig?.payee_code) {
+      setErro('Configuracao do gateway de pagamento indisponivel. Tente novamente.');
+      return;
+    }
+
+    const numero = form.numero.replace(/\D/g, '');
+    if (numero.length < 13) { setErro('Numero do cartao invalido'); return; }
+    if (form.cvv.length < 3) { setErro('CVV invalido'); return; }
+    if (!form.mes || !form.ano) { setErro('Data de validade obrigatoria'); return; }
+    if (!form.titular.trim()) { setErro('Nome do titular obrigatorio'); return; }
+    const cpfLimpo = form.cpf.replace(/\D/g, '');
+    if (cpfLimpo.length !== 11) { setErro('CPF invalido (11 digitos)'); return; }
+    if (!form.email.includes('@')) { setErro('Email invalido'); return; }
+
+    if (!cardBrand) { setErro('Bandeira do cartao nao identificada. Verifique o numero.'); return; }
+
+    setLoading(true);
+
+    try {
+      // Step 1: Generate payment_token via Efi JS library
+      const tokenResult = await EfiPay.CreditCard
+        .setAccount(efiConfig.payee_code)
+        .setEnvironment(efiConfig.environment)
+        .setCreditCardData({
+          brand: cardBrand,
+          number: numero,
+          cvv: form.cvv,
+          expirationMonth: form.mes,
+          expirationYear: form.ano,
+          holderName: form.titular,
+          holderDocument: cpfLimpo,
+          reuse: false,
+        })
+        .getPaymentToken();
+
+      const paymentToken = tokenResult.payment_token;
+      if (!paymentToken) {
+        setErro('Falha ao gerar token de pagamento. Verifique os dados do cartao.');
+        setLoading(false);
+        return;
+      }
+
+      // Step 2: Send payment_token to backend
+      const res = await fetch(`${API}/api/efi/cartao/criar`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          payment_token: paymentToken,
+          nome: form.titular,
+          cpf: cpfLimpo,
+          email: form.email,
+          telefone: form.telefone.replace(/\D/g, '') || '0000000000',
+          parcelas: 5,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setErro(data.detail || 'Erro ao processar pagamento');
+        setLoading(false);
+        return;
+      }
+
+      if (data.payment_status === 'paid' || data.status === 'approved') {
+        toast.success('Pagamento aprovado!');
+        onPaid();
+      } else {
+        setErro('Pagamento aguardando confirmacao. Tente novamente em instantes.');
+      }
+    } catch (err) {
+      console.error('Erro no pagamento:', err);
+      const msg = err?.error_description || err?.message || 'Erro ao processar pagamento. Verifique os dados.';
+      setErro(typeof msg === 'string' ? msg : JSON.stringify(msg));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const brandLabel = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', elo: 'Elo' };
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-4" data-testid="cartao-form-efi">
+      {/* Card Number */}
+      <div>
+        <label className="text-xs text-gray-400 mb-1 block">Numero do Cartao</label>
+        <div className="relative">
+          <input
+            type="text"
+            maxLength={19}
+            value={formatCardNumber(form.numero)}
+            onChange={e => handleChange('numero', e.target.value)}
+            placeholder="0000 0000 0000 0000"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none"
+            data-testid="input-card-number"
+          />
+          {cardBrand && (
+            <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded" data-testid="card-brand-badge">
+              {brandLabel[cardBrand] || cardBrand}
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* CVV + Expiry */}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Mes</label>
+          <select
+            value={form.mes}
+            onChange={e => handleChange('mes', e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+            data-testid="select-card-month"
+          >
+            <option value="">MM</option>
+            {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map(m => (
+              <option key={m} value={m}>{m}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Ano</label>
+          <select
+            value={form.ano}
+            onChange={e => handleChange('ano', e.target.value)}
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+            data-testid="select-card-year"
+          >
+            <option value="">AAAA</option>
+            {Array.from({ length: 10 }, (_, i) => String(2025 + i)).map(y => (
+              <option key={y} value={y}>{y}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">CVV</label>
+          <input
+            type="text"
+            maxLength={4}
+            value={form.cvv}
+            onChange={e => handleChange('cvv', e.target.value.replace(/\D/g, ''))}
+            placeholder="123"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+            data-testid="input-card-cvv"
+          />
+        </div>
+      </div>
+
+      {/* Holder Name */}
+      <div>
+        <label className="text-xs text-gray-400 mb-1 block">Nome do Titular</label>
+        <input
+          type="text"
+          value={form.titular}
+          onChange={e => handleChange('titular', e.target.value)}
+          placeholder="Como esta no cartao"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+          data-testid="input-card-holder"
+        />
+      </div>
+
+      {/* CPF + Email */}
+      <div className="grid grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">CPF</label>
+          <input
+            type="text"
+            maxLength={14}
+            value={form.cpf}
+            onChange={e => handleChange('cpf', e.target.value)}
+            placeholder="000.000.000-00"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+            data-testid="input-card-cpf"
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-400 mb-1 block">Email</label>
+          <input
+            type="email"
+            value={form.email}
+            onChange={e => handleChange('email', e.target.value)}
+            placeholder="seu@email.com"
+            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+            data-testid="input-card-email"
+          />
+        </div>
+      </div>
+
+      {/* Error */}
+      {erro && (
+        <div className="flex items-start gap-2 bg-red-500/10 border border-red-500/20 rounded-lg p-3" data-testid="cartao-erro">
+          <AlertCircle className="w-4 h-4 text-red-400 mt-0.5 flex-shrink-0" />
+          <p className="text-sm text-red-400">{erro}</p>
+        </div>
+      )}
+
+      {/* Submit */}
+      <Button
+        type="submit"
+        disabled={loading}
+        className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 text-base font-medium"
+        data-testid="btn-pagar-cartao"
+      >
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+            Processando pagamento...
+          </span>
+        ) : (
+          <span className="flex items-center gap-2">
+            <CreditCard className="w-4 h-4" /> Pagar com Cartao - 5x R$ 19,40
+          </span>
+        )}
+      </Button>
+
+      <p className="text-xs text-gray-500 text-center">
+        Pagamento seguro via Efi Bank. Bandeiras: Visa, Mastercard, Elo, Amex
+      </p>
+    </form>
+  );
+}
 export default function PagamentoPage() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
@@ -293,38 +596,9 @@ export default function PagamentoPage() {
     }
   };
 
-  const handlePixPaid = useCallback(() => {
+  const handlePaid = useCallback(() => {
     setPagamentoConfirmado(true);
   }, []);
-
-  const iniciarPagamentoStripe = async () => {
-    setLoading(true);
-    try {
-      const origin = window.location.origin;
-      const res = await fetch(`${API}/api/pagamentos/checkout`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ origin_url: origin }),
-      });
-      if (!res.ok) {
-        const err = await res.json();
-        toast.error(err.detail || 'Erro ao iniciar pagamento');
-        return;
-      }
-      const data = await res.json();
-      if (data.url) {
-        window.location.href = data.url;
-      }
-    } catch (err) {
-      toast.error('Erro de conexao. Tente novamente.');
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const recursos = [
     { icon: BarChart3, label: 'Raio-X completo do atleta' },
@@ -502,28 +776,9 @@ export default function PagamentoPage() {
 
                 {/* Conteudo do metodo selecionado */}
                 {metodo === 'pix' ? (
-                  <PixCheckout token={token} planoInfo={planoInfo} onPaid={handlePixPaid} />
+                  <PixCheckout token={token} planoInfo={planoInfo} onPaid={handlePaid} />
                 ) : (
-                  <div data-testid="cartao-checkout">
-                    <Button
-                      onClick={iniciarPagamentoStripe}
-                      disabled={loading}
-                      className="w-full bg-emerald-600 hover:bg-emerald-500 text-white h-12 text-base font-medium"
-                      data-testid="btn-assinar-cartao"
-                    >
-                      {loading ? (
-                        <span className="flex items-center gap-2">
-                          <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
-                          Processando...
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-2">
-                          <CreditCard className="w-4 h-4" /> Pagar com Cartao - 5x R$ 19,40
-                        </span>
-                      )}
-                    </Button>
-                    <p className="text-xs text-gray-500 text-center mt-2">Pagamento seguro via Stripe</p>
-                  </div>
+                  <CartaoCheckout token={token} onPaid={handlePaid} />
                 )}
               </div>
             )}

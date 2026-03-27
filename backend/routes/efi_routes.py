@@ -262,7 +262,7 @@ async def efi_webhook_pix(request: Request, hmac_token: Optional[str] = Query(No
 
     # Validacao de seguranca: HMAC
     if hmac_token and hmac_token != _WEBHOOK_HMAC_SECRET:
-        logger.warning(f"[EFI WEBHOOK] HMAC invalido recebido")
+        logger.warning("[EFI WEBHOOK] HMAC invalido recebido")
         # Nao rejeita para nao perder notificacoes, apenas loga
 
     # Validacao de seguranca: IP (x-forwarded-for em ambientes com proxy)
@@ -411,8 +411,163 @@ async def listar_transacoes_efi(admin_user: dict = Depends(get_admin_user)):
     return {"transacoes": transactions, "total": len(transactions)}
 
 
-async def _ativar_acesso_efi(user_id: str, txid: str):
-    """Ativa acesso premium apos pagamento PIX confirmado"""
+class CartaoCheckoutRequest(BaseModel):
+    payment_token: str
+    nome: str
+    cpf: str
+    email: str
+    telefone: Optional[str] = None
+    nascimento: Optional[str] = None
+    parcelas: int = 1
+    endereco: Optional[dict] = None
+
+
+@router.get("/config")
+async def efi_config(current_user: dict = Depends(get_current_user)):
+    """Retorna configuracao publica do Efi para tokenizacao no frontend"""
+    payee_code = os.environ.get("EFI_PAYEE_CODE", "")
+    sandbox = os.environ.get("EFI_SANDBOX", "true").lower() == "true"
+    return {
+        "payee_code": payee_code,
+        "environment": "sandbox" if sandbox else "production",
+    }
+
+
+@router.post("/cartao/criar")
+async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict = Depends(get_current_user)):
+    """Cria cobranca via cartao de credito (One Step) no Efi Bank"""
+
+    # Verificar se usuario ja tem acesso ativo
+    auth_existente = await db.autorizacoes.find_one({
+        "atleta_id": current_user["id"],
+        "status": "ativa"
+    })
+    if auth_existente:
+        try:
+            exp_str = auth_existente["data_expiracao"].replace("Z", "+00:00")
+            if "+" not in exp_str and "T" in exp_str:
+                exp_str = exp_str + "+00:00"
+            data_exp = datetime.fromisoformat(exp_str)
+            if data_exp.tzinfo is None:
+                data_exp = data_exp.replace(tzinfo=timezone.utc)
+            if data_exp > datetime.now(timezone.utc):
+                raise HTTPException(status_code=400, detail="Voce ja possui acesso Premium ativo")
+        except HTTPException:
+            raise
+        except Exception:
+            pass
+
+    # Valor total em centavos: R$ 97,00 = 9700
+    valor_centavos = 9700
+
+    # Limpar CPF
+    cpf_limpo = dados.cpf.replace(".", "").replace("-", "").strip()
+
+    # Montar billing_address
+    billing_address = dados.endereco if dados.endereco else {
+        "street": "Nao informado",
+        "number": "0",
+        "neighborhood": "Nao informado",
+        "zipcode": "00000000",
+        "city": "Nao informado",
+        "state": "MG",
+    }
+
+    # Montar body para one-step charge
+    body = {
+        "items": [{
+            "name": "Atleta Premium - Ranking Run Pro",
+            "value": valor_centavos,
+            "amount": 1,
+        }],
+        "payment": {
+            "credit_card": {
+                "installments": dados.parcelas,
+                "payment_token": dados.payment_token,
+                "billing_address": billing_address,
+                "customer": {
+                    "name": dados.nome,
+                    "cpf": cpf_limpo,
+                    "email": dados.email,
+                    "phone_number": dados.telefone or "0000000000",
+                },
+            }
+        }
+    }
+
+    if dados.nascimento:
+        body["payment"]["credit_card"]["customer"]["birth"] = dados.nascimento
+
+    charge_id_efi = None
+    try:
+        efi = get_efi_client()
+        response = efi.create_one_step_charge(body=body)
+
+        if not isinstance(response, dict):
+            error_msg = getattr(response, 'msg', str(response))
+            logger.error(f"Erro Efi Bank Cartao: {error_msg}")
+            raise HTTPException(status_code=502, detail=f"Erro na API Efi Bank: {error_msg}")
+
+        logger.info(f"Cobranca Cartao criada: {json.dumps(response, default=str)}")
+
+        status_efi = response.get("data", {}).get("status", response.get("status", ""))
+        charge_id_efi = response.get("data", {}).get("charge_id", response.get("charge_id"))
+
+        # Verificar se foi recusada
+        if status_efi == "unpaid":
+            refusal = response.get("data", {}).get("refusal", {})
+            reason = refusal.get("reason", "Pagamento recusado pela operadora do cartao.")
+            raise HTTPException(status_code=400, detail=reason)
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao criar cobranca Cartao: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao processar pagamento por cartao: {str(e)}")
+
+    # Gerar ID unico da transacao
+    tx_id = str(uuid.uuid4())
+
+    # Registrar transacao no MongoDB
+    transaction = {
+        "id": tx_id,
+        "charge_id_efi": charge_id_efi,
+        "user_id": current_user["id"],
+        "user_email": current_user.get("email", ""),
+        "user_nome": current_user.get("nome", ""),
+        "gateway": "efi_bank",
+        "tipo": "cartao",
+        "plano": "atleta_premium_lancamento",
+        "plano_nome": "Atleta Premium",
+        "amount": 97.00,
+        "parcelas": dados.parcelas,
+        "valor_parcela": round(97.00 / dados.parcelas, 2),
+        "currency": "brl",
+        "payment_status": "paid" if status_efi == "approved" else "waiting",
+        "status": status_efi,
+        "data_criacao": datetime.now(timezone.utc).isoformat(),
+        "data_atualizacao": datetime.now(timezone.utc).isoformat(),
+    }
+    await db.payment_transactions.insert_one(transaction)
+
+    # Se aprovado, ativar acesso premium imediatamente
+    if status_efi == "approved":
+        await _ativar_acesso_efi(current_user["id"], tx_id, tipo="cartao")
+
+    return {
+        "status": status_efi,
+        "charge_id": charge_id_efi,
+        "transaction_id": tx_id,
+        "parcelas": dados.parcelas,
+        "valor_parcela": round(valor_centavos / dados.parcelas / 100, 2),
+        "total": 97.00,
+        "plano": "Atleta Premium",
+        "payment_status": "paid" if status_efi == "approved" else "waiting",
+    }
+
+
+async def _ativar_acesso_efi(user_id: str, txid: str, tipo: str = "pix"):
+    """Ativa acesso premium apos pagamento confirmado (PIX ou Cartao)"""
     agora = datetime.now(timezone.utc)
     data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
@@ -431,6 +586,8 @@ async def _ativar_acesso_efi(user_id: str, txid: str):
         {"$set": {"status": "substituida", "data_substituicao": agora.isoformat()}}
     )
 
+    tipo_label = "Cartao de Credito" if tipo == "cartao" else "PIX"
+
     autorizacao = {
         "id": str(uuid.uuid4()),
         "atleta_id": user_id,
@@ -441,28 +598,26 @@ async def _ativar_acesso_efi(user_id: str, txid: str):
         "data_criacao": agora.isoformat(),
         "data_expiracao": data_expiracao.isoformat(),
         "criado_por": "efi_bank",
-        "criado_por_nome": "Pagamento PIX (Efi Bank)",
-        "observacao": f"Atleta Premium - PIX txid {txid}",
+        "criado_por_nome": f"Pagamento {tipo_label} (Efi Bank)",
+        "observacao": f"Atleta Premium - {tipo_label} txid {txid}",
         "status": "ativa",
         "origem_pagamento": f"efi_{txid}",
     }
     await db.autorizacoes.insert_one(autorizacao)
 
     # Atualizar transacao
-    await db.payment_transactions.update_one(
-        {"txid": txid},
-        {"$set": {
-            "payment_status": "paid",
-            "status": "CONCLUIDA",
-            "data_atualizacao": agora.isoformat(),
-            "autorizacao_id": autorizacao["id"],
-        }}
-    )
+    update_query = {"payment_status": "paid", "status": "CONCLUIDA" if tipo == "pix" else "approved", "data_atualizacao": agora.isoformat(), "autorizacao_id": autorizacao["id"]}
+    if tipo == "pix":
+        await db.payment_transactions.update_one({"txid": txid}, {"$set": update_query})
+    else:
+        await db.payment_transactions.update_one({"id": txid}, {"$set": update_query})
 
     # Buscar dados do usuario para notificacao
     usuario = await db.usuarios.find_one({"id": user_id}, {"_id": 0, "nome": 1, "email": 1})
     nome = usuario.get("nome", "Atleta") if usuario else "Atleta"
     email = usuario.get("email", "") if usuario else ""
+
+    gateway_label = "cartao" if tipo == "cartao" else "pix"
 
     # Notificacao push para o ATLETA
     await notify_user(
@@ -470,13 +625,13 @@ async def _ativar_acesso_efi(user_id: str, txid: str):
         notification_type="pagamento_confirmado",
         title="Pagamento Confirmado!",
         message="Seu acesso Atleta Premium foi ativado com sucesso! Aproveite todos os recursos.",
-        data={"plano": "Atleta Premium", "validade": data_expiracao.isoformat(), "gateway": "pix"}
+        data={"plano": "Atleta Premium", "validade": data_expiracao.isoformat(), "gateway": gateway_label}
     )
 
     # Notificacao push para TODOS OS ADMINS
     await notify_admin_alert(
-        alert_type="novo_pagamento_pix",
-        message=f"Novo pagamento PIX confirmado! {nome} ({email}) - R$ 97,00",
+        alert_type=f"novo_pagamento_{gateway_label}",
+        message=f"Novo pagamento {tipo_label} confirmado! {nome} ({email}) - R$ 97,00",
         details={
             "user_id": user_id,
             "user_nome": nome,
@@ -484,8 +639,9 @@ async def _ativar_acesso_efi(user_id: str, txid: str):
             "txid": txid,
             "valor": 97.00,
             "gateway": "efi_bank",
+            "tipo": tipo,
             "plano": "Atleta Premium",
         }
     )
 
-    logger.info(f"[EFI] Acesso Premium ativado para {user_id} via PIX txid={txid}")
+    logger.info(f"[EFI] Acesso Premium ativado para {user_id} via {tipo_label} txid={txid}")
