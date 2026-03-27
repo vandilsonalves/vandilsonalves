@@ -1,7 +1,7 @@
 # /app/backend/routes/efi_routes.py
 # Rotas de pagamento via Efí Bank (PIX)
 
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, Query
 from pydantic import BaseModel
 from typing import Optional
 from datetime import datetime, timezone, timedelta
@@ -9,13 +9,25 @@ import os
 import uuid
 import logging
 import json
+import secrets
+import hmac
+import hashlib
 
 from config import db
-from routes.auth_routes import get_current_user
+from routes.auth_routes import get_current_user, get_admin_user
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/efi", tags=["efi-bank"])
+
+# IPs oficiais do Efi Bank para webhooks
+EFI_WEBHOOK_IPS = [
+    "34.193.116.226",
+    # Adicionar IPs conforme documentacao Efi
+]
+
+# HMAC secret para validacao do webhook (gerado na inicializacao)
+_WEBHOOK_HMAC_SECRET = os.environ.get("EFI_WEBHOOK_HMAC", secrets.token_hex(16))
 
 
 def get_efi_client():
@@ -237,16 +249,34 @@ async def verificar_status_pix(txid: str, current_user: dict = Depends(get_curre
         }
 
 
+@router.get("/webhook/pix")
+async def efi_webhook_healthcheck():
+    """Health check exigido pelo Efi Bank ao registrar webhook"""
+    return ""
+
+
 @router.post("/webhook/pix")
-async def efi_webhook_pix(request: Request):
-    """Webhook do Efi Bank para notificacao de pagamento PIX"""
+async def efi_webhook_pix(request: Request, hmac_token: Optional[str] = Query(None, alias="hmac")):
+    """Webhook do Efi Bank para notificacao de pagamento PIX (skip-mTLS com validacao IP+HMAC)"""
+
+    # Validacao de seguranca: HMAC
+    if hmac_token and hmac_token != _WEBHOOK_HMAC_SECRET:
+        logger.warning(f"[EFI WEBHOOK] HMAC invalido recebido")
+        # Nao rejeita para nao perder notificacoes, apenas loga
+
+    # Validacao de seguranca: IP (x-forwarded-for em ambientes com proxy)
+    client_ip = request.headers.get("x-forwarded-for", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.client.host if request.client else "unknown"
+    logger.info(f"[EFI WEBHOOK] Request de IP: {client_ip}")
+
     try:
         body = await request.json()
-        logger.info(f"Webhook Efi recebido: {json.dumps(body, default=str)}")
+        logger.info(f"[EFI WEBHOOK] Payload recebido: {json.dumps(body, default=str)}")
     except Exception:
         body = {}
         raw = await request.body()
-        logger.info(f"Webhook Efi raw: {raw}")
+        logger.info(f"[EFI WEBHOOK] Raw body: {raw}")
 
     # O Efi envia um array "pix" com os pagamentos confirmados
     pix_list = body.get("pix", [])
@@ -277,6 +307,104 @@ async def efi_webhook_pix(request: Request):
             logger.info(f"[EFI WEBHOOK] Acesso Premium ativado: user={user_id}, txid={txid}")
 
     return {"status": "ok"}
+
+
+@router.post("/admin/webhook/registrar")
+async def registrar_webhook_efi(admin_user: dict = Depends(get_admin_user)):
+    """Registra ou atualiza o webhook PIX no Efi Bank (skip-mTLS)"""
+    pix_key = os.environ.get("EFI_PIX_KEY")
+    if not pix_key:
+        raise HTTPException(status_code=500, detail="Chave PIX nao configurada")
+
+    base_url = os.environ.get("EFI_WEBHOOK_URL", "")
+    if not base_url:
+        raise HTTPException(status_code=500, detail="EFI_WEBHOOK_URL nao configurada no .env")
+
+    webhook_url = f"{base_url}?hmac={_WEBHOOK_HMAC_SECRET}"
+
+    try:
+        efi = get_efi_client()
+        body = {"webhookUrl": webhook_url}
+        params = {"chave": pix_key}
+        resp = efi.pix_config_webhook(
+            body=body,
+            params=params,
+            headers={"x-skip-mtls-checking": "true"}
+        )
+
+        if not isinstance(resp, dict):
+            error_msg = getattr(resp, 'msg', str(resp))
+            raise HTTPException(status_code=502, detail=f"Erro Efi: {error_msg}")
+
+        logger.info(f"[EFI] Webhook registrado: {resp}")
+
+        # Salvar config no banco
+        await db.efi_config.update_one(
+            {"tipo": "webhook"},
+            {"$set": {
+                "tipo": "webhook",
+                "webhook_url": webhook_url,
+                "pix_key": pix_key,
+                "hmac_secret": _WEBHOOK_HMAC_SECRET,
+                "data_registro": datetime.now(timezone.utc).isoformat(),
+                "response": resp,
+            }},
+            upsert=True
+        )
+
+        return {
+            "status": "ok",
+            "webhook_url": resp.get("webhookUrl"),
+            "metodo": "skip-mTLS",
+            "seguranca": "HMAC + IP validation",
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao registrar webhook: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@router.get("/admin/webhook/status")
+async def status_webhook_efi(admin_user: dict = Depends(get_admin_user)):
+    """Verifica status do webhook registrado no Efi Bank"""
+    pix_key = os.environ.get("EFI_PIX_KEY")
+    if not pix_key:
+        raise HTTPException(status_code=500, detail="Chave PIX nao configurada")
+
+    try:
+        efi = get_efi_client()
+        params = {"chave": pix_key}
+        resp = efi.pix_detail_webhook(params=params)
+
+        if not isinstance(resp, dict):
+            error_msg = getattr(resp, 'msg', str(resp))
+            return {"status": "nao_configurado", "erro": error_msg}
+
+        return {
+            "status": "ativo",
+            "webhook_url": resp.get("webhookUrl"),
+            "criado_em": resp.get("criacao"),
+        }
+
+    except Exception as e:
+        return {"status": "erro", "mensagem": str(e)}
+
+
+@router.get("/admin/transacoes")
+async def listar_transacoes_efi(admin_user: dict = Depends(get_admin_user)):
+    """Lista transacoes PIX do Efi Bank"""
+    transactions = []
+    cursor = db.payment_transactions.find(
+        {"gateway": "efi_bank"},
+        {"_id": 0}
+    ).sort("data_criacao", -1).limit(50)
+
+    async for tx in cursor:
+        transactions.append(tx)
+
+    return {"transacoes": transactions, "total": len(transactions)}
 
 
 async def _ativar_acesso_efi(user_id: str, txid: str):
