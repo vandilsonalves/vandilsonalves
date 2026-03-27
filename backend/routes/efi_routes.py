@@ -463,6 +463,11 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
     # Limpar CPF
     cpf_limpo = dados.cpf.replace(".", "").replace("-", "").strip()
 
+    # Limpar telefone - formato Efi: DDD + numero (10-11 digitos, regex: ^[1-9]{2}9?[0-9]{8}$)
+    telefone_limpo = (dados.telefone or "").replace("+55", "").replace("(", "").replace(")", "").replace("-", "").replace(" ", "").strip()
+    if not telefone_limpo or len(telefone_limpo) < 10:
+        telefone_limpo = "11999999999"  # Fallback valido
+
     # Montar billing_address
     billing_address = dados.endereco if dados.endereco else {
         "street": "Nao informado",
@@ -489,7 +494,7 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
                     "name": dados.nome,
                     "cpf": cpf_limpo,
                     "email": dados.email,
-                    "phone_number": dados.telefone or "0000000000",
+                    "phone_number": telefone_limpo,
                 },
             }
         }
@@ -508,7 +513,17 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
             logger.error(f"Erro Efi Bank Cartao: {error_msg}")
             raise HTTPException(status_code=502, detail=f"Erro na API Efi Bank: {error_msg}")
 
-        logger.info(f"Cobranca Cartao criada: {json.dumps(response, default=str)}")
+        logger.info(f"Cobranca Cartao resposta: {json.dumps(response, default=str)}")
+
+        # Checar se a resposta e um erro da API Efi (campo "error" presente)
+        if "error" in response and "code" in response:
+            error_desc = response.get("error_description", {})
+            if isinstance(error_desc, dict):
+                error_msg = error_desc.get("message", response.get("error", "Erro desconhecido"))
+            else:
+                error_msg = str(error_desc)
+            logger.error(f"Erro Efi Bank Cartao: code={response['code']}, error={error_msg}")
+            raise HTTPException(status_code=400, detail=f"Erro no pagamento: {error_msg}")
 
         status_efi = response.get("data", {}).get("status", response.get("status", ""))
         charge_id_efi = response.get("data", {}).get("charge_id", response.get("charge_id"))

@@ -115,7 +115,7 @@ function ConfirmacaoPagamento({ navigate }) {
         </div>
 
         <p className="text-xs text-gray-600 mt-6">
-          Pagamento via PIX processado com sucesso
+          Pagamento processado com sucesso via Efi Bank
         </p>
       </div>
     </div>
@@ -265,6 +265,7 @@ function CartaoCheckout({ token, onPaid }) {
   const [loading, setLoading] = useState(false);
   const [detectingBrand, setDetectingBrand] = useState(false);
   const [cardBrand, setCardBrand] = useState('');
+  const [parcelas, setParcelas] = useState(1);
   const [form, setForm] = useState({
     numero: '',
     cvv: '',
@@ -276,6 +277,20 @@ function CartaoCheckout({ token, onPaid }) {
     telefone: '',
   });
   const [erro, setErro] = useState('');
+
+  const VALOR_TOTAL = 9700; // centavos
+
+  const opcoesParcelamento = Array.from({ length: 12 }, (_, i) => {
+    const n = i + 1;
+    const valorParcela = Math.ceil(VALOR_TOTAL / n);
+    return {
+      parcelas: n,
+      valorParcela,
+      label: n === 1
+        ? `1x de R$ ${(valorParcela / 100).toFixed(2).replace('.', ',')} (a vista)`
+        : `${n}x de R$ ${(valorParcela / 100).toFixed(2).replace('.', ',')}`,
+    };
+  });
 
   useEffect(() => {
     fetchConfig();
@@ -299,7 +314,6 @@ function CartaoCheckout({ token, onPaid }) {
     setForm(prev => ({ ...prev, [field]: value }));
     setErro('');
 
-    // Auto-detect brand when card number has 6+ digits
     if (field === 'numero') {
       const limpo = value.replace(/\D/g, '');
       if (limpo.length >= 6 && !detectingBrand) {
@@ -334,12 +348,19 @@ function CartaoCheckout({ token, onPaid }) {
     return groups ? groups.join(' ') : limpo;
   };
 
+  const formatPhone = (value) => {
+    const limpo = value.replace(/\D/g, '');
+    if (limpo.length <= 2) return limpo;
+    if (limpo.length <= 7) return `(${limpo.slice(0, 2)}) ${limpo.slice(2)}`;
+    return `(${limpo.slice(0, 2)}) ${limpo.slice(2, 7)}-${limpo.slice(7, 11)}`;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro('');
 
     if (!efiConfig?.payee_code) {
-      setErro('Configuracao do gateway de pagamento indisponivel. Tente novamente.');
+      setErro('Configuracao do gateway indisponivel. Recarregue a pagina.');
       return;
     }
 
@@ -351,13 +372,14 @@ function CartaoCheckout({ token, onPaid }) {
     const cpfLimpo = form.cpf.replace(/\D/g, '');
     if (cpfLimpo.length !== 11) { setErro('CPF invalido (11 digitos)'); return; }
     if (!form.email.includes('@')) { setErro('Email invalido'); return; }
-
+    const telLimpo = form.telefone.replace(/\D/g, '');
+    if (telLimpo.length < 10) { setErro('Telefone invalido (DDD + numero)'); return; }
     if (!cardBrand) { setErro('Bandeira do cartao nao identificada. Verifique o numero.'); return; }
 
     setLoading(true);
 
     try {
-      // Step 1: Generate payment_token via Efi JS library
+      // Step 1: Generate payment_token
       const tokenResult = await EfiPay.CreditCard
         .setAccount(efiConfig.payee_code)
         .setEnvironment(efiConfig.environment)
@@ -380,7 +402,7 @@ function CartaoCheckout({ token, onPaid }) {
         return;
       }
 
-      // Step 2: Send payment_token to backend
+      // Step 2: Send to backend
       const res = await fetch(`${API}/api/efi/cartao/criar`, {
         method: 'POST',
         headers: {
@@ -392,8 +414,8 @@ function CartaoCheckout({ token, onPaid }) {
           nome: form.titular,
           cpf: cpfLimpo,
           email: form.email,
-          telefone: form.telefone.replace(/\D/g, '') || '0000000000',
-          parcelas: 5,
+          telefone: telLimpo,
+          parcelas,
         }),
       });
 
@@ -421,6 +443,7 @@ function CartaoCheckout({ token, onPaid }) {
   };
 
   const brandLabel = { visa: 'Visa', mastercard: 'Mastercard', amex: 'Amex', elo: 'Elo' };
+  const selectedParcela = opcoesParcelamento.find(p => p.parcelas === parcelas);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4" data-testid="cartao-form-efi">
@@ -502,7 +525,7 @@ function CartaoCheckout({ token, onPaid }) {
         />
       </div>
 
-      {/* CPF + Email */}
+      {/* CPF + Telefone */}
       <div className="grid grid-cols-2 gap-3">
         <div>
           <label className="text-xs text-gray-400 mb-1 block">CPF</label>
@@ -517,16 +540,45 @@ function CartaoCheckout({ token, onPaid }) {
           />
         </div>
         <div>
-          <label className="text-xs text-gray-400 mb-1 block">Email</label>
+          <label className="text-xs text-gray-400 mb-1 block">Telefone</label>
           <input
-            type="email"
-            value={form.email}
-            onChange={e => handleChange('email', e.target.value)}
-            placeholder="seu@email.com"
+            type="text"
+            maxLength={15}
+            value={formatPhone(form.telefone)}
+            onChange={e => handleChange('telefone', e.target.value)}
+            placeholder="(11) 99999-9999"
             className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 outline-none"
-            data-testid="input-card-email"
+            data-testid="input-card-telefone"
           />
         </div>
+      </div>
+
+      {/* Email */}
+      <div>
+        <label className="text-xs text-gray-400 mb-1 block">Email</label>
+        <input
+          type="email"
+          value={form.email}
+          onChange={e => handleChange('email', e.target.value)}
+          placeholder="seu@email.com"
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm placeholder-gray-500 focus:ring-2 focus:ring-emerald-500 outline-none"
+          data-testid="input-card-email"
+        />
+      </div>
+
+      {/* Parcelas Selector */}
+      <div>
+        <label className="text-xs text-gray-400 mb-1 block">Parcelas</label>
+        <select
+          value={parcelas}
+          onChange={e => setParcelas(Number(e.target.value))}
+          className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2.5 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+          data-testid="select-parcelas"
+        >
+          {opcoesParcelamento.map(op => (
+            <option key={op.parcelas} value={op.parcelas}>{op.label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Error */}
@@ -551,7 +603,7 @@ function CartaoCheckout({ token, onPaid }) {
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" /> Pagar com Cartao - 5x R$ 19,40
+            <CreditCard className="w-4 h-4" /> Pagar com Cartao - {selectedParcela?.label || `R$ 97,00`}
           </span>
         )}
       </Button>
