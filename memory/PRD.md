@@ -18,26 +18,32 @@ Plataforma de ranking de corridas com monetizacao, feed social, Raio-X, Strava e
 - [x] PIX (QR Code, Copia e Cola, polling 5s, ativacao automatica)
 - [x] Cartao de Credito (formulario inline, tokenizacao payment-token-efi, create_one_step_charge)
 - [x] Seletor de Parcelas (1x a 12x) com valor dinamico
+- [x] Validacao rigorosa de status: somente "approved"/"paid" ativa premium
+- [x] Aviso de sandbox no frontend e backend quando EFI_SANDBOX=true
 - [x] Webhook PIX + Tela confirmacao confetti
-- [x] Notificacoes push para atleta e admin
+- [x] Notificacoes push para atleta e admin (PIX e Cartao)
+
+### Painel de Conversao (28/03/2026)
+- [x] Endpoint GET /api/admin/financeiro/conversao
+- [x] Funil visual: Visitantes -> Cadastros -> Pagamentos com taxas percentuais
+- [x] Toggle de periodo: 7 dias / 30 dias / Total
+- [x] Tendencia diaria (14 dias) com grafico de barras
+- [x] Middleware de tracking de visitantes unicos por dia (IP+UA hash)
 
 ### Relatorio Semanal Automatico (28/03/2026)
-- [x] Servico /app/backend/services/relatorio_semanal.py
-- [x] Agendado via APScheduler (domingos 20:00)
-- [x] Endpoint manual: POST /api/admin/financeiro/relatorio-semanal/enviar
-- [x] HTML email com KPIs: receita semana, total atletas, novos cadastros, corridas, PIX vs Cartao
-- [x] Enviado para todos os admins na collection administradores
-- [x] Testado: 8/8 admins receberam o email via Resend
+- [x] APScheduler (domingos 20:00) + endpoint manual POST /api/admin/financeiro/relatorio-semanal/enviar
+- [x] Email HTML: receita, atletas, corridas, PIX vs Cartao
+
+### Bug Fixes (28/03/2026)
+- [x] atletas.forEach: optional chaining (atletasRes.data?.atletas)
+- [x] financeiro_routes: filtro tipo=="cartao" em vez de gateway=="stripe"
+- [x] Label "Cartao (Stripe)" -> "Cartao (Efi Bank)" no DashboardFinanceiro
+- [x] Telefone formato Efi: regex ^[1-9]{2}9?[0-9]{8}$
 
 ### Dashboard Financeiro Admin
-- [x] KPIs corrigidos: filtra por campo tipo (pix/cartao) em vez de gateway
-- [x] Graficos e tabela transacoes
-
-### Bug Fix: atletas.forEach (28/03/2026)
-- [x] Optional chaining em atletasRes.data?.atletas no AdminDashboard.jsx
-
-### Limpeza AdminDashboard.jsx (28/03/2026)
-- [x] Auditoria completa: todos estados e imports estao em uso (limpeza anterior ja removeu dead code)
+- [x] KPIs, graficos, tabela transacoes
+- [x] Funil de Conversao integrado
+- [x] Auto-refresh via WebSocket
 
 ## Config
 - Admin: admin@runpro.com / admin
@@ -45,15 +51,9 @@ Plataforma de ranking de corridas com monetizacao, feed social, Raio-X, Strava e
 - EFI_PAYEE_CODE: f96ce1225005dfed63a78f3694fcbbc1
 - EFI_SANDBOX: true
 
-## Endpoints Efi
-- POST /api/efi/pix/criar
-- POST /api/efi/cartao/criar
-- POST /api/efi/webhook/pix
-- GET /api/efi/config
-- GET /api/efi/pix/status/{txid}
-
 ## Issues Conhecidas
-- Redis instavel (restarts manuais, APScheduler como alternativa)
+- Redis instavel (restarts manuais)
+- Sandbox Efi: cartoes NAO sao validados por saldo/bloqueio (comportamento esperado em homologacao)
 
 ## Backlog
 - Nenhuma tarefa pendente prioritaria

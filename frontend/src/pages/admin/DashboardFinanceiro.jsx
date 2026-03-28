@@ -420,7 +420,7 @@ export default function DashboardFinanceiro() {
             <div className="flex items-center justify-between text-sm">
               <div className="flex items-center gap-2">
                 <CreditCard className="w-3.5 h-3.5 text-indigo-400" />
-                <span className="text-gray-400">Cartao (Stripe)</span>
+                <span className="text-gray-400">Cartao (Efi Bank)</span>
               </div>
               <span className="text-white font-medium">{formatCurrency(distribuicao_gateway.cartao.valor)}</span>
             </div>
