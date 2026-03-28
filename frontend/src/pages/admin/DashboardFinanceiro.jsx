@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import {
   DollarSign, TrendingUp, CreditCard, QrCode,
   ArrowUpRight, ArrowDownRight, RefreshCw, Loader2,
-  CheckCircle, Clock, XCircle, BarChart3
+  CheckCircle, Clock, XCircle, BarChart3, Users, Eye, ShoppingCart, ArrowDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -99,11 +99,115 @@ function DonutChart({ pix, cartao }) {
   );
 }
 
+function FunnelVisual({ data }) {
+  const steps = [
+    {
+      label: 'Visitantes',
+      value: data.visitantes_unicos || 0,
+      icon: Eye,
+      color: 'blue',
+      bgFrom: 'from-blue-500/20',
+      bgTo: 'to-blue-500/5',
+      borderColor: 'border-blue-500/30',
+      textColor: 'text-blue-400',
+    },
+    {
+      label: 'Cadastros',
+      value: data.cadastros || 0,
+      icon: Users,
+      color: 'amber',
+      bgFrom: 'from-amber-500/20',
+      bgTo: 'to-amber-500/5',
+      borderColor: 'border-amber-500/30',
+      textColor: 'text-amber-400',
+      rate: data.taxa_visitante_cadastro,
+      rateLabel: 'dos visitantes',
+    },
+    {
+      label: 'Pagamentos',
+      value: data.pagamentos || 0,
+      icon: ShoppingCart,
+      color: 'emerald',
+      bgFrom: 'from-emerald-500/20',
+      bgTo: 'to-emerald-500/5',
+      borderColor: 'border-emerald-500/30',
+      textColor: 'text-emerald-400',
+      rate: data.taxa_cadastro_pagamento,
+      rateLabel: 'dos cadastrados',
+    },
+  ];
+
+  return (
+    <div className="space-y-2" data-testid="funnel-visual">
+      {steps.map((step, i) => {
+        const Icon = step.icon;
+        const widthPercent = i === 0 ? 100 : Math.max(20, (step.value / (steps[0].value || 1)) * 100);
+        return (
+          <div key={step.label}>
+            {i > 0 && (
+              <div className="flex items-center justify-center py-1">
+                <ArrowDown className="w-4 h-4 text-gray-600" />
+                {step.rate !== undefined && (
+                  <span className={`text-xs ml-2 font-medium ${step.rate > 0 ? step.textColor : 'text-gray-600'}`}>
+                    {step.rate}% {step.rateLabel}
+                  </span>
+                )}
+              </div>
+            )}
+            <div
+              className={`relative bg-gradient-to-r ${step.bgFrom} ${step.bgTo} border ${step.borderColor} rounded-lg p-4 transition-all duration-500`}
+              style={{ width: `${widthPercent}%`, marginLeft: 'auto', marginRight: 'auto' }}
+              data-testid={`funnel-step-${step.label.toLowerCase()}`}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Icon className={`w-4 h-4 ${step.textColor}`} />
+                  <span className="text-sm text-gray-300">{step.label}</span>
+                </div>
+                <span className={`text-xl font-bold ${step.textColor}`}>
+                  {step.value.toLocaleString('pt-BR')}
+                </span>
+              </div>
+            </div>
+          </div>
+        );
+      })}
+
+      {/* Conversion Rate Summary */}
+      <div className="mt-4 pt-4 border-t border-gray-800 grid grid-cols-3 gap-3">
+        <div className="text-center">
+          <p className="text-2xl font-bold text-blue-400">{data.taxa_visitante_cadastro || 0}%</p>
+          <p className="text-[11px] text-gray-500">Visitante &rarr; Cadastro</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-amber-400">{data.taxa_cadastro_pagamento || 0}%</p>
+          <p className="text-[11px] text-gray-500">Cadastro &rarr; Pagamento</p>
+        </div>
+        <div className="text-center">
+          <p className="text-2xl font-bold text-emerald-400">{data.taxa_conversao_total || 0}%</p>
+          <p className="text-[11px] text-gray-500">Conversao Total</p>
+        </div>
+      </div>
+
+      {data.receita !== undefined && (
+        <div className="mt-3 text-center">
+          <p className="text-sm text-gray-500">
+            Receita no periodo: <span className="text-emerald-400 font-semibold">{formatCurrency(data.receita)}</span>
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function DashboardFinanceiro() {
   const { token } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [visao, setVisao] = useState('diaria');
+  const [conversao, setConversao] = useState(null);
+  const [loadingConversao, setLoadingConversao] = useState(true);
+  const [periodoConversao, setPeriodoConversao] = useState('30d');
 
   const fetchData = async () => {
     setLoading(true);
@@ -124,7 +228,24 @@ export default function DashboardFinanceiro() {
     }
   };
 
-  useEffect(() => { fetchData(); }, []);
+  const fetchConversao = async () => {
+    setLoadingConversao(true);
+    try {
+      const res = await fetch(`${API}/admin/financeiro/conversao`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const d = await res.json();
+        setConversao(d);
+      }
+    } catch {
+      // silent
+    } finally {
+      setLoadingConversao(false);
+    }
+  };
+
+  useEffect(() => { fetchData(); fetchConversao(); }, []);
 
   // Auto-refresh quando receber notificacao de pagamento via WebSocket
   useEffect(() => {
@@ -375,6 +496,69 @@ export default function DashboardFinanceiro() {
             </tbody>
           </table>
         </div>
+      </Card>
+
+      {/* Funil de Conversao */}
+      <Card className="bg-gray-900/50 border-gray-800 p-6" data-testid="painel-conversao">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-5 h-5 text-blue-400" />
+            <h3 className="text-lg font-semibold text-white">Funil de Conversao</h3>
+          </div>
+          <div className="flex gap-1 bg-gray-800 rounded-lg p-0.5">
+            {['7d', '30d', 'total'].map(p => (
+              <button
+                key={p}
+                onClick={() => setPeriodoConversao(p)}
+                className={`px-3 py-1 text-xs rounded-md transition-colors ${periodoConversao === p ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'}`}
+                data-testid={`btn-periodo-${p}`}
+              >
+                {p === '7d' ? '7 dias' : p === '30d' ? '30 dias' : 'Total'}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {loadingConversao ? (
+          <div className="flex items-center justify-center py-10">
+            <Loader2 className="w-5 h-5 animate-spin text-gray-400" />
+          </div>
+        ) : conversao && conversao[periodoConversao] ? (
+          <div>
+            {/* Funnel Steps */}
+            <FunnelVisual data={conversao[periodoConversao]} />
+
+            {/* Daily Trend (only for 7d and 30d) */}
+            {conversao.funil_diario && periodoConversao !== 'total' && (
+              <div className="mt-6 pt-6 border-t border-gray-800">
+                <h4 className="text-sm text-gray-400 mb-3">Tendencia Diaria (14 dias)</h4>
+                <div className="flex items-end gap-[3px] h-24" data-testid="trend-chart">
+                  {conversao.funil_diario.map((d, i) => {
+                    const maxV = Math.max(...conversao.funil_diario.map(x => x.visitantes || 1), 1);
+                    const hV = Math.max((d.visitantes / maxV) * 100, 3);
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-0.5 group relative">
+                        <div className="w-full rounded-t bg-blue-500/60" style={{ height: `${hV}%`, minHeight: '2px' }} />
+                        {d.cadastros > 0 && <div className="w-full h-1 bg-amber-500 rounded" />}
+                        {d.pagamentos > 0 && <div className="w-full h-1 bg-emerald-500 rounded" />}
+                        <div className="absolute bottom-full mb-1 hidden group-hover:block bg-gray-800 text-[10px] text-gray-300 px-2 py-1 rounded border border-gray-700 whitespace-nowrap z-10">
+                          {d.data?.slice(5)}: {d.visitantes}v / {d.cadastros}c / {d.pagamentos}p
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <div className="flex gap-4 mt-2 text-[10px] text-gray-500">
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-blue-500/60 rounded" />Visitantes</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-amber-500 rounded" />Cadastros</span>
+                  <span className="flex items-center gap-1"><span className="w-2 h-2 bg-emerald-500 rounded" />Pagamentos</span>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="text-gray-500 text-center py-10">Nenhum dado disponivel</p>
+        )}
       </Card>
     </div>
   );

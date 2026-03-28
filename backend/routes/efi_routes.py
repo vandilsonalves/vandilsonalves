@@ -430,6 +430,7 @@ async def efi_config(current_user: dict = Depends(get_current_user)):
     return {
         "payee_code": payee_code,
         "environment": "sandbox" if sandbox else "production",
+        "is_sandbox": sandbox,
     }
 
 
@@ -504,6 +505,8 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         body["payment"]["credit_card"]["customer"]["birth"] = dados.nascimento
 
     charge_id_efi = None
+    is_sandbox = os.environ.get("EFI_SANDBOX", "true").lower() == "true"
+
     try:
         efi = get_efi_client()
         response = efi.create_one_step_charge(body=body)
@@ -528,11 +531,18 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         status_efi = response.get("data", {}).get("status", response.get("status", ""))
         charge_id_efi = response.get("data", {}).get("charge_id", response.get("charge_id"))
 
-        # Verificar se foi recusada
+        # Em producao, apenas "approved" e aceito. Qualquer outro status e tratado como erro.
         if status_efi == "unpaid":
             refusal = response.get("data", {}).get("refusal", {})
             reason = refusal.get("reason", "Pagamento recusado pela operadora do cartao.")
             raise HTTPException(status_code=400, detail=reason)
+
+        if status_efi == "waiting":
+            raise HTTPException(status_code=400, detail="Pagamento aguardando autorizacao do banco. Tente novamente em instantes.")
+
+        if status_efi not in ("approved", "paid"):
+            logger.warning(f"Status inesperado da Efi: {status_efi}")
+            raise HTTPException(status_code=400, detail=f"Pagamento nao aprovado. Status: {status_efi}")
 
     except HTTPException:
         raise
@@ -558,18 +568,18 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         "parcelas": dados.parcelas,
         "valor_parcela": round(97.00 / dados.parcelas, 2),
         "currency": "brl",
-        "payment_status": "paid" if status_efi == "approved" else "waiting",
+        "payment_status": "paid",
         "status": status_efi,
+        "sandbox": is_sandbox,
         "data_criacao": datetime.now(timezone.utc).isoformat(),
         "data_atualizacao": datetime.now(timezone.utc).isoformat(),
     }
     await db.payment_transactions.insert_one(transaction)
 
-    # Se aprovado, ativar acesso premium imediatamente
-    if status_efi == "approved":
-        await _ativar_acesso_efi(current_user["id"], tx_id, tipo="cartao")
+    # Ativar acesso premium
+    await _ativar_acesso_efi(current_user["id"], tx_id, tipo="cartao")
 
-    return {
+    resp = {
         "status": status_efi,
         "charge_id": charge_id_efi,
         "transaction_id": tx_id,
@@ -577,8 +587,12 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         "valor_parcela": round(valor_centavos / dados.parcelas / 100, 2),
         "total": 97.00,
         "plano": "Atleta Premium",
-        "payment_status": "paid" if status_efi == "approved" else "waiting",
+        "payment_status": "paid",
     }
+    if is_sandbox:
+        resp["aviso_sandbox"] = "Ambiente de homologacao: o cartao NAO foi debitado. Em producao, a operadora validara saldo e bloqueio."
+
+    return resp
 
 
 async def _ativar_acesso_efi(user_id: str, txid: str, tipo: str = "pix"):

@@ -120,3 +120,116 @@ async def enviar_relatorio_manual(admin_user: dict = Depends(get_admin_user)):
     except Exception as e:
         logger.error(f"Erro ao enviar relatorio semanal: {e}")
         return {"status": "error", "message": str(e)}
+
+
+@router.get("/conversao")
+async def metricas_conversao(admin_user: dict = Depends(get_admin_user)):
+    """Retorna metricas de funil de conversao: Visitantes -> Cadastro -> Pagamento"""
+
+    agora = datetime.now(timezone.utc)
+
+    # Periodos: 7d, 30d, total
+    periodos = {
+        "7d": (agora - timedelta(days=7)).isoformat(),
+        "30d": (agora - timedelta(days=30)).isoformat(),
+    }
+
+    resultado = {}
+
+    for label, inicio in periodos.items():
+        # Visitantes unicos no periodo
+        pipeline_visitors = [
+            {"$match": {"data": {"$gte": inicio[:10]}}},
+            {"$project": {"unique_count": {"$size": {"$ifNull": ["$visitors", []]}}, "total_hits": 1}},
+            {"$group": {"_id": None, "unique_visitors": {"$sum": "$unique_count"}, "total_hits": {"$sum": "$total_hits"}}}
+        ]
+        visitors_result = await db.visitas_diarias.aggregate(pipeline_visitors).to_list(1)
+        unique_visitors = visitors_result[0]["unique_visitors"] if visitors_result else 0
+        total_hits = visitors_result[0]["total_hits"] if visitors_result else 0
+
+        # Cadastros no periodo
+        cadastros = await db.usuarios.count_documents({
+            "role": "atleta",
+            "data_criacao": {"$gte": inicio}
+        })
+
+        # Pagamentos confirmados no periodo
+        pagamentos = await db.payment_transactions.count_documents({
+            "payment_status": "paid",
+            "data_criacao": {"$gte": inicio}
+        })
+
+        # Receita no periodo
+        txs_pagas = []
+        cursor = db.payment_transactions.find(
+            {"payment_status": "paid", "data_criacao": {"$gte": inicio}},
+            {"_id": 0, "amount": 1}
+        )
+        async for tx in cursor:
+            txs_pagas.append(tx)
+        receita = sum(t.get("amount", 0) for t in txs_pagas)
+
+        # Taxas de conversao
+        taxa_cadastro = round((cadastros / unique_visitors * 100), 1) if unique_visitors > 0 else 0
+        taxa_pagamento = round((pagamentos / cadastros * 100), 1) if cadastros > 0 else 0
+        taxa_total = round((pagamentos / unique_visitors * 100), 1) if unique_visitors > 0 else 0
+
+        resultado[label] = {
+            "visitantes_unicos": unique_visitors,
+            "total_pageviews": total_hits,
+            "cadastros": cadastros,
+            "pagamentos": pagamentos,
+            "receita": round(receita, 2),
+            "taxa_visitante_cadastro": taxa_cadastro,
+            "taxa_cadastro_pagamento": taxa_pagamento,
+            "taxa_conversao_total": taxa_total,
+        }
+
+    # Totais historicos (all time)
+    total_atletas = await db.usuarios.count_documents({"role": "atleta"})
+    total_pagamentos = await db.payment_transactions.count_documents({"payment_status": "paid"})
+    all_visitors = await db.visitas_diarias.aggregate([
+        {"$project": {"unique_count": {"$size": {"$ifNull": ["$visitors", []]}}}},
+        {"$group": {"_id": None, "total": {"$sum": "$unique_count"}}}
+    ]).to_list(1)
+    total_visitors = all_visitors[0]["total"] if all_visitors else 0
+
+    resultado["total"] = {
+        "visitantes_unicos": total_visitors,
+        "cadastros": total_atletas,
+        "pagamentos": total_pagamentos,
+        "taxa_visitante_cadastro": round((total_atletas / total_visitors * 100), 1) if total_visitors > 0 else 0,
+        "taxa_cadastro_pagamento": round((total_pagamentos / total_atletas * 100), 1) if total_atletas > 0 else 0,
+        "taxa_conversao_total": round((total_pagamentos / total_visitors * 100), 1) if total_visitors > 0 else 0,
+    }
+
+    # Funil diario (ultimos 14 dias)
+    funil_diario = []
+    for i in range(13, -1, -1):
+        d = (agora - timedelta(days=i)).strftime("%Y-%m-%d")
+        dia_inicio = f"{d}T00:00:00"
+        dia_fim = f"{d}T23:59:59"
+
+        visita = await db.visitas_diarias.find_one({"data": d}, {"_id": 0, "visitors": 1})
+        vis_count = len(visita.get("visitors", [])) if visita else 0
+
+        cad_count = await db.usuarios.count_documents({
+            "role": "atleta",
+            "data_criacao": {"$gte": dia_inicio, "$lte": dia_fim}
+        })
+
+        pag_count = await db.payment_transactions.count_documents({
+            "payment_status": "paid",
+            "data_criacao": {"$gte": dia_inicio, "$lte": dia_fim}
+        })
+
+        funil_diario.append({
+            "data": d,
+            "visitantes": vis_count,
+            "cadastros": cad_count,
+            "pagamentos": pag_count,
+        })
+
+    resultado["funil_diario"] = funil_diario
+
+    return resultado

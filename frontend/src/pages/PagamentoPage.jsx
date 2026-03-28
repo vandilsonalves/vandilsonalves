@@ -611,6 +611,13 @@ function CartaoCheckout({ token, onPaid }) {
       <p className="text-xs text-gray-500 text-center">
         Pagamento seguro via Efi Bank. Bandeiras: Visa, Mastercard, Elo, Amex
       </p>
+      {efiConfig?.is_sandbox && (
+        <div className="bg-amber-500/10 border border-amber-500/20 rounded-lg p-2.5 mt-2" data-testid="sandbox-warning">
+          <p className="text-xs text-amber-400 text-center">
+            Ambiente de homologacao: cartoes NAO serao debitados. Em producao, a operadora validara saldo e bloqueio do cartao.
+          </p>
+        </div>
+      )}
     </form>
   );
 }
