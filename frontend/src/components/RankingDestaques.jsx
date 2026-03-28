@@ -40,7 +40,7 @@ const RankingDestaques = ({ categoria = 'masculino' }) => {
         const [semanalRes, mensalRes, destaqueRes] = await Promise.all([
           axios.get(`${API}/ranking/semanal?${params}`),
           axios.get(`${API}/ranking/mensal?${params}`),
-          axios.get(`${API}/ranking/destaque-mes`)
+          axios.get(`${API}/ranking/destaque-mes?${params}`)
         ]);
         
         setRankingSemanal(semanalRes.data);
@@ -138,7 +138,7 @@ const RankingDestaques = ({ categoria = 'masculino' }) => {
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-xl">
               <Award className="w-6 h-6 text-yellow-300" />
-              Destaque de {destaqueMes.mes} {destaqueMes.ano}
+              Destaque de {destaqueMes.mes} {destaqueMes.ano} - {categoria.replace('-', ' / ').toUpperCase()}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">

@@ -479,8 +479,8 @@ async def get_ranking_mensal(
 
 @router.get("/ranking/destaque-mes")
 @cached(prefix='ranking', ttl_key='ranking_destaque')
-async def get_destaque_mes(mes: int = None, ano: int = None):
-    """Retorna os destaques do mês (top 3 de cada categoria + estatísticas)"""
+async def get_destaque_mes(mes: int = None, ano: int = None, genero: str = None, categoria: str = None):
+    """Retorna os destaques do mês (top 3 + estatísticas), filtrado por modalidade se informado"""
     
     hoje = datetime.now()
     mes_atual = mes or hoje.month
@@ -496,60 +496,77 @@ async def get_destaque_mes(mes: int = None, ano: int = None):
     meses_nome = ["", "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho", 
                   "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     
-    categorias = [
-        ("Masculino", "normal", "M"),
-        ("Feminino", "normal", "F"),
-        ("PCD Masculino", "pcd", "M"),
-        ("PCD Feminino", "pcd", "F"),
-        ("Cadeirante Masculino", "cadeirante", "M"),
-        ("Cadeirante Feminino", "cadeirante", "F")
-    ]
+    # Se genero e categoria foram informados, filtra para UMA modalidade
+    if genero and categoria:
+        categorias_filtro = []
+        genero_label = {"M": "Masculino", "F": "Feminino"}.get(genero, genero)
+        cat_label = {"normal": "", "pcd": "PCD", "cadeirante": "Cadeirante"}.get(categoria, "")
+        nome_cat = f"{cat_label} / {genero_label}" if cat_label else genero_label
+        categorias_filtro.append((nome_cat, categoria, genero))
+    else:
+        categorias_filtro = [
+            ("Masculino", "normal", "M"),
+            ("Feminino", "normal", "F"),
+            ("PCD / M", "pcd", "M"),
+            ("PCD / F", "pcd", "F"),
+            ("Cadeirante / M", "cadeirante", "M"),
+            ("Cadeirante / F", "cadeirante", "F")
+        ]
     
     destaques = {}
     
-    for nome_cat, cat_db, gen_db in categorias:
-        # Buscar corridas do mês para esta categoria
+    for nome_cat, cat_db, gen_db in categorias_filtro:
         pipeline = [
-            {"$match": {
-                "data": {"$gte": inicio_mes, "$lt": fim_mes}
-            }},
+            {"$match": {"data": {"$gte": inicio_mes, "$lt": fim_mes}}},
+            {"$lookup": {"from": "usuarios", "localField": "usuario_id", "foreignField": "id", "as": "u"}},
+            {"$unwind": "$u"},
+            {"$match": {"u.categoria": cat_db, "u.genero": gen_db}},
             {"$group": {
                 "_id": "$usuario_id",
+                "nome": {"$first": "$u.nome"},
+                "equipe": {"$first": "$u.equipe"},
+                "cidade": {"$first": "$u.cidade"},
+                "estado": {"$first": "$u.estado"},
+                "foto_url": {"$first": "$u.foto_url"},
                 "pontos_mes": {"$sum": "$pontos"},
                 "corridas_mes": {"$sum": 1}
             }},
-            {"$sort": {"pontos_mes": -1}}
+            {"$sort": {"pontos_mes": -1}},
+            {"$limit": 3}
         ]
         
-        agregados = await db.corridas.aggregate(pipeline).to_list(None)
-        
-        top3 = []
-        for agg in agregados:
-            usuario = await db.usuarios.find_one({"id": agg["_id"]}, {"_id": 0})
-            if usuario and usuario.get("categoria") == cat_db and usuario.get("genero") == gen_db:
-                top3.append({
-                    "atleta_id": agg["_id"],
-                    "nome": usuario["nome"],
-                    "equipe": usuario["equipe"],
-                    "cidade": usuario["cidade"],
-                    "estado": usuario["estado"],
-                    "foto_url": usuario.get("foto_url", ""),
-                    "pontos_mes": agg["pontos_mes"],
-                    "corridas_mes": agg["corridas_mes"]
-                })
-                if len(top3) >= 3:
-                    break
+        top3_raw = await db.corridas.aggregate(pipeline).to_list(None)
+        top3 = [{
+            "atleta_id": r["_id"],
+            "nome": r["nome"],
+            "equipe": r.get("equipe", ""),
+            "cidade": r.get("cidade", ""),
+            "estado": r.get("estado", ""),
+            "foto_url": r.get("foto_url", ""),
+            "pontos_mes": r["pontos_mes"],
+            "corridas_mes": r["corridas_mes"]
+        } for r in top3_raw]
         
         destaques[nome_cat] = top3
     
-    # Estatísticas gerais do mês
-    total_corridas_mes = await db.corridas.count_documents({
-        "data": {"$gte": inicio_mes, "$lt": fim_mes}
-    })
+    # Filtro de corridas (por modalidade se informado)
+    match_corridas = {"data": {"$gte": inicio_mes, "$lt": fim_mes}}
     
-    # Atleta mais ativo do mês (mais corridas)
+    # Buscar usuario_ids da modalidade se filtrado
+    usuario_ids_filtro = None
+    if genero and categoria:
+        usuarios_mod = await db.usuarios.find(
+            {"genero": genero, "categoria": categoria}, {"id": 1, "_id": 0}
+        ).to_list(None)
+        usuario_ids_filtro = [u["id"] for u in usuarios_mod]
+        match_corridas["usuario_id"] = {"$in": usuario_ids_filtro}
+    
+    # Total de corridas
+    total_corridas_mes = await db.corridas.count_documents(match_corridas)
+    
+    # Mais ativo (por modalidade se filtrado)
     pipeline_mais_ativo = [
-        {"$match": {"data": {"$gte": inicio_mes, "$lt": fim_mes}}},
+        {"$match": match_corridas},
         {"$group": {"_id": "$usuario_id", "total_corridas": {"$sum": 1}}},
         {"$sort": {"total_corridas": -1}},
         {"$limit": 1}
@@ -563,14 +580,14 @@ async def get_destaque_mes(mes: int = None, ano: int = None):
             mais_ativo = {
                 "atleta_id": mais_ativo_result[0]["_id"],
                 "nome": usuario_ativo["nome"],
-                "equipe": usuario_ativo["equipe"],
+                "equipe": usuario_ativo.get("equipe", ""),
                 "foto_url": usuario_ativo.get("foto_url", ""),
                 "total_corridas": mais_ativo_result[0]["total_corridas"]
             }
     
-    # Atleta com mais pontos no mês (geral)
+    # Mais pontos (por modalidade se filtrado)
     pipeline_mais_pontos = [
-        {"$match": {"data": {"$gte": inicio_mes, "$lt": fim_mes}}},
+        {"$match": match_corridas},
         {"$group": {"_id": "$usuario_id", "total_pontos": {"$sum": "$pontos"}}},
         {"$sort": {"total_pontos": -1}},
         {"$limit": 1}
@@ -584,14 +601,22 @@ async def get_destaque_mes(mes: int = None, ano: int = None):
             mais_pontos = {
                 "atleta_id": mais_pontos_result[0]["_id"],
                 "nome": usuario_pontos["nome"],
-                "equipe": usuario_pontos["equipe"],
+                "equipe": usuario_pontos.get("equipe", ""),
                 "foto_url": usuario_pontos.get("foto_url", ""),
                 "total_pontos": mais_pontos_result[0]["total_pontos"]
             }
     
+    # Label da modalidade
+    modalidade_label = None
+    if genero and categoria:
+        genero_label = {"M": "Masculino", "F": "Feminino"}.get(genero, genero)
+        cat_label = {"normal": "", "pcd": "PCD", "cadeirante": "Cadeirante"}.get(categoria, "")
+        modalidade_label = f"{cat_label} / {genero_label}" if cat_label else genero_label
+    
     return {
         "mes": meses_nome[mes_atual],
         "ano": ano_atual,
+        "modalidade": modalidade_label,
         "total_corridas_mes": total_corridas_mes,
         "destaques_categoria": destaques,
         "mais_ativo_mes": mais_ativo,
