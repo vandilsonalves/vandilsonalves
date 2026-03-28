@@ -56,4 +56,15 @@ Plataforma de ranking de corridas com monetizacao, feed social, Raio-X, Strava e
 - Plano Anual (admin): 365 dias a partir da ativacao
 
 ## Issues Conhecidas
-- Redis instavel (restarts manuais)
+- ~~Redis instavel (restarts manuais)~~ RESOLVIDO (28/03/2026): Redis eliminado completamente. Cache em memoria (cachetools) + asyncio background tasks
+
+## Migracoes Realizadas (28/03/2026)
+- Redis -> cachetools (TTLCache em memoria) para cache
+- Celery -> asyncio.create_task para tarefas em background
+- celery_routes.py reescrito sem dependencia de Redis/Celery
+- feed_routes.py e server.py: redis_client removido
+- requirements.txt: redis e celery removidos, cachetools adicionado
+
+## Backlog
+- P2: Exportar como PDF no Raio-X do atleta
+- P3: Limpeza de arquivos mortos (tasks/, celery_app.py, pagamentos_routes.py antigo)

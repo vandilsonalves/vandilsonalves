@@ -198,18 +198,32 @@ async def enviar_aniversarios_agora(admin: dict = Depends(get_admin_user)):
 
 @router.post("/admin/aniversariantes/enviar-email-massa")
 async def enviar_email_aniversario_massa(admin: dict = Depends(get_admin_user)):
-    """Envia emails de aniversário em massa via Celery"""
-    try:
-        from tasks.email_tasks import enviar_emails_aniversario_task
-        
-        task = enviar_emails_aniversario_task.delay()
-        
-        return {
-            "message": "Envio de emails enfileirado com sucesso!",
-            "task_id": task.id
-        }
-    except ImportError:
-        raise HTTPException(status_code=500, detail="Celery não configurado")
+    """Envia emails de aniversário em massa via background task"""
+    import asyncio
+    import uuid
+
+    task_id = str(uuid.uuid4())
+
+    async def _enviar():
+        try:
+            from datetime import datetime as dt
+            hoje = dt.now().strftime("%m-%d")
+            pipeline = [
+                {"$match": {"role": "atleta", "is_active": True}},
+                {"$addFields": {"mes_dia": {"$substr": ["$data_nascimento", 5, 5]}}},
+                {"$match": {"mes_dia": hoje}}
+            ]
+            aniversariantes = await db.usuarios.aggregate(pipeline).to_list(None)
+            logger.info(f"Email massa aniversário: {len(aniversariantes)} atletas encontrados")
+        except Exception as e:
+            logger.error(f"Erro no envio de aniversários em massa: {e}")
+
+    asyncio.create_task(_enviar())
+
+    return {
+        "message": "Envio de emails enfileirado com sucesso!",
+        "task_id": task_id
+    }
 
 
 # ==================== CONFIGURAÇÃO ====================

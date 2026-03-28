@@ -1177,13 +1177,10 @@ async def limpar_todos_comentarios(
     # Excluir comentários não fixados
     resultado = await db.feed_comentarios.delete_many({"fixado": {"$ne": True}})
     
-    # Limpar cache do Redis
+    # Limpar cache
     try:
-        from services.cache_service import redis_client
-        if redis_client:
-            keys = redis_client.keys("feed:*")
-            if keys:
-                redis_client.delete(*keys)
+        from services.cache_service import cache_service
+        await cache_service.invalidate_feed()
     except Exception as e:
         print(f"Erro ao limpar cache: {e}")
     
@@ -1224,13 +1221,10 @@ async def limpar_todos_posts(
     await db.feed_reacoes.delete_many({})
     await db.feed_comentarios.delete_many({})
     
-    # Limpar cache do Redis
+    # Limpar cache
     try:
-        from services.cache_service import redis_client
-        if redis_client:
-            keys = redis_client.keys("feed:*")
-            if keys:
-                redis_client.delete(*keys)
+        from services.cache_service import cache_service
+        await cache_service.invalidate_feed()
     except Exception as e:
         print(f"Erro ao limpar cache: {e}")
     

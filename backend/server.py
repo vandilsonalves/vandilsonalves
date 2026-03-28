@@ -2150,16 +2150,13 @@ async def limpar_comentarios_semanal():
         # Excluir comentários não fixados
         resultado = await db.feed_comentarios.delete_many({"fixado": {"$ne": True}})
         
-        # Limpar cache do Redis
+        # Limpar cache do feed
         try:
-            from services.cache_service import redis_client
-            if redis_client:
-                keys = redis_client.keys("feed:*")
-                if keys:
-                    redis_client.delete(*keys)
-                logger.info("🗑️ Cache do feed limpo")
+            from services.cache_service import cache_service
+            await cache_service.invalidate_feed()
+            logger.info("Cache do feed limpo")
         except Exception as e:
-            logger.warning(f"Não foi possível limpar cache Redis: {e}")
+            logger.warning(f"Não foi possível limpar cache: {e}")
         
         # Registrar log
         await db.logs_scheduler.insert_one({
