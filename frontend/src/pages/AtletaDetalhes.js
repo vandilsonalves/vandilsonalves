@@ -247,7 +247,7 @@ const AtletaDetalhes = () => {
                               alt={atleta.nome}
                               crossOrigin="anonymous"
                               className="w-full h-full object-cover"
-                              onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+                              onError={(e) => { e.target.style.display = 'none'; const sib = e.target.nextElementSibling; if (sib) sib.style.display = 'flex'; }}
                             />
                           ) : null}
                           <span className={`text-white text-xl font-bold ${getFotoUrl() ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>

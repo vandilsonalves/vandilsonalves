@@ -250,7 +250,8 @@ const AssessoriaPage = () => {
                       className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover shadow-lg border-4 border-white/30"
                       onError={(e) => {
                         e.target.style.display = 'none';
-                        e.target.nextSibling.style.display = 'flex';
+                        const sib = e.target.nextElementSibling;
+                        if (sib) sib.style.display = 'flex';
                       }}
                     />
                     <div 
