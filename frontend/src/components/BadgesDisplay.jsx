@@ -10,7 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { 
   Star, Medal, Trophy, Award, Zap, Play, Shield, Target, Crown, 
-  Calendar, Users, Eye, Sparkles, Share2, Download, Check, Lock, HelpCircle
+  Calendar, Users, Eye, Sparkles, Share2, Download, Check, Lock, HelpCircle, Gem
 } from 'lucide-react';
 import { toast } from 'sonner';
 import html2canvas from 'html2canvas';
@@ -32,152 +32,270 @@ const ICON_MAP = {
   calendar: Calendar,
   users: Users,
   eye: Eye,
-  sparkles: Sparkles
+  sparkles: Sparkles,
+  gem: Gem
 };
 
-// Definição completa de todas as insígnias do sistema com explicações
+// Definição completa de todas as insígnias do sistema com explicações (sincronizado com backend)
 const TODAS_INSIGNIAS = [
+  // === Performance ===
   {
-    id: 'primeiro_lugar',
-    nome: 'Campeão',
-    emoji: '🥇',
-    cor: '#FFD700',
-    descricao: 'Conquistou o 1º lugar em uma corrida oficial',
-    como_conquistar: 'Fique em 1º lugar na sua categoria em qualquer corrida aprovada',
-    pontos_bonus: 5
+    id: 'atleta_elite',
+    nome: 'Atleta Elite',
+    icone: 'star',
+    cor_primaria: '#FFD700',
+    cor_secundaria: '#FFA500',
+    categoria: 'performance',
+    descricao: 'Conquistou 100+ pontos no ranking',
+    como_conquistar: 'Acumule 100 pontos ou mais no ranking geral'
+  },
+  {
+    id: 'corredor_maratona',
+    nome: 'Corredor de Maratona',
+    icone: 'medal',
+    cor_primaria: '#8B5CF6',
+    cor_secundaria: '#6D28D9',
+    categoria: 'performance',
+    descricao: 'Completou uma prova de 42km',
+    como_conquistar: 'Registre uma corrida de 42km ou mais no sistema'
+  },
+  {
+    id: 'top_10_mes',
+    nome: 'Top 10 do Mes',
+    icone: 'trophy',
+    cor_primaria: '#10B981',
+    cor_secundaria: '#059669',
+    categoria: 'performance',
+    descricao: 'Ficou entre os 10 melhores do mes na sua modalidade',
+    como_conquistar: 'Fique entre os 10 primeiros do ranking mensal da sua modalidade'
   },
   {
     id: 'podio',
-    nome: 'Pódio',
-    emoji: '🏆',
-    cor: '#F59E0B',
-    descricao: 'Subiu ao pódio (top 3) em uma corrida',
-    como_conquistar: 'Fique entre os 3 primeiros lugares na sua categoria',
-    pontos_bonus: 2
+    nome: 'Podio',
+    icone: 'award',
+    cor_primaria: '#F59E0B',
+    cor_secundaria: '#D97706',
+    categoria: 'performance',
+    descricao: 'Conquistou 1, 2 ou 3 lugar em uma corrida',
+    como_conquistar: 'Fique entre os 3 primeiros na sua categoria em qualquer corrida aprovada'
   },
   {
-    id: '10_corridas',
+    id: 'rei_velocidade',
+    nome: 'Rei da Velocidade',
+    icone: 'zap',
+    cor_primaria: '#EF4444',
+    cor_secundaria: '#DC2626',
+    categoria: 'performance',
+    descricao: 'Maior pontuacao semanal na sua modalidade',
+    como_conquistar: 'Tenha a maior pontuacao na semana dentro da sua modalidade'
+  },
+  // === Participacao ===
+  {
+    id: 'iniciante',
+    nome: 'Iniciante',
+    icone: 'play',
+    cor_primaria: '#06B6D4',
+    cor_secundaria: '#0891B2',
+    categoria: 'participacao',
+    descricao: 'Primeira corrida registrada',
+    como_conquistar: 'Registre sua primeira corrida na plataforma'
+  },
+  {
+    id: 'veterano',
     nome: 'Veterano',
-    emoji: '🏃',
-    cor: '#10B981',
-    descricao: 'Completou 10 corridas',
-    como_conquistar: 'Participe e complete 10 corridas registradas no ranking',
-    pontos_bonus: 10
-  },
-  {
-    id: '12_resultados',
-    nome: 'Atleta Bronze',
-    emoji: '🥉',
-    cor: '#CD7F32',
-    descricao: 'Lançou 12 resultados no ranking',
-    como_conquistar: 'Registre 12 resultados de corridas aprovados no sistema',
-    pontos_bonus: 12
-  },
-  {
-    id: '20_resultados',
-    nome: 'Atleta Prata',
-    emoji: '🥈',
-    cor: '#C0C0C0',
-    descricao: 'Lançou 20 resultados no ranking',
-    como_conquistar: 'Registre 20 resultados de corridas aprovados no sistema',
-    pontos_bonus: 20
-  },
-  {
-    id: '30_resultados',
-    nome: 'Atleta Ouro',
-    emoji: '🥇',
-    cor: '#FFD700',
-    descricao: 'Lançou 30 resultados no ranking',
-    como_conquistar: 'Registre 30 resultados de corridas aprovados no sistema',
-    pontos_bonus: 30
-  },
-  {
-    id: 'elite',
-    nome: 'Atleta Elite',
-    emoji: '⭐',
-    cor: '#FFD700',
-    descricao: 'Alcançou 100 pontos no ranking',
-    como_conquistar: 'Acumule 100 pontos ou mais no ranking geral',
-    pontos_bonus: 20
+    icone: 'shield',
+    cor_primaria: '#3B82F6',
+    cor_secundaria: '#2563EB',
+    categoria: 'participacao',
+    descricao: 'Completou 10+ corridas',
+    como_conquistar: 'Participe e complete 10 corridas registradas no ranking'
   },
   {
     id: 'maratonista',
     nome: 'Maratonista',
-    emoji: '🎯',
-    cor: '#8B5CF6',
-    descricao: 'Completou uma maratona (42KM)',
-    como_conquistar: 'Complete uma corrida de 42KM ou mais',
-    pontos_bonus: 15
+    icone: 'target',
+    cor_primaria: '#8B5CF6',
+    cor_secundaria: '#7C3AED',
+    categoria: 'participacao',
+    descricao: 'Completou 20+ corridas',
+    como_conquistar: 'Participe e complete 20 corridas registradas no ranking'
+  },
+  {
+    id: 'lenda',
+    nome: 'Lenda',
+    icone: 'crown',
+    cor_primaria: '#FFD700',
+    cor_secundaria: '#FFC000',
+    categoria: 'participacao',
+    descricao: 'Completou 50+ corridas',
+    como_conquistar: 'Participe e complete 50 corridas registradas no ranking'
   },
   {
     id: 'consistente',
     nome: 'Consistente',
-    emoji: '📅',
-    cor: '#3B82F6',
-    descricao: 'Completou corridas em 6 meses diferentes',
-    como_conquistar: 'Participe de pelo menos uma corrida em 6 meses distintos',
-    pontos_bonus: 10
+    icone: 'calendar',
+    cor_primaria: '#14B8A6',
+    cor_secundaria: '#0D9488',
+    categoria: 'participacao',
+    descricao: 'Participou de corridas em 6 meses consecutivos',
+    como_conquistar: 'Participe de pelo menos uma corrida em 6 meses distintos'
+  },
+  // === Especiais ===
+  {
+    id: 'embaixador_run',
+    nome: 'Embaixador Run',
+    icone: 'users',
+    cor_primaria: '#EC4899',
+    cor_secundaria: '#DB2777',
+    categoria: 'especial',
+    descricao: 'Indicou 5+ atletas para a plataforma',
+    como_conquistar: 'Indique 5 atletas que se cadastrem na plataforma'
   },
   {
-    id: 'embaixador',
-    nome: 'Embaixador Run',
-    emoji: '🎖️',
-    cor: '#EC4899',
-    descricao: 'Embaixador oficial do Ranking Run',
-    como_conquistar: 'Seja selecionado como embaixador oficial da plataforma',
-    pontos_bonus: 25
+    id: 'indicador_bronze',
+    nome: 'Indicador Bronze',
+    icone: 'award',
+    cor_primaria: '#CD7F32',
+    cor_secundaria: '#B87333',
+    categoria: 'especial',
+    descricao: 'Indicou 10+ atletas para a plataforma',
+    como_conquistar: 'Indique 10 atletas que se cadastrem na plataforma'
+  },
+  {
+    id: 'indicador_prata',
+    nome: 'Indicador Prata',
+    icone: 'medal',
+    cor_primaria: '#C0C0C0',
+    cor_secundaria: '#A8A8A8',
+    categoria: 'especial',
+    descricao: 'Indicou 20+ atletas para a plataforma',
+    como_conquistar: 'Indique 20 atletas que se cadastrem na plataforma'
+  },
+  {
+    id: 'indicador_ouro',
+    nome: 'Indicador Ouro',
+    icone: 'trophy',
+    cor_primaria: '#FFD700',
+    cor_secundaria: '#FFC000',
+    categoria: 'especial',
+    descricao: 'Indicou 30+ atletas para a plataforma',
+    como_conquistar: 'Indique 30 atletas que se cadastrem na plataforma'
+  },
+  {
+    id: 'indicador_diamante',
+    nome: 'Indicador Diamante',
+    icone: 'sparkles',
+    cor_primaria: '#B9F2FF',
+    cor_secundaria: '#00CED1',
+    categoria: 'especial',
+    descricao: 'Indicou 50+ atletas para a plataforma',
+    como_conquistar: 'Indique 50 atletas que se cadastrem na plataforma'
+  },
+  {
+    id: 'influencer',
+    nome: 'Influencer',
+    icone: 'eye',
+    cor_primaria: '#F472B6',
+    cor_secundaria: '#EC4899',
+    categoria: 'especial',
+    descricao: 'Perfil mais visualizado do mes',
+    como_conquistar: 'Tenha o perfil mais visualizado do mes na plataforma'
+  },
+  {
+    id: 'estrela_assessoria',
+    nome: 'Estrela da Assessoria',
+    icone: 'sparkles',
+    cor_primaria: '#FBBF24',
+    cor_secundaria: '#F59E0B',
+    categoria: 'especial',
+    descricao: 'Maior pontuacao da equipe',
+    como_conquistar: 'Seja o atleta com maior pontuacao dentro da sua assessoria'
   }
 ];
 
-// Componente de Modal de Ajuda das Insígnias
+// Componente de Modal de Ajuda das Insígnias - com badges 3D
 const InsigniasHelpModal = ({ open, onOpenChange }) => {
+  const categorias = [
+    { key: 'performance', label: 'Performance', cor: '#10B981' },
+    { key: 'participacao', label: 'Participacao', cor: '#3B82F6' },
+    { key: 'especial', label: 'Especiais', cor: '#EC4899' }
+  ];
+  
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-xl">
             <Trophy className="w-6 h-6 text-amber-500" />
-            Guia de Insígnias & Conquistas
+            Guia de Insignias & Conquistas
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 mt-4">
+        <div className="space-y-6 mt-4">
           <p className="text-slate-600 dark:text-slate-400 text-sm">
-            As insígnias são conquistas especiais que você pode ganhar ao participar de corridas e atingir marcos importantes. 
-            Cada insígnia concede pontos bônus ao ser conquistada!
+            As insignias sao conquistas especiais que voce pode ganhar ao participar de corridas e atingir marcos importantes.
+            Cada insignia representa uma conquista unica na sua jornada como atleta!
           </p>
           
-          <div className="grid gap-3">
-            {TODAS_INSIGNIAS.map((insignia) => (
-              <div 
-                key={insignia.id}
-                className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
-              >
-                {/* Badge visual */}
-                <div 
-                  className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg"
-                  style={{ background: `linear-gradient(135deg, ${insignia.cor}, ${insignia.cor}dd)` }}
-                >
-                  <span className="text-2xl">{insignia.emoji}</span>
-                </div>
-                
-                {/* Info */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-bold text-slate-800 dark:text-white">{insignia.nome}</h3>
-                    <Badge className="text-xs" style={{ backgroundColor: `${insignia.cor}20`, color: insignia.cor }}>
-                      +{insignia.pontos_bonus} pts
-                    </Badge>
-                  </div>
-                  <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{insignia.descricao}</p>
-                  <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
-                    <Sparkles className="w-3 h-3" />
-                    <strong>Como conquistar:</strong> {insignia.como_conquistar}
-                  </p>
+          {categorias.map(cat => {
+            const insigniasCat = TODAS_INSIGNIAS.filter(i => i.categoria === cat.key);
+            return (
+              <div key={cat.key}>
+                <h3 className="font-bold text-base mb-3 flex items-center gap-2" style={{ color: cat.cor }}>
+                  <div className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.cor }} />
+                  {cat.label} ({insigniasCat.length})
+                </h3>
+                <div className="grid gap-3">
+                  {insigniasCat.map((insignia) => {
+                    const IconComp = ICON_MAP[insignia.icone] || Star;
+                    return (
+                      <div 
+                        key={insignia.id}
+                        className="flex items-start gap-4 p-4 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors"
+                      >
+                        {/* Badge 3D */}
+                        <div className="relative flex-shrink-0">
+                          <div 
+                            className="w-14 h-14 rounded-full flex items-center justify-center shadow-lg"
+                            style={{
+                              background: `linear-gradient(135deg, ${insignia.cor_primaria}, ${insignia.cor_secundaria})`
+                            }}
+                          >
+                            {/* Anel externo */}
+                            <div 
+                              className="absolute inset-0 rounded-full"
+                              style={{
+                                border: `2px solid ${insignia.cor_primaria}40`,
+                                transform: 'scale(1.15)'
+                              }}
+                            />
+                            {/* Brilho */}
+                            <div 
+                              className="absolute top-1 left-1/4 w-1/3 h-1/4 rounded-full opacity-40"
+                              style={{ background: 'linear-gradient(to bottom, white, transparent)' }}
+                            />
+                            <IconComp className="w-7 h-7 text-white" strokeWidth={2} />
+                          </div>
+                        </div>
+                        
+                        {/* Info */}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h4 className="font-bold text-slate-800 dark:text-white">{insignia.nome}</h4>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{insignia.descricao}</p>
+                          <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-2 flex items-center gap-1">
+                            <Sparkles className="w-3 h-3" />
+                            <strong>Como conquistar:</strong> {insignia.como_conquistar}
+                          </p>
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            ))}
-          </div>
+            );
+          })}
           
           <div className="mt-6 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200 dark:border-emerald-800">
             <h4 className="font-bold text-emerald-700 dark:text-emerald-400 flex items-center gap-2">
@@ -185,7 +303,7 @@ const InsigniasHelpModal = ({ open, onOpenChange }) => {
               Dica
             </h4>
             <p className="text-sm text-emerald-600 dark:text-emerald-300 mt-1">
-              Continue participando de corridas e registrando seus resultados para desbloquear mais insígnias. 
+              Continue participando de corridas e registrando seus resultados para desbloquear mais insignias. 
               Cada conquista te aproxima do status de Atleta Elite!
             </p>
           </div>
