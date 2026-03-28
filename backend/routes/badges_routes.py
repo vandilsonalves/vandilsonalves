@@ -435,6 +435,7 @@ async def get_badges_atleta(atleta_id: str):
         "atleta_id": atleta_id,
         "atleta_nome": usuario.get("nome", ""),
         "equipe": usuario.get("equipe", ""),
+        "foto_url": usuario.get("foto_url", ""),
         "modalidade": usuario.get("modalidade_usuario", "profissional_amador"),
         "badges": badges,
         "badges_conquistados": len(badges_conquistados),

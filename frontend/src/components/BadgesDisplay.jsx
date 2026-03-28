@@ -1,7 +1,7 @@
 // /app/frontend/src/components/BadgesDisplay.jsx
 // Componente de exibição de badges visuais
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -13,6 +13,7 @@ import {
   Calendar, Users, Eye, Sparkles, Share2, Download, Check, Lock, HelpCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import html2canvas from 'html2canvas';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -289,108 +290,204 @@ const BadgeItem = ({ badge, size = 'md', showTooltip = true }) => {
   );
 };
 
-// Componente de Card de Compartilhamento
-const ShareCard = ({ atletaId, atleta, stats, badges, onClose }) => {
-  const [copying, setCopying] = useState(false);
+// Componente de Card de Compartilhamento - Formato 9:16 (Stories)
+const ShareCard = ({ atletaId, atleta, stats, badges, fotoUrl, onClose }) => {
+  const [shareImageUrl, setShareImageUrl] = useState(null);
+  const [generatingImage, setGeneratingImage] = useState(false);
+  const [fotoError, setFotoError] = useState(false);
+  const shareCardRef = useRef(null);
   
-  const handleCopyText = async () => {
-    const texto = `🏆 Minhas Insígnias no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} insígnias conquistadas\n⭐ ${stats.pontos} pontos | ${stats.total_corridas} corridas\n\n🏅 Insígnias:\n${badges.slice(0, 5).map(b => `• ${b.nome}`).join('\n')}\n\n#RankingRunPro #Corrida #Running`;
-    
+  // Gerar imagem ao abrir
+  useEffect(() => {
+    const timer = setTimeout(() => generateShareImage(), 300);
+    return () => clearTimeout(timer);
+  }, []);
+  
+  const generateShareImage = async () => {
+    setGeneratingImage(true);
     try {
-      await navigator.clipboard.writeText(texto);
-      setCopying(true);
-      toast.success('Texto copiado!');
-      setTimeout(() => setCopying(false), 2000);
-    } catch {
-      toast.error('Erro ao copiar');
+      const element = shareCardRef.current;
+      if (!element) return;
+      
+      // Pre-carregar foto
+      if (fotoUrl) {
+        try {
+          const img = new window.Image();
+          img.crossOrigin = 'anonymous';
+          img.src = fotoUrl;
+          await new Promise((resolve) => {
+            img.onload = resolve;
+            img.onerror = resolve;
+            setTimeout(resolve, 3000);
+          });
+        } catch {}
+      }
+      
+      const canvas = await html2canvas(element, {
+        scale: 3,
+        backgroundColor: '#0f172a',
+        useCORS: true,
+        allowTaint: true,
+        logging: false
+      });
+      
+      const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+      const url = URL.createObjectURL(blob);
+      setShareImageUrl(url);
+    } catch (err) {
+      console.error('Erro ao gerar imagem:', err);
+    } finally {
+      setGeneratingImage(false);
     }
   };
   
-  const handleShareWhatsApp = () => {
-    const texto = encodeURIComponent(`🏆 Confira minhas insígnias no Ranking Run Pró!\n\n👤 ${atleta.nome}\n🎯 ${badges.length} insígnias\n⭐ ${stats.pontos} pontos\n\nhttps://geo-filtered-admin.preview.emergentagent.com/atleta/${atletaId}`);
+  const downloadImage = () => {
+    if (!shareImageUrl) return;
+    const link = document.createElement('a');
+    link.href = shareImageUrl;
+    link.download = `insignias-${atleta.nome?.replace(/\s+/g, '-')}.png`;
+    link.click();
+    toast.success('Imagem baixada!');
+  };
+  
+  const shareToWhatsApp = () => {
+    const texto = encodeURIComponent(`Confira minhas insignias no Ranking Run Pro!\n\n${atleta.nome}\n${badges.length} insignias | ${stats.pontos} pontos | ${stats.total_corridas} corridas\n\nhttps://geo-filtered-admin.preview.emergentagent.com/atleta/${atletaId}`);
     window.open(`https://wa.me/?text=${texto}`, '_blank');
   };
   
-  const handleShareTwitter = () => {
-    const texto = encodeURIComponent(`🏆 Conquistei ${badges.length} insígnias no @RankingRunPro! ${stats.pontos} pontos e ${stats.total_corridas} corridas! #RankingRunPro #Corrida`);
-    window.open(`https://twitter.com/intent/tweet?text=${texto}`, '_blank');
+  const shareToInstagram = () => {
+    if (shareImageUrl) {
+      downloadImage();
+      toast.success('Imagem baixada! Abra o Instagram e poste nos Stories');
+    }
+  };
+  
+  const shareToFacebook = () => {
+    const url = encodeURIComponent(`https://geo-filtered-admin.preview.emergentagent.com/atleta/${atletaId}`);
+    window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
   };
   
   return (
     <div className="space-y-4">
-      {/* Card Visual */}
-      <div 
-        className="relative rounded-2xl overflow-hidden p-6"
-        style={{
-          background: 'linear-gradient(135deg, #10B981 0%, #059669 50%, #047857 100%)'
-        }}
-      >
-        {/* Padrão decorativo */}
-        <div className="absolute top-0 right-0 w-64 h-64 opacity-10">
-          <div className="absolute inset-0" style={{
-            background: 'radial-gradient(circle at center, white 1px, transparent 1px)',
-            backgroundSize: '20px 20px'
-          }} />
-        </div>
+      {/* Preview da imagem */}
+      <div className="relative">
+        {generatingImage && (
+          <div className="absolute inset-0 bg-slate-900/80 flex items-center justify-center rounded-lg z-10">
+            <p className="text-white">Gerando imagem...</p>
+          </div>
+        )}
         
-        {/* Conteúdo */}
-        <div className="relative z-10">
-          {/* Header */}
-          <div className="flex items-center gap-4 mb-4">
-            <div className="w-16 h-16 rounded-full bg-white/20 flex items-center justify-center">
-              <span className="text-2xl font-bold text-white">
-                {atleta.nome?.charAt(0)}
-              </span>
+        {/* Card 9:16 para gerar imagem */}
+        <div 
+          ref={shareCardRef}
+          className="bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 rounded-lg p-6 text-white"
+          style={{ aspectRatio: '9/16', maxHeight: '420px' }}
+          data-testid="share-insignias-card"
+        >
+          <div className="h-full flex flex-col justify-between">
+            {/* Header */}
+            <div className="text-center">
+              <p className="text-emerald-400 text-sm font-semibold mb-1">RANKING RUN PRO 2026</p>
+              <div className="w-16 h-1 bg-emerald-500 mx-auto rounded-full" />
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-white">{atleta.nome}</h3>
-              <p className="text-emerald-100 text-sm">{atleta.equipe}</p>
+            
+            {/* Atleta Info */}
+            <div className="text-center flex-1 flex flex-col justify-center">
+              {/* Foto do Atleta */}
+              <div className="w-20 h-20 mx-auto mb-3 rounded-full ring-4 ring-amber-500 overflow-hidden bg-amber-600 flex items-center justify-center">
+                {fotoUrl && !fotoError ? (
+                  <img
+                    src={fotoUrl}
+                    alt={atleta.nome}
+                    crossOrigin="anonymous"
+                    className="w-full h-full object-cover"
+                    onError={() => setFotoError(true)}
+                  />
+                ) : (
+                  <span className="text-white text-xl font-bold flex items-center justify-center w-full h-full">
+                    {atleta.nome?.charAt(0)}
+                  </span>
+                )}
+              </div>
+              
+              <h2 className="text-lg font-bold mb-0.5">{atleta.nome}</h2>
+              <p className="text-emerald-300 text-xs mb-3">{atleta.equipe}</p>
+              
+              {/* Stats */}
+              <div className="grid grid-cols-3 gap-2 mb-3">
+                <div className="bg-slate-800/50 rounded-lg p-2">
+                  <p className="text-xl font-bold text-amber-400">{stats.pontos}</p>
+                  <p className="text-[10px] text-slate-400">Pontos</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-2">
+                  <p className="text-xl font-bold text-blue-400">{stats.total_corridas}</p>
+                  <p className="text-[10px] text-slate-400">Corridas</p>
+                </div>
+                <div className="bg-slate-800/50 rounded-lg p-2">
+                  <p className="text-xl font-bold text-emerald-400">{badges.length}</p>
+                  <p className="text-[10px] text-slate-400">Insignias</p>
+                </div>
+              </div>
+              
+              {/* Titulo Insignias */}
+              <div className="flex items-center justify-center gap-1 mb-2">
+                <Trophy className="w-4 h-4 text-amber-400" />
+                <p className="text-amber-400 text-xs font-semibold">MINHAS INSIGNIAS</p>
+              </div>
+              
+              {/* Badges Grid */}
+              <div className="flex flex-wrap gap-2 justify-center">
+                {badges.slice(0, 8).map(badge => (
+                  <BadgeItem key={badge.id} badge={badge} size="sm" showTooltip={false} />
+                ))}
+              </div>
+              {badges.length > 8 && (
+                <p className="text-slate-400 text-[10px] mt-1">+{badges.length - 8} mais</p>
+              )}
             </div>
-          </div>
-          
-          {/* Stats */}
-          <div className="grid grid-cols-3 gap-4 mb-4">
-            <div className="text-center bg-white/10 rounded-xl p-3">
-              <p className="text-2xl font-bold text-white">{stats.pontos}</p>
-              <p className="text-xs text-emerald-100">Pontos</p>
+            
+            {/* Footer */}
+            <div className="text-center">
+              <p className="text-xs text-slate-400">ranking-run-pro.com</p>
             </div>
-            <div className="text-center bg-white/10 rounded-xl p-3">
-              <p className="text-2xl font-bold text-white">{stats.total_corridas}</p>
-              <p className="text-xs text-emerald-100">Corridas</p>
-            </div>
-            <div className="text-center bg-white/10 rounded-xl p-3">
-              <p className="text-2xl font-bold text-white">{badges.length}</p>
-              <p className="text-xs text-emerald-100">Insígnias</p>
-            </div>
-          </div>
-          
-          {/* Badges */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {badges.slice(0, 6).map(badge => (
-              <BadgeItem key={badge.id} badge={badge} size="sm" showTooltip={false} />
-            ))}
-          </div>
-          
-          {/* Footer */}
-          <div className="mt-4 text-center">
-            <p className="text-emerald-100 text-xs">rankingrunpro.com.br</p>
           </div>
         </div>
       </div>
       
-      {/* Botões de compartilhamento */}
-      <div className="flex flex-wrap gap-2 justify-center">
-        <Button onClick={handleShareWhatsApp} className="bg-green-600 hover:bg-green-700">
+      {/* Botoes de Compartilhamento */}
+      <div className="grid grid-cols-2 gap-3">
+        <Button
+          onClick={shareToWhatsApp}
+          className="bg-green-600 hover:bg-green-700"
+          data-testid="share-insignias-whatsapp"
+        >
           <Share2 className="w-4 h-4 mr-2" />
           WhatsApp
         </Button>
-        <Button onClick={handleShareTwitter} variant="outline" className="border-blue-500 text-blue-500">
+        <Button
+          onClick={shareToInstagram}
+          className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600"
+          data-testid="share-insignias-instagram"
+        >
           <Share2 className="w-4 h-4 mr-2" />
-          Twitter
+          Instagram
         </Button>
-        <Button onClick={handleCopyText} variant="outline">
-          {copying ? <Check className="w-4 h-4 mr-2" /> : <Download className="w-4 h-4 mr-2" />}
-          {copying ? 'Copiado!' : 'Copiar Texto'}
+        <Button
+          onClick={shareToFacebook}
+          className="bg-blue-600 hover:bg-blue-700"
+          data-testid="share-insignias-facebook"
+        >
+          <Share2 className="w-4 h-4 mr-2" />
+          Facebook
+        </Button>
+        <Button
+          onClick={downloadImage}
+          disabled={!shareImageUrl}
+          variant="outline"
+          data-testid="share-insignias-download"
+        >
+          <Download className="w-4 h-4 mr-2" />
+          Baixar
         </Button>
       </div>
     </div>
@@ -419,6 +516,7 @@ export const BadgesDisplay = ({ atletaId, showTitle = true, compact = false }) =
       setAtletaData({
         nome: response.data.atleta_nome,
         equipe: response.data.equipe || '',
+        foto_url: response.data.foto_url || '',
         pontos: response.data.pontos_totais,
         total_corridas: response.data.total_corridas || 0,
         total_badges: response.data.badges_conquistados
@@ -495,6 +593,7 @@ export const BadgesDisplay = ({ atletaId, showTitle = true, compact = false }) =
                     atleta={{ nome: atletaData?.nome, equipe: atletaData?.equipe || '' }}
                     stats={{ pontos: atletaData?.pontos || 0, total_corridas: atletaData?.total_corridas || 0 }}
                     badges={badgesConquistados}
+                    fotoUrl={atletaData?.foto_url || ''}
                     onClose={() => setShowShareModal(false)}
                   />
                 </DialogContent>
