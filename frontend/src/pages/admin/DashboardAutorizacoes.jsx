@@ -207,10 +207,13 @@ const DashboardAutorizacoes = () => {
   };
 
   // ---- Autorizar atleta ----
-  const handleAutorizar = async (atletaId, dias = 365) => {
+  const handleAutorizar = async (atletaId, tipoPlano = 'ate_fim_ano') => {
     try {
-      await axios.post(`${API}/admin/autorizacoes/autorizar`, { atleta_id: atletaId, dias }, { headers });
-      toast.success('Atleta autorizado!');
+      const res = await axios.post(`${API}/admin/autorizacoes/autorizar`, {
+        atleta_id: atletaId,
+        tipo_plano: tipoPlano,
+      }, { headers });
+      toast.success(res.data.message || 'Atleta autorizado!');
       fetchAtletas();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro ao autorizar');
@@ -218,9 +221,10 @@ const DashboardAutorizacoes = () => {
   };
 
   const handleRevogar = async (atletaId) => {
+    if (!window.confirm('Tem certeza que deseja revogar o acesso deste atleta?')) return;
     try {
-      await axios.post(`${API}/admin/autorizacoes/revogar`, { atleta_id: atletaId }, { headers });
-      toast.success('Autorização revogada');
+      const res = await axios.post(`${API}/admin/autorizacoes/revogar`, { atleta_id: atletaId }, { headers });
+      toast.success(res.data.message || 'Autorização revogada');
       fetchAtletas();
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro ao revogar');
@@ -566,10 +570,16 @@ const DashboardAutorizacoes = () => {
                         <td className="py-2 px-3 text-slate-300 text-xs">{a.dias_restantes}d</td>
                         <td className="py-2 px-3">
                           {a.status_periodo !== 'autorizado' ? (
-                            <Button size="sm" variant="outline" className="text-xs border-green-600 text-green-400 hover:bg-green-600/20 h-7"
-                              onClick={() => handleAutorizar(a.id)} data-testid={`autorizar-${a.id}`}>
-                              <CheckCircle2 className="w-3 h-3 mr-1" /> Autorizar
-                            </Button>
+                            <div className="flex items-center gap-1">
+                              <Button size="sm" variant="outline" className="text-xs border-green-600 text-green-400 hover:bg-green-600/20 h-7"
+                                onClick={() => handleAutorizar(a.id, 'ate_fim_ano')} data-testid={`autorizar-${a.id}`}>
+                                <CheckCircle2 className="w-3 h-3 mr-1" /> Ate 31/12/2026
+                              </Button>
+                              <Button size="sm" variant="outline" className="text-xs border-blue-600 text-blue-400 hover:bg-blue-600/20 h-7"
+                                onClick={() => handleAutorizar(a.id, 'plano_anual')} data-testid={`autorizar-anual-${a.id}`}>
+                                <CheckCircle2 className="w-3 h-3 mr-1" /> Anual
+                              </Button>
+                            </div>
                           ) : (
                             <Button size="sm" variant="outline" className="text-xs border-red-600 text-red-400 hover:bg-red-600/20 h-7"
                               onClick={() => handleRevogar(a.id)} data-testid={`revogar-${a.id}`}>

@@ -1812,6 +1812,94 @@ async def revogar_autorizacao(autorizacao_id: str, admin: dict = Depends(get_adm
     return {"message": "Autorização revogada com sucesso"}
 
 
+# Rotas de autorizar/revogar por atleta_id (usadas pelo DashboardAutorizacoes)
+class AutorizarAtletaRequest(BaseModel):
+    atleta_id: str
+    tipo_plano: str = "ate_fim_ano"  # ate_fim_ano, plano_anual
+    dias: int = 365
+
+
+class RevogarAtletaRequest(BaseModel):
+    atleta_id: str
+
+
+@api_router.post("/admin/autorizacoes/autorizar")
+async def autorizar_atleta(dados: AutorizarAtletaRequest, admin: dict = Depends(get_admin_user)):
+    """Autoriza acesso premium de um atleta (por atleta_id)"""
+    atleta = await db.usuarios.find_one(
+        {"id": dados.atleta_id, "role": {"$in": ["atleta", "dono_assessoria"]}},
+        {"_id": 0, "id": 1, "nome": 1, "email": 1}
+    )
+    if not atleta:
+        raise HTTPException(status_code=404, detail="Atleta nao encontrado")
+
+    agora = datetime.now(timezone.utc)
+
+    # Desativar autorizacoes anteriores
+    await db.autorizacoes.update_many(
+        {"atleta_id": dados.atleta_id, "status": "ativa"},
+        {"$set": {"status": "substituida", "data_substituicao": agora.isoformat()}}
+    )
+
+    # Calcular data de expiracao baseado no tipo
+    if dados.tipo_plano == "ate_fim_ano":
+        data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+        descricao = "Plano Premium ate 31/12/2026"
+        plano_nome = "Ate 31/12/2026"
+    elif dados.tipo_plano == "plano_anual":
+        data_expiracao = agora + timedelta(days=365)
+        descricao = "Plano Anual (1 ano a partir da ativacao)"
+        plano_nome = "Plano Anual"
+    else:
+        data_expiracao = agora + timedelta(days=dados.dias)
+        descricao = f"Plano por {dados.dias} dias"
+        plano_nome = f"{dados.dias} dias"
+
+    autorizacao = {
+        "id": str(uuid.uuid4()),
+        "atleta_id": dados.atleta_id,
+        "tipo": "premium",
+        "plano_id": dados.tipo_plano,
+        "plano_nome": plano_nome,
+        "descricao": descricao,
+        "duracao_dias": (data_expiracao - agora).days,
+        "data_criacao": agora.isoformat(),
+        "data_inicio": agora.isoformat(),
+        "data_expiracao": data_expiracao.isoformat(),
+        "criado_por": "admin_manual",
+        "criado_por_nome": admin.get("nome", "Admin"),
+        "admin_id": admin.get("id"),
+        "observacao": f"Autorizado manualmente por {admin.get('nome', 'Admin')}",
+        "status": "ativa",
+    }
+    await db.autorizacoes.insert_one(autorizacao)
+
+    return {
+        "message": f"Atleta {atleta.get('nome', '')} autorizado! Acesso ate {data_expiracao.strftime('%d/%m/%Y')}",
+        "autorizacao_id": autorizacao["id"],
+        "data_expiracao": data_expiracao.isoformat(),
+    }
+
+
+@api_router.post("/admin/autorizacoes/revogar")
+async def revogar_atleta(dados: RevogarAtletaRequest, admin: dict = Depends(get_admin_user)):
+    """Revoga todas as autorizacoes ativas de um atleta (por atleta_id)"""
+    result = await db.autorizacoes.update_many(
+        {"atleta_id": dados.atleta_id, "status": "ativa"},
+        {"$set": {
+            "status": "revogada",
+            "revogado_por": admin.get("nome", "Admin"),
+            "admin_revogacao_id": admin.get("id"),
+            "data_revogacao": datetime.now(timezone.utc).isoformat(),
+        }}
+    )
+
+    if result.modified_count == 0:
+        raise HTTPException(status_code=404, detail="Nenhuma autorizacao ativa encontrada para este atleta")
+
+    return {"message": f"Autorizacao revogada ({result.modified_count} revogada(s))"}
+
+
 @api_router.get("/atleta/status-acesso")
 async def verificar_status_acesso(current_user: dict = Depends(get_current_user)):
     """Verifica o status de acesso do atleta logado"""

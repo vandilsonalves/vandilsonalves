@@ -82,6 +82,14 @@ class PixCheckoutRequest(BaseModel):
 async def criar_cobranca_pix(dados: PixCheckoutRequest, current_user: dict = Depends(get_current_user)):
     """Cria cobranca PIX imediata via Efi Bank"""
 
+    # Bloqueio de pagamentos apos 15/12/2026
+    data_limite_pagamentos = datetime(2026, 12, 15, 0, 0, 0, tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) >= data_limite_pagamentos:
+        raise HTTPException(
+            status_code=403,
+            detail="Periodo de vendas encerrado. Novos valores serao divulgados para 2027. Autorizacoes serao feitas apenas pelo administrador."
+        )
+
     # Verificar se usuario ja tem acesso ativo
     auth_existente = await db.autorizacoes.find_one({
         "atleta_id": current_user["id"],
@@ -431,6 +439,20 @@ async def listar_transacoes_efi(admin_user: dict = Depends(get_admin_user)):
     return {"transacoes": transactions, "total": len(transactions)}
 
 
+@router.get("/pagamento/status")
+async def status_pagamento():
+    """Verifica se o periodo de vendas esta aberto"""
+    data_limite = datetime(2026, 12, 15, 0, 0, 0, tzinfo=timezone.utc)
+    agora = datetime.now(timezone.utc)
+    aberto = agora < data_limite
+    return {
+        "vendas_abertas": aberto,
+        "data_limite": data_limite.isoformat(),
+        "mensagem": None if aberto else "Periodo de vendas encerrado. Novos valores serao divulgados para 2027. Autorizacoes serao feitas apenas pelo administrador.",
+    }
+
+
+
 class CartaoCheckoutRequest(BaseModel):
     payment_token: str
     nome: str
@@ -462,6 +484,14 @@ async def efi_config(current_user: dict = Depends(get_current_user)):
 @router.post("/cartao/criar")
 async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict = Depends(get_current_user)):
     """Cria cobranca via cartao de credito (One Step) no Efi Bank"""
+
+    # Bloqueio de pagamentos apos 15/12/2026
+    data_limite_pagamentos = datetime(2026, 12, 15, 0, 0, 0, tzinfo=timezone.utc)
+    if datetime.now(timezone.utc) >= data_limite_pagamentos:
+        raise HTTPException(
+            status_code=403,
+            detail="Periodo de vendas encerrado. Novos valores serao divulgados para 2027. Autorizacoes serao feitas apenas pelo administrador."
+        )
 
     # Verificar se usuario ja tem acesso ativo
     auth_existente = await db.autorizacoes.find_one({

@@ -629,6 +629,8 @@ export default function PagamentoPage() {
   const [loadingPlano, setLoadingPlano] = useState(true);
   const [metodo, setMetodo] = useState('pix');
   const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
+  const [vendasFechadas, setVendasFechadas] = useState(false);
+  const [msgVendas, setMsgVendas] = useState('');
 
   useEffect(() => {
     if (!token) {
@@ -636,7 +638,21 @@ export default function PagamentoPage() {
       return;
     }
     fetchPlano();
+    checkVendas();
   }, [token]);
+
+  const checkVendas = async () => {
+    try {
+      const res = await fetch(`${API}/api/efi/pagamento/status`);
+      if (res.ok) {
+        const data = await res.json();
+        if (!data.vendas_abertas) {
+          setVendasFechadas(true);
+          setMsgVendas(data.mensagem || 'Periodo de vendas encerrado.');
+        }
+      }
+    } catch {}
+  };
 
   const fetchPlano = async () => {
     try {
@@ -678,6 +694,29 @@ export default function PagamentoPage() {
   // Tela de confirmacao com confetti
   if (pagamentoConfirmado) {
     return <ConfirmacaoPagamento navigate={navigate} />;
+  }
+
+  // Vendas encerradas
+  if (vendasFechadas) {
+    return (
+      <div className="min-h-screen bg-gray-950 text-white flex items-center justify-center" data-testid="vendas-fechadas">
+        <div className="max-w-md mx-auto px-6 text-center">
+          <div className="w-16 h-16 bg-amber-500/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Clock className="w-8 h-8 text-amber-400" />
+          </div>
+          <h1 className="text-2xl font-bold mb-4">Vendas Encerradas</h1>
+          <p className="text-gray-400 mb-6">
+            {msgVendas}
+          </p>
+          <p className="text-sm text-gray-500 mb-8">
+            Novos planos e valores para 2027 serao divulgados em breve. Fique atento!
+          </p>
+          <Button onClick={() => navigate('/')} className="bg-gray-800 hover:bg-gray-700 text-white">
+            Voltar ao Inicio
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   const dataLimite = new Date('2026-12-14T23:59:59Z');
