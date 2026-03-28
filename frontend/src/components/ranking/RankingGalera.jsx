@@ -187,6 +187,7 @@ const RankingGalera = () => {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="all">Todas as faixas</SelectItem>
+                      <SelectItem value="Até 17">Até 17</SelectItem>
                       <SelectItem value="18-29">18-29</SelectItem>
                       <SelectItem value="30-39">30-39</SelectItem>
                       <SelectItem value="40-49">40-49</SelectItem>

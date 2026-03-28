@@ -687,7 +687,7 @@ async def get_estados():
 @cached(prefix='ranking', ttl_key='faixas_etarias')
 async def get_faixas_etarias():
     """Lista faixas etárias disponíveis"""
-    return {"faixas": ["18-29", "30-39", "40-49", "50-59", "60-69", "70+"]}
+    return {"faixas": ["Até 17", "18-29", "30-39", "40-49", "50-59", "60-69", "70+"]}
 
 
 @router.get("/ranking/equipes")
