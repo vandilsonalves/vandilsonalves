@@ -64,6 +64,8 @@ Plataforma de ranking de corridas com monetizacao, feed social, Raio-X, Strava e
 - celery_routes.py reescrito sem dependencia de Redis/Celery
 - feed_routes.py e server.py: redis_client removido
 - requirements.txt: redis e celery removidos, cachetools adicionado
+- Rankings por Periodo (Semanal/Mensal) filtrados por modalidade (Masculino, Feminino, PCD/M, PCD/F, Cadeirante/M, Cadeirante/F)
+- Badges "Top 10 do Mes" e "Rei da Velocidade" agora verificados por modalidade
 
 ## Backlog
 - P2: Exportar como PDF no Raio-X do atleta

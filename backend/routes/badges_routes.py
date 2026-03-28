@@ -4,7 +4,7 @@
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from typing import List, Optional
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 
 ANO_ATUAL = datetime.now(timezone.utc).year
 from pydantic import BaseModel
@@ -40,13 +40,13 @@ BADGES_CONFIG = {
     },
     "top_10_mes": {
         "nome": "Top 10 do Mês",
-        "descricao": "Ficou entre os 10 melhores do mês",
+        "descricao": "Ficou entre os 10 melhores do mês na sua modalidade",
         "icone": "trophy",
         "cor_primaria": "#10B981",
         "cor_secundaria": "#059669",
         "categoria": "performance",
         "criterio": {"ranking_mes_maximo": 10},
-        "exclusivo_profissional": True  # Não disponível para Povão
+        "exclusivo_profissional": True
     },
     "podio": {
         "nome": "Pódio",
@@ -60,13 +60,13 @@ BADGES_CONFIG = {
     },
     "rei_velocidade": {
         "nome": "Rei da Velocidade",
-        "descricao": "Maior pontuação semanal",
+        "descricao": "Maior pontuação semanal na sua modalidade",
         "icone": "zap",
         "cor_primaria": "#EF4444",
         "cor_secundaria": "#DC2626",
         "categoria": "performance",
         "criterio": {"top_semanal": 1},
-        "exclusivo_profissional": True  # Não disponível para Povão
+        "exclusivo_profissional": True
     },
     
     # === Participação ===
@@ -289,6 +289,56 @@ async def verificar_badges_atleta(atleta_id: str) -> List[dict]:
                 "status": "confirmada"
             })
             conquistado = total_indicacoes >= criterio["indicacoes_minimas"]
+        
+        elif "ranking_mes_maximo" in criterio:
+            # Top 10 do Mês - verifica por modalidade do atleta
+            genero = usuario.get("genero", "M")
+            cat = usuario.get("categoria", "normal")
+            hoje = datetime.now()
+            primeiro_dia = datetime(hoje.year, hoje.month, 1)
+            if hoje.month == 12:
+                ultimo_dia = datetime(hoje.year + 1, 1, 1) - timedelta(days=1)
+            else:
+                ultimo_dia = datetime(hoje.year, hoje.month + 1, 1) - timedelta(days=1)
+            data_inicio = primeiro_dia.strftime("%Y-%m-%d")
+            data_fim = ultimo_dia.strftime("%Y-%m-%d")
+            
+            pipeline_mes = [
+                {"$match": {"data": {"$gte": data_inicio, "$lte": data_fim}, "modalidade": {"$ne": "povao_pace_livre"}}},
+                {"$lookup": {"from": "usuarios", "localField": "usuario_id", "foreignField": "id", "as": "u"}},
+                {"$unwind": "$u"},
+                {"$match": {"u.genero": genero, "u.categoria": cat}},
+                {"$group": {"_id": "$usuario_id", "pontos": {"$sum": "$pontos"}}},
+                {"$sort": {"pontos": -1}},
+                {"$limit": criterio["ranking_mes_maximo"]}
+            ]
+            top_mes = await db.corridas.aggregate(pipeline_mes).to_list(None)
+            top_ids = [r["_id"] for r in top_mes]
+            conquistado = atleta_id in top_ids
+        
+        elif "top_semanal" in criterio:
+            # Rei da Velocidade - maior pontuação semanal, por modalidade
+            genero = usuario.get("genero", "M")
+            cat = usuario.get("categoria", "normal")
+            hoje = datetime.now()
+            inicio_semana = hoje - timedelta(days=hoje.weekday())
+            inicio_semana = inicio_semana.replace(hour=0, minute=0, second=0, microsecond=0)
+            fim_semana = inicio_semana + timedelta(days=6, hours=23, minutes=59, seconds=59)
+            data_inicio = inicio_semana.strftime("%Y-%m-%d")
+            data_fim = fim_semana.strftime("%Y-%m-%d")
+            
+            pipeline_sem = [
+                {"$match": {"data": {"$gte": data_inicio, "$lte": data_fim}, "modalidade": {"$ne": "povao_pace_livre"}}},
+                {"$lookup": {"from": "usuarios", "localField": "usuario_id", "foreignField": "id", "as": "u"}},
+                {"$unwind": "$u"},
+                {"$match": {"u.genero": genero, "u.categoria": cat}},
+                {"$group": {"_id": "$usuario_id", "pontos": {"$sum": "$pontos"}}},
+                {"$sort": {"pontos": -1}},
+                {"$limit": criterio["top_semanal"]}
+            ]
+            top_sem = await db.corridas.aggregate(pipeline_sem).to_list(None)
+            top_ids = [r["_id"] for r in top_sem]
+            conquistado = atleta_id in top_ids
         
         # Salvar badge no banco se conquistado
         if conquistado:

@@ -361,10 +361,15 @@ async def get_ranking_semanal(
             "total_corridas": r["corridas_semana"]
         })
     
+    genero_label = {"M": "Masculino", "F": "Feminino"}.get(genero, genero)
+    categoria_label = {"normal": "", "pcd": "PCD", "cadeirante": "Cadeirante"}.get(categoria, "")
+    modalidade_label = f"{categoria_label} / {genero_label}" if categoria_label else genero_label
+    
     return {
         "periodo": f"{inicio_semana.strftime('%d/%m/%Y')} a {fim_semana.strftime('%d/%m/%Y')}",
-        "genero": "Masculino" if genero == "M" else "Feminino",
+        "genero": genero_label,
         "categoria": categoria,
+        "modalidade": modalidade_label,
         "ranking": ranking
     }
 
@@ -455,10 +460,17 @@ async def get_ranking_mensal(
     meses = ["Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
              "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"]
     
+    genero_label = {"M": "Masculino", "F": "Feminino"}.get(genero, genero)
+    categoria_label = {"normal": "", "pcd": "PCD", "cadeirante": "Cadeirante"}.get(categoria, "")
+    modalidade_label = f"{categoria_label} / {genero_label}" if categoria_label else genero_label
+    
     return {
         "periodo": f"{meses[mes_atual-1]} {ano_atual}",
-        "genero": "Masculino" if genero == "M" else "Feminino",
+        "mes": meses[mes_atual-1],
+        "ano": ano_atual,
+        "genero": genero_label,
         "categoria": categoria,
+        "modalidade": modalidade_label,
         "ranking": ranking
     }
 

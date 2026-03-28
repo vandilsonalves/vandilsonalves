@@ -18,13 +18,28 @@ const RankingDestaques = ({ categoria = 'masculino' }) => {
   const [destaqueMes, setDestaqueMes] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  // Mapeia a tab de categoria para os params do backend
+  const getBackendParams = (cat) => {
+    const map = {
+      'masculino':     { genero: 'M', categoria: 'normal' },
+      'feminino':      { genero: 'F', categoria: 'normal' },
+      'pcd-m':         { genero: 'M', categoria: 'pcd' },
+      'pcd-f':         { genero: 'F', categoria: 'pcd' },
+      'cadeirante-m':  { genero: 'M', categoria: 'cadeirante' },
+      'cadeirante-f':  { genero: 'F', categoria: 'cadeirante' },
+    };
+    return map[cat] || { genero: 'M', categoria: 'normal' };
+  };
+
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
       try {
+        const { genero, categoria: cat } = getBackendParams(categoria);
+        const params = `genero=${genero}&categoria=${cat}`;
         const [semanalRes, mensalRes, destaqueRes] = await Promise.all([
-          axios.get(`${API}/ranking/semanal?categoria=${categoria}`),
-          axios.get(`${API}/ranking/mensal?categoria=${categoria}`),
+          axios.get(`${API}/ranking/semanal?${params}`),
+          axios.get(`${API}/ranking/mensal?${params}`),
           axios.get(`${API}/ranking/destaque-mes`)
         ]);
         
@@ -190,7 +205,7 @@ const RankingDestaques = ({ categoria = 'masculino' }) => {
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-emerald-500" />
-            Rankings por Período
+            Rankings por Periodo - {categoria.replace('-', ' / ').toUpperCase()}
           </CardTitle>
         </CardHeader>
         <CardContent>
