@@ -31,26 +31,46 @@ EFI_WEBHOOK_IPS = [
 _WEBHOOK_HMAC_SECRET = os.environ.get("EFI_WEBHOOK_HMAC", secrets.token_hex(16))
 
 
-def get_efi_client():
-    """Cria e retorna instancia do EfiPay"""
+def get_efi_client(tipo="pix"):
+    """Cria e retorna instancia do EfiPay.
+    tipo='pix' usa certificado (obrigatorio para PIX).
+    tipo='cartao' nao precisa de certificado.
+    """
     from efipay import EfiPay
 
-    client_id = os.environ.get("EFI_CLIENT_ID")
-    client_secret = os.environ.get("EFI_CLIENT_SECRET")
-    cert_path = os.environ.get("EFI_CERTIFICATE_PATH")
     sandbox = os.environ.get("EFI_SANDBOX", "true").lower() == "true"
 
-    if not all([client_id, client_secret, cert_path]):
-        raise HTTPException(status_code=500, detail="Efi Bank nao configurado")
+    if tipo == "cartao":
+        # Cartao de credito NAO precisa de certificado
+        client_id = os.environ.get("EFI_CLIENT_ID_PROD", os.environ.get("EFI_CLIENT_ID"))
+        client_secret = os.environ.get("EFI_CLIENT_SECRET_PROD", os.environ.get("EFI_CLIENT_SECRET"))
 
-    credentials = {
-        "client_id": client_id,
-        "client_secret": client_secret,
-        "sandbox": sandbox,
-        "certificate": cert_path,
-    }
+        if not all([client_id, client_secret]):
+            raise HTTPException(status_code=500, detail="Efi Bank nao configurado para Cartao")
 
-    return EfiPay(credentials)
+        credentials = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "sandbox": False,  # Cartao sempre em producao quando há credenciais de prod
+        }
+        return EfiPay(credentials)
+
+    else:
+        # PIX precisa de certificado
+        client_id = os.environ.get("EFI_CLIENT_ID")
+        client_secret = os.environ.get("EFI_CLIENT_SECRET")
+        cert_path = os.environ.get("EFI_CERTIFICATE_PATH")
+
+        if not all([client_id, client_secret, cert_path]):
+            raise HTTPException(status_code=500, detail="Efi Bank nao configurado para PIX (certificado ausente)")
+
+        credentials = {
+            "client_id": client_id,
+            "client_secret": client_secret,
+            "sandbox": sandbox,
+            "certificate": cert_path,
+        }
+        return EfiPay(credentials)
 
 
 class PixCheckoutRequest(BaseModel):
@@ -426,11 +446,16 @@ class CartaoCheckoutRequest(BaseModel):
 async def efi_config(current_user: dict = Depends(get_current_user)):
     """Retorna configuracao publica do Efi para tokenizacao no frontend"""
     payee_code = os.environ.get("EFI_PAYEE_CODE", "")
-    sandbox = os.environ.get("EFI_SANDBOX", "true").lower() == "true"
+    has_prod = bool(os.environ.get("EFI_CLIENT_ID_PROD"))
+    # Cartao usa producao se credenciais de prod existem
+    cartao_sandbox = not has_prod
+    # PIX segue a flag EFI_SANDBOX
+    pix_sandbox = os.environ.get("EFI_SANDBOX", "true").lower() == "true"
     return {
         "payee_code": payee_code,
-        "environment": "sandbox" if sandbox else "production",
-        "is_sandbox": sandbox,
+        "environment": "production" if has_prod else "sandbox",
+        "is_sandbox": cartao_sandbox,
+        "pix_sandbox": pix_sandbox,
     }
 
 
@@ -505,10 +530,12 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         body["payment"]["credit_card"]["customer"]["birth"] = dados.nascimento
 
     charge_id_efi = None
-    is_sandbox = os.environ.get("EFI_SANDBOX", "true").lower() == "true"
+    # Detectar se tem credenciais de producao para cartao
+    has_prod = bool(os.environ.get("EFI_CLIENT_ID_PROD"))
+    is_sandbox = not has_prod
 
     try:
-        efi = get_efi_client()
+        efi = get_efi_client("cartao")
         response = efi.create_one_step_charge(body=body)
 
         if not isinstance(response, dict):
