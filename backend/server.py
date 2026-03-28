@@ -1956,8 +1956,18 @@ async def startup_event():
     )
     logger.info("📊 Sincronização Strava agendada para cada 1 hora")
     
+    # Agendar relatório semanal por e-mail (todo domingo às 20:00)
+    from services.relatorio_semanal import enviar_relatorio_semanal
+    scheduler.add_job(
+        enviar_relatorio_semanal,
+        CronTrigger(day_of_week='sun', hour=20, minute=0),
+        id="relatorio_semanal_email",
+        replace_existing=True
+    )
+    logger.info("📧 Relatório semanal agendado para domingos às 20:00")
+    
     scheduler.start()
-    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza comentários domingo 23:59, Strava sync a cada 1h")
+    logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza dom 23:59, Strava 1h, Relatório dom 20h")
 
     # Criar índices MongoDB para performance
     try:

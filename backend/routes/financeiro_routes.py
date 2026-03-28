@@ -28,8 +28,8 @@ async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
     pendentes = [t for t in all_txs if t.get("payment_status") == "pending"]
 
     receita_total = sum(t.get("amount", 0) for t in pagas)
-    receita_pix = sum(t.get("amount", 0) for t in pagas if t.get("gateway") == "efi_bank")
-    receita_cartao = sum(t.get("amount", 0) for t in pagas if t.get("gateway") == "stripe")
+    receita_pix = sum(t.get("amount", 0) for t in pagas if t.get("tipo") == "pix")
+    receita_cartao = sum(t.get("amount", 0) for t in pagas if t.get("tipo") == "cartao")
 
     # Receita por dia (ultimos 30 dias)
     hoje = datetime.now(timezone.utc)
@@ -86,9 +86,9 @@ async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
             "plano_nome": t.get("plano_nome", t.get("plano", "")),
         })
 
-    # Distribuicao por gateway
-    count_pix = len([t for t in all_txs if t.get("gateway") == "efi_bank"])
-    count_cartao = len([t for t in all_txs if t.get("gateway") == "stripe"])
+    # Distribuicao por tipo (pix vs cartao)
+    count_pix = len([t for t in all_txs if t.get("tipo") == "pix"])
+    count_cartao = len([t for t in all_txs if t.get("tipo") == "cartao"])
 
     return {
         "totais": {
@@ -108,3 +108,15 @@ async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
         "receita_mensal": meses_uniq,
         "transacoes_recentes": recentes_clean,
     }
+
+
+@router.post("/relatorio-semanal/enviar")
+async def enviar_relatorio_manual(admin_user: dict = Depends(get_admin_user)):
+    """Dispara manualmente o relatorio semanal por e-mail"""
+    from services.relatorio_semanal import enviar_relatorio_semanal
+    try:
+        await enviar_relatorio_semanal()
+        return {"status": "success", "message": "Relatorio semanal enviado com sucesso"}
+    except Exception as e:
+        logger.error(f"Erro ao enviar relatorio semanal: {e}")
+        return {"status": "error", "message": str(e)}

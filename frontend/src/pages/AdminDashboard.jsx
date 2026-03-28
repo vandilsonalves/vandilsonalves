@@ -335,7 +335,7 @@ const AdminDashboard = () => {
   const fetchEquipesStats = async () => {
     try {
       const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers: { Authorization: `Bearer ${token}` } });
-      const atletasList = Array.isArray(atletasRes.data) ? atletasRes.data : (atletasRes.data.atletas || []);
+      const atletasList = Array.isArray(atletasRes.data) ? atletasRes.data : (atletasRes.data?.atletas || []);
       const equipesCount = {};
       let profissionalCount = 0;
       let povaoCount = 0;
