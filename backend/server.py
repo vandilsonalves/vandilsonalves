@@ -1874,6 +1874,32 @@ async def autorizar_atleta(dados: AutorizarAtletaRequest, admin: dict = Depends(
     }
     await db.autorizacoes.insert_one(autorizacao)
 
+    # Registrar transacao financeira (vinculo com Financeiro)
+    tx_id = str(uuid.uuid4())
+    transaction = {
+        "id": tx_id,
+        "user_id": dados.atleta_id,
+        "user_email": atleta.get("email", ""),
+        "user_nome": atleta.get("nome", ""),
+        "gateway": "admin_manual",
+        "tipo": "admin_manual",
+        "origem": "admin_manual",
+        "plano": dados.tipo_plano,
+        "plano_nome": plano_nome,
+        "amount": 0,
+        "parcelas": 0,
+        "valor_parcela": 0,
+        "currency": "brl",
+        "payment_status": "paid",
+        "status": "approved",
+        "admin_nome": admin.get("nome", "Admin"),
+        "admin_id": admin.get("id"),
+        "autorizacao_id": autorizacao["id"],
+        "data_criacao": agora.isoformat(),
+        "data_atualizacao": agora.isoformat(),
+    }
+    await db.payment_transactions.insert_one(transaction)
+
     return {
         "message": f"Atleta {atleta.get('nome', '')} autorizado! Acesso ate {data_expiracao.strftime('%d/%m/%Y')}",
         "autorizacao_id": autorizacao["id"],

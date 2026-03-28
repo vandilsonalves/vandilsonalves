@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import {
   DollarSign, TrendingUp, CreditCard, QrCode,
   ArrowUpRight, ArrowDownRight, RefreshCw, Loader2,
-  CheckCircle, Clock, XCircle, BarChart3, Users, Eye, ShoppingCart, ArrowDown
+  CheckCircle, Clock, XCircle, BarChart3, Users, Eye, ShoppingCart, ArrowDown,
+  Download, FileSpreadsheet, FileText, HelpCircle, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -208,6 +209,8 @@ export default function DashboardFinanceiro() {
   const [conversao, setConversao] = useState(null);
   const [loadingConversao, setLoadingConversao] = useState(true);
   const [periodoConversao, setPeriodoConversao] = useState('30d');
+  const [showExport, setShowExport] = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const fetchData = async () => {
     setLoading(true);
@@ -247,6 +250,34 @@ export default function DashboardFinanceiro() {
 
   useEffect(() => { fetchData(); fetchConversao(); }, []);
 
+  const handleExport = async (formato) => {
+    setExporting(true);
+    setShowExport(false);
+    try {
+      const res = await fetch(`${API}/admin/financeiro/exportar/${formato}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `financeiro_ranking_run.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        toast.success(`Relatorio ${formato.toUpperCase()} exportado!`);
+      } else {
+        toast.error('Erro ao exportar');
+      }
+    } catch {
+      toast.error('Erro de conexao');
+    } finally {
+      setExporting(false);
+    }
+  };
+
   // Auto-refresh quando receber notificacao de pagamento via WebSocket
   useEffect(() => {
     const handlePaymentAlert = (e) => {
@@ -272,13 +303,15 @@ export default function DashboardFinanceiro() {
 
   const { totais, distribuicao_gateway, receita_diaria, receita_mensal, transacoes_recentes } = data;
 
-  const statusIcon = (s) => {
+  const statusIcon = (s, isManual) => {
+    if (s === 'paid' && isManual) return <HelpCircle className="w-3.5 h-3.5 text-amber-400" />;
     if (s === 'paid') return <CheckCircle className="w-3.5 h-3.5 text-emerald-400" />;
     if (s === 'pending') return <Clock className="w-3.5 h-3.5 text-amber-400" />;
     return <XCircle className="w-3.5 h-3.5 text-red-400" />;
   };
 
-  const statusLabel = (s) => {
+  const statusLabel = (s, isManual) => {
+    if (s === 'paid' && isManual) return 'Pago?';
     if (s === 'paid') return 'Pago';
     if (s === 'pending') return 'Pendente';
     return s;
@@ -292,15 +325,48 @@ export default function DashboardFinanceiro() {
           <h2 className="text-xl font-bold text-white">Dashboard Financeiro</h2>
           <p className="text-sm text-gray-400 mt-0.5">Transacoes PIX e Cartao de Credito</p>
         </div>
-        <Button
-          onClick={fetchData}
-          variant="outline"
-          size="sm"
-          className="border-gray-700 text-gray-300 hover:bg-gray-800"
-          data-testid="btn-refresh-financeiro"
-        >
-          <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Atualizar
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            onClick={fetchData}
+            variant="outline"
+            size="sm"
+            className="border-gray-700 text-gray-300 hover:bg-gray-800"
+            data-testid="btn-refresh-financeiro"
+          >
+            <RefreshCw className="w-3.5 h-3.5 mr-1.5" /> Atualizar
+          </Button>
+          <div className="relative">
+            <Button
+              onClick={() => setShowExport(!showExport)}
+              variant="outline"
+              size="sm"
+              disabled={exporting}
+              className="border-emerald-700 text-emerald-400 hover:bg-emerald-900/30"
+              data-testid="btn-exportar-dados"
+            >
+              {exporting ? <Loader2 className="w-3.5 h-3.5 mr-1.5 animate-spin" /> : <Download className="w-3.5 h-3.5 mr-1.5" />}
+              Exportar Dados
+            </Button>
+            {showExport && (
+              <div className="absolute right-0 top-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden" data-testid="export-dropdown">
+                <button
+                  onClick={() => handleExport('pdf')}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                  data-testid="btn-export-pdf"
+                >
+                  <FileText className="w-4 h-4 text-red-400" /> Exportar PDF
+                </button>
+                <button
+                  onClick={() => handleExport('excel')}
+                  className="flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gray-300 hover:bg-gray-700 transition-colors"
+                  data-testid="btn-export-excel"
+                >
+                  <FileSpreadsheet className="w-4 h-4 text-green-400" /> Exportar Excel
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
 
       {/* Cards KPI */}
@@ -424,6 +490,15 @@ export default function DashboardFinanceiro() {
               </div>
               <span className="text-white font-medium">{formatCurrency(distribuicao_gateway.cartao.valor)}</span>
             </div>
+            {distribuicao_gateway.manual?.count > 0 && (
+              <div className="flex items-center justify-between text-sm">
+                <div className="flex items-center gap-2">
+                  <UserCheck className="w-3.5 h-3.5 text-amber-400" />
+                  <span className="text-gray-400">Manual/Cortesia</span>
+                </div>
+                <span className="text-amber-400 font-medium">{distribuicao_gateway.manual.count}x</span>
+              </div>
+            )}
           </div>
         </Card>
       </div>
@@ -443,49 +518,65 @@ export default function DashboardFinanceiro() {
               </tr>
             </thead>
             <tbody>
-              {transacoes_recentes.map((tx, i) => (
+              {transacoes_recentes.map((tx, i) => {
+                const isManual = tx.is_manual || tx.gateway === 'admin_manual';
+                return (
                 <tr key={i} className="border-b border-gray-800/50 hover:bg-gray-800/30 transition" data-testid={`transacao-row-${i}`}>
                   <td className="py-3 pr-3">
                     <p className="text-white text-sm truncate max-w-[160px]">{tx.user_nome || '-'}</p>
                     <p className="text-gray-500 text-xs truncate max-w-[160px]">{tx.user_email || '-'}</p>
                   </td>
                   <td className="py-3 pr-3">
-                    <Badge
-                      variant="outline"
-                      className={tx.gateway === 'efi_bank'
-                        ? 'border-emerald-500/30 text-emerald-400 bg-emerald-500/5'
-                        : 'border-indigo-500/30 text-indigo-400 bg-indigo-500/5'
-                      }
-                    >
-                      {tx.gateway === 'efi_bank' ? (
-                        <><QrCode className="w-3 h-3 mr-1" /> PIX</>
-                      ) : (
-                        <><CreditCard className="w-3 h-3 mr-1" /> Cartao</>
-                      )}
-                    </Badge>
-                  </td>
-                  <td className="py-3 pr-3">
-                    <span className="text-white font-medium">{formatCurrency(tx.amount)}</span>
-                    {tx.parcelas > 1 && (
-                      <span className="text-gray-500 text-xs ml-1">({tx.parcelas}x {formatCurrency(tx.valor_parcela)})</span>
+                    {isManual ? (
+                      <Badge variant="outline" className="border-amber-500/30 text-amber-400 bg-amber-500/5">
+                        <UserCheck className="w-3 h-3 mr-1" /> Manual
+                      </Badge>
+                    ) : tx.tipo === 'pix' ? (
+                      <Badge variant="outline" className="border-emerald-500/30 text-emerald-400 bg-emerald-500/5">
+                        <QrCode className="w-3 h-3 mr-1" /> PIX
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="border-indigo-500/30 text-indigo-400 bg-indigo-500/5">
+                        <CreditCard className="w-3 h-3 mr-1" /> Cartao
+                      </Badge>
                     )}
                   </td>
                   <td className="py-3 pr-3">
-                    <div className="flex items-center gap-1.5">
-                      {statusIcon(tx.payment_status)}
+                    {isManual ? (
+                      <span className="text-gray-500 text-xs italic">Cortesia</span>
+                    ) : (
+                      <>
+                        <span className="text-white font-medium">{formatCurrency(tx.amount)}</span>
+                        {tx.parcelas > 1 && (
+                          <span className="text-gray-500 text-xs ml-1">({tx.parcelas}x {formatCurrency(tx.valor_parcela)})</span>
+                        )}
+                      </>
+                    )}
+                  </td>
+                  <td className="py-3 pr-3">
+                    <div className="flex items-center gap-1.5 group relative">
+                      {statusIcon(tx.payment_status, isManual)}
                       <span className={`text-xs ${
+                        isManual ? 'text-amber-400' :
                         tx.payment_status === 'paid' ? 'text-emerald-400' :
                         tx.payment_status === 'pending' ? 'text-amber-400' : 'text-red-400'
                       }`}>
-                        {statusLabel(tx.payment_status)}
+                        {statusLabel(tx.payment_status, isManual)}
                       </span>
+                      {isManual && (
+                        <div className="hidden group-hover:block absolute left-0 bottom-full mb-1 bg-gray-800 border border-gray-700 rounded-lg p-2 z-50 whitespace-nowrap shadow-xl">
+                          <p className="text-xs text-amber-400 font-medium">Autorizado manualmente</p>
+                          <p className="text-[10px] text-gray-400">{tx.admin_nome ? `Por: ${tx.admin_nome}` : 'Pagamento externo ou cortesia'}</p>
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="py-3 text-gray-400 text-xs whitespace-nowrap">
                     {tx.data_criacao ? new Date(tx.data_criacao).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '-'}
                   </td>
                 </tr>
-              ))}
+                );
+              })}
               {transacoes_recentes.length === 0 && (
                 <tr>
                   <td colSpan={5} className="py-10 text-center text-gray-500">

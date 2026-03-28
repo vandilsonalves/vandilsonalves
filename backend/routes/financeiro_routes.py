@@ -71,24 +71,30 @@ async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
     recentes = sorted(all_txs, key=lambda x: x.get("data_criacao", ""), reverse=True)[:20]
     recentes_clean = []
     for t in recentes:
+        origem = t.get("origem", t.get("gateway", ""))
+        is_manual = origem == "admin_manual" or t.get("gateway") == "admin_manual"
         recentes_clean.append({
             "id": t.get("id", ""),
             "txid": t.get("txid", t.get("session_id", "")),
             "gateway": t.get("gateway", "desconhecido"),
             "tipo": t.get("tipo", "cartao"),
+            "origem": origem,
+            "is_manual": is_manual,
             "amount": t.get("amount", 0),
             "parcelas": t.get("parcelas", 1),
             "valor_parcela": t.get("valor_parcela", t.get("amount", 0)),
             "payment_status": t.get("payment_status", "unknown"),
             "user_nome": t.get("user_nome", ""),
             "user_email": t.get("user_email", ""),
+            "admin_nome": t.get("admin_nome", ""),
             "data_criacao": t.get("data_criacao", ""),
             "plano_nome": t.get("plano_nome", t.get("plano", "")),
         })
 
-    # Distribuicao por tipo (pix vs cartao)
+    # Distribuicao por tipo (pix vs cartao vs manual)
     count_pix = len([t for t in all_txs if t.get("tipo") == "pix"])
     count_cartao = len([t for t in all_txs if t.get("tipo") == "cartao"])
+    count_manual = len([t for t in all_txs if t.get("tipo") == "admin_manual" or t.get("gateway") == "admin_manual"])
 
     return {
         "totais": {
@@ -103,6 +109,7 @@ async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
         "distribuicao_gateway": {
             "pix": {"count": count_pix, "valor": round(receita_pix, 2)},
             "cartao": {"count": count_cartao, "valor": round(receita_cartao, 2)},
+            "manual": {"count": count_manual},
         },
         "receita_diaria": dias_30,
         "receita_mensal": meses_uniq,
@@ -233,3 +240,193 @@ async def metricas_conversao(admin_user: dict = Depends(get_admin_user)):
     resultado["funil_diario"] = funil_diario
 
     return resultado
+
+
+@router.get("/exportar/{formato}")
+async def exportar_financeiro(formato: str, admin_user: dict = Depends(get_admin_user)):
+    """Exporta dados financeiros em PDF ou Excel"""
+    from fastapi.responses import StreamingResponse
+    import io
+
+    # Buscar todas as transacoes
+    all_txs = []
+    cursor = db.payment_transactions.find({}, {"_id": 0}).sort("data_criacao", -1)
+    async for tx in cursor:
+        all_txs.append(tx)
+
+    pagas = [t for t in all_txs if t.get("payment_status") == "paid"]
+    receita_total = sum(t.get("amount", 0) for t in pagas)
+    receita_pix = sum(t.get("amount", 0) for t in pagas if t.get("tipo") == "pix")
+    receita_cartao = sum(t.get("amount", 0) for t in pagas if t.get("tipo") == "cartao")
+    count_manual = len([t for t in all_txs if t.get("tipo") == "admin_manual" or t.get("gateway") == "admin_manual"])
+
+    if formato == "excel":
+        import openpyxl
+        from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+
+        wb = openpyxl.Workbook()
+
+        # Aba 1: Resumo Geral
+        ws1 = wb.active
+        ws1.title = "Resumo Geral"
+        header_font = Font(bold=True, color="FFFFFF", size=11)
+        header_fill = PatternFill(start_color="1F2937", end_color="1F2937", fill_type="solid")
+        thin_border = Border(
+            left=Side(style='thin'), right=Side(style='thin'),
+            top=Side(style='thin'), bottom=Side(style='thin')
+        )
+
+        ws1.append(["RELATORIO FINANCEIRO - RANKING RUN PRO"])
+        ws1.merge_cells("A1:D1")
+        ws1["A1"].font = Font(bold=True, size=14)
+        ws1.append([f"Gerado em: {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')}"])
+        ws1.append([])
+        ws1.append(["Metrica", "Valor"])
+        ws1.append(["Receita Total", f"R$ {receita_total:.2f}"])
+        ws1.append(["Receita PIX", f"R$ {receita_pix:.2f}"])
+        ws1.append(["Receita Cartao", f"R$ {receita_cartao:.2f}"])
+        ws1.append(["Total Transacoes", len(all_txs)])
+        ws1.append(["Transacoes Pagas", len(pagas)])
+        ws1.append(["Autorizacoes Manuais (Cortesia)", count_manual])
+        ws1.append(["Ticket Medio", f"R$ {(receita_total / len(pagas)):.2f}" if pagas else "R$ 0,00"])
+
+        for row in ws1.iter_rows(min_row=4, max_row=ws1.max_row, max_col=2):
+            for cell in row:
+                cell.border = thin_border
+
+        ws1.column_dimensions["A"].width = 35
+        ws1.column_dimensions["B"].width = 25
+
+        # Aba 2: Transacoes Detalhadas
+        ws2 = wb.create_sheet("Transacoes Detalhadas")
+        headers = ["Data", "Atleta", "Email", "Tipo", "Gateway", "Valor (R$)", "Parcelas", "Status", "Plano", "Origem", "Admin"]
+        ws2.append(headers)
+        for i, cell in enumerate(ws2[1]):
+            cell.font = header_font
+            cell.fill = header_fill
+            cell.alignment = Alignment(horizontal="center")
+
+        for tx in all_txs:
+            is_manual = tx.get("tipo") == "admin_manual" or tx.get("gateway") == "admin_manual"
+            origem = "Cortesia/Externo" if is_manual else ("PIX" if tx.get("tipo") == "pix" else "Cartao")
+            ws2.append([
+                tx.get("data_criacao", "")[:16].replace("T", " "),
+                tx.get("user_nome", ""),
+                tx.get("user_email", ""),
+                tx.get("tipo", ""),
+                tx.get("gateway", ""),
+                tx.get("amount", 0),
+                tx.get("parcelas", 0),
+                tx.get("payment_status", ""),
+                tx.get("plano_nome", tx.get("plano", "")),
+                origem,
+                tx.get("admin_nome", "") if is_manual else "",
+            ])
+
+        for row in ws2.iter_rows(min_row=2, max_row=ws2.max_row, max_col=len(headers)):
+            for cell in row:
+                cell.border = thin_border
+
+        for i, w in enumerate([18, 25, 30, 15, 18, 12, 10, 10, 22, 18, 18]):
+            ws2.column_dimensions[chr(65 + i)].width = w
+
+        buffer = io.BytesIO()
+        wb.save(buffer)
+        buffer.seek(0)
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": "attachment; filename=financeiro_ranking_run.xlsx"}
+        )
+
+    elif formato == "pdf":
+        from fpdf import FPDF
+
+        class PDF(FPDF):
+            def header(self):
+                self.set_fill_color(31, 41, 55)
+                self.rect(0, 0, 297, 20, "F")
+                self.set_font("Helvetica", "B", 14)
+                self.set_text_color(255, 255, 255)
+                self.cell(0, 15, "Relatorio Financeiro - Ranking Run Pro", new_x="LMARGIN", new_y="NEXT", align="C")
+                self.ln(5)
+
+            def footer(self):
+                self.set_y(-15)
+                self.set_font("Helvetica", "I", 8)
+                self.set_text_color(128, 128, 128)
+                self.cell(0, 10, f"Pagina {self.page_no()}/{{nb}} | {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M')}", align="C")
+
+        pdf = PDF(orientation="L", unit="mm", format="A4")
+        pdf.alias_nb_pages()
+        pdf.add_page()
+        pdf.set_auto_page_break(auto=True, margin=20)
+
+        # Resumo
+        pdf.set_font("Helvetica", "B", 12)
+        pdf.set_text_color(16, 185, 129)
+        pdf.cell(0, 8, "Resumo Geral", new_x="LMARGIN", new_y="NEXT")
+        pdf.set_font("Helvetica", "", 10)
+        pdf.set_text_color(0, 0, 0)
+        pdf.cell(80, 7, f"Receita Total: R$ {receita_total:.2f}", new_x="END")
+        pdf.cell(80, 7, f"PIX: R$ {receita_pix:.2f}", new_x="END")
+        pdf.cell(80, 7, f"Cartao: R$ {receita_cartao:.2f}", new_x="LMARGIN", new_y="NEXT")
+        pdf.cell(80, 7, f"Transacoes Pagas: {len(pagas)}", new_x="END")
+        pdf.cell(80, 7, f"Cortesias/Manual: {count_manual}", new_x="END")
+        pdf.cell(80, 7, f"Ticket Medio: R$ {(receita_total / len(pagas)):.2f}" if pagas else "Ticket Medio: R$ 0,00", new_x="LMARGIN", new_y="NEXT")
+        pdf.ln(5)
+
+        # Tabela
+        pdf.set_font("Helvetica", "B", 11)
+        pdf.set_text_color(16, 185, 129)
+        pdf.cell(0, 8, "Transacoes Detalhadas", new_x="LMARGIN", new_y="NEXT")
+
+        cols = [("Data", 30), ("Atleta", 45), ("Email", 55), ("Tipo", 20), ("Valor", 22), ("Parc.", 12), ("Status", 18), ("Plano", 35), ("Origem", 25), ("Admin", 25)]
+        pdf.set_font("Helvetica", "B", 7)
+        pdf.set_fill_color(31, 41, 55)
+        pdf.set_text_color(255, 255, 255)
+        for name, w in cols:
+            pdf.cell(w, 6, name, border=1, fill=True, align="C")
+        pdf.ln()
+
+        pdf.set_font("Helvetica", "", 7)
+        pdf.set_text_color(0, 0, 0)
+        for i, tx in enumerate(all_txs):
+            is_manual = tx.get("tipo") == "admin_manual" or tx.get("gateway") == "admin_manual"
+            origem = "Cortesia" if is_manual else ("PIX" if tx.get("tipo") == "pix" else "Cartao")
+            if i % 2 == 0:
+                pdf.set_fill_color(243, 244, 246)
+            else:
+                pdf.set_fill_color(255, 255, 255)
+
+            data_str = tx.get("data_criacao", "")[:16].replace("T", " ")
+            values = [
+                data_str,
+                tx.get("user_nome", "")[:22],
+                tx.get("user_email", "")[:28],
+                tx.get("tipo", ""),
+                f"R$ {tx.get('amount', 0):.2f}",
+                str(tx.get("parcelas", 0)),
+                tx.get("payment_status", ""),
+                (tx.get("plano_nome") or "")[:18],
+                origem,
+                (tx.get("admin_nome", "") if is_manual else "")[:14],
+            ]
+            for j, (_, w) in enumerate(cols):
+                pdf.cell(w, 5, values[j], border=1, fill=True)
+            pdf.ln()
+
+        buffer = io.BytesIO()
+        pdf.output(buffer)
+        buffer.seek(0)
+
+        return StreamingResponse(
+            buffer,
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=financeiro_ranking_run.pdf"}
+        )
+
+    else:
+        from fastapi import HTTPException as HE
+        raise HE(status_code=400, detail="Formato invalido. Use 'pdf' ou 'excel'.")
