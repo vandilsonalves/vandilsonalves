@@ -52,6 +52,7 @@ const AtletaDetalhes = () => {
   const [shareImageUrl, setShareImageUrl] = useState(null);
   const [generatingImage, setGeneratingImage] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [fotoShareError, setFotoShareError] = useState(false);
   const shareCardRef = useRef(null);
   
   // Verificar se é o dono do perfil
@@ -241,18 +242,19 @@ const AtletaDetalhes = () => {
                       {/* Atleta Info */}
                       <div className="text-center flex-1 flex flex-col justify-center">
                         <div className="w-20 h-20 mx-auto mb-3 rounded-full ring-4 ring-emerald-500 overflow-hidden bg-emerald-600 flex items-center justify-center">
-                          {getFotoUrl() ? (
+                          {getFotoUrl() && !fotoShareError ? (
                             <img
                               src={getFotoUrl()}
                               alt={atleta.nome}
                               crossOrigin="anonymous"
                               className="w-full h-full object-cover"
-                              onError={(e) => { e.target.style.display = 'none'; const sib = e.target.nextElementSibling; if (sib) sib.style.display = 'flex'; }}
+                              onError={() => setFotoShareError(true)}
                             />
-                          ) : null}
-                          <span className={`text-white text-xl font-bold ${getFotoUrl() ? 'hidden' : 'flex'} items-center justify-center w-full h-full`}>
-                            {atleta.nome.charAt(0)}
-                          </span>
+                          ) : (
+                            <span className="text-white text-xl font-bold flex items-center justify-center w-full h-full">
+                              {atleta.nome.charAt(0)}
+                            </span>
+                          )}
                         </div>
                         <h2 className="text-xl font-bold mb-1">{atleta.nome}</h2>
                         <p className="text-emerald-300 text-sm mb-4">{atleta.equipe}</p>

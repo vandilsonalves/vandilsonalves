@@ -38,6 +38,7 @@ const AssessoriaPage = () => {
   const [mensagemSolicitacao, setMensagemSolicitacao] = useState('');
   const [enviandoSolicitacao, setEnviandoSolicitacao] = useState(false);
   const [solicitacaoPendente, setSolicitacaoPendente] = useState(false);
+  const [fotoAssessoriaError, setFotoAssessoriaError] = useState(false);
   
   // Verificar se o usuário logado é o dono da assessoria
   const isDono = user && assessoria && assessoria.responsavel_id === user.id;
@@ -242,23 +243,14 @@ const AssessoriaPage = () => {
             <div className="flex flex-col md:flex-row md:items-center gap-6">
               {/* Logo/Avatar da Assessoria - Prioriza foto se existir */}
               <div className="flex-shrink-0">
-                {assessoria.foto_url ? (
+                {assessoria.foto_url && !fotoAssessoriaError ? (
                   <div className="relative">
                     <img 
                       src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
                       alt={`Foto da ${assessoria.nome}`}
                       className="w-24 h-24 md:w-32 md:h-32 rounded-2xl object-cover shadow-lg border-4 border-white/30"
-                      onError={(e) => {
-                        e.target.style.display = 'none';
-                        const sib = e.target.nextElementSibling;
-                        if (sib) sib.style.display = 'flex';
-                      }}
+                      onError={() => setFotoAssessoriaError(true)}
                     />
-                    <div 
-                      className={`w-24 h-24 md:w-32 md:h-32 rounded-2xl ${getSeloColor(assessoria.selo)} items-center justify-center text-6xl shadow-lg border-4 border-white/30 hidden`}
-                    >
-                      {getSeloIcon(assessoria.selo)}
-                    </div>
                     {/* Badge do selo no canto */}
                     <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${getSeloColor(assessoria.selo)} rounded-full flex items-center justify-center text-2xl shadow-md border-2 border-white`}>
                       {getSeloIcon(assessoria.selo)}
