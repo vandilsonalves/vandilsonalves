@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import RankingTable from '@/components/RankingTable';
 import RankingDestaques from '@/components/RankingDestaques';
 import { Search, FileDown, Flame, Trophy, HelpCircle } from 'lucide-react';
+import LoadMoreButton from '@/components/LoadMoreButton';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
@@ -357,11 +358,14 @@ const RankingProfissional = () => {
                   <>
                     <RankingTable data={rankingFiltrado} onAtletaClick={handleAtletaClick} modalidade="profissional" />
                     {hasMore && !filtroNome && !filtroColocacao && !filtroUF && (
-                      <div className="flex justify-center mt-4">
-                        <Button onClick={handleLoadMore} disabled={loadingMore} variant="outline" className="w-full md:w-auto" data-testid="btn-carregar-mais-prof">
-                          {loadingMore ? 'Carregando...' : `Carregar mais (${rankingData.length} de ${totalAtletas})`}
-                        </Button>
-                      </div>
+                      <LoadMoreButton
+                        current={rankingData.length}
+                        total={totalAtletas}
+                        loading={loadingMore}
+                        onClick={handleLoadMore}
+                        testId="btn-carregar-mais-prof"
+                        color="emerald"
+                      />
                     )}
                     {!hasMore && rankingData.length > 0 && !filtroNome && !filtroColocacao && !filtroUF && (
                       <p className="text-center text-sm text-slate-400 mt-3">Mostrando todos os {rankingData.length} atletas</p>

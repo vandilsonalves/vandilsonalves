@@ -10,6 +10,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import RankingTable from '@/components/RankingTable';
 import { Search, HelpCircle, Share2, Trophy, Flame, Users, Target, Award, CheckCircle, TrendingUp, Star, FileText, BadgeCheck, History, Activity, Zap, MapPin } from 'lucide-react';
+import LoadMoreButton from '@/components/LoadMoreButton';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 
@@ -769,11 +770,14 @@ const RankingGalera = () => {
                     </table>
                   </div>
                   {hasMorePovao && !filtroNomePovao && !filtroColocacaoPovao && !filtroUFPovao && !filtroFaixaPovao && !filtroEquipePovao && !filtroCidadePovao && (
-                    <div className="flex justify-center mt-4">
-                      <Button onClick={handleLoadMorePovao} disabled={loadingMorePovao} variant="outline" className="w-full md:w-auto" data-testid="btn-carregar-mais-galera">
-                        {loadingMorePovao ? 'Carregando...' : `Carregar mais (${rankingPovao.length} de ${totalAtletasPovao})`}
-                      </Button>
-                    </div>
+                    <LoadMoreButton
+                      current={rankingPovao.length}
+                      total={totalAtletasPovao}
+                      loading={loadingMorePovao}
+                      onClick={handleLoadMorePovao}
+                      testId="btn-carregar-mais-galera"
+                      color="purple"
+                    />
                   )}
                   {!hasMorePovao && rankingPovao.length > 0 && !filtroNomePovao && !filtroColocacaoPovao && !filtroUFPovao && (
                     <p className="text-center text-sm text-slate-400 mt-3">Mostrando todos os {rankingPovao.length} atletas</p>

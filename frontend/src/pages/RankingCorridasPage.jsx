@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { RankingAvaliadores } from '@/components/ReputacaoAvaliador';
 import CidadeCombobox from '@/components/CidadeCombobox';
+import LoadMoreButton from '@/components/LoadMoreButton';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -972,24 +973,14 @@ const RankingCorridasPage = () => {
               
               {/* Botao Carregar Mais */}
               {hasMore && (
-                <div className="flex justify-center mt-4 pb-2">
-                  <Button
-                    onClick={handleLoadMore}
-                    disabled={loadingMore}
-                    variant="outline"
-                    className="w-full md:w-auto"
-                    data-testid="btn-carregar-mais"
-                  >
-                    {loadingMore ? (
-                      <span className="flex items-center gap-2">
-                        <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
-                        Carregando...
-                      </span>
-                    ) : (
-                      `Carregar mais (${ranking.length} de ${totalCorridas})`
-                    )}
-                  </Button>
-                </div>
+                <LoadMoreButton
+                  current={ranking.length}
+                  total={totalCorridas}
+                  loading={loadingMore}
+                  onClick={handleLoadMore}
+                  testId="btn-carregar-mais"
+                  color="emerald"
+                />
               )}
               
               {!hasMore && ranking.length > 0 && (

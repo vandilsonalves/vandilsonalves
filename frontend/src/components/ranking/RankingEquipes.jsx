@@ -9,6 +9,7 @@ import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Trophy, Award, TrendingUp, Users, Eye, Star, HelpCircle, FileText, MapPin, Target, Send, RefreshCw, Loader2, Activity, BadgeCheck, CheckCircle } from 'lucide-react';
+import LoadMoreButton from '@/components/LoadMoreButton';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useAuth } from '@/context/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, AreaChart, Area, LineChart, Line, Legend } from 'recharts';
@@ -786,16 +787,14 @@ const RankingEquipes = () => {
                   </div>
                 )}
                 {ligaRanking.length > displayCount && (
-                  <div className="flex justify-center mt-4">
-                    <Button
-                      onClick={() => setDisplayCount(prev => prev + 20)}
-                      variant="outline"
-                      className="w-full md:w-auto"
-                      data-testid="btn-carregar-mais-equipes"
-                    >
-                      Carregar mais ({Math.min(displayCount, ligaRanking.length)} de {ligaRanking.length})
-                    </Button>
-                  </div>
+                  <LoadMoreButton
+                    current={Math.min(displayCount, ligaRanking.length)}
+                    total={ligaRanking.length}
+                    loading={false}
+                    onClick={() => setDisplayCount(prev => prev + 20)}
+                    testId="btn-carregar-mais-equipes"
+                    color="amber"
+                  />
                 )}
                 {ligaRanking.length > 0 && ligaRanking.length <= displayCount && (
                   <p className="text-center text-sm text-slate-400 mt-3">

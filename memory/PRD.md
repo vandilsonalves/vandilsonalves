@@ -40,6 +40,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Paginação "Carregar Mais" (20 itens/página) no RankingGalera ✅
 - Paginação "Carregar Mais" (20 itens/página) no RankingEquipes ✅
 - Correção de erro de parsing no RankingGalera.jsx (fragment wrapper) ✅
+- Componente reutilizável LoadMoreButton.jsx com barra de progresso visual + percentual ✅
+- Aplicado em todos os 4 rankings (Profissional, Galera, Equipes, Corridas) ✅
 - Testes: 14/14 backend, 100% frontend (iteration_90)
 
 ## Backlog Priorizado
