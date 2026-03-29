@@ -694,6 +694,7 @@ const RankingGalera = () => {
                     <p className="text-sm mt-2">Tente limpar os filtros ou buscar por outros critérios.</p>
                   </div>
                 ) : (
+                  <>
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-purple-50 dark:bg-purple-900/30">
@@ -777,6 +778,7 @@ const RankingGalera = () => {
                   {!hasMorePovao && rankingPovao.length > 0 && !filtroNomePovao && !filtroColocacaoPovao && !filtroUFPovao && (
                     <p className="text-center text-sm text-slate-400 mt-3">Mostrando todos os {rankingPovao.length} atletas</p>
                   )}
+                  </>
                 )}
               </CardContent>
             </Card>

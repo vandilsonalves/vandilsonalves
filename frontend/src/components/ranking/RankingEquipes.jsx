@@ -34,6 +34,7 @@ const RankingEquipes = () => {
   const [showEvolucaoChart, setShowEvolucaoChart] = useState(true);
   const [showComoFuncionaEquipes, setShowComoFuncionaEquipes] = useState(false);
   const [showRegulamentoEquipes, setShowRegulamentoEquipes] = useState(false);
+  const [displayCount, setDisplayCount] = useState(20);
 
   const getMesesDisponiveis = () => {
     const mesAtual = new Date().getMonth() + 1;
@@ -49,6 +50,7 @@ const RankingEquipes = () => {
   };
 
   useEffect(() => {
+    setDisplayCount(20);
     fetchLigaRanking();
     fetchLigaStats();
     fetchEstadosComAssessorias();
@@ -736,7 +738,7 @@ const RankingEquipes = () => {
                         </tr>
                       </thead>
                       <tbody>
-                        {ligaRanking.map((equipe, idx) => (
+                        {ligaRanking.slice(0, displayCount).map((equipe, idx) => (
                           <tr 
                             key={equipe.nome} 
                             className={`border-b border-slate-100 dark:border-slate-800 hover:bg-amber-50 dark:hover:bg-amber-900/10 transition-colors cursor-pointer ${
@@ -783,10 +785,26 @@ const RankingEquipes = () => {
                     </table>
                   </div>
                 )}
+                {ligaRanking.length > displayCount && (
+                  <div className="flex justify-center mt-4">
+                    <Button
+                      onClick={() => setDisplayCount(prev => prev + 20)}
+                      variant="outline"
+                      className="w-full md:w-auto"
+                      data-testid="btn-carregar-mais-equipes"
+                    >
+                      Carregar mais ({Math.min(displayCount, ligaRanking.length)} de {ligaRanking.length})
+                    </Button>
+                  </div>
+                )}
+                {ligaRanking.length > 0 && ligaRanking.length <= displayCount && (
+                  <p className="text-center text-sm text-slate-400 mt-3">
+                    Mostrando todas as {ligaRanking.length} assessorias
+                  </p>
+                )}
               </CardContent>
             </Card>
           </div>
-        )}
 
         {/* Modal Detalhes da Assessoria */}
         <Dialog open={showAssessoriaModal} onOpenChange={setShowAssessoriaModal}>
