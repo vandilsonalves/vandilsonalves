@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NotificacoesBell from '@/components/NotificacoesBell';
 import MobileNav from '@/components/MobileNav';
-import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquare, HelpCircle, Award, Star, Activity, History, MapPin, RefreshCw, Zap, CreditCard } from 'lucide-react';
+import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquare, HelpCircle, Award, Star, Activity, History, MapPin, RefreshCw, Zap, CreditCard, UsersRound } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -83,6 +83,12 @@ const RankingPage = () => {
                   <MessageSquare className="w-4 h-4 mr-1" />
                   Feed
                 </Button>
+                {user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe) && (
+                  <Button onClick={() => navigate('/feed-equipe')} variant="ghost" size="sm" className="text-amber-500 hover:text-amber-600" data-testid="btn-feed-equipe">
+                    <UsersRound className="w-4 h-4 mr-1" />
+                    Feed da Equipe
+                  </Button>
+                )}
                 <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras">
                   <HelpCircle className="w-4 h-4 mr-1" />
                   Regras

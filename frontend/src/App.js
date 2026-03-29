@@ -23,6 +23,7 @@ import RaioXPage from "@/pages/RaioXPage";
 import PagamentoPage from "@/pages/PagamentoPage";
 import PagamentoSucessoPage from "@/pages/PagamentoSucessoPage";
 import PagamentoCanceladoPage from "@/pages/PagamentoCanceladoPage";
+import FeedEquipePage from "@/pages/FeedEquipePage";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import SplashScreen from "@/components/SplashScreen";
 import AccessGate from "@/components/AccessGate";
@@ -72,6 +73,7 @@ function App() {
               <Route path="/pagamento" element={<PagamentoPage />} />
               <Route path="/pagamento/sucesso" element={<PagamentoSucessoPage />} />
               <Route path="/pagamento/cancelado" element={<PagamentoCanceladoPage />} />
+              <Route path="/feed-equipe" element={<FeedEquipePage />} />
             </Routes>
           </PrintProtectionWrapper>
         </BrowserRouter>

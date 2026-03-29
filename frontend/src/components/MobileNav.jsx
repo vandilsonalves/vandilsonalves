@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import {
   Menu, X, MessageSquare, HelpCircle, History, MapPin, Activity,
-  Zap, User, Upload, LogOut, Shield, Award, Home, CreditCard
+  Zap, User, Upload, LogOut, Shield, Award, Home, CreditCard, UsersRound
 } from 'lucide-react';
 
 /**
@@ -20,9 +20,12 @@ export default function MobileNav() {
     navigate(path);
   };
 
+  const hasEquipe = user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe);
+
   const menuItems = [
     { label: 'Ranking', icon: Home, path: '/', color: 'text-emerald-400' },
     { label: 'Feed', icon: MessageSquare, path: '/feed', color: 'text-blue-400' },
+    ...(hasEquipe ? [{ label: 'Feed da Equipe', icon: UsersRound, path: '/feed-equipe', color: 'text-amber-400' }] : []),
     { label: 'Regras', icon: HelpCircle, path: '/regras', color: 'text-slate-400' },
     { label: 'Historico', icon: History, path: '/historico', color: 'text-purple-400' },
     { label: 'Por Cidade', icon: MapPin, path: '/ranking-cidade', color: 'text-teal-400' },

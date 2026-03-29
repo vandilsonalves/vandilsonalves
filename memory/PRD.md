@@ -28,6 +28,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **Botão "Desvincular Atleta"** com motivo e notificação ✅
 - **Nomes com apelido** (prioriza apelido, senão primeiro+segundo nome) ✅
 - Feed acessível tanto no painel do dono quanto no perfil do atleta ✅
+- **Botão "Feed da Equipe"** no header e mobile nav (só para atletas com equipe) ✅
+- **Página dedicada /feed-equipe** fora do AccessGate (sempre acessível) ✅
 - Testes: Backend 17/17 PASSED, Frontend 100% (iteration_91)
 
 ## Backlog Priorizado
