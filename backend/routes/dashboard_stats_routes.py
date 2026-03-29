@@ -1108,3 +1108,60 @@ async def get_distribuicao_etnia(admin: dict = Depends(get_admin_user)):
             })
     
     return {"dados": dados, "total": total, "titulo": "Distribuição por Etnia"}
+
+
+@router.get("/dashboard/grafico/distribuicao-tipo-corredor")
+async def get_distribuicao_tipo_corredor(admin: dict = Depends(get_admin_user)):
+    """Gráfico 31: Distribuição por Tipo de Corredor (pizza)"""
+    pipeline = [
+        {"$match": {"tipo_corredor": {"$nin": ["", None]}}},
+        {"$group": {"_id": "$tipo_corredor", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    tipos = await db.usuarios.aggregate(pipeline).to_list(None)
+    total = sum(t["count"] for t in tipos)
+
+    labels = {
+        "velocista": "VELOCISTA",
+        "resistencia": "RESISTENCIA",
+        "endurance": "ENDURANCE",
+        "pace_leve": "PACE LEVE"
+    }
+
+    dados = []
+    for t in tipos:
+        dados.append({
+            "tipo": labels.get(t["_id"], t["_id"]),
+            "count": t["count"],
+            "percentual": round((t["count"] / total * 100) if total > 0 else 0, 1)
+        })
+
+    return {"dados": dados, "total": total, "titulo": "Tipo de Corredor"}
+
+
+@router.get("/dashboard/grafico/distribuicao-terreno-preferido")
+async def get_distribuicao_terreno_preferido(admin: dict = Depends(get_admin_user)):
+    """Gráfico 32: Distribuição por Terreno Preferido (pizza)"""
+    pipeline = [
+        {"$match": {"terreno_preferido": {"$nin": ["", None]}}},
+        {"$group": {"_id": "$terreno_preferido", "count": {"$sum": 1}}},
+        {"$sort": {"count": -1}}
+    ]
+    terrenos = await db.usuarios.aggregate(pipeline).to_list(None)
+    total = sum(t["count"] for t in terrenos)
+
+    labels = {
+        "rua_asfalto": "Rua - Asfalto",
+        "trilha": "Trilha",
+        "esteira": "Esteira"
+    }
+
+    dados = []
+    for t in terrenos:
+        dados.append({
+            "terreno": labels.get(t["_id"], t["_id"]),
+            "count": t["count"],
+            "percentual": round((t["count"] / total * 100) if total > 0 else 0, 1)
+        })
+
+    return {"dados": dados, "total": total, "titulo": "Terreno Preferido"}

@@ -128,6 +128,8 @@ const PerfilAtletaPage = () => {
   const [bio, setBio] = useState('');
   const [etnia, setEtnia] = useState('');
   const [apelido, setApelido] = useState('');
+  const [tipoCorredor, setTipoCorredor] = useState('');
+  const [terrenoPreferido, setTerrenoPreferido] = useState('');
   const [whatsappLink, setWhatsappLink] = useState(''); // Campo para dono de assessoria
   
   // Estados para alteração de senha
@@ -204,6 +206,8 @@ const PerfilAtletaPage = () => {
       setBio(data.bio || '');
       setEtnia(data.etnia || '');
       setApelido(data.apelido || '');
+      setTipoCorredor(data.tipo_corredor || '');
+      setTerrenoPreferido(data.terreno_preferido || '');
       setWhatsappLink(data.whatsapp_link || '');
       
     } catch (error) {
@@ -295,7 +299,9 @@ const PerfilAtletaPage = () => {
         telefone,
         bio,
         etnia,
-        apelido
+        apelido,
+        tipo_corredor: tipoCorredor,
+        terreno_preferido: terrenoPreferido
       };
       
       // Adicionar whatsapp_link apenas para donos de assessoria
@@ -1074,6 +1080,44 @@ const PerfilAtletaPage = () => {
                   className="bg-slate-900 border-slate-600 text-white"
                   data-testid="input-apelido"
                 />
+              </div>
+
+              {/* Tipo de Corredor e Terreno Preferido */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label className="text-slate-300 flex items-center gap-2">
+                    <Trophy className="w-4 h-4" />
+                    Tipo de Corredor
+                  </Label>
+                  <Select value={tipoCorredor} onValueChange={setTipoCorredor}>
+                    <SelectTrigger className="bg-slate-900 border-slate-600 text-white" data-testid="select-tipo-corredor">
+                      <SelectValue placeholder="Selecione seu tipo" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="velocista">VELOCISTA - provas curtas ate 5km</SelectItem>
+                      <SelectItem value="resistencia">RESISTENCIA - provas mais longas ate 21km</SelectItem>
+                      <SelectItem value="endurance">ENDURANCE - acima de 42km, Maratonista, Ironman</SelectItem>
+                      <SelectItem value="pace_leve">PACE LEVE - Corro por Diversao</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-slate-300 flex items-center gap-2">
+                    <MapPin className="w-4 h-4" />
+                    Seu Terreno Preferido
+                  </Label>
+                  <Select value={terrenoPreferido} onValueChange={setTerrenoPreferido}>
+                    <SelectTrigger className="bg-slate-900 border-slate-600 text-white" data-testid="select-terreno-preferido">
+                      <SelectValue placeholder="Selecione seu terreno" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="rua_asfalto">Rua - Asfalto</SelectItem>
+                      <SelectItem value="trilha">Trilha</SelectItem>
+                      <SelectItem value="esteira">Esteira</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
 
               {/* Seção Alterar Senha */}

@@ -92,7 +92,7 @@ const RankingPage = () => {
           </div>
           {/* Bottom row: Navigation */}
           {user && (
-            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-thin" data-testid="nav-bar-desktop">
+            <div className="flex items-center gap-1 overflow-x-auto pb-2 pt-1 scrollbar-thin -mx-1 px-1" data-testid="nav-bar-desktop" style={{WebkitOverflowScrolling: 'touch'}}>
               {isAdmin && (
                 <Button onClick={() => navigate('/admin')} variant="outline" size="sm" className="shrink-0">
                   <Shield className="w-4 h-4 mr-1" />

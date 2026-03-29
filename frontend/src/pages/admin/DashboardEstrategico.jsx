@@ -166,7 +166,7 @@ const DashboardEstrategico = () => {
     'participacao-media-evento', 'taxa-retorno-atletas', 'novos-vs-recorrentes',
     'engajamento-plataforma', 'atletas-por-assessoria', 'crescimento-regional',
     'provas-competitivas', 'evolucao-rankings', 'donos-assessoria-mapa',
-    'distribuicao-etnia'
+    'distribuicao-etnia', 'distribuicao-tipo-corredor', 'distribuicao-terreno-preferido'
   ];
 
   // Carregar dados
@@ -764,6 +764,56 @@ const DashboardEstrategico = () => {
           {/* Gráfico 30: Donos de Assessoria por Estado (Mapa) */}
           <ChartCard title="30. Donos de Assessoria por Estado" loading={!graficos['donos-assessoria-mapa']} height={350} icon={Map}>
             <BrazilMap data={graficos['donos-assessoria-mapa']?.dados || []} />
+          </ChartCard>
+
+          {/* Gráfico 31: Tipo de Corredor (Pizza) */}
+          <ChartCard title="31. Tipo de Corredor" loading={!graficos['distribuicao-tipo-corredor']} icon={Target}>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={graficos['distribuicao-tipo-corredor']?.dados || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="count"
+                  nameKey="tipo"
+                  label={({ tipo, percentual }) => `${tipo} (${percentual}%)`}
+                >
+                  {(graficos['distribuicao-tipo-corredor']?.dados || []).map((entry, index) => (
+                    <Cell key={`cell-tc-${index}`} fill={COLORS.chart[index % COLORS.chart.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => [value, 'Atletas']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </ChartCard>
+
+          {/* Gráfico 32: Terreno Preferido (Pizza) */}
+          <ChartCard title="32. Terreno Preferido" loading={!graficos['distribuicao-terreno-preferido']} icon={MapPin}>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={graficos['distribuicao-terreno-preferido']?.dados || []}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={true}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="count"
+                  nameKey="terreno"
+                  label={({ terreno, percentual }) => `${terreno} (${percentual}%)`}
+                >
+                  {(graficos['distribuicao-terreno-preferido']?.dados || []).map((entry, index) => (
+                    <Cell key={`cell-tp-${index}`} fill={COLORS.chart[index % COLORS.chart.length]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(value) => [value, 'Atletas']} />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
           </ChartCard>
         </div>
 

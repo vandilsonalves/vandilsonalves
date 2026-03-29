@@ -59,6 +59,12 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Testado: 3/3 cenários validados via curl
 
 
+### Tipo de Corredor + Terreno Preferido (29/03/2026)
+- Novos campos no "Meu Perfil": **Tipo de Corredor** (Velocista/Resistencia/Endurance/Pace Leve) e **Seu Terreno Preferido** (Rua-Asfalto/Trilha/Esteira) ✅
+- Backend: Model `PerfilUpdate` atualizado + endpoints de atualização ✅
+- Admin Dashboard: Gráficos **31. Tipo de Corredor** e **32. Terreno Preferido** em pizza no Dashboard Estratégico ✅
+- Header: Fix do overflow na barra de navegação (badges não cortam mais) ✅
+
 ## Backlog Priorizado
 
 ### P3

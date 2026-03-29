@@ -46,7 +46,7 @@ async def get_meu_perfil(current_user: dict = Depends(get_current_user)):
 
 
 @router.patch("/atletas/perfil")
-async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(require_premium_access)):
+async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(get_current_user)):
     """Atleta atualiza seu próprio perfil"""
     update_data = {}
     
@@ -73,6 +73,10 @@ async def atualizar_perfil(dados: PerfilUpdate, current_user: dict = Depends(req
         update_data["etnia"] = dados.etnia
     if dados.apelido is not None:
         update_data["apelido"] = dados.apelido
+    if dados.tipo_corredor is not None:
+        update_data["tipo_corredor"] = dados.tipo_corredor
+    if dados.terreno_preferido is not None:
+        update_data["terreno_preferido"] = dados.terreno_preferido
     if dados.whatsapp_link is not None:
         # Somente dono de assessoria pode ter whatsapp_link
         if current_user.get("role") == "dono_assessoria":
