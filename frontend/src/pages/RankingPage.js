@@ -50,106 +50,115 @@ const RankingPage = () => {
       </div>
 
       <div className="container mx-auto px-4 py-4 md:py-8">
-        {/* Header Desktop - original */}
-        <div className="hidden md:flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 mb-2 tracking-tight">
+        {/* Header Desktop */}
+        <div className="hidden md:block mb-6">
+          {/* Top row: Logo + User Actions */}
+          <div className="flex items-center justify-between mb-3">
+            <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">
               Ranking Run Pro
             </h1>
+            <div className="flex items-center gap-2">
+              {user ? (
+                <>
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-full">
+                    <User className="w-4 h-4 text-emerald-600" />
+                    <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300" data-testid="user-name">
+                      {user.nome}
+                    </span>
+                  </div>
+                  <Button variant="ghost" size="icon" onClick={() => window.location.reload()} title="Atualizar" data-testid="btn-refresh" className="text-slate-600 hover:text-emerald-600 hover:bg-emerald-50">
+                    <RefreshCw className="w-5 h-5" />
+                  </Button>
+                  <NotificacoesBell />
+                  <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600" size="sm" data-testid="btn-submeter-desktop">
+                    <Upload className="w-4 h-4 mr-1" />
+                    Submeter
+                  </Button>
+                  <Button onClick={logout} variant="outline" size="sm" data-testid="btn-sair-desktop">
+                    <LogOut className="w-4 h-4 mr-1" />
+                    Sair
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => navigate('/cadastro')} variant="outline">Cadastrar</Button>
+                  <Button onClick={() => navigate('/login')} className="bg-emerald-600">
+                    <LogIn className="w-4 h-4 mr-2" />
+                    Entrar
+                  </Button>
+                </>
+              )}
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            {user ? (
-              <>
-                <div className="flex items-center gap-2 mr-4 px-3 py-1.5 bg-emerald-50 dark:bg-emerald-900/30 rounded-full">
-                  <User className="w-4 h-4 text-emerald-600" />
-                  <span className="text-sm font-medium text-emerald-700 dark:text-emerald-300" data-testid="user-name">
-                    {user.nome}
-                  </span>
-                </div>
-                <Button variant="ghost" size="icon" onClick={() => window.location.reload()} title="Atualizar pagina" data-testid="btn-refresh" className="text-slate-600 hover:text-emerald-600 hover:bg-emerald-50">
-                  <RefreshCw className="w-5 h-5" />
+          {/* Bottom row: Navigation */}
+          {user && (
+            <div className="flex items-center gap-1 overflow-x-auto pb-1 scrollbar-thin" data-testid="nav-bar-desktop">
+              {isAdmin && (
+                <Button onClick={() => navigate('/admin')} variant="outline" size="sm" className="shrink-0">
+                  <Shield className="w-4 h-4 mr-1" />
+                  Admin
                 </Button>
-                <NotificacoesBell />
-                {isAdmin && (
-                  <Button onClick={() => navigate('/admin')} variant="outline" size="sm">
-                    <Shield className="w-4 h-4 mr-2" />
-                    Admin
-                  </Button>
-                )}
-                {user?.role === 'dono_assessoria' && (
-                  <Button onClick={() => navigate('/minha-assessoria')} variant="outline" size="sm" className="border-amber-500 text-amber-600 hover:bg-amber-50">
-                    <Award className="w-4 h-4 mr-2" />
-                    Minha Assessoria
-                  </Button>
-                )}
-                <Button onClick={() => navigate('/feed')} variant="ghost" size="sm" className="text-blue-500 hover:text-blue-600" data-testid="btn-feed">
-                  <MessageSquare className="w-4 h-4 mr-1" />
-                  Feed
+              )}
+              {user?.role === 'dono_assessoria' && (
+                <Button onClick={() => navigate('/minha-assessoria')} variant="outline" size="sm" className="shrink-0 border-amber-500 text-amber-600 hover:bg-amber-50">
+                  <Award className="w-4 h-4 mr-1" />
+                  Minha Assessoria
                 </Button>
-                {hasEquipe && (
-                  <Button onClick={() => navigate('/feed-equipe')} variant="ghost" size="sm" className="text-amber-500 hover:text-amber-600 relative" data-testid="btn-feed-equipe">
-                    <UsersRound className="w-4 h-4 mr-1" />
-                    Feed da Equipe
-                    {naoLidos > 0 && (
-                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1" data-testid="badge-feed-nao-lidos">
-                        {naoLidos > 99 ? '99+' : naoLidos}
-                      </span>
-                    )}
-                  </Button>
-                )}
-                <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras">
-                  <HelpCircle className="w-4 h-4 mr-1" />
-                  Regras
+              )}
+              <Button onClick={() => navigate('/feed')} variant="ghost" size="sm" className="shrink-0 text-blue-500 hover:text-blue-600" data-testid="btn-feed">
+                <MessageSquare className="w-4 h-4 mr-1" />
+                Feed
+              </Button>
+              {hasEquipe && (
+                <Button onClick={() => navigate('/feed-equipe')} variant="ghost" size="sm" className="shrink-0 text-amber-500 hover:text-amber-600 relative" data-testid="btn-feed-equipe">
+                  <UsersRound className="w-4 h-4 mr-1" />
+                  Feed da Equipe
+                  {naoLidos > 0 && (
+                    <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1" data-testid="badge-feed-nao-lidos">
+                      {naoLidos > 99 ? '99+' : naoLidos}
+                    </span>
+                  )}
                 </Button>
-                <Button onClick={() => navigate('/historico')} variant="ghost" size="sm" className="text-purple-500 hover:text-purple-700" data-testid="btn-historico">
-                  <History className="w-4 h-4 mr-1" />
-                  Historico
-                </Button>
-                <Button onClick={() => navigate('/ranking-cidade')} variant="ghost" size="sm" className="text-emerald-500 hover:text-emerald-700" data-testid="btn-ranking-cidade">
-                  <MapPin className="w-4 h-4 mr-1" />
-                  Por Cidade
-                </Button>
-                <Button onClick={() => navigate('/strava-clube')} variant="ghost" size="sm" className="text-orange-500 hover:text-orange-600" data-testid="btn-strava-clube">
-                  <Activity className="w-4 h-4 mr-1" />
-                  Strava
-                </Button>
-                <Button onClick={() => navigate('/raio-x')} variant="ghost" size="sm" className="text-purple-500 hover:text-purple-600" data-testid="btn-raio-x">
-                  <Zap className="w-4 h-4 mr-1" />
-                  RAIO-X
-                </Button>
-                <Button onClick={() => navigate('/pagamento')} variant="ghost" size="sm" className="text-amber-500 hover:text-amber-600" data-testid="btn-premium-desktop">
-                  <CreditCard className="w-4 h-4 mr-1" />
-                  Atleta Premium
-                </Button>
-                <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" data-testid="btn-perfil">
-                  <User className="w-4 h-4 mr-2" />
-                  Meu Perfil
-                </Button>
-                <Button onClick={() => navigate('/submeter-resultado')} className="bg-emerald-600" size="sm">
-                  <Upload className="w-4 h-4 mr-2" />
-                  Submeter
-                </Button>
-                <Button onClick={logout} variant="outline" size="sm">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sair
-                </Button>
-              </>
-            ) : (
-              <>
-                <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras-visitor">
-                  <HelpCircle className="w-4 h-4 mr-1" />
-                  Regras
-                </Button>
-                <Button onClick={() => navigate('/cadastro')} variant="outline">
-                  Cadastrar
-                </Button>
-                <Button onClick={() => navigate('/login')} className="bg-emerald-600">
-                  <LogIn className="w-4 h-4 mr-2" />
-                  Entrar
-                </Button>
-              </>
-            )}
-          </div>
+              )}
+              <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="shrink-0 text-slate-500 hover:text-slate-700" data-testid="btn-regras">
+                <HelpCircle className="w-4 h-4 mr-1" />
+                Regras
+              </Button>
+              <Button onClick={() => navigate('/historico')} variant="ghost" size="sm" className="shrink-0 text-purple-500 hover:text-purple-700" data-testid="btn-historico">
+                <History className="w-4 h-4 mr-1" />
+                Historico
+              </Button>
+              <Button onClick={() => navigate('/ranking-cidade')} variant="ghost" size="sm" className="shrink-0 text-emerald-500 hover:text-emerald-700" data-testid="btn-ranking-cidade">
+                <MapPin className="w-4 h-4 mr-1" />
+                Por Cidade
+              </Button>
+              <Button onClick={() => navigate('/strava-clube')} variant="ghost" size="sm" className="shrink-0 text-orange-500 hover:text-orange-600" data-testid="btn-strava-clube">
+                <Activity className="w-4 h-4 mr-1" />
+                Strava
+              </Button>
+              <Button onClick={() => navigate('/raio-x')} variant="ghost" size="sm" className="shrink-0 text-purple-500 hover:text-purple-600" data-testid="btn-raio-x">
+                <Zap className="w-4 h-4 mr-1" />
+                RAIO-X
+              </Button>
+              <Button onClick={() => navigate('/pagamento')} variant="ghost" size="sm" className="shrink-0 text-amber-500 hover:text-amber-600" data-testid="btn-premium-desktop">
+                <CreditCard className="w-4 h-4 mr-1" />
+                Atleta Premium
+              </Button>
+              <Button onClick={() => navigate('/perfil')} variant="outline" size="sm" className="shrink-0" data-testid="btn-perfil">
+                <User className="w-4 h-4 mr-1" />
+                Meu Perfil
+              </Button>
+            </div>
+          )}
+          {/* Visitor nav */}
+          {!user && (
+            <div className="flex items-center gap-2">
+              <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras-visitor">
+                <HelpCircle className="w-4 h-4 mr-1" />
+                Regras
+              </Button>
+            </div>
+          )}
         </div>
 
         {/* Visitante mobile - botões compactos */}

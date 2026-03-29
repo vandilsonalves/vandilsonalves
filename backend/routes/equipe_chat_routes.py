@@ -255,6 +255,7 @@ async def enviar_feed(
         "mensagem": mensagem.strip(),
         "arquivo": arquivo_info,
         "curtidas": [],
+        "respostas_count": 0,
         "data_envio": datetime.now(timezone.utc).isoformat()
     }
 
@@ -316,6 +317,79 @@ async def deletar_feed(post_id: str, current_user: dict = Depends(get_current_us
 
     await db.feed_equipe.delete_one({"id": post_id})
     return {"message": "Post removido"}
+
+
+
+# ==================== RESPOSTAS EM THREAD ====================
+
+@router.post("/equipe/feed/{post_id}/responder")
+async def responder_post(
+    post_id: str,
+    mensagem: str = Form(default=""),
+    arquivo: UploadFile = File(default=None),
+    current_user: dict = Depends(get_current_user)
+):
+    equipe = current_user.get("equipe", "")
+    if not equipe or equipe.upper() in ["INDIVIDUAL", "SEM EQUIPE"]:
+        raise HTTPException(status_code=400, detail="Sem equipe")
+
+    post = await db.feed_equipe.find_one({"id": post_id, "equipe": equipe})
+    if not post:
+        raise HTTPException(status_code=404, detail="Post não encontrado")
+
+    if not mensagem.strip() and not arquivo:
+        raise HTTPException(status_code=400, detail="Envie uma mensagem ou arquivo")
+
+    arquivo_info = None
+    if arquivo and arquivo.filename:
+        ext = os.path.splitext(arquivo.filename)[1].lower()
+        if ext not in ALLOWED_EXTENSIONS:
+            raise HTTPException(status_code=400, detail=f"Tipo não permitido: {ext}")
+        content = await arquivo.read()
+        if len(content) > MAX_FILE_SIZE:
+            raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 10MB)")
+        file_id = str(uuid.uuid4())
+        filename = f"{file_id}{ext}"
+        async with aiofiles.open(UPLOADS_DIR / filename, "wb") as f:
+            await f.write(content)
+        tipo_arquivo = "imagem" if ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"} else "documento"
+        arquivo_info = {
+            "nome_original": arquivo.filename,
+            "caminho": f"/api/uploads/chat/{filename}",
+            "tipo": tipo_arquivo,
+            "tamanho": len(content),
+            "extensao": ext
+        }
+
+    resposta = {
+        "id": str(uuid.uuid4()),
+        "post_id": post_id,
+        "equipe": equipe,
+        "autor_id": current_user["id"],
+        "autor_nome": get_nome_display(current_user),
+        "autor_foto": current_user.get("foto_url", ""),
+        "mensagem": mensagem.strip(),
+        "arquivo": arquivo_info,
+        "data_envio": datetime.now(timezone.utc).isoformat()
+    }
+
+    await db.feed_respostas.insert_one(resposta)
+    await db.feed_equipe.update_one({"id": post_id}, {"$inc": {"respostas_count": 1}})
+    resposta.pop("_id", None)
+    return {"message": "Resposta enviada!", "resposta": resposta}
+
+
+@router.get("/equipe/feed/{post_id}/respostas")
+async def get_respostas(
+    post_id: str,
+    current_user: dict = Depends(get_current_user)
+):
+    equipe = current_user.get("equipe", "")
+    respostas = await db.feed_respostas.find(
+        {"post_id": post_id, "equipe": equipe},
+        {"_id": 0}
+    ).sort("data_envio", 1).to_list(100)
+    return {"respostas": respostas, "total": len(respostas)}
 
 
 
