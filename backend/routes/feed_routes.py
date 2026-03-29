@@ -12,7 +12,6 @@ from PIL import Image as PILImage
 
 from config import db
 from routes.auth_routes import get_current_user, require_premium_access
-from routes.notificacoes_routes import criar_notificacao
 from services.moderacao_service import (
     analisar_conteudo, NivelInfracao, registrar_infracao,
     verificar_usuario_bloqueado, bloquear_usuario_temporariamente,
@@ -542,17 +541,7 @@ async def reagir_post(
     }
     await db.feed_reacoes.insert_one(reacao)
     
-    # Notificar autor do post (se não for o próprio)
-    if post["autor_id"] != current_user["id"]:
-        emoji = REACOES_DISPONIVEIS[dados.tipo_reacao]["emoji"]
-        nome_reacao = REACOES_DISPONIVEIS[dados.tipo_reacao]["nome"]
-        await criar_notificacao(
-            usuario_id=post["autor_id"],
-            tipo="reacao",
-            titulo=f"{emoji} Nova reação!",
-            mensagem=f"{current_user.get('nome', 'Alguém')} reagiu com {emoji} ({nome_reacao}) ao seu post.",
-            dados_extras={"post_id": post_id, "tipo_reacao": dados.tipo_reacao}
-        )
+    # Notificação de reação removida - apenas admin/dono enviam notificações
     
     return {
         "message": f"Reação {REACOES_DISPONIVEIS[dados.tipo_reacao]['emoji']} adicionada!",
@@ -705,15 +694,7 @@ async def comentar_post(
     # 4. Incrementar contador de comentários aprovados
     await incrementar_comentarios_aprovados(db, current_user["id"])
     
-    # 5. Notificar autor do post (se não for o próprio)
-    if post["autor_id"] != current_user["id"]:
-        await criar_notificacao(
-            usuario_id=post["autor_id"],
-            tipo="comentario",
-            titulo="Novo comentário!",
-            mensagem=f"{current_user.get('nome', 'Alguém')} comentou: \"{dados.texto[:50]}...\"",
-            dados_extras={"post_id": post_id, "comentario_id": comentario["id"]}
-        )
+    # Notificação de comentário removida - apenas admin/dono enviam notificações
     
     # 6. Verificar se o usuário ganhou o selo de respeitoso
     usuario_atualizado = await db.usuarios.find_one(
@@ -912,21 +893,7 @@ async def criar_post_conquista(
     await db.feed_posts.insert_one(post)
     
     # Notificar membros da mesma equipe
-    usuario = await db.usuarios.find_one({"id": usuario_id}, {"_id": 0, "equipe": 1})
-    if usuario and usuario.get("equipe"):
-        colegas = await db.usuarios.find(
-            {"equipe": usuario["equipe"], "id": {"$ne": usuario_id}},
-            {"_id": 0, "id": 1}
-        ).limit(50).to_list(50)
-        
-        for colega in colegas:
-            await criar_notificacao(
-                usuario_id=colega["id"],
-                tipo="conquista_equipe",
-                titulo=f"🏆 {usuario_nome} conquistou {conquista_nome}!",
-                mensagem=f"Um colega da sua equipe acabou de ganhar uma nova insígnia. Parabenize!",
-                dados_extras={"post_id": post["id"], "conquista": conquista_nome}
-            )
+    # Notificação de conquista para colegas removida - apenas admin/dono enviam notificações
     
     return post["id"]
 
@@ -1015,15 +982,7 @@ async def dar_parabens(
         }
         await db.feed_reacoes.insert_one(reacao)
     
-    # Notificar autor
-    if post["autor_id"] != current_user["id"]:
-        await criar_notificacao(
-            usuario_id=post["autor_id"],
-            tipo="parabens",
-            titulo=f"🎊 {current_user.get('nome', 'Alguém')} te parabenizou!",
-            mensagem=f"Você recebeu parabéns pela sua conquista!",
-            dados_extras={"post_id": post_id}
-        )
+    # Notificação de parabéns removida - apenas admin/dono enviam notificações
     
     return {
         "message": "Parabéns enviado!",

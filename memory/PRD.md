@@ -51,10 +51,15 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
   - Painel Admin: Menu "Resumo Semanal" em Ferramentas com botao "Disparar Agora", preview e historico ✅
   - Testado: 392/392 atletas notificados, 0 erros
 
-## Backlog Priorizado
+### Regra de Notificações (29/03/2026)
+- Atletas recebem notificações APENAS de Admin e Dono de Assessoria ✅
+- Removidas: notificações de reação, comentário, parabéns, conquista de colega (feed_routes.py)
+- Condicionadas: menções no Feed da Equipe só notificam se remetente for dono/admin (equipe_chat_routes.py)
+- Chat da Assessoria já era restrito a dono/admin (sem alteração)
+- Testado: 3/3 cenários validados via curl
 
-### P2
-- ~~Exportar como PDF no Raio-X do atleta~~ ✅ (Ja implementado com jsPDF v4.2.1 - 5 paginas)
+
+## Backlog Priorizado
 
 ### P3
 - ~~Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe~~ ✅ (Removido em 29/03)

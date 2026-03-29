@@ -262,9 +262,9 @@ async def enviar_feed(
 
     await db.feed_equipe.insert_one(post)
 
-    # Notificar mencionados
+    # Notificar mencionados (apenas se o autor for dono/admin)
     mencao_ids = [m.strip() for m in mencionados.split(",") if m.strip()]
-    if mencao_ids:
+    if mencao_ids and current_user.get("role") in ["dono_assessoria", "admin", "super_admin"]:
         from routes.notificacoes_routes import criar_notificacao
         for uid in mencao_ids:
             if uid != current_user["id"]:
@@ -417,9 +417,9 @@ async def responder_post(
     await db.feed_respostas.insert_one(resposta)
     await db.feed_equipe.update_one({"id": post_id}, {"$inc": {"respostas_count": 1}})
 
-    # Notificar mencionados
+    # Notificar mencionados nas respostas (apenas se o autor for dono/admin)
     mencao_ids = [m.strip() for m in mencionados.split(",") if m.strip()]
-    if mencao_ids:
+    if mencao_ids and current_user.get("role") in ["dono_assessoria", "admin", "super_admin"]:
         from routes.notificacoes_routes import criar_notificacao
         for uid in mencao_ids:
             if uid != current_user["id"]:
