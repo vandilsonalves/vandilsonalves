@@ -235,21 +235,20 @@ async def excluir_corridas_lote(
 async def get_ranking_corridas(
     tipo: str = "nacional",
     estado: str = None,
-    cidade: str = None
+    cidade: str = None,
+    page: int = 1,
+    limit: int = 20
 ):
     """
-    Retorna ranking das corridas baseado em avaliações
-    Usa Média Bayesiana para cálculo justo
+    Retorna ranking das corridas baseado em avaliações (paginado)
     """
     
     filtro = {}
     if tipo == "estadual" and estado:
         filtro["estado"] = estado
     elif tipo == "cidade":
-        # Sempre filtra pelo estado quando está na aba cidade
         if estado:
             filtro["estado"] = estado
-        # E também pela cidade se especificada
         if cidade:
             filtro["cidade"] = cidade
     
@@ -296,12 +295,21 @@ async def get_ranking_corridas(
         else:
             corrida["selo"] = "bronze"
     
+    # Paginação
+    total = len(corridas)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated = corridas[start:end]
+    
     return {
         "tipo": tipo,
-        "total_corridas": len(corridas),
+        "total_corridas": total,
         "media_global": round(media_global, 2),
         "minimo_avaliacoes": m,
-        "ranking": corridas
+        "page": page,
+        "limit": limit,
+        "has_more": end < total,
+        "ranking": paginated
     }
 
 

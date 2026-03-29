@@ -31,6 +31,10 @@ const RankingCorridasPage = () => {
   const [ranking, setRanking] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalCorridas, setTotalCorridas] = useState(0);
   const [tipo, setTipo] = useState('nacional');
   const [estado, setEstado] = useState('');
   const [cidade, setCidade] = useState('');
@@ -74,20 +78,23 @@ const RankingCorridasPage = () => {
   const [loadingCidadesIBGE, setLoadingCidadesIBGE] = useState(false);
 
   useEffect(() => {
-    fetchRanking();
+    setRanking([]);
+    setCurrentPage(1);
+    setHasMore(false);
+    fetchRanking(1, true);
     fetchStats();
     fetchEstados();
   }, [tipo, estado, cidade]);
 
-  const fetchRanking = async () => {
-    setLoading(true);
+  const fetchRanking = async (page = 1, reset = false) => {
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
     try {
-      let url = `${API}/ranking-corridas?tipo=${tipo}`;
+      let url = `${API}/ranking-corridas?tipo=${tipo}&page=${page}&limit=20`;
       if (tipo === 'estadual' && estado) {
         url += `&estado=${estado}`;
       }
       if (tipo === 'cidade') {
-        // Sempre enviar o estado quando estiver na aba cidade
         if (estado) {
           url += `&estado=${estado}`;
         }
@@ -97,12 +104,25 @@ const RankingCorridasPage = () => {
       }
       
       const response = await axios.get(url);
-      setRanking(response.data.ranking || []);
+      const data = response.data;
+      if (reset) {
+        setRanking(data.ranking || []);
+      } else {
+        setRanking(prev => [...prev, ...(data.ranking || [])]);
+      }
+      setHasMore(data.has_more || false);
+      setTotalCorridas(data.total_corridas || 0);
+      setCurrentPage(page);
     } catch (error) {
       console.error('Erro ao buscar ranking:', error);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
     }
+  };
+
+  const handleLoadMore = () => {
+    fetchRanking(currentPage + 1, false);
   };
 
   const fetchStats = async () => {
@@ -842,6 +862,7 @@ const RankingCorridasPage = () => {
                 )}
               </div>
             ) : (
+              <>
               <div className="overflow-x-auto">
                 <table className="w-full">
                   <thead>
@@ -948,8 +969,37 @@ const RankingCorridasPage = () => {
                   </tbody>
                 </table>
               </div>
+              
+              {/* Botao Carregar Mais */}
+              {hasMore && (
+                <div className="flex justify-center mt-4 pb-2">
+                  <Button
+                    onClick={handleLoadMore}
+                    disabled={loadingMore}
+                    variant="outline"
+                    className="w-full md:w-auto"
+                    data-testid="btn-carregar-mais"
+                  >
+                    {loadingMore ? (
+                      <span className="flex items-center gap-2">
+                        <div className="w-4 h-4 border-2 border-emerald-500 border-t-transparent rounded-full animate-spin" />
+                        Carregando...
+                      </span>
+                    ) : (
+                      `Carregar mais (${ranking.length} de ${totalCorridas})`
+                    )}
+                  </Button>
+                </div>
+              )}
+              
+              {!hasMore && ranking.length > 0 && (
+                <p className="text-center text-sm text-slate-400 mt-3">
+                  Mostrando todas as {ranking.length} corridas
+                </p>
+              )}
+              </>
             )}
-          </CardContent>
+            </CardContent>
         </Card>
       </div>
 
