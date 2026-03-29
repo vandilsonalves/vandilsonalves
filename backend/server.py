@@ -149,7 +149,6 @@ from routes.ranking_routes import router as ranking_router
 from routes.monitoring_routes import router as monitoring_router
 from routes.admin_routes import router as admin_routes_router
 from routes.assessorias_routes import router as assessorias_router
-from routes.celery_routes import router as celery_router
 from routes.corridas_eventos_routes import router as corridas_eventos_router
 from routes.aniversariantes_routes import router as aniversariantes_router
 from routes.instagram_routes import router as instagram_router
@@ -171,7 +170,6 @@ from routes.strava_routes import router as strava_router
 from routes.strava_atividades_routes import router as strava_atividades_router
 from routes.raio_x_routes import router as raio_x_router
 from routes.pagamentos_routes import router as pagamentos_router
-from routes.webhook_stripe_routes import router as webhook_stripe_router
 from routes.email_routes import router as email_router
 from routes.efi_routes import router as efi_router
 from routes.financeiro_routes import router as financeiro_router
@@ -187,7 +185,6 @@ api_router.include_router(ranking_router)
 api_router.include_router(monitoring_router)
 api_router.include_router(admin_routes_router)
 api_router.include_router(assessorias_router)
-api_router.include_router(celery_router)
 api_router.include_router(corridas_eventos_router)
 api_router.include_router(aniversariantes_router)
 api_router.include_router(instagram_router)
@@ -208,7 +205,6 @@ api_router.include_router(strava_router)
 api_router.include_router(strava_atividades_router)
 api_router.include_router(raio_x_router)
 api_router.include_router(pagamentos_router)
-api_router.include_router(webhook_stripe_router)
 api_router.include_router(email_router)
 api_router.include_router(efi_router)
 api_router.include_router(financeiro_router)

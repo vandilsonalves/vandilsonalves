@@ -36,7 +36,6 @@ const DashboardAssessorias = ({
   estadosComAssessorias,
   loadingLiga,
   onRefresh,
-  onViewAssessoria,
   fetchCidades,
   cidadesComAssessorias,
   ligaCidade,

@@ -47,8 +47,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Exportar como PDF no Raio-X do atleta (usar canvasShareGenerator.js)
 
 ### P3
-- Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe
-- Limpeza de states obsoletos no AdminDashboard.jsx
+- ~~Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe~~ ✅ (Removido em 29/03)
+- ~~Limpeza de states obsoletos no AdminDashboard.jsx~~ ✅ (Removido em 29/03)
 
 ## Credenciais de Teste
 - Dono Assessoria: marcos_martins_3@email.com / marcos123 (equipe: Victory Run PE)

@@ -430,19 +430,6 @@ const AdminDashboard = () => {
     }
   };
 
-  const fetchAssessoriaDetalhe = async (nome) => {
-    try {
-      const response = await axios.get(`${API}/liga-assessorias/assessoria/${encodeURIComponent(nome)}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      setAssessoriaDetalhe(response.data);
-      setShowAssessoriaModal(true);
-    } catch (error) {
-      console.error('Erro ao buscar detalhes:', error);
-      toast.error('Erro ao carregar detalhes da assessoria');
-    }
-  };
-
   // ======= Ranking das Corridas - Dashboard Admin (Fase 4) =======
   const fetchRankingCorridasDashboard = async () => {
     setLoadingRankingCorridas(true);
@@ -989,7 +976,6 @@ const AdminDashboard = () => {
             cidadesComAssessorias={cidadesComAssessorias}
             loadingLiga={loadingLiga}
             onRefresh={fetchLigaRanking}
-            onViewAssessoria={fetchAssessoriaDetalhe}
             fetchCidades={fetchCidadesComAssessorias}
             token={token}
           />
