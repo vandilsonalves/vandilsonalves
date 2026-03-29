@@ -22,6 +22,10 @@ const RankingGalera = () => {
   const [rankingPovao, setRankingPovao] = useState([]);
   const [povaoStats, setPovaoStats] = useState(null);
   const [loadingPovao, setLoadingPovao] = useState(false);
+  const [loadingMorePovao, setLoadingMorePovao] = useState(false);
+  const [hasMorePovao, setHasMorePovao] = useState(false);
+  const [currentPagePovao, setCurrentPagePovao] = useState(1);
+  const [totalAtletasPovao, setTotalAtletasPovao] = useState(0);
   const [showDestaquePovao, setShowDestaquePovao] = useState(true);
   const [showComoFuncionaPovao, setShowComoFuncionaPovao] = useState(false);
   const [showRegulamentoPovao, setShowRegulamentoPovao] = useState(false);
@@ -71,25 +75,41 @@ const RankingGalera = () => {
   };
 
   useEffect(() => {
-    const fetchRankingPovao = async () => {
-      setLoadingPovao(true);
-      try {
-        const [rankingRes, statsRes] = await Promise.all([
-          axios.get(`${API}/ranking/povao?genero=${generoPovao}`),
-          axios.get(`${API}/ranking/povao/stats`)
-        ]);
-        setRankingPovao(rankingRes.data.ranking || []);
-        setPovaoStats(statsRes.data);
-      } catch (error) {
-        console.error('Erro ao buscar ranking Galera:', error);
-        setRankingPovao([]);
-      } finally {
-        setLoadingPovao(false);
-      }
-    };
-    fetchRankingPovao();
+    setRankingPovao([]);
+    setCurrentPagePovao(1);
+    setHasMorePovao(false);
+    fetchRankingPovaoPage(1, true);
     fetchPovaoDestaques();
   }, [generoPovao]);
+
+  const fetchRankingPovaoPage = async (page = 1, reset = false) => {
+    if (reset) setLoadingPovao(true);
+    else setLoadingMorePovao(true);
+    try {
+      const [rankingRes, statsRes] = await Promise.all([
+        axios.get(`${API}/ranking/povao?genero=${generoPovao}&page=${page}&limit=20`),
+        ...(reset ? [axios.get(`${API}/ranking/povao/stats`)] : [])
+      ]);
+      const data = rankingRes.data;
+      if (reset) {
+        setRankingPovao(data.ranking || []);
+        if (statsRes) setPovaoStats(statsRes.data);
+      } else {
+        setRankingPovao(prev => [...prev, ...(data.ranking || [])]);
+      }
+      setHasMorePovao(data.has_more || false);
+      setTotalAtletasPovao(data.total_atletas || 0);
+      setCurrentPagePovao(page);
+    } catch (error) {
+      console.error('Erro ao buscar ranking Galera:', error);
+      if (reset) setRankingPovao([]);
+    } finally {
+      setLoadingPovao(false);
+      setLoadingMorePovao(false);
+    }
+  };
+
+  const handleLoadMorePovao = () => fetchRankingPovaoPage(currentPagePovao + 1, false);
 
   const rankingPovaoFiltrado = rankingPovao.filter(atleta => {
     const nomeMatch = atleta.nome.toLowerCase().includes(filtroNomePovao.toLowerCase());
@@ -747,6 +767,16 @@ const RankingGalera = () => {
                       </tbody>
                     </table>
                   </div>
+                  {hasMorePovao && !filtroNomePovao && !filtroColocacaoPovao && !filtroUFPovao && !filtroFaixaPovao && !filtroEquipePovao && !filtroCidadePovao && (
+                    <div className="flex justify-center mt-4">
+                      <Button onClick={handleLoadMorePovao} disabled={loadingMorePovao} variant="outline" className="w-full md:w-auto" data-testid="btn-carregar-mais-galera">
+                        {loadingMorePovao ? 'Carregando...' : `Carregar mais (${rankingPovao.length} de ${totalAtletasPovao})`}
+                      </Button>
+                    </div>
+                  )}
+                  {!hasMorePovao && rankingPovao.length > 0 && !filtroNomePovao && !filtroColocacaoPovao && !filtroUFPovao && (
+                    <p className="text-center text-sm text-slate-400 mt-3">Mostrando todos os {rankingPovao.length} atletas</p>
+                  )}
                 )}
               </CardContent>
             </Card>

@@ -21,6 +21,10 @@ const RankingProfissional = () => {
   const [categoriaAtual, setCategoriaAtual] = useState('masculino');
   const [rankingData, setRankingData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalAtletas, setTotalAtletas] = useState(0);
   const [showDestaques, setShowDestaques] = useState(true);
 
   const [filtroNome, setFiltroNome] = useState('');
@@ -49,24 +53,41 @@ const RankingProfissional = () => {
   }, []);
 
   useEffect(() => {
-    const fetchRanking = async () => {
-      setLoading(true);
-      try {
-        let url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=${new Date().getFullYear()}`;
-        if (filtroFaixa) url += `&faixa=${filtroFaixa}`;
-        if (filtroEquipe) url += `&equipe=${encodeURIComponent(filtroEquipe)}`;
-        if (filtroCidade) url += `&cidade=${encodeURIComponent(filtroCidade)}`;
-        const response = await axios.get(url);
-        setRankingData(response.data);
-      } catch (error) {
-        console.error('Erro ao buscar ranking:', error);
-        setRankingData([]);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchRanking();
+    setRankingData([]);
+    setCurrentPage(1);
+    setHasMore(false);
+    fetchRankingPage(1, true);
   }, [categoriaAtual, filtroFaixa, filtroEquipe, filtroCidade]);
+
+  const fetchRankingPage = async (page = 1, reset = false) => {
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
+    try {
+      let url = `${API}/ranking/categoria/${categoriaAtual}/M?ano=${new Date().getFullYear()}&page=${page}&limit=20`;
+      if (filtroFaixa) url += `&faixa=${filtroFaixa}`;
+      if (filtroEquipe) url += `&equipe=${encodeURIComponent(filtroEquipe)}`;
+      if (filtroCidade) url += `&cidade=${encodeURIComponent(filtroCidade)}`;
+      const response = await axios.get(url);
+      const data = response.data;
+      const items = data.ranking || data;
+      if (reset) {
+        setRankingData(Array.isArray(items) ? items : []);
+      } else {
+        setRankingData(prev => [...prev, ...(Array.isArray(items) ? items : [])]);
+      }
+      setHasMore(data.has_more || false);
+      setTotalAtletas(data.total_atletas || (Array.isArray(items) ? items.length : 0));
+      setCurrentPage(page);
+    } catch (error) {
+      console.error('Erro ao buscar ranking:', error);
+      if (reset) setRankingData([]);
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  const handleLoadMore = () => fetchRankingPage(currentPage + 1, false);
 
   const rankingFiltrado = rankingData.filter(atleta => {
     const nomeMatch = atleta.nome.toLowerCase().includes(filtroNome.toLowerCase());
@@ -333,7 +354,19 @@ const RankingProfissional = () => {
                     Carregando ranking...
                   </div>
                 ) : (
-                  <RankingTable data={rankingFiltrado} onAtletaClick={handleAtletaClick} modalidade="profissional" />
+                  <>
+                    <RankingTable data={rankingFiltrado} onAtletaClick={handleAtletaClick} modalidade="profissional" />
+                    {hasMore && !filtroNome && !filtroColocacao && !filtroUF && (
+                      <div className="flex justify-center mt-4">
+                        <Button onClick={handleLoadMore} disabled={loadingMore} variant="outline" className="w-full md:w-auto" data-testid="btn-carregar-mais-prof">
+                          {loadingMore ? 'Carregando...' : `Carregar mais (${rankingData.length} de ${totalAtletas})`}
+                        </Button>
+                      </div>
+                    )}
+                    {!hasMore && rankingData.length > 0 && !filtroNome && !filtroColocacao && !filtroUF && (
+                      <p className="text-center text-sm text-slate-400 mt-3">Mostrando todos os {rankingData.length} atletas</p>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

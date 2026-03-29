@@ -24,8 +24,8 @@ router = APIRouter(tags=["Ranking"])
 
 @router.get("/ranking/povao")
 @cached(prefix='ranking', ttl_key='ranking_povao')
-async def get_ranking_povao(genero: str = "M"):
-    """Retorna o ranking da Galera"""
+async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20):
+    """Retorna o ranking da Galera (paginado)"""
     ranking_list = await db.ranking_povao.find(
         {"ano": ANO_ATUAL, "genero": genero},
         {"_id": 0}
@@ -50,10 +50,18 @@ async def get_ranking_povao(genero: str = "M"):
                 "pontos": rank.get("pontos_total", 0)
             })
     
+    total = len(result)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated = result[start:end]
+    
     return {
         "genero": "Masculino" if genero == "M" else "Feminino",
-        "total_atletas": len(result),
-        "ranking": result
+        "total_atletas": total,
+        "page": page,
+        "limit": limit,
+        "has_more": end < total,
+        "ranking": paginated
     }
 
 
@@ -626,12 +634,13 @@ async def get_destaque_mes(mes: int = None, ano: int = None, genero: str = None,
 
 # ==================== RANKING POR CATEGORIA ====================
 
-@router.get("/ranking/categoria/{categoria}/{genero}", response_model=List[RankingResponse])
+@router.get("/ranking/categoria/{categoria}/{genero}", response_model=None)
 async def get_ranking_por_categoria(
     categoria: str,
     genero: str,
     ano: int = ANO_ATUAL,
-    limit: int = 100,
+    limit: int = 20,
+    page: int = 1,
     faixa: str = None,
     equipe: str = None,
     cidade: str = None
@@ -698,7 +707,18 @@ async def get_ranking_por_categoria(
                 is_pendente=rank.get("total_corridas", 0) < 3
             ))
     
-    return result
+    total = len(result)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated = result[start:end]
+    
+    return {
+        "total_atletas": total,
+        "page": page,
+        "limit": limit,
+        "has_more": end < total,
+        "ranking": [r.dict() if hasattr(r, 'dict') else r for r in paginated]
+    }
 
 
 # ==================== HISTÓRICO E ANOS ====================
@@ -729,17 +749,29 @@ async def get_faixas_etarias():
 
 @router.get("/ranking/equipes")
 @cached(prefix='ranking', ttl_key='equipes')
-async def get_equipes():
-    """Lista equipes/assessorias ativas"""
+async def get_equipes(page: int = 1, limit: int = 20):
+    """Lista equipes/assessorias ativas (paginado)"""
     pipeline = [
         {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$ne": "", "$exists": True}}},
         {"$group": {"_id": "$equipe", "count": {"$sum": 1}}},
-        {"$sort": {"count": -1}},
-        {"$limit": 100}
+        {"$sort": {"count": -1}}
     ]
     
-    equipes = await db.usuarios.aggregate(pipeline).to_list(None)
-    return {"equipes": [{"nome": e["_id"], "atletas": e["count"]} for e in equipes if e["_id"]]}
+    equipes_all = await db.usuarios.aggregate(pipeline).to_list(None)
+    equipes_filtered = [{"nome": e["_id"], "atletas": e["count"]} for e in equipes_all if e["_id"]]
+    
+    total = len(equipes_filtered)
+    start = (page - 1) * limit
+    end = start + limit
+    paginated = equipes_filtered[start:end]
+    
+    return {
+        "total_equipes": total,
+        "page": page,
+        "limit": limit,
+        "has_more": end < total,
+        "equipes": paginated
+    }
 
 
 @router.get("/ranking/cidades")
