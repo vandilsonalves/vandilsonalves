@@ -23,6 +23,7 @@ import IndicarAmigos from '@/components/IndicarAmigos';
 import CriarAssessoria from '@/components/CriarAssessoria';
 import ImageCropModal from '@/components/ImageCropModal';
 import StravaIntegration from '@/components/StravaIntegration';
+import { FeedEquipe } from '@/components/dono-assessoria/FeedEquipe';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -1170,6 +1171,18 @@ const PerfilAtletaPage = () => {
           </CardContent>
         </Card>
         
+        {/* Feed da Equipe */}
+        {equipe && equipe.toUpperCase() !== 'INDIVIDUAL' && equipe.toUpperCase() !== 'SEM EQUIPE' && (
+          <div className="mt-6">
+            <FeedEquipe
+              token={token}
+              userId={user?.id}
+              equipe={equipe}
+              isDonoAssessoria={isDono}
+            />
+          </div>
+        )}
+
         {/* Integração Strava */}
         <div className="mt-6">
           <StravaIntegration token={token} />

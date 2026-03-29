@@ -175,6 +175,7 @@ from routes.webhook_stripe_routes import router as webhook_stripe_router
 from routes.email_routes import router as email_router
 from routes.efi_routes import router as efi_router
 from routes.financeiro_routes import router as financeiro_router
+from routes.equipe_chat_routes import router as equipe_chat_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -211,6 +212,7 @@ api_router.include_router(webhook_stripe_router)
 api_router.include_router(email_router)
 api_router.include_router(efi_router)
 api_router.include_router(financeiro_router)
+api_router.include_router(equipe_chat_router)
 
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:

@@ -30,6 +30,8 @@ import { ExportacaoCard } from '@/components/dono-assessoria/ExportacaoCard';
 import { SolicitacoesTab } from '@/components/dono-assessoria/SolicitacoesTab';
 import { AtletasTab } from '@/components/dono-assessoria/AtletasTab';
 import { FotoEquipeTab } from '@/components/dono-assessoria/FotoEquipeTab';
+import { ChatAssessoria } from '@/components/dono-assessoria/ChatAssessoria';
+import { FeedEquipe } from '@/components/dono-assessoria/FeedEquipe';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -67,10 +69,12 @@ const DonoAssessoriaDashboard = () => {
   const [graficosAvancados, setGraficosAvancados] = useState(null);
 
   useEffect(() => {
-    if (!user || user.role !== 'dono_assessoria') {
+    if (!user) return;
+    if (user.role !== 'dono_assessoria' && user.role !== 'admin' && user.role !== 'super_admin') {
       navigate('/');
       return;
     }
+    if (!user.equipe) return; // Wait for full user data
     fetchDados();
     fetchSolicitacoesPendentes();
   }, [user]);
@@ -411,6 +415,22 @@ const DonoAssessoriaDashboard = () => {
     }
   };
 
+  const handleDesvincular = async (atletaId, motivo) => {
+    try {
+      await axios.post(`${API}/assessoria/desvincular-atleta`, {
+        atleta_id: atletaId,
+        motivo
+      }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Atleta desvinculado com sucesso!');
+      setAtletas(prev => prev.filter(a => a.id !== atletaId));
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao desvincular');
+      throw error;
+    }
+  };
+
   const downloadCertificado = async () => {
     if (!certificadoRef.current) return;
     
@@ -473,12 +493,13 @@ const DonoAssessoriaDashboard = () => {
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home },
-    { id: 'solicitacoes', label: 'Solicitações', icon: UserPlus, badge: totalPendentes },
+    { id: 'solicitacoes', label: 'Solicitacoes', icon: UserPlus, badge: totalPendentes },
     { id: 'atletas', label: 'Meus Atletas', icon: Users },
+    { id: 'mensagens', label: 'Chat', icon: MessageSquare },
+    { id: 'feed', label: 'Feed da Equipe', icon: Send },
     { id: 'foto', label: 'Foto da Equipe', icon: Camera },
-    { id: 'relatorios', label: 'Relatórios', icon: PieChart },
+    { id: 'relatorios', label: 'Relatorios', icon: PieChart },
     { id: 'rankings', label: 'Rankings', icon: Trophy },
-    { id: 'mensagens', label: 'Mensagens', icon: MessageSquare },
     { id: 'selo', label: 'Selo Oficial', icon: Award },
   ];
 
@@ -1252,8 +1273,9 @@ const DonoAssessoriaDashboard = () => {
           <AtletasTab
             atletas={atletas}
             onExportar={exportarAtletas}
-            onEnviarMensagem={() => setShowMensagemModal(true)}
+            onEnviarMensagem={() => setActiveTab('mensagens')}
             onVerPerfil={(atletaId) => navigate(`/atleta/${atletaId}`)}
+            onDesvincular={handleDesvincular}
           />
         )}
 
@@ -1489,71 +1511,23 @@ const DonoAssessoriaDashboard = () => {
           </div>
         )}
 
-        {/* Mensagens Tab */}
+        {/* Mensagens/Chat Tab */}
         {activeTab === 'mensagens' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between">
-              <h2 className="text-2xl font-bold text-white">Enviar Mensagem</h2>
-            </div>
+          <ChatAssessoria 
+            atletas={atletas}
+            token={token}
+            userId={user.id}
+          />
+        )}
 
-            <Card className="bg-slate-800 border-slate-700">
-              <CardContent className="p-6 space-y-4">
-                <div>
-                  <Label className="text-slate-300">Selecionar Atletas</Label>
-                  <p className="text-xs text-slate-500 mb-2">Deixe em branco para enviar para todos</p>
-                  <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 bg-slate-900 rounded-lg">
-                    {atletas.map((atleta) => (
-                      <button
-                        key={atleta.id}
-                        onClick={() => {
-                          if (atletasSelecionados.includes(atleta.id)) {
-                            setAtletasSelecionados(atletasSelecionados.filter(id => id !== atleta.id));
-                          } else {
-                            setAtletasSelecionados([...atletasSelecionados, atleta.id]);
-                          }
-                        }}
-                        className={`px-3 py-1 rounded-full text-sm transition-colors ${
-                          atletasSelecionados.includes(atleta.id)
-                            ? 'bg-amber-500 text-white'
-                            : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
-                        }`}
-                      >
-                        {atleta.nome?.split(' ')[0]}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                
-                <div>
-                  <Label className="text-slate-300">Mensagem</Label>
-                  <Textarea
-                    value={mensagem}
-                    onChange={(e) => setMensagem(e.target.value)}
-                    placeholder="Digite sua mensagem para os atletas..."
-                    className="bg-slate-900 border-slate-700 text-white min-h-32"
-                  />
-                </div>
-
-                <Button 
-                  className="w-full bg-amber-500 hover:bg-amber-600"
-                  onClick={enviarMensagem}
-                  disabled={sendingMensagem}
-                >
-                  {sendingMensagem ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Enviando...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4 mr-2" />
-                      Enviar Mensagem ({atletasSelecionados.length || atletas.length} atletas)
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
+        {/* Feed da Equipe Tab */}
+        {activeTab === 'feed' && (
+          <FeedEquipe
+            token={token}
+            userId={user.id}
+            equipe={user.equipe}
+            isDonoAssessoria={true}
+          />
         )}
 
         {/* Selo Tab */}

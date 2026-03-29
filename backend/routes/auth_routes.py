@@ -330,7 +330,10 @@ async def login(dados: UsuarioLogin):
             "email": user["email"],
             "role": user["role"],
             "foto_url": user.get("foto_url", ""),
-            "categoria": user.get("categoria", "normal")
+            "categoria": user.get("categoria", "normal"),
+            "equipe": user.get("equipe", ""),
+            "estado": user.get("estado", ""),
+            "is_dono_assessoria": user.get("is_dono_assessoria", False)
         }
     }
 
