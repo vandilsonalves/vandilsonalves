@@ -1,72 +1,67 @@
-# PRD - Ranking Run Pro
+# Ranking Run Pro - PRD
 
 ## Problema Original
-Plataforma de ranking de corridas com monetizacao, feed social, Raio-X, Strava e notificacoes.
+Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/FastAPI/MongoDB) com rankings profissionais, amadores ("Galera"), equipes (Liga de Assessorias) e corridas. Inclui sistema de insígnias, compartilhamento via Canvas, pagamentos via Efí Bank e painel administrativo completo.
 
 ## Arquitetura
-- Frontend: React + TailwindCSS + Shadcn UI
-- Backend: FastAPI + MongoDB (Motor)
-- Pagamentos: Efi Bank PRODUCAO (PIX + Cartao)
-- Emails: Resend (rankingrun.com.br)
-- Scheduler: APScheduler
-- WebSocket: Notificacoes em tempo real
+- **Frontend**: React + Shadcn/UI + Recharts
+- **Backend**: FastAPI + MongoDB (Motor async)
+- **Cache**: cachetools (in-memory) - Redis/Celery foram removidos
+- **Agendamento**: APScheduler (nativo Python)
+- **Pagamentos**: Efí Bank (PRODUÇÃO REAL)
+- **Compressão**: GZip Middleware
 
-## Funcionalidades Implementadas
+## O que foi implementado
 
-### Pagamento Efi Bank (PRODUCAO)
-- [x] PIX + Cartao de Credito (parcelas 1x-12x)
-- [x] Desbloqueio automatico: Premium ate 31/12/2026
-- [x] Bloqueio vendas: a partir 15/12/2026
-- [x] Certificado .p12 producao (valido ate 2029)
+### Sessão Anterior (Refatoração/Features)
+- Refatoração de AdminDashboard.jsx (3876→1657 linhas)
+- Refatoração de RankingPage.js (2267→232 linhas)
+- Refatoração de RaioXPage.jsx (-22% com extração canvas)
+- Filtros "Por Estado" e "Por Cidade" no Admin Mensagens
+- Botões "Selecionar Todos" e "Limpar" nos filtros
+- Sistema de visualização de leitura de mensagens (Lidas/Não lidas)
+- Reenvio de mensagem como Splash Screen
+- Componente SplashScreen.jsx global no App.js
 
-### Integracao Autorizacoes <-> Financeiro (28/03/2026)
-- [x] Autorizacao manual cria transacao financeira automaticamente
-- [x] Transacao manual: gateway=admin_manual, amount=0, is_manual=true
-- [x] Tag "Pago?" (amarelo com ?) para cortesias/pagamentos externos
-- [x] Tooltip no hover: "Autorizado manualmente por [Admin]"
-- [x] Badge "Manual" (amarelo) na coluna Gateway
-- [x] Valor mostra "Cortesia" em vez de R$0
-- [x] Manual/Cortesia aparece na distribuicao por gateway
+### Sessão Anterior (Performance/Features)
+- Remoção completa de Redis/Celery → cachetools + APScheduler
+- Faixa etária "Até 17 anos" nos rankings
+- Correção do erro fatal Canvas (null style) usando React state
+- Rankings Semanais/Mensais e "Destaque do Mês" filtrados por Modalidade
+- Insígnias "Top 10 do Mês" e "Rei da Velocidade" por Modalidade
+- Card de compartilhamento de Insígnias formato 9:16 com foto e download
+- Guia de Insígnias com 17 insígnias em formato 3D
+- GZip Middleware (-78% payload)
+- +14 índices MongoDB
+- Paginação na página de Ranking de Corridas
 
-### Exportacao Financeira (28/03/2026)
-- [x] Botao "Exportar Dados" no canto superior direito
-- [x] PDF: Resumo geral + tabela detalhada (fpdf2)
-- [x] Excel: 2 abas - Resumo Geral + Transacoes Detalhadas (openpyxl)
-- [x] Ambos incluem: origem (Cortesia/PIX/Cartao), admin responsavel
+### Sessão Atual (29/03/2026)
+- Paginação "Carregar Mais" (20 itens/página) no RankingProfissional ✅
+- Paginação "Carregar Mais" (20 itens/página) no RankingGalera ✅
+- Paginação "Carregar Mais" (20 itens/página) no RankingEquipes ✅
+- Correção de erro de parsing no RankingGalera.jsx (fragment wrapper) ✅
+- Testes: 14/14 backend, 100% frontend (iteration_90)
 
-### Autorizacoes Admin
-- [x] Botao "Ate 31/12/2026" (verde)
-- [x] Botao "Anual" (azul) - 1 ano a partir da ativacao
-- [x] Botao "Revogar" (vermelho) com confirmacao
+## Backlog Priorizado
 
-### Dashboard Financeiro Admin
-- [x] KPIs: Receita Total, PIX, Cartao, Ticket Medio
-- [x] Distribuicao: PIX / Cartao / Manual-Cortesia
-- [x] Funil de Conversao (Visitantes -> Cadastros -> Pagamentos)
-- [x] Relatorio Semanal (APScheduler dom 20h + endpoint manual)
+### P2
+- Exportar como PDF no Raio-X do atleta (usar canvasShareGenerator.js)
 
-## Credenciais
+### P3
+- Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe
+- Limpeza de states obsoletos no AdminDashboard.jsx
+
+## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta: teste.dono@teste.com / 123456
 
-## Regras de Negocio
-- Pagamentos abertos ate 14/12/2026
-- Apos 15/12/2026: apenas admin autoriza manualmente
-- Premium via pagamento: ate 31/12/2026
-- Plano Anual (admin): 365 dias a partir da ativacao
+## Integrações
+- Efí Bank (Pagamentos) - PRODUÇÃO REAL
+- Resend (Emails)
+- Strava (Atividades)
 
-## Issues Conhecidas
-- ~~Redis instavel (restarts manuais)~~ RESOLVIDO (28/03/2026): Redis eliminado completamente. Cache em memoria (cachetools) + asyncio background tasks
-
-## Migracoes Realizadas (28/03/2026)
-- Redis -> cachetools (TTLCache em memoria) para cache
-- Celery -> asyncio.create_task para tarefas em background
-- celery_routes.py reescrito sem dependencia de Redis/Celery
-- feed_routes.py e server.py: redis_client removido
-- requirements.txt: redis e celery removidos, cachetools adicionado
-- Rankings por Periodo (Semanal/Mensal) filtrados por modalidade (Masculino, Feminino, PCD/M, PCD/F, Cadeirante/M, Cadeirante/F)
-- Badges "Top 10 do Mes" e "Rei da Velocidade" agora verificados por modalidade
-
-## Backlog
-- P2: Exportar como PDF no Raio-X do atleta
-- P3: Limpeza de arquivos mortos (tasks/, celery_app.py, pagamentos_routes.py antigo)
+## Notas Importantes
+- NÃO iniciar Redis ou Celery (removidos da arquitetura)
+- Pagamentos em PRODUÇÃO REAL (não testar com dados falsos)
+- App.js usa imports diretos (sem React.lazy - causava lag mobile)
+- Acesso 90% via celular - performance é prioridade
