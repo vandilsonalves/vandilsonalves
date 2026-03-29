@@ -19,7 +19,10 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Remoção Redis/Celery, faixa "Até 17 anos", rankings por modalidade
 - Insígnias 3D, compartilhamento 9:16, GZip, índices MongoDB
 
-### Sessão "Minha Assessoria" (29/03/2026)
+### Sessão Redes Sociais no Perfil (29/03/2026)
+- **8 botões de redes sociais** no "Acesso Rápido" do Meu Perfil: Instagram, Club Strava, Facebook, Grupo WhatsApp, TikTok, YouTube, Canal WhatsApp, Telegram ✅
+- Todos com links oficiais do Ranking Run e ícones lucide-react (sem emojis) ✅
+- Botão Instagram removido de "Compartilhar minha posição" (só WhatsApp permanece) ✅
 - Paginação "Carregar Mais" em todos os 4 rankings (Profissional, Galera, Equipes, Corridas) ✅
 - Scroll infinito automático via IntersectionObserver ✅
 - Componente reutilizável LoadMoreButton.jsx com barra de progresso ✅

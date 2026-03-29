@@ -13,7 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { 
   ArrowLeft, Save, User, Mail, MapPin, Users, Trophy, 
   Facebook, Instagram, Phone, FileText, Camera, Check, Loader2,
-  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff, Crop, Zap
+  Share2, Award, ExternalLink, Download, Calendar, Lock, Eye, EyeOff, Crop, Zap,
+  Youtube, MessageCircle, Radio, Send, Music
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -27,33 +28,71 @@ import StravaIntegration from '@/components/StravaIntegration';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
-// Links de redes sociais com URLs funcionais
+// Links oficiais das redes sociais do Ranking Run
 const SocialLinks = [
   { 
-    name: 'Strava', 
-    icon: '🏃', 
-    url: 'https://www.strava.com/dashboard', 
+    name: 'Instagram', 
+    icon: 'instagram',
+    url: 'https://www.instagram.com/rankingrun', 
+    color: 'bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 hover:from-purple-700 hover:via-pink-600 hover:to-orange-500' 
+  },
+  { 
+    name: 'Club Strava', 
+    icon: 'strava',
+    url: 'https://www.strava.com/clubs/1341324', 
     color: 'bg-orange-500 hover:bg-orange-600' 
   },
   { 
-    name: 'WhatsApp', 
-    icon: '💬', 
-    url: 'https://wa.me/', 
+    name: 'Facebook', 
+    icon: 'facebook',
+    url: 'https://www.facebook.com/profile.php?id=61557999299423', 
+    color: 'bg-blue-600 hover:bg-blue-700' 
+  },
+  { 
+    name: 'Grupo WhatsApp', 
+    icon: 'whatsapp',
+    url: 'https://chat.whatsapp.com/JG3mooU8QmLHJkv7JvvCHp', 
     color: 'bg-green-500 hover:bg-green-600' 
   },
   { 
     name: 'TikTok', 
-    icon: '🎵', 
-    url: 'https://www.tiktok.com/explore', 
-    color: 'bg-slate-800 hover:bg-slate-700' 
+    icon: 'tiktok',
+    url: 'https://www.tiktok.com/@ranking_run?_t=ZM-90eQxvkeWke&_r=1', 
+    color: 'bg-slate-900 hover:bg-slate-800 border border-slate-600' 
   },
   { 
     name: 'YouTube', 
-    icon: '▶️', 
-    url: 'https://www.youtube.com', 
+    icon: 'youtube',
+    url: 'https://www.youtube.com/@RankingRun1', 
     color: 'bg-red-600 hover:bg-red-700' 
   },
+  { 
+    name: 'Canal WhatsApp', 
+    icon: 'whatsapp-channel',
+    url: 'https://whatsapp.com/channel/0029VbBuB3M11ulNxEcLiZ0G', 
+    color: 'bg-emerald-600 hover:bg-emerald-700' 
+  },
+  { 
+    name: 'Telegram', 
+    icon: 'telegram',
+    url: 'https://t.me/rankingrun', 
+    color: 'bg-sky-500 hover:bg-sky-600' 
+  },
 ];
+
+const SocialIcon = ({ type, className = "w-4 h-4" }) => {
+  switch (type) {
+    case 'instagram': return <Instagram className={className} />;
+    case 'facebook': return <Facebook className={className} />;
+    case 'youtube': return <Youtube className={className} />;
+    case 'whatsapp': return <MessageCircle className={className} />;
+    case 'whatsapp-channel': return <Radio className={className} />;
+    case 'telegram': return <Send className={className} />;
+    case 'strava': return <svg className={className} viewBox="0 0 24 24" fill="currentColor"><path d="M15.387 17.944l-2.089-4.116h-3.065L15.387 24l5.15-10.172h-3.066m-7.008-5.599l2.836 5.598h4.172L10.463 0l-7 13.828h4.169"/></svg>;
+    case 'tiktok': return <Music className={className} />;
+    default: return <ExternalLink className={className} />;
+  }
+};
 
 const ESTADOS_BR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
@@ -540,15 +579,16 @@ const PerfilAtletaPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex flex-wrap gap-3">
+            <div className="grid grid-cols-4 gap-2 sm:flex sm:flex-wrap sm:gap-2">
               {SocialLinks.map((link) => (
                 <Button
                   key={link.name}
-                  className={`${link.color} text-white border-0`}
+                  className={`${link.color} text-white border-0 text-xs px-2 py-2 h-auto flex flex-col sm:flex-row items-center gap-1 sm:gap-1.5 sm:px-3 sm:py-2`}
                   onClick={() => handleSocialLink(link)}
+                  data-testid={`social-${link.icon}`}
                 >
-                  <span className="mr-2">{link.icon}</span>
-                  {link.name}
+                  <SocialIcon type={link.icon} className="w-4 h-4 shrink-0" />
+                  <span className="text-[10px] sm:text-xs leading-tight text-center">{link.name}</span>
                 </Button>
               ))}
             </div>
@@ -690,15 +730,10 @@ const PerfilAtletaPage = () => {
                     size="sm"
                     className="flex-1 bg-green-600 hover:bg-green-500"
                     onClick={() => handleShare('whatsapp')}
+                    data-testid="share-whatsapp-btn"
                   >
+                    <MessageCircle className="w-4 h-4 mr-1" />
                     WhatsApp
-                  </Button>
-                  <Button
-                    size="sm"
-                    className="flex-1 bg-pink-600 hover:bg-pink-500"
-                    onClick={() => handleShare('instagram')}
-                  >
-                    Instagram
                   </Button>
                 </div>
               </div>
