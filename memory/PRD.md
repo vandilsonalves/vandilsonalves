@@ -19,7 +19,7 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Remoção Redis/Celery, faixa "Até 17 anos", rankings por modalidade
 - Insígnias 3D, compartilhamento 9:16, GZip, índices MongoDB
 
-### Sessão Atual (29/03/2026)
+### Sessão "Minha Assessoria" (29/03/2026)
 - Paginação "Carregar Mais" em todos os 4 rankings (Profissional, Galera, Equipes, Corridas) ✅
 - Scroll infinito automático via IntersectionObserver ✅
 - Componente reutilizável LoadMoreButton.jsx com barra de progresso ✅
@@ -35,6 +35,7 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **Threads de resposta** nos posts do Feed (respostas indentadas com borda lateral) ✅
 - **Menções @nome** com autocomplete dropdown e notificação push ao mencionado ✅
 - **Header reestruturado** em 2 linhas: top (logo+user+ações) + bottom (navegação com scroll) ✅
+- **Enquetes (Polls) no Feed da Equipe** ✅ — Criar enquetes, votar, ver %, encerrar (testado 29/03)
 - Testes: Backend 17/17 PASSED, Frontend 100% (iteration_91)
 
 ## Backlog Priorizado
@@ -47,7 +48,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Limpeza de states obsoletos no AdminDashboard.jsx
 
 ## Credenciais de Teste
-- Dono Assessoria: gustavo_gomes_2@email.com / teste123 (equipe: Assessoria CAFAV)
+- Dono Assessoria: marcos_martins_3@email.com / marcos123 (equipe: Victory Run PE)
+- Atleta c/ Equipe: leonardo_souza_136@email.com / leonardo123
 - Admin: admin@runpro.com / admin
 
 ## Integrações
@@ -61,6 +63,7 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - App.js usa imports diretos (sem React.lazy)
 - Acesso 90% via celular - performance é prioridade
 
-## Collections MongoDB Novas
-- `chat_assessoria`: Mensagens do chat da assessoria (texto + arquivos)
-- `feed_equipe`: Posts do feed da equipe (texto + arquivos + curtidas)
+## Collections MongoDB Relevantes
+- `mensagens_assessoria`: Chat + Feed posts (diferenciados por campo `tipo`)
+- `feed_enquetes`: Enquetes do feed da equipe (pergunta, opções, votos, ativa)
+- `notificacoes`: Notificações push (menções, desvinculação, splash, etc.)
