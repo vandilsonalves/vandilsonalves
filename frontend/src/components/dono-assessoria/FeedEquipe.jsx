@@ -10,6 +10,7 @@ import {
   Send, Paperclip, Heart, Trash2, FileText, X, Download, Loader2, MessageSquare, Users, MessageCircle
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { MentionInput, renderWithMentions } from '@/components/MentionInput';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -23,6 +24,7 @@ export const FeedEquipe = ({ token, userId, equipe, isDonoAssessoria = false }) 
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(false);
   const [threadOpen, setThreadOpen] = useState(null);
+  const [mencionadosPost, setMencionadosPost] = useState([]);
   const fileInputRef = useRef(null);
 
   const headers = { Authorization: `Bearer ${token}` };
@@ -49,12 +51,14 @@ export const FeedEquipe = ({ token, userId, equipe, isDonoAssessoria = false }) 
     try {
       const formData = new FormData();
       formData.append('mensagem', texto);
+      formData.append('mencionados', mencionadosPost.join(','));
       if (arquivo) formData.append('arquivo', arquivo);
       await axios.post(`${API}/equipe/feed/enviar`, formData, {
         headers: { ...headers, 'Content-Type': 'multipart/form-data' }
       });
       setTexto('');
       setArquivo(null);
+      setMencionadosPost([]);
       await fetchPosts(1);
       toast.success('Publicado!');
     } catch (e) {
@@ -115,7 +119,7 @@ export const FeedEquipe = ({ token, userId, equipe, isDonoAssessoria = false }) 
           <Textarea
             value={texto}
             onChange={e => setTexto(e.target.value)}
-            placeholder="O que está acontecendo na equipe?"
+            placeholder="O que está acontecendo na equipe? (use @ para mencionar)"
             className="bg-slate-900 border-slate-700 text-white min-h-20 resize-none"
             data-testid="feed-input"
           />
@@ -203,7 +207,7 @@ const PostCard = ({ post, userId, isDonoAssessoria, onCurtir, onDeletar, threadO
                 </button>
               )}
             </div>
-            {post.mensagem && <p className="text-sm text-slate-200 mt-1 whitespace-pre-wrap">{post.mensagem}</p>}
+            {post.mensagem && <p className="text-sm text-slate-200 mt-1 whitespace-pre-wrap">{renderWithMentions(post.mensagem)}</p>}
             {post.arquivo && <ArquivoDisplay arquivo={post.arquivo} />}
             <div className="flex items-center gap-4 mt-2">
               <button
@@ -238,6 +242,7 @@ const ThreadSection = ({ postId, token, headers, userId }) => {
   const [texto, setTexto] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [mencionados, setMencionados] = useState([]);
 
   const fetchRespostas = useCallback(async () => {
     try {
@@ -255,10 +260,12 @@ const ThreadSection = ({ postId, token, headers, userId }) => {
     try {
       const formData = new FormData();
       formData.append('mensagem', texto);
+      formData.append('mencionados', mencionados.join(','));
       await axios.post(`${API}/equipe/feed/${postId}/responder`, formData, {
         headers: { ...headers, 'Content-Type': 'multipart/form-data' }
       });
       setTexto('');
+      setMencionados([]);
       await fetchRespostas();
     } catch (e) {
       toast.error(e.response?.data?.detail || 'Erro ao responder');
@@ -283,20 +290,22 @@ const ThreadSection = ({ postId, token, headers, userId }) => {
                   {new Date(r.data_envio).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}
                 </span>
               </div>
-              <p className="text-sm text-slate-200 whitespace-pre-wrap">{r.mensagem}</p>
+              <p className="text-sm text-slate-200 whitespace-pre-wrap">{renderWithMentions(r.mensagem)}</p>
               {r.arquivo && <ArquivoDisplay arquivo={r.arquivo} small />}
             </div>
           </div>
         ))
       ) : null}
       <div className="flex gap-2">
-        <Input
+        <MentionInput
           value={texto}
           onChange={e => setTexto(e.target.value)}
           onKeyDown={e => e.key === 'Enter' && !e.shiftKey && enviar()}
-          placeholder="Escreva uma resposta..."
-          className="bg-slate-900 border-slate-700 text-white text-sm h-8 flex-1"
-          data-testid={`thread-input-${postId}`}
+          placeholder="Escreva uma resposta... (use @ para mencionar)"
+          className="w-full bg-slate-900 border border-slate-700 text-white text-sm h-8 rounded-md px-3 flex-1"
+          token={token}
+          testId={`thread-input-${postId}`}
+          onMention={(id) => setMencionados(prev => prev.includes(id) ? prev : [...prev, id])}
         />
         <Button onClick={enviar} disabled={sending || !texto.trim()} size="sm" className="bg-amber-500 hover:bg-amber-600 h-8 px-3" data-testid={`thread-send-${postId}`}>
           {sending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}

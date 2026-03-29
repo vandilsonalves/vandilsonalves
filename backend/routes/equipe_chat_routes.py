@@ -210,6 +210,7 @@ async def desvincular_atleta(
 @router.post("/equipe/feed/enviar")
 async def enviar_feed(
     mensagem: str = Form(default=""),
+    mencionados: str = Form(default=""),
     arquivo: UploadFile = File(default=None),
     current_user: dict = Depends(get_current_user)
 ):
@@ -260,6 +261,21 @@ async def enviar_feed(
     }
 
     await db.feed_equipe.insert_one(post)
+
+    # Notificar mencionados
+    mencao_ids = [m.strip() for m in mencionados.split(",") if m.strip()]
+    if mencao_ids:
+        from routes.notificacoes_routes import criar_notificacao
+        for uid in mencao_ids:
+            if uid != current_user["id"]:
+                await criar_notificacao(
+                    usuario_id=uid,
+                    tipo="mencao_feed",
+                    titulo=f"{get_nome_display(current_user)} mencionou você",
+                    mensagem=mensagem[:100],
+                    dados_extras={"post_id": post["id"]}
+                )
+
     post.pop("_id", None)
     return {"message": "Publicado no feed!", "post": post}
 
@@ -320,12 +336,37 @@ async def deletar_feed(post_id: str, current_user: dict = Depends(get_current_us
 
 
 
+# ==================== MEMBROS DA EQUIPE ====================
+
+@router.get("/equipe/membros")
+async def get_membros_equipe(current_user: dict = Depends(get_current_user)):
+    equipe = current_user.get("equipe", "")
+    if not equipe or equipe.upper() in ["INDIVIDUAL", "SEM EQUIPE"]:
+        return {"membros": []}
+
+    membros = await db.usuarios.find(
+        {"equipe": equipe},
+        {"_id": 0, "id": 1, "nome": 1, "apelido": 1, "foto_url": 1}
+    ).to_list(200)
+
+    result = []
+    for m in membros:
+        result.append({
+            "id": m["id"],
+            "nome": m.get("nome", ""),
+            "nome_display": get_nome_display(m),
+            "foto_url": m.get("foto_url", "")
+        })
+    return {"membros": result}
+
+
 # ==================== RESPOSTAS EM THREAD ====================
 
 @router.post("/equipe/feed/{post_id}/responder")
 async def responder_post(
     post_id: str,
     mensagem: str = Form(default=""),
+    mencionados: str = Form(default=""),
     arquivo: UploadFile = File(default=None),
     current_user: dict = Depends(get_current_user)
 ):
@@ -375,6 +416,21 @@ async def responder_post(
 
     await db.feed_respostas.insert_one(resposta)
     await db.feed_equipe.update_one({"id": post_id}, {"$inc": {"respostas_count": 1}})
+
+    # Notificar mencionados
+    mencao_ids = [m.strip() for m in mencionados.split(",") if m.strip()]
+    if mencao_ids:
+        from routes.notificacoes_routes import criar_notificacao
+        for uid in mencao_ids:
+            if uid != current_user["id"]:
+                await criar_notificacao(
+                    usuario_id=uid,
+                    tipo="mencao_feed",
+                    titulo=f"{get_nome_display(current_user)} mencionou você",
+                    mensagem=mensagem[:100],
+                    dados_extras={"post_id": post_id}
+                )
+
     resposta.pop("_id", None)
     return {"message": "Resposta enviada!", "resposta": resposta}
 
