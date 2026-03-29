@@ -486,3 +486,97 @@ async def marcar_feed_lido(current_user: dict = Depends(get_current_user)):
         upsert=True
     )
     return {"ok": True}
+
+
+# ==================== ENQUETES ====================
+
+class EnqueteCreate(BaseModel):
+    pergunta: str
+    opcoes: List[str]
+
+@router.post("/equipe/enquete/criar")
+async def criar_enquete(dados: EnqueteCreate, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos de assessoria podem criar enquetes")
+
+    equipe = current_user.get("equipe", "")
+    if not equipe or equipe.upper() in ["INDIVIDUAL", "SEM EQUIPE"]:
+        raise HTTPException(status_code=400, detail="Sem equipe vinculada")
+
+    if len(dados.opcoes) < 2:
+        raise HTTPException(status_code=400, detail="Mínimo 2 opções")
+    if len(dados.opcoes) > 6:
+        raise HTTPException(status_code=400, detail="Máximo 6 opções")
+
+    opcoes_doc = [{"texto": op.strip(), "votos": []} for op in dados.opcoes if op.strip()]
+
+    enquete = {
+        "id": str(uuid.uuid4()),
+        "equipe": equipe,
+        "autor_id": current_user["id"],
+        "autor_nome": get_nome_display(current_user),
+        "autor_foto": current_user.get("foto_url", ""),
+        "pergunta": dados.pergunta.strip(),
+        "opcoes": opcoes_doc,
+        "total_votos": 0,
+        "ativa": True,
+        "data_criacao": datetime.now(timezone.utc).isoformat()
+    }
+
+    await db.feed_enquetes.insert_one(enquete)
+    enquete.pop("_id", None)
+    return {"message": "Enquete criada!", "enquete": enquete}
+
+
+@router.get("/equipe/enquetes")
+async def listar_enquetes(current_user: dict = Depends(get_current_user)):
+    equipe = current_user.get("equipe", "")
+    if not equipe or equipe.upper() in ["INDIVIDUAL", "SEM EQUIPE"]:
+        return {"enquetes": []}
+
+    enquetes = await db.feed_enquetes.find(
+        {"equipe": equipe},
+        {"_id": 0}
+    ).sort("data_criacao", -1).to_list(20)
+    return {"enquetes": enquetes}
+
+
+@router.post("/equipe/enquete/{enquete_id}/votar")
+async def votar_enquete(enquete_id: str, opcao_idx: int = 0, current_user: dict = Depends(get_current_user)):
+    enquete = await db.feed_enquetes.find_one({"id": enquete_id})
+    if not enquete:
+        raise HTTPException(status_code=404, detail="Enquete não encontrada")
+
+    if not enquete.get("ativa"):
+        raise HTTPException(status_code=400, detail="Enquete encerrada")
+
+    if opcao_idx < 0 or opcao_idx >= len(enquete["opcoes"]):
+        raise HTTPException(status_code=400, detail="Opção inválida")
+
+    uid = current_user["id"]
+
+    # Remover voto anterior (se existir)
+    for i, op in enumerate(enquete["opcoes"]):
+        if uid in op.get("votos", []):
+            await db.feed_enquetes.update_one(
+                {"id": enquete_id},
+                {"$pull": {f"opcoes.{i}.votos": uid}, "$inc": {"total_votos": -1}}
+            )
+
+    # Adicionar novo voto
+    await db.feed_enquetes.update_one(
+        {"id": enquete_id},
+        {"$push": {f"opcoes.{opcao_idx}.votos": uid}, "$inc": {"total_votos": 1}}
+    )
+
+    updated = await db.feed_enquetes.find_one({"id": enquete_id}, {"_id": 0})
+    return {"message": "Voto registrado!", "enquete": updated}
+
+
+@router.post("/equipe/enquete/{enquete_id}/encerrar")
+async def encerrar_enquete(enquete_id: str, current_user: dict = Depends(get_current_user)):
+    if current_user.get("role") not in ["dono_assessoria", "admin", "super_admin"]:
+        raise HTTPException(status_code=403, detail="Apenas donos")
+
+    await db.feed_enquetes.update_one({"id": enquete_id}, {"$set": {"ativa": False}})
+    return {"message": "Enquete encerrada"}

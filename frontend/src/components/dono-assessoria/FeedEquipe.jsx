@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { MentionInput, renderWithMentions } from '@/components/MentionInput';
+import { EnquetesSection } from '@/components/dono-assessoria/EnquetesSection';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -143,6 +144,9 @@ export const FeedEquipe = ({ token, userId, equipe, isDonoAssessoria = false }) 
           </div>
         </CardContent>
       </Card>
+
+      {/* Enquetes */}
+      <EnquetesSection token={token} userId={userId} isDonoAssessoria={isDonoAssessoria} />
 
       {/* Posts */}
       {loading ? (
