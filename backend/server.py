@@ -435,6 +435,16 @@ async def admin_disparar_resumo_semanal(admin: dict = Depends(get_admin_user)):
     return {"message": "Resumo semanal enviado!", "resultado": resultado}
 
 
+@api_router.get("/admin/resumo-semanal/historico")
+async def admin_historico_resumo_semanal(admin: dict = Depends(get_admin_user)):
+    """Retorna historico dos disparos de resumo semanal"""
+    logs = await db.logs_scheduler.find(
+        {"tipo": "resumo_semanal_atletas"},
+        {"_id": 0}
+    ).sort("data", -1).limit(20).to_list(None)
+    return {"historico": logs}
+
+
 
 @api_router.post("/admin/adicionar-corrida")
 async def admin_adicionar_corrida(dados: dict, admin: dict = Depends(get_admin_user)):

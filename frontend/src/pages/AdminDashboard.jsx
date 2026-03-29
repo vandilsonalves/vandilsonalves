@@ -48,6 +48,7 @@ import {
 } from './admin';
 import DashboardMonitoramento from './admin/dashboards/DashboardMonitoramento';
 import DashboardMensagens from './admin/DashboardMensagens';
+import DashboardResumoSemanal from './admin/DashboardResumoSemanal';
 import DashboardEngajamento from './admin/DashboardEngajamento';
 import DashboardFinanceiro from './admin/DashboardFinanceiro';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
@@ -89,6 +90,7 @@ const menuSections = [
     title: 'Ferramentas',
     items: [
       { id: 'submeter', label: 'Submeter Resultado', icon: Plus, permissoes: ['aprovar_resultados'] },
+      { id: 'resumo-semanal', label: 'Resumo Semanal', icon: Send, permissoes: [] },
       { id: 'ranking', label: 'Exportar Ranking', icon: FileText, permissoes: ['exportar_dados'], superAdminOnly: true },
       { id: 'aniversariantes', label: 'Aniversariantes', icon: Cake, permissoes: [] },
     ]
@@ -1084,6 +1086,11 @@ const AdminDashboard = () => {
         {/* Instagram Analytics - Componentizado */}
         {activeMenu === 'instagram' && (
           <DashboardInstagram token={token} />
+        )}
+
+        {/* Resumo Semanal - Disparo manual para atletas */}
+        {activeMenu === 'resumo-semanal' && (
+          <DashboardResumoSemanal token={token} />
         )}
 
         {/* Modal Editar Atleta */}

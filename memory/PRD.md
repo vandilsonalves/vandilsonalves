@@ -47,12 +47,14 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
   - Agendado: toda segunda-feira às 08:00 (APScheduler CronTrigger)
   - Conteúdo: corridas da semana, pontos ganhos, posição no ranking, total acumulado
   - Endpoint admin: `POST /api/admin/resumo-semanal/disparar` (disparo manual)
+  - Endpoint admin: `GET /api/admin/resumo-semanal/historico` (historico de disparos)
+  - Painel Admin: Menu "Resumo Semanal" em Ferramentas com botao "Disparar Agora", preview e historico ✅
   - Testado: 392/392 atletas notificados, 0 erros
 
 ## Backlog Priorizado
 
 ### P2
-- Exportar como PDF no Raio-X do atleta (usar canvasShareGenerator.js)
+- ~~Exportar como PDF no Raio-X do atleta~~ ✅ (Ja implementado com jsPDF v4.2.1 - 5 paginas)
 
 ### P3
 - ~~Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe~~ ✅ (Removido em 29/03)
