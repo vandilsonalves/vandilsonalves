@@ -13,37 +13,22 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 
 ## O que foi implementado
 
-### Sessão Anterior (Refatoração/Features)
-- Refatoração de AdminDashboard.jsx (3876→1657 linhas)
-- Refatoração de RankingPage.js (2267→232 linhas)
-- Refatoração de RaioXPage.jsx (-22% com extração canvas)
-- Filtros "Por Estado" e "Por Cidade" no Admin Mensagens
-- Botões "Selecionar Todos" e "Limpar" nos filtros
-- Sistema de visualização de leitura de mensagens (Lidas/Não lidas)
-- Reenvio de mensagem como Splash Screen
-- Componente SplashScreen.jsx global no App.js
-
-### Sessão Anterior (Performance/Features)
-- Remoção completa de Redis/Celery → cachetools + APScheduler
-- Faixa etária "Até 17 anos" nos rankings
-- Correção do erro fatal Canvas (null style) usando React state
-- Rankings Semanais/Mensais e "Destaque do Mês" filtrados por Modalidade
-- Insígnias "Top 10 do Mês" e "Rei da Velocidade" por Modalidade
-- Card de compartilhamento de Insígnias formato 9:16 com foto e download
-- Guia de Insígnias com 17 insígnias em formato 3D
-- GZip Middleware (-78% payload)
-- +14 índices MongoDB
-- Paginação na página de Ranking de Corridas
+### Sessões Anteriores (Refatoração/Features)
+- Refatoração de AdminDashboard.jsx, RankingPage.js, RaioXPage.jsx
+- Filtros geográficos no Admin Mensagens, Splash Screen, leitura de mensagens
+- Remoção Redis/Celery, faixa "Até 17 anos", rankings por modalidade
+- Insígnias 3D, compartilhamento 9:16, GZip, índices MongoDB
 
 ### Sessão Atual (29/03/2026)
-- Paginação "Carregar Mais" (20 itens/página) no RankingProfissional ✅
-- Paginação "Carregar Mais" (20 itens/página) no RankingGalera ✅
-- Paginação "Carregar Mais" (20 itens/página) no RankingEquipes ✅
-- Correção de erro de parsing no RankingGalera.jsx (fragment wrapper) ✅
-- Componente reutilizável LoadMoreButton.jsx com barra de progresso visual + percentual ✅
-- Scroll infinito automático via IntersectionObserver em todos os 4 rankings ✅
-- Aplicado em todos os 4 rankings (Profissional, Galera, Equipes, Corridas) ✅
-- Testes: 14/14 backend, 100% frontend (iteration_90)
+- Paginação "Carregar Mais" em todos os 4 rankings (Profissional, Galera, Equipes, Corridas) ✅
+- Scroll infinito automático via IntersectionObserver ✅
+- Componente reutilizável LoadMoreButton.jsx com barra de progresso ✅
+- **Chat da Assessoria** com upload de PDF/Excel/Imagens ✅
+- **Feed da Equipe** (grupo fechado tipo WhatsApp) com curtidas e anexos ✅
+- **Botão "Desvincular Atleta"** com motivo e notificação ✅
+- **Nomes com apelido** (prioriza apelido, senão primeiro+segundo nome) ✅
+- Feed acessível tanto no painel do dono quanto no perfil do atleta ✅
+- Testes: Backend 17/17 PASSED, Frontend 100% (iteration_91)
 
 ## Backlog Priorizado
 
@@ -55,8 +40,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Limpeza de states obsoletos no AdminDashboard.jsx
 
 ## Credenciais de Teste
+- Dono Assessoria: gustavo_gomes_2@email.com / teste123 (equipe: Assessoria CAFAV)
 - Admin: admin@runpro.com / admin
-- Atleta: teste.dono@teste.com / 123456
 
 ## Integrações
 - Efí Bank (Pagamentos) - PRODUÇÃO REAL
@@ -66,5 +51,9 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 ## Notas Importantes
 - NÃO iniciar Redis ou Celery (removidos da arquitetura)
 - Pagamentos em PRODUÇÃO REAL (não testar com dados falsos)
-- App.js usa imports diretos (sem React.lazy - causava lag mobile)
+- App.js usa imports diretos (sem React.lazy)
 - Acesso 90% via celular - performance é prioridade
+
+## Collections MongoDB Novas
+- `chat_assessoria`: Mensagens do chat da assessoria (texto + arquivos)
+- `feed_equipe`: Posts do feed da equipe (texto + arquivos + curtidas)
