@@ -2,6 +2,7 @@ from fastapi import FastAPI, APIRouter, HTTPException, Query, Depends, UploadFil
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from fastapi.responses import StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
@@ -1363,6 +1364,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# GZip compression - comprime respostas > 500 bytes (reduz ~70% do trafego)
+app.add_middleware(GZipMiddleware, minimum_size=500)
+
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
@@ -2089,16 +2093,32 @@ async def startup_event():
         await db.usuarios.create_index("email")
         await db.usuarios.create_index([("estado", 1), ("cidade", 1)])
         await db.usuarios.create_index("role")
+        await db.usuarios.create_index("equipe")
+        await db.usuarios.create_index([("genero", 1), ("categoria", 1)])
         await db.corridas.create_index("usuario_id")
         await db.corridas.create_index([("usuario_id", 1), ("status", 1)])
+        await db.corridas.create_index("status")
+        await db.corridas.create_index("data")
+        await db.corridas.create_index([("data", 1), ("usuario_id", 1)])
+        await db.corridas.create_index([("data", 1), ("modalidade", 1)])
         await db.ranking_anual.create_index([("ano", 1), ("usuario_id", 1)])
         await db.ranking_anual.create_index([("ano", 1), ("categoria", 1), ("genero", 1)])
+        await db.ranking_anual.create_index([("ano", 1), ("pontos_total", -1)])
         await db.ranking_povao.create_index([("ano", 1), ("usuario_id", 1)])
+        await db.ranking_povao.create_index([("ano", 1), ("pontos_total", -1)])
         await db.notificacoes.create_index([("usuario_id", 1), ("tipo", 1), ("lida", 1)])
         await db.notificacoes.create_index([("mensagem_id", 1), ("tipo", 1)])
         await db.mensagens_admin.create_index("id")
         await db.resultados.create_index("usuario_id")
-        logger.info("📊 Índices MongoDB criados/verificados")
+        await db.transacoes.create_index("usuario_id")
+        await db.transacoes.create_index("status")
+        await db.transacoes.create_index("created_at")
+        await db.transacoes.create_index([("gateway", 1), ("status", 1)])
+        await db.conquistas_atleta.create_index("usuario_id")
+        await db.conquistas_atleta.create_index([("usuario_id", 1), ("conquista_codigo", 1)])
+        await db.feed_posts.create_index([("created_at", -1)])
+        await db.feed_posts.create_index("usuario_id")
+        logger.info("Indices MongoDB criados/verificados")
     except Exception as e:
         logger.warning(f"Erro ao criar índices: {e}")
 

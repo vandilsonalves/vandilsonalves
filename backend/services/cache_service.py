@@ -23,15 +23,15 @@ DEFAULT_TTL = 300
 CACHE_TTL = {
     'ranking': 300,
     'ranking_povao': 300,
-    'ranking_semanal': 300,
-    'ranking_mensal': 600,
-    'ranking_destaque': 600,
-    'estados': 3600,
-    'faixas_etarias': 3600,
-    'equipes': 600,
-    'liga_assessorias': 300,
-    'corridas_eventos': 300,
-    'stats': 60,
+    'ranking_semanal': 600,
+    'ranking_mensal': 900,
+    'ranking_destaque': 900,
+    'estados': 7200,
+    'faixas_etarias': 7200,
+    'equipes': 1200,
+    'liga_assessorias': 600,
+    'corridas_eventos': 600,
+    'stats': 120,
 }
 
 # Prefixos de cache para invalidação em grupo
