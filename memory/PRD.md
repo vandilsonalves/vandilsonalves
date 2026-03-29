@@ -30,6 +30,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Feed acessível tanto no painel do dono quanto no perfil do atleta ✅
 - **Botão "Feed da Equipe"** no header e mobile nav (só para atletas com equipe) ✅
 - **Página dedicada /feed-equipe** fora do AccessGate (sempre acessível) ✅
+- **Badge de posts não lidos** (vermelho) no botão Feed da Equipe com polling 15s ✅
+- **Auto marca como lido** ao entrar no feed, badge desaparece ✅
 - Testes: Backend 17/17 PASSED, Frontend 100% (iteration_91)
 
 ## Backlog Priorizado

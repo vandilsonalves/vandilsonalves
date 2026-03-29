@@ -1,5 +1,7 @@
+import { useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useFeedNaoLidos } from '@/hooks/useFeedNaoLidos';
 import { FeedEquipe } from '@/components/dono-assessoria/FeedEquipe';
 import { Button } from '@/components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -7,6 +9,11 @@ import { ArrowLeft } from 'lucide-react';
 export default function FeedEquipePage() {
   const { user, token } = useAuth();
   const navigate = useNavigate();
+  const { marcarLido } = useFeedNaoLidos(token, user?.equipe);
+
+  useEffect(() => {
+    marcarLido();
+  }, [marcarLido]);
 
   if (!user || !token) {
     navigate('/login');

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useFeedNaoLidos } from '@/hooks/useFeedNaoLidos';
 import {
   Menu, X, MessageSquare, HelpCircle, History, MapPin, Activity,
   Zap, User, Upload, LogOut, Shield, Award, Home, CreditCard, UsersRound
@@ -13,7 +14,7 @@ import {
 export default function MobileNav() {
   const [open, setOpen] = useState(false);
   const navigate = useNavigate();
-  const { user, isAdmin, logout } = useAuth();
+  const { user, isAdmin, logout, token } = useAuth();
 
   const go = (path) => {
     setOpen(false);
@@ -21,11 +22,12 @@ export default function MobileNav() {
   };
 
   const hasEquipe = user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe);
+  const { naoLidos } = useFeedNaoLidos(token, user?.equipe);
 
   const menuItems = [
     { label: 'Ranking', icon: Home, path: '/', color: 'text-emerald-400' },
     { label: 'Feed', icon: MessageSquare, path: '/feed', color: 'text-blue-400' },
-    ...(hasEquipe ? [{ label: 'Feed da Equipe', icon: UsersRound, path: '/feed-equipe', color: 'text-amber-400' }] : []),
+    ...(hasEquipe ? [{ label: 'Feed da Equipe', icon: UsersRound, path: '/feed-equipe', color: 'text-amber-400', badge: naoLidos }] : []),
     { label: 'Regras', icon: HelpCircle, path: '/regras', color: 'text-slate-400' },
     { label: 'Historico', icon: History, path: '/historico', color: 'text-purple-400' },
     { label: 'Por Cidade', icon: MapPin, path: '/ranking-cidade', color: 'text-teal-400' },
@@ -120,7 +122,12 @@ export default function MobileNav() {
               data-testid={`mobile-nav-${item.label.toLowerCase().replace(/\s/g, '-')}`}
             >
               <item.icon className={`w-5 h-5 ${item.color}`} />
-              <span className="text-sm">{item.label}</span>
+              <span className="text-sm flex-1 text-left">{item.label}</span>
+              {item.badge > 0 && (
+                <span className="min-w-[20px] h-5 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1.5">
+                  {item.badge > 99 ? '99+' : item.badge}
+                </span>
+              )}
             </button>
           ))}
         </nav>

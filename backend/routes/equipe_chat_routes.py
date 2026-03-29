@@ -316,3 +316,43 @@ async def deletar_feed(post_id: str, current_user: dict = Depends(get_current_us
 
     await db.feed_equipe.delete_one({"id": post_id})
     return {"message": "Post removido"}
+
+
+
+# ==================== FEED NÃO LIDOS ====================
+
+@router.get("/equipe/feed/nao-lidos")
+async def get_feed_nao_lidos(current_user: dict = Depends(get_current_user)):
+    equipe = current_user.get("equipe", "")
+    if not equipe or equipe.upper() in ["INDIVIDUAL", "SEM EQUIPE"]:
+        return {"nao_lidos": 0}
+
+    uid = current_user["id"]
+    leitura = await db.feed_leitura.find_one(
+        {"user_id": uid, "equipe": equipe}, {"_id": 0}
+    )
+    last_seen = leitura.get("last_seen_at") if leitura else None
+
+    query = {"equipe": equipe}
+    if last_seen:
+        query["data_envio"] = {"$gt": last_seen}
+
+    count = await db.feed_equipe.count_documents(query)
+    return {"nao_lidos": count}
+
+
+@router.post("/equipe/feed/marcar-lido")
+async def marcar_feed_lido(current_user: dict = Depends(get_current_user)):
+    equipe = current_user.get("equipe", "")
+    if not equipe or equipe.upper() in ["INDIVIDUAL", "SEM EQUIPE"]:
+        return {"ok": True}
+
+    uid = current_user["id"]
+    now = datetime.now(timezone.utc).isoformat()
+
+    await db.feed_leitura.update_one(
+        {"user_id": uid, "equipe": equipe},
+        {"$set": {"last_seen_at": now}},
+        upsert=True
+    )
+    return {"ok": True}

@@ -7,6 +7,7 @@ import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquar
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useFeedNaoLidos } from '@/hooks/useFeedNaoLidos';
 import RankingProfissional from '@/components/ranking/RankingProfissional';
 import RankingGalera from '@/components/ranking/RankingGalera';
 import RankingEquipes from '@/components/ranking/RankingEquipes';
@@ -17,6 +18,8 @@ const RankingPage = () => {
   const navigate = useNavigate();
   const { user, token, isAdmin, logout } = useAuth();
   const [tipoRanking, setTipoRanking] = useState('profissional');
+  const hasEquipe = user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe);
+  const { naoLidos } = useFeedNaoLidos(token, user?.equipe);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
@@ -83,10 +86,15 @@ const RankingPage = () => {
                   <MessageSquare className="w-4 h-4 mr-1" />
                   Feed
                 </Button>
-                {user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe) && (
-                  <Button onClick={() => navigate('/feed-equipe')} variant="ghost" size="sm" className="text-amber-500 hover:text-amber-600" data-testid="btn-feed-equipe">
+                {hasEquipe && (
+                  <Button onClick={() => navigate('/feed-equipe')} variant="ghost" size="sm" className="text-amber-500 hover:text-amber-600 relative" data-testid="btn-feed-equipe">
                     <UsersRound className="w-4 h-4 mr-1" />
                     Feed da Equipe
+                    {naoLidos > 0 && (
+                      <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center px-1" data-testid="badge-feed-nao-lidos">
+                        {naoLidos > 99 ? '99+' : naoLidos}
+                      </span>
+                    )}
                   </Button>
                 )}
                 <Button onClick={() => navigate('/regras')} variant="ghost" size="sm" className="text-slate-500 hover:text-slate-700" data-testid="btn-regras">
