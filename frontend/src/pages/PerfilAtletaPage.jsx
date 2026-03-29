@@ -33,7 +33,7 @@ const SocialLinks = [
   { 
     name: 'Instagram', 
     icon: 'instagram',
-    url: 'https://www.instagram.com/rankingrun', 
+    url: 'https://www.instagram.com/rankingrun/', 
     color: 'bg-gradient-to-br from-purple-600 via-pink-500 to-orange-400 hover:from-purple-700 hover:via-pink-600 hover:to-orange-500' 
   },
   { 

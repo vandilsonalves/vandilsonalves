@@ -427,6 +427,15 @@ async def admin_ajustar_pontos(dados: dict, admin: dict = Depends(get_admin_user
     return {"message": f"Pontos ajustados com sucesso! ({pontos:+d} pontos)"}
 
 
+@api_router.post("/admin/resumo-semanal/disparar")
+async def admin_disparar_resumo_semanal(admin: dict = Depends(get_admin_user)):
+    """Admin dispara manualmente o resumo semanal para todos os atletas"""
+    from services.resumo_semanal_atleta import gerar_resumo_semanal_atletas
+    resultado = await gerar_resumo_semanal_atletas()
+    return {"message": "Resumo semanal enviado!", "resultado": resultado}
+
+
+
 @api_router.post("/admin/adicionar-corrida")
 async def admin_adicionar_corrida(dados: dict, admin: dict = Depends(get_admin_user)):
     """Admin adiciona corrida completa para um atleta"""
@@ -2081,6 +2090,16 @@ async def startup_event():
         replace_existing=True
     )
     logger.info("📧 Relatório semanal agendado para domingos às 20:00")
+    
+    # Agendar resumo semanal para atletas (toda segunda às 8:00)
+    from services.resumo_semanal_atleta import gerar_resumo_semanal_atletas
+    scheduler.add_job(
+        gerar_resumo_semanal_atletas,
+        CronTrigger(day_of_week='mon', hour=8, minute=0),
+        id="resumo_semanal_atletas",
+        replace_existing=True
+    )
+    logger.info("📊 Resumo semanal para atletas agendado para segundas às 08:00")
     
     scheduler.start()
     logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza dom 23:59, Strava 1h, Relatório dom 20h")

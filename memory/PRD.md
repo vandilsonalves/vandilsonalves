@@ -41,6 +41,14 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **Enquetes (Polls) no Feed da Equipe** ✅ — Criar enquetes, votar, ver %, encerrar (testado 29/03)
 - Testes: Backend 17/17 PASSED, Frontend 100% (iteration_91)
 
+### Sessão Resumo Semanal + Instagram Fix (29/03/2026)
+- **Link Instagram corrigido** no Meu Perfil (trailing slash adicionado) ✅
+- **Resumo Semanal automático para atletas** via notificação push ✅
+  - Agendado: toda segunda-feira às 08:00 (APScheduler CronTrigger)
+  - Conteúdo: corridas da semana, pontos ganhos, posição no ranking, total acumulado
+  - Endpoint admin: `POST /api/admin/resumo-semanal/disparar` (disparo manual)
+  - Testado: 392/392 atletas notificados, 0 erros
+
 ## Backlog Priorizado
 
 ### P2
