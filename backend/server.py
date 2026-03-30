@@ -733,12 +733,12 @@ async def export_ranking_csv(categoria: str = "masculino", todas_modalidades: bo
                     writer.writerow([
                         rank.get("ranking_categoria", 0),
                         usuario["nome"],
-                        usuario["equipe"],
-                        usuario["cidade"],
-                        usuario["estado"],
-                        rank["faixa_etaria"],
-                        rank["total_corridas"],
-                        rank["pontos_total"]
+                        usuario.get("equipe", ""),
+                        usuario.get("cidade", ""),
+                        usuario.get("estado", ""),
+                        rank.get("faixa_etaria", ""),
+                        rank.get("total_corridas", 0),
+                        rank.get("pontos_total", 0)
                     ])
             writer.writerow([])  # Linha em branco entre modalidades
     else:
@@ -767,12 +767,12 @@ async def export_ranking_csv(categoria: str = "masculino", todas_modalidades: bo
                 writer.writerow([
                     rank.get("ranking_categoria", 0),
                     usuario["nome"],
-                    usuario["equipe"],
-                    usuario["cidade"],
-                    usuario["estado"],
-                    rank["faixa_etaria"],
-                    rank["total_corridas"],
-                    rank["pontos_total"]
+                    usuario.get("equipe", ""),
+                    usuario.get("cidade", ""),
+                    usuario.get("estado", ""),
+                    rank.get("faixa_etaria", ""),
+                    rank.get("total_corridas", 0),
+                    rank.get("pontos_total", 0)
                 ])
     
     output.seek(0)
@@ -831,12 +831,12 @@ async def export_ranking_excel(categoria: str = "masculino", todas_modalidades: 
                     ws.append([
                         rank.get("ranking_categoria", 0),
                         usuario["nome"],
-                        usuario["equipe"],
-                        usuario["cidade"],
-                        usuario["estado"],
-                        rank["faixa_etaria"],
-                        rank["total_corridas"],
-                        rank["pontos_total"]
+                        usuario.get("equipe", ""),
+                        usuario.get("cidade", ""),
+                        usuario.get("estado", ""),
+                        rank.get("faixa_etaria", ""),
+                        rank.get("total_corridas", 0),
+                        rank.get("pontos_total", 0)
                     ])
     else:
         # Exportar apenas uma categoria
@@ -873,12 +873,12 @@ async def export_ranking_excel(categoria: str = "masculino", todas_modalidades: 
                 ws.append([
                     rank.get("ranking_categoria", 0),
                     usuario["nome"],
-                    usuario["equipe"],
-                    usuario["cidade"],
-                    usuario["estado"],
-                    rank["faixa_etaria"],
-                    rank["total_corridas"],
-                    rank["pontos_total"]
+                    usuario.get("equipe", ""),
+                    usuario.get("cidade", ""),
+                    usuario.get("estado", ""),
+                    rank.get("faixa_etaria", ""),
+                    rank.get("total_corridas", 0),
+                    rank.get("pontos_total", 0)
                 ])
     
     output = io.BytesIO()
