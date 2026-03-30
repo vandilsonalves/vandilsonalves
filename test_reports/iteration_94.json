@@ -1,0 +1,61 @@
+{
+  "summary": "Iteration 94: Validated all scraping features - POST /api/scraping/buscar with Ticket Sports API returns corridas correctly, anti-duplicidade working (0 new on second search, 5 duplicates), CRUD for fontes monitoradas, atualizar-todas endpoint. All 9 backend tests PASSED. All frontend UI elements verified via Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter94_scraping.py",
+    "/app/test_reports/pytest/pytest_iter94_scraping.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "scraping_corridas.py - VERIFIED: Scrapers for Ticket Sports API, Central Inscrições HTML, generic HTML, and Playwright fallback",
+    "scraping_routes.py - VERIFIED: POST /api/scraping/buscar with anti-duplicidade, CRUD for fontes, atualizar-todas",
+    "DashboardCorridas.jsx - VERIFIED: 'Busca e Varredura Avançada de Corridas' section with URL input, Buscar Corridas button, Fontes button, Atualizar Todas button",
+    "Anti-duplicidade - VERIFIED: Second search returns novas=0, duplicatas=5 (all existing)",
+    "Status calculation - VERIFIED: calcular_status() returns 'ativa' or 'encerrada' based on date",
+    "data-testid attributes - VERIFIED: input-scraping-url, btn-scraping, btn-toggle-fontes, btn-atualizar-todas"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter94_scraping.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (All UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin"
+  },
+  "seed_data_creation": "None - used existing data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 94 verified all scraping features. The scraping system uses intelligent fallback: API parsers for known sites (Ticket Sports), HTML scraping for static sites, and Playwright for JS-heavy sites. Anti-duplicidade checks against corridas_eventos collection using (nome_corrida, data_corrida) and pagina_link. Fontes monitoradas are stored in scraping_fontes collection with 12h auto-update. The Ticket Sports API URL for testing is: https://www.ticketsports.com.br/api/events/list?quantity=10&atlheteId=0&quickFilter=corrida-de-rua",
+  "features_verified": {
+    "Admin Login": "VERIFIED - Dashboard loads correctly",
+    "Corridas Section": "VERIFIED - Shows 1455 corridas, 25 avaliações, 4.4 média",
+    "Busca e Varredura Avançada": "VERIFIED - Section visible with all UI elements",
+    "Scraping URL Input": "VERIFIED - data-testid='input-scraping-url'",
+    "Buscar Corridas Button": "VERIFIED - data-testid='btn-scraping'",
+    "Fontes Button": "VERIFIED - data-testid='btn-toggle-fontes', shows (1) fonte",
+    "Atualizar Todas Button": "VERIFIED - data-testid='btn-atualizar-todas'",
+    "Scraping Results": "VERIFIED - Shows 'X corridas encontradas', fonte, método, novas, duplicatas",
+    "Anti-duplicidade": "VERIFIED - Second search returns 0 novas, 5 duplicatas",
+    "CSV Export": "VERIFIED - Button visible in results"
+  },
+  "api_endpoints_tested": {
+    "POST /api/auth/login": "200 OK",
+    "POST /api/scraping/buscar": "200 OK - Returns corridas with nome_corrida, organizador, cidade, estado, data_corrida, status",
+    "POST /api/scraping/buscar (2nd time)": "200 OK - Anti-duplicidade: novas=0, duplicatas=5",
+    "POST /api/scraping/fontes": "200 OK - Adds monitored source",
+    "GET /api/scraping/fontes": "200 OK - Lists monitored sources",
+    "DELETE /api/scraping/fontes/{id}": "200 OK - Removes source",
+    "POST /api/scraping/atualizar-todas": "200 OK - Updates all active sources",
+    "GET /api/scraping/status": "200 OK - Returns total_fontes_ativas and ultimo_scraping"
+  }
+}

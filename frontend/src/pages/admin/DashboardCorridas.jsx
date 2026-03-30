@@ -11,7 +11,8 @@ import {
   Star, Trophy, MapPin, Plus, Edit, Trash2, Loader2, 
   Calendar, CalendarDays, ExternalLink, BarChart3, Award, TrendingUp,
   Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle,
-  ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square, FileText
+  ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square, FileText,
+  RefreshCw, Bookmark, Clock, Link2, ShieldCheck, AlertOctagon
 } from 'lucide-react';
 import CidadeCombobox from '@/components/CidadeCombobox';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,11 +49,15 @@ const DashboardCorridas = ({
   const [cidadesIBGE, setCidadesIBGE] = useState([]);
   const [loadingCidadesIBGE, setLoadingCidadesIBGE] = useState(false);
 
-  // Estados para Scraping
+  // Estados para Scraping Avançado
   const [scrapingUrl, setScrapingUrl] = useState('');
   const [loadingScraping, setLoadingScraping] = useState(false);
   const [scrapingResultado, setScrapingResultado] = useState(null);
   const [showScrapingModal, setShowScrapingModal] = useState(false);
+  const [fontesMonitoradas, setFontesMonitoradas] = useState([]);
+  const [loadingFontes, setLoadingFontes] = useState(false);
+  const [showFontes, setShowFontes] = useState(false);
+  const [loadingAtualizarTodas, setLoadingAtualizarTodas] = useState(false);
 
   // Estados para Importação
   const [showImportModal, setShowImportModal] = useState(false);
@@ -137,40 +142,104 @@ const DashboardCorridas = ({
 
   // ==================== FUNÇÕES DE SCRAPING ====================
   
-  const handleScraping = async () => {
-    if (!scrapingUrl.trim()) {
-      toast.error('Digite uma URL válida');
-      return;
-    }
-
-    setLoadingScraping(true);
-    setScrapingResultado(null);
-
+  // Carregar fontes monitoradas
+  const fetchFontes = async () => {
+    setLoadingFontes(true);
     try {
       const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('url', scrapingUrl);
-
-      const response = await axios.post(`${API}/corridas-eventos/scraping`, formData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        }
+      const res = await axios.get(`${API}/scraping/fontes`, {
+        headers: { Authorization: `Bearer ${token}` }
       });
+      setFontesMonitoradas(res.data);
+    } catch (e) { /* silently fail */ }
+    finally { setLoadingFontes(false); }
+  };
 
+  useEffect(() => { fetchFontes(); }, []);
+
+  const handleScraping = async () => {
+    if (!scrapingUrl.trim()) {
+      toast.error('Cole uma URL válida');
+      return;
+    }
+    setLoadingScraping(true);
+    setScrapingResultado(null);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API}/scraping/buscar`, {
+        url: scrapingUrl,
+        usar_playwright: false,
+        cadastrar_automaticamente: true
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 120000
+      });
       setScrapingResultado(response.data);
-      
       if (response.data.success && response.data.total_encontradas > 0) {
-        toast.success(`${response.data.total_encontradas} corridas encontradas!`);
-        setShowScrapingModal(true);
+        const novas = response.data.novas || 0;
+        const dups = response.data.duplicatas || 0;
+        if (novas > 0) {
+          toast.success(`${novas} corridas novas cadastradas! (${dups} duplicatas ignoradas)`);
+          if (onRefresh) onRefresh();
+        } else {
+          toast.info(`${response.data.total_encontradas} corridas encontradas, mas todas já existem no banco.`);
+        }
       } else {
         toast.warning(response.data.mensagem || 'Nenhuma corrida encontrada');
       }
     } catch (error) {
-      console.error('Erro no scraping:', error);
-      toast.error(error.response?.data?.detail || 'Erro ao fazer varredura');
+      console.error('Scraping error:', error);
+      toast.error(error.response?.data?.detail || 'Erro ao fazer varredura. Tente novamente.');
     } finally {
       setLoadingScraping(false);
+    }
+  };
+
+  const handleSalvarFonte = async () => {
+    if (!scrapingUrl.trim()) return;
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/scraping/fontes`, {
+        url: scrapingUrl,
+        nome: '',
+        ativa: true
+      }, { headers: { Authorization: `Bearer ${token}` } });
+      toast.success('Fonte salva para monitoramento automático!');
+      fetchFontes();
+    } catch (e) {
+      toast.error(e.response?.data?.detail || 'Erro ao salvar fonte');
+    }
+  };
+
+  const handleRemoverFonte = async (fonteId) => {
+    try {
+      const token = localStorage.getItem('token');
+      await axios.delete(`${API}/scraping/fontes/${fonteId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Fonte removida');
+      fetchFontes();
+    } catch (e) {
+      toast.error('Erro ao remover fonte');
+    }
+  };
+
+  const handleAtualizarTodas = async () => {
+    setLoadingAtualizarTodas(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await axios.post(`${API}/scraping/atualizar-todas`, {}, {
+        headers: { Authorization: `Bearer ${token}` },
+        timeout: 300000
+      });
+      const data = res.data;
+      toast.success(`Varredura completa: ${data.total_novas} novas corridas de ${data.total_fontes} fontes`);
+      fetchFontes();
+      if (data.total_novas > 0 && onRefresh) onRefresh();
+    } catch (e) {
+      toast.error('Erro na atualização geral');
+    } finally {
+      setLoadingAtualizarTodas(false);
     }
   };
 
@@ -807,17 +876,45 @@ const DashboardCorridas = ({
             </div>
           </div>
           
-          {/* Barra de Scraping */}
+          {/* Barra de Scraping Avançado */}
           <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div className="flex items-center gap-2 mb-3">
-              <Globe className="w-5 h-5 text-purple-600" />
-              <span className="font-semibold text-purple-700 dark:text-purple-300">Varredura Automática de Corridas</span>
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5 text-purple-600" />
+                <span className="font-semibold text-purple-700 dark:text-purple-300">Busca e Varredura Avançada de Corridas</span>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowFontes(!showFontes)}
+                  className="border-purple-400 text-purple-600 hover:bg-purple-50 text-xs"
+                  data-testid="btn-toggle-fontes"
+                >
+                  <Bookmark className="w-3 h-3 mr-1" />
+                  Fontes ({fontesMonitoradas.length})
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleAtualizarTodas}
+                  disabled={loadingAtualizarTodas || fontesMonitoradas.length === 0}
+                  className="border-green-500 text-green-600 hover:bg-green-50 text-xs"
+                  data-testid="btn-atualizar-todas"
+                >
+                  {loadingAtualizarTodas ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
+                  Atualizar Todas
+                </Button>
+              </div>
             </div>
+            
+            {/* Search bar */}
             <div className="flex gap-2">
               <Input
-                placeholder="Cole a URL do site de corridas (Ticket Sports, Minhas Inscrições, etc.)"
+                placeholder="Cole a URL do site de corridas (Ticket Sports, Sympla, Central das Inscrições, etc.)"
                 value={scrapingUrl}
                 onChange={(e) => setScrapingUrl(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleScraping()}
                 className="flex-1"
                 data-testid="input-scraping-url"
               />
@@ -834,113 +931,166 @@ const DashboardCorridas = ({
                 )}
                 {loadingScraping ? 'Buscando...' : 'Buscar Corridas'}
               </Button>
+              <Button
+                variant="outline"
+                onClick={handleSalvarFonte}
+                disabled={!scrapingUrl.trim()}
+                className="border-orange-400 text-orange-600 hover:bg-orange-50"
+                title="Salvar URL para monitoramento automático (12h)"
+                data-testid="btn-salvar-fonte"
+              >
+                <Bookmark className="w-4 h-4" />
+              </Button>
             </div>
+
+            {/* Fontes Monitoradas (collapsible) */}
+            {showFontes && (
+              <div className="mt-3 p-3 bg-white dark:bg-slate-800 rounded-lg border max-h-48 overflow-y-auto">
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                    <Clock className="w-4 h-4" />
+                    Fontes Monitoradas (atualização a cada 12h)
+                  </span>
+                </div>
+                {fontesMonitoradas.length === 0 ? (
+                  <p className="text-sm text-slate-400">Nenhuma fonte salva. Cole uma URL e clique no ícone de marcador.</p>
+                ) : (
+                  <div className="space-y-1">
+                    {fontesMonitoradas.map(f => (
+                      <div key={f.id} className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-700/50 rounded text-xs group hover:bg-slate-100 dark:hover:bg-slate-700">
+                        <div className="flex items-center gap-2 flex-1 min-w-0">
+                          <Link2 className="w-3 h-3 text-purple-500 flex-shrink-0" />
+                          <span 
+                            className="truncate text-slate-700 dark:text-slate-300 cursor-pointer hover:text-purple-600"
+                            onClick={() => { setScrapingUrl(f.url); }}
+                            title={f.url}
+                          >
+                            {f.nome || f.url}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0 ml-2">
+                          {f.ultima_varredura && (
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(f.ultima_varredura).toLocaleDateString('pt-BR')} - {f.total_novas_ultima || 0} novas
+                            </span>
+                          )}
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-6 w-6 p-0 text-red-400 hover:text-red-600 opacity-0 group-hover:opacity-100"
+                            onClick={() => handleRemoverFonte(f.id)}
+                          >
+                            <X className="w-3 h-3" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
             
             {/* Resultado do Scraping inline */}
             {scrapingResultado && (
               <div className="mt-4 p-4 bg-white dark:bg-slate-800 rounded-lg border">
                 <div className="flex items-center justify-between mb-3">
                   <div>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">
-                      Fonte: {scrapingResultado.fonte}
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      Fonte: {scrapingResultado.fonte} | Método: {scrapingResultado.metodo || 'auto'}
                     </p>
                     <p className={`font-semibold ${scrapingResultado.total_encontradas > 0 ? 'text-green-600' : 'text-amber-600'}`}>
                       {scrapingResultado.total_encontradas > 0 
-                        ? `${scrapingResultado.total_encontradas} corridas encontradas!`
+                        ? `${scrapingResultado.total_encontradas} corridas encontradas`
                         : 'Nenhuma corrida encontrada neste site'}
                     </p>
+                    {scrapingResultado.total_encontradas > 0 && (
+                      <div className="flex items-center gap-3 mt-1">
+                        <span className="text-xs flex items-center gap-1 text-green-600">
+                          <ShieldCheck className="w-3 h-3" />
+                          {scrapingResultado.novas || 0} novas cadastradas
+                        </span>
+                        <span className="text-xs flex items-center gap-1 text-orange-500">
+                          <AlertOctagon className="w-3 h-3" />
+                          {scrapingResultado.duplicatas || 0} duplicatas ignoradas
+                        </span>
+                      </div>
+                    )}
                   </div>
                   <div className="flex gap-2">
-                    {scrapingResultado.total_encontradas > 0 ? (
+                    {scrapingResultado.total_encontradas > 0 && (
                       <>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleExportarScraping('csv')}
-                          className="border-green-500 text-green-600 hover:bg-green-50"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Baixar CSV
+                        <Button variant="outline" size="sm" onClick={() => handleExportarScraping('csv')} className="border-green-500 text-green-600 hover:bg-green-50">
+                          <Download className="w-4 h-4 mr-1" /> CSV
                         </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleExportarScraping('excel')}
-                          className="border-blue-500 text-blue-600 hover:bg-blue-50"
-                        >
-                          <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Baixar Excel
-                        </Button>
-                        <Button 
-                          size="sm"
-                          onClick={() => setShowScrapingModal(true)}
-                          className="bg-purple-600 hover:bg-purple-700"
-                        >
-                          Ver Detalhes
+                        <Button variant="outline" size="sm" onClick={() => handleExportarScraping('excel')} className="border-blue-500 text-blue-600 hover:bg-blue-50">
+                          <FileSpreadsheet className="w-4 h-4 mr-1" /> Excel
                         </Button>
                       </>
-                    ) : (
-                      <div className="flex gap-2 items-center">
-                        <span className="text-sm text-slate-500">Use a importação manual:</span>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDownloadTemplate('csv')}
-                          className="border-green-500 text-green-600"
-                        >
-                          <Download className="w-4 h-4 mr-2" />
-                          Template CSV
-                        </Button>
-                        <Button 
-                          variant="outline" 
-                          size="sm"
-                          onClick={() => handleDownloadTemplate('excel')}
-                          className="border-blue-500 text-blue-600"
-                        >
-                          <FileSpreadsheet className="w-4 h-4 mr-2" />
-                          Template Excel
-                        </Button>
-                      </div>
                     )}
                   </div>
                 </div>
                 
-                {/* Preview das corridas encontradas */}
+                {/* Preview table */}
                 {scrapingResultado.total_encontradas > 0 && (
                   <div className="border rounded-lg overflow-hidden max-h-60 overflow-y-auto">
                     <table className="w-full text-sm">
                       <thead className="bg-slate-100 dark:bg-slate-700 sticky top-0">
                         <tr>
-                          <th className="text-left p-2 font-semibold">Nome</th>
-                          <th className="text-left p-2 font-semibold">Cidade/UF</th>
-                          <th className="text-left p-2 font-semibold">Data</th>
+                          <th className="text-left p-2 font-semibold text-xs">Status</th>
+                          <th className="text-left p-2 font-semibold text-xs">Nome</th>
+                          <th className="text-left p-2 font-semibold text-xs">Organizador</th>
+                          <th className="text-left p-2 font-semibold text-xs">Cidade/UF</th>
+                          <th className="text-left p-2 font-semibold text-xs">Data</th>
+                          <th className="text-left p-2 font-semibold text-xs">Situação</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {scrapingResultado.corridas?.slice(0, 10).map((corrida, idx) => (
-                          <tr key={idx} className="border-t hover:bg-slate-50 dark:hover:bg-slate-800/50">
-                            <td className="p-2">{corrida.nome_corrida?.substring(0, 40)}</td>
-                            <td className="p-2">{corrida.cidade}/{corrida.estado}</td>
+                        {(scrapingResultado.corridas_novas || scrapingResultado.corridas || []).slice(0, 15).map((corrida, idx) => (
+                          <tr key={idx} className="border-t hover:bg-slate-50 dark:hover:bg-slate-800/50 text-xs">
+                            <td className="p-2">
+                              <Badge className="bg-green-100 text-green-700 text-[10px]">Nova</Badge>
+                            </td>
+                            <td className="p-2 max-w-[200px] truncate">{corrida.nome_corrida}</td>
+                            <td className="p-2 text-slate-500">{corrida.organizador || '-'}</td>
+                            <td className="p-2">{[corrida.cidade, corrida.estado].filter(Boolean).join('/') || '-'}</td>
                             <td className="p-2">{corrida.data_corrida || '-'}</td>
+                            <td className="p-2">
+                              <Badge className={corrida.status === 'ativa' ? 'bg-blue-100 text-blue-700 text-[10px]' : 'bg-gray-100 text-gray-600 text-[10px]'}>
+                                {corrida.status || 'ativa'}
+                              </Badge>
+                            </td>
+                          </tr>
+                        ))}
+                        {(scrapingResultado.corridas_duplicatas || []).slice(0, 5).map((corrida, idx) => (
+                          <tr key={`dup-${idx}`} className="border-t bg-orange-50/50 dark:bg-orange-900/10 text-xs opacity-60">
+                            <td className="p-2">
+                              <Badge className="bg-orange-100 text-orange-700 text-[10px]">Duplicata</Badge>
+                            </td>
+                            <td className="p-2 max-w-[200px] truncate">{corrida.nome_corrida}</td>
+                            <td className="p-2 text-slate-500">{corrida.organizador || '-'}</td>
+                            <td className="p-2">{[corrida.cidade, corrida.estado].filter(Boolean).join('/') || '-'}</td>
+                            <td className="p-2">{corrida.data_corrida || '-'}</td>
+                            <td className="p-2">
+                              <Badge className="bg-gray-100 text-gray-600 text-[10px]">já existe</Badge>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                    {scrapingResultado.corridas?.length > 10 && (
+                    {(scrapingResultado.total_encontradas) > 15 && (
                       <div className="p-2 bg-slate-50 text-center text-xs text-slate-500">
-                        + {scrapingResultado.corridas.length - 10} corridas. Clique em "Ver Detalhes" para ver todas.
+                        + {scrapingResultado.total_encontradas - 15} corridas no total
                       </div>
                     )}
                   </div>
                 )}
                 
-                {/* Dica quando não encontra */}
                 {scrapingResultado.total_encontradas === 0 && (
                   <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg text-sm">
-                    <p className="font-semibold text-amber-700 mb-1">💡 Dica:</p>
-                    <p className="text-amber-600">
-                      Muitos sites modernos carregam conteúdo via JavaScript, dificultando a varredura automática.
-                      Use a <strong>importação manual</strong>: baixe o template, preencha com as corridas e faça o upload.
+                    <p className="font-semibold text-amber-700 mb-1">Dica:</p>
+                    <p className="text-amber-600 text-xs">
+                      O sistema tentará automaticamente o modo Playwright (navegador headless) para sites com JavaScript.
+                      Se persistir sem resultados, o site pode ter proteção anti-bot avançada. Use a importação manual.
                     </p>
                   </div>
                 )}
@@ -949,7 +1099,7 @@ const DashboardCorridas = ({
             
             <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
               <AlertCircle className="w-3 h-3 inline mr-1" />
-              Sites suportados: Ticket Sports, Minhas Inscrições, Webrun, Sympla e outros sites de eventos esportivos
+              Detecção automática: Sites com JavaScript (Sympla, Ticket Sports, etc.) usam Playwright. Anti-duplicidade ativa. Monitoramento a cada 12h.
             </p>
           </div>
         </CardHeader>
