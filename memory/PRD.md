@@ -86,6 +86,19 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
   - Endpoint: `POST /api/admin/retencao/alertar-assessoria` (envia notificação ao dono da equipe)
 - Testado: Backend 11/11 PASSED, Frontend 100% (iteration_93)
 
+### Sessão Scraping Avançado de Corridas (30/03/2026)
+- Feature: **Sistema de Busca e Varredura Avançada de Corridas** ✅
+  - Scraping inteligente com fallback: API → HTML → Playwright (headless browser)
+  - Parsers específicos: Ticket Sports (API JSON), Central das Inscrições (HTML), Genérico
+  - Auto-detecção de sites JS-heavy (Sympla, Minhas Inscrições, etc.) → Playwright
+  - **Anti-duplicidade**: verifica nome+data e link contra o banco antes de cadastrar
+  - **Status automático**: "ativa" (futuro) ou "encerrada" (passado) baseado na data
+  - **Fontes monitoradas**: salvar URLs para monitoramento automático a cada 12h via APScheduler
+  - **Cadastro automático**: corridas novas são cadastradas direto no banco
+  - UI no Admin > Corridas: barra de URL, botões Fontes/Atualizar Todas, tabela com Status/Nome/Org/Cidade/Data/Situação
+  - Endpoints: POST /api/scraping/buscar, GET/POST/DELETE /api/scraping/fontes, POST /api/scraping/atualizar-todas
+- Testado: Backend 9/9 PASSED, Frontend 100% (iteration_94)
+
 ## Backlog Priorizado
 
 ### P2
