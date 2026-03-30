@@ -874,10 +874,10 @@ async def exportar_analise_xlsx(analysis_id: str, admin: dict = Depends(get_admi
     ws['A7'].font = Font(bold=True)
     
     metricas = [
-        ("Seguidores", analysis['seguidores']),
-        ("Seguindo", analysis['seguindo']),
-        ("Total de Posts", analysis['total_posts']),
-        ("Engagement Rate", f"{analysis['engagement_rate']}%"),
+        ("Seguidores", analysis.get('seguidores', 0)),
+        ("Seguindo", analysis.get('seguindo', 0)),
+        ("Total de Posts", analysis.get('total_posts', 0)),
+        ("Engagement Rate", f"{analysis.get('engagement_rate', 0)}%"),
     ]
     
     for i, (label, value) in enumerate(metricas, start=8):
@@ -889,14 +889,14 @@ async def exportar_analise_xlsx(analysis_id: str, admin: dict = Depends(get_admi
     ws[f'A{row}'].font = Font(bold=True)
     
     notas = [
-        ("Bio", analysis['nota_bio']),
-        ("Frequência", analysis['nota_frequencia']),
-        ("Engajamento", analysis['nota_engajamento']),
-        ("Crescimento", analysis['nota_crescimento']),
-        ("Consistência", analysis['nota_consistencia']),
-        ("Padrões", analysis['nota_padroes']),
-        ("Reels", analysis['nota_reels']),
-        ("Formatos", analysis['nota_formatos'])
+        ("Bio", analysis.get('nota_bio', 0)),
+        ("Frequência", analysis.get('nota_frequencia', 0)),
+        ("Engajamento", analysis.get('nota_engajamento', 0)),
+        ("Crescimento", analysis.get('nota_crescimento', 0)),
+        ("Consistência", analysis.get('nota_consistencia', 0)),
+        ("Padrões", analysis.get('nota_padroes', 0)),
+        ("Reels", analysis.get('nota_reels', 0)),
+        ("Formatos", analysis.get('nota_formatos', 0))
     ]
     
     for i, (label, value) in enumerate(notas, start=row+1):
@@ -935,23 +935,23 @@ async def exportar_analise_csv(analysis_id: str, admin: dict = Depends(get_admin
     writer.writerow(["Ranking Run Inside - Análise de Instagram"])
     writer.writerow([])
     writer.writerow(["Campo", "Valor"])
-    writer.writerow(["Username", f"@{analysis['username']}"])
-    writer.writerow(["Score Final", analysis['score_final']])
-    writer.writerow(["Classificação", analysis['classificacao']])
+    writer.writerow(["Username", f"@{analysis.get('username', '')}"])
+    writer.writerow(["Score Final", analysis.get('score_final', 0)])
+    writer.writerow(["Classificação", analysis.get('classificacao', '')])
     writer.writerow([])
     writer.writerow(["Métricas"])
-    writer.writerow(["Seguidores", analysis['seguidores']])
-    writer.writerow(["Engagement Rate", f"{analysis['engagement_rate']}%"])
+    writer.writerow(["Seguidores", analysis.get('seguidores', 0)])
+    writer.writerow(["Engagement Rate", f"{analysis.get('engagement_rate', 0)}%"])
     writer.writerow([])
     writer.writerow(["Notas (0-10)"])
-    writer.writerow(["Bio", analysis['nota_bio']])
-    writer.writerow(["Frequência", analysis['nota_frequencia']])
-    writer.writerow(["Engajamento", analysis['nota_engajamento']])
-    writer.writerow(["Crescimento", analysis['nota_crescimento']])
-    writer.writerow(["Consistência", analysis['nota_consistencia']])
-    writer.writerow(["Padrões", analysis['nota_padroes']])
-    writer.writerow(["Reels", analysis['nota_reels']])
-    writer.writerow(["Formatos", analysis['nota_formatos']])
+    writer.writerow(["Bio", analysis.get('nota_bio', 0)])
+    writer.writerow(["Frequência", analysis.get('nota_frequencia', 0)])
+    writer.writerow(["Engajamento", analysis.get('nota_engajamento', 0)])
+    writer.writerow(["Crescimento", analysis.get('nota_crescimento', 0)])
+    writer.writerow(["Consistência", analysis.get('nota_consistencia', 0)])
+    writer.writerow(["Padrões", analysis.get('nota_padroes', 0)])
+    writer.writerow(["Reels", analysis.get('nota_reels', 0)])
+    writer.writerow(["Formatos", analysis.get('nota_formatos', 0)])
     
     output.seek(0)
     

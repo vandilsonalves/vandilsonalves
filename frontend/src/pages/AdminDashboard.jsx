@@ -24,6 +24,21 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+// Helper robusto para download de arquivos
+const triggerDownload = (blob, filename) => {
+  const url = window.URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.style.display = 'none';
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => {
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }, 500);
+};
+
 const ESTADOS_BR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
   'MT', 'MS', 'MG', 'PA', 'PB', 'PR', 'PE', 'PI', 'RJ', 'RN', 
@@ -714,24 +729,18 @@ const AdminDashboard = () => {
         responseType: 'blob'
       });
       
-      // Gerar nome do arquivo com base nos filtros
       const filtros = [];
       if (filtroModalidade !== 'all') filtros.push(filtroModalidade);
       if (filtroEquipe !== 'all') filtros.push(filtroEquipe);
       const nomeArquivo = `atletas_${filtros.length ? filtros.join('_') : 'todos'}.xlsx`;
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', nomeArquivo);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Ação Concluída', { description: 'Dados exportados com sucesso!' });
+      const blob = new Blob([response.data], { 
+        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+      });
+      triggerDownload(blob, nomeArquivo);
+      toast.success('Download iniciado!');
     } catch (error) {
-      toast.error('Erro', { description: 'Erro ao exportar dados' });
+      toast.error('Erro ao exportar dados');
     }
   };
 
@@ -743,18 +752,14 @@ const AdminDashboard = () => {
         responseType: 'blob'
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `ranking_todas_modalidades.${format === 'excel' ? 'xlsx' : 'csv'}`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
-      
-      toast.success('Ação Concluída', { description: 'Ranking exportado com sucesso!' });
+      const mimeType = format === 'excel' 
+        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
+        : 'text/csv';
+      const blob = new Blob([response.data], { type: mimeType });
+      triggerDownload(blob, `ranking_todas_modalidades.${format === 'excel' ? 'xlsx' : 'csv'}`);
+      toast.success('Download iniciado!');
     } catch (error) {
-      toast.error('Erro', { description: 'Erro ao exportar ranking' });
+      toast.error('Erro ao exportar ranking');
     }
   };
 

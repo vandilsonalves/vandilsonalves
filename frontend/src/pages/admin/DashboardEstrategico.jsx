@@ -56,7 +56,7 @@ const ChartCard = ({ title, children, loading, height = 300, icon: Icon }) => (
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-emerald-500"></div>
       </div>
     ) : (
-      <div style={{ height }}>
+      <div style={{ height, overflowY: 'auto' }}>
         {children}
       </div>
     )}
@@ -85,64 +85,142 @@ const RankingList = ({ data, valueKey, labelKey, icon: Icon }) => (
   </div>
 );
 
-// Mapa do Brasil simplificado (SVG inline)
+// Mapa Coroplético do Brasil com legenda
 const BrazilMap = ({ data }) => {
-  const statePositions = {
-    'AC': { x: 80, y: 180 }, 'AL': { x: 420, y: 200 }, 'AP': { x: 240, y: 60 },
-    'AM': { x: 140, y: 120 }, 'BA': { x: 380, y: 220 }, 'CE': { x: 400, y: 150 },
-    'DF': { x: 310, y: 240 }, 'ES': { x: 390, y: 280 }, 'GO': { x: 300, y: 260 },
-    'MA': { x: 340, y: 130 }, 'MT': { x: 220, y: 230 }, 'MS': { x: 240, y: 310 },
-    'MG': { x: 340, y: 280 }, 'PA': { x: 260, y: 120 }, 'PB': { x: 430, y: 170 },
-    'PR': { x: 280, y: 360 }, 'PE': { x: 420, y: 180 }, 'PI': { x: 360, y: 170 },
-    'RJ': { x: 370, y: 320 }, 'RN': { x: 420, y: 155 }, 'RS': { x: 270, y: 420 },
-    'RO': { x: 150, y: 200 }, 'RR': { x: 160, y: 50 }, 'SC': { x: 290, y: 390 },
-    'SP': { x: 310, y: 320 }, 'SE': { x: 410, y: 210 }, 'TO': { x: 300, y: 190 }
+  const [hoveredState, setHoveredState] = useState(null);
+  
+  // Cores fortes para legenda
+  const colorScale = ['#1a1a2e', '#16213e', '#0f3460', '#1a6b4a', '#2d8f4e', '#4caf50', '#8bc34a', '#ffeb3b', '#ff9800', '#f44336'];
+  
+  const getColor = (count, maxCount) => {
+    if (!count || count === 0) return '#374151';
+    const ratio = count / maxCount;
+    const idx = Math.min(Math.floor(ratio * (colorScale.length - 1)), colorScale.length - 1);
+    return colorScale[idx];
   };
 
-  const maxCount = Math.max(...data.map(d => d.count), 1);
+  const maxCount = Math.max(...data.map(d => d.count || 0), 1);
+  const stateData = {};
+  data.forEach(d => { stateData[d.estado] = d.count; });
+
+  // Posições dos estados para labels
+  const labelPos = {
+    'AC': [68, 245], 'AL': [530, 285], 'AP': [315, 75], 'AM': [165, 155],
+    'BA': [490, 300], 'CE': [520, 215], 'DF': [395, 330], 'ES': [500, 370],
+    'GO': [380, 340], 'MA': [430, 185], 'MT': [280, 290], 'MS': [310, 395],
+    'MG': [440, 360], 'PA': [330, 150], 'PB': [550, 245], 'PR': [365, 440],
+    'PE': [540, 260], 'PI': [465, 225], 'RJ': [470, 400], 'RN': [545, 225],
+    'RS': [345, 500], 'RO': [170, 260], 'RR': [195, 65], 'SC': [375, 470],
+    'SP': [395, 400], 'SE': [530, 275], 'TO': [385, 255]
+  };
+
+  // SVG paths simplificados dos estados do Brasil
+  const statePaths = {
+    'AM': 'M50,80 L280,80 L300,120 L290,180 L240,200 L190,210 L120,200 L70,210 L40,180 L30,140 Z',
+    'PA': 'M280,80 L420,80 L440,120 L420,180 L380,190 L340,200 L300,190 L290,180 L300,120 Z',
+    'MA': 'M420,120 L480,120 L490,150 L480,200 L440,210 L400,200 L380,190 L420,180 Z',
+    'PI': 'M440,210 L480,200 L500,220 L490,260 L460,270 L440,250 Z',
+    'CE': 'M490,150 L540,160 L560,200 L540,230 L500,220 L480,200 L490,150 Z',
+    'RN': 'M540,200 L580,200 L580,240 L550,245 L540,230 Z',
+    'PB': 'M540,230 L580,240 L575,260 L540,265 L530,250 Z',
+    'PE': 'M500,250 L575,260 L570,280 L520,290 L490,280 Z',
+    'AL': 'M520,290 L555,285 L545,305 L520,305 Z',
+    'SE': 'M520,305 L545,305 L540,320 L520,315 Z',
+    'BA': 'M440,250 L520,290 L530,320 L530,370 L500,380 L460,370 L430,340 L420,300 Z',
+    'MG': 'M380,310 L460,370 L500,380 L510,400 L470,420 L410,420 L370,400 L350,370 Z',
+    'ES': 'M500,380 L530,370 L535,400 L510,415 L500,400 Z',
+    'RJ': 'M460,400 L510,415 L500,430 L460,430 Z',
+    'SP': 'M350,370 L410,420 L420,450 L380,460 L340,440 L330,410 Z',
+    'PR': 'M330,410 L380,460 L380,480 L330,490 L300,475 Z',
+    'SC': 'M330,490 L380,480 L390,510 L340,520 Z',
+    'RS': 'M300,500 L370,510 L380,530 L350,560 L300,560 L280,530 Z',
+    'MS': 'M250,340 L330,410 L340,440 L310,460 L260,440 L240,400 Z',
+    'GO': 'M330,270 L380,310 L370,370 L350,370 L330,340 L310,310 Z',
+    'TO': 'M340,200 L400,200 L420,250 L380,270 L340,270 L330,240 Z',
+    'MT': 'M140,220 L290,200 L310,270 L290,340 L250,340 L200,350 L160,310 Z',
+    'RO': 'M70,210 L170,200 L180,260 L160,310 L120,300 L70,280 Z',
+    'AC': 'M20,200 L70,210 L70,280 L50,290 L20,270 Z',
+    'RR': 'M140,30 L220,30 L230,80 L190,100 L140,80 Z',
+    'AP': 'M280,30 L350,30 L370,70 L340,100 L290,80 Z',
+    'DF': 'M370,325 L395,325 L395,345 L370,345 Z'
+  };
+
+  // Calcular faixas para legenda
+  const step = Math.ceil(maxCount / 5);
+  const legendItems = [];
+  for (let i = 0; i < 5; i++) {
+    const min = i * step;
+    const max = Math.min((i + 1) * step, maxCount);
+    legendItems.push({
+      color: getColor(min + step / 2, maxCount),
+      label: min === 0 ? '0' : `${min}-${max}`
+    });
+  }
 
   return (
-    <div className="relative w-full h-full">
-      <svg viewBox="0 0 500 480" className="w-full h-full">
-        {data.map((estado) => {
-          const pos = statePositions[estado.estado];
-          if (!pos) return null;
-          const radius = Math.max(8, Math.min(25, (estado.count / maxCount) * 25 + 8));
-          const opacity = Math.max(0.4, estado.count / maxCount);
-          
+    <div className="relative w-full h-full flex flex-col">
+      <svg viewBox="0 0 600 580" className="w-full flex-1">
+        {Object.entries(statePaths).map(([uf, path]) => {
+          const count = stateData[uf] || 0;
+          const color = getColor(count, maxCount);
+          const isHovered = hoveredState === uf;
           return (
-            <g key={estado.estado}>
-              <circle
-                cx={pos.x}
-                cy={pos.y}
-                r={radius}
-                fill={COLORS.primary}
-                opacity={opacity}
-                className="cursor-pointer hover:opacity-100 transition-opacity"
+            <g key={uf} 
+               onMouseEnter={() => setHoveredState(uf)} 
+               onMouseLeave={() => setHoveredState(null)}
+               className="cursor-pointer"
+            >
+              <path 
+                d={path} 
+                fill={color} 
+                stroke={isHovered ? '#fff' : '#1f2937'} 
+                strokeWidth={isHovered ? 2 : 1}
+                opacity={isHovered ? 1 : 0.9}
               />
-              <text
-                x={pos.x}
-                y={pos.y + 4}
-                textAnchor="middle"
-                fill="white"
-                fontSize="10"
+              <text 
+                x={labelPos[uf]?.[0] || 0} 
+                y={labelPos[uf]?.[1] || 0} 
+                textAnchor="middle" 
+                fill="white" 
+                fontSize="10" 
                 fontWeight="bold"
+                style={{ pointerEvents: 'none' }}
               >
-                {estado.estado}
+                {uf}
               </text>
-              <text
-                x={pos.x}
-                y={pos.y + radius + 12}
-                textAnchor="middle"
-                fill="#9CA3AF"
-                fontSize="9"
-              >
-                {estado.count}
-              </text>
+              {count > 0 && (
+                <text 
+                  x={labelPos[uf]?.[0] || 0} 
+                  y={(labelPos[uf]?.[1] || 0) + 12} 
+                  textAnchor="middle" 
+                  fill="#fbbf24" 
+                  fontSize="9" 
+                  fontWeight="bold"
+                  style={{ pointerEvents: 'none' }}
+                >
+                  {count}
+                </text>
+              )}
             </g>
           );
         })}
+        {hoveredState && stateData[hoveredState] !== undefined && (
+          <g>
+            <rect x="10" y="10" width="140" height="35" rx="6" fill="#111827" stroke="#374151" />
+            <text x="80" y="25" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="bold">{hoveredState}</text>
+            <text x="80" y="40" textAnchor="middle" fill="#fbbf24" fontSize="10">{stateData[hoveredState] || 0} registros</text>
+          </g>
+        )}
       </svg>
+      {/* Legenda */}
+      <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+        {legendItems.map((item, i) => (
+          <div key={i} className="flex items-center gap-1">
+            <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
+            <span className="text-[10px] text-gray-400">{item.label}</span>
+          </div>
+        ))}
+      </div>
     </div>
   );
 };
@@ -553,7 +631,7 @@ const DashboardEstrategico = () => {
           </ChartCard>
 
           {/* Gráfico 14: Eventos Populares */}
-          <ChartCard title="14. Eventos Mais Populares" loading={!graficos['eventos-populares']} icon={Trophy}>
+          <ChartCard title="14. Eventos Mais Populares" loading={!graficos['eventos-populares']} icon={Trophy} height={420}>
             <RankingList 
               data={graficos['eventos-populares']?.dados || []}
               valueKey="participantes"
@@ -562,7 +640,7 @@ const DashboardEstrategico = () => {
           </ChartCard>
 
           {/* Gráfico 15: Assessorias com Mais Atletas */}
-          <ChartCard title="15. Assessorias com Mais Atletas" loading={!graficos['assessorias-mais-atletas']} icon={Building}>
+          <ChartCard title="15. Assessorias com Mais Atletas" loading={!graficos['assessorias-mais-atletas']} icon={Building} height={420}>
             <RankingList 
               data={graficos['assessorias-mais-atletas']?.dados || []}
               valueKey="atletas"
@@ -571,7 +649,7 @@ const DashboardEstrategico = () => {
           </ChartCard>
 
           {/* Gráfico 16: Assessorias com Mais Pontos */}
-          <ChartCard title="16. Assessorias com Mais Pontos no Ranking" loading={!graficos['assessorias-mais-pontos']} icon={Award}>
+          <ChartCard title="16. Assessorias com Mais Pontos no Ranking" loading={!graficos['assessorias-mais-pontos']} icon={Award} height={420}>
             <RankingList 
               data={graficos['assessorias-mais-pontos']?.dados || []}
               valueKey="pontos"
@@ -583,7 +661,7 @@ const DashboardEstrategico = () => {
         {/* ====== GRÁFICOS 17-18: RANKINGS DE ATLETAS ====== */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Gráfico 17: Atletas Mais Ativos */}
-          <ChartCard title="17. Atletas Mais Ativos" loading={!graficos['atletas-mais-ativos']} icon={Zap}>
+          <ChartCard title="17. Atletas Mais Ativos" loading={!graficos['atletas-mais-ativos']} icon={Zap} height={420}>
             <RankingList 
               data={graficos['atletas-mais-ativos']?.dados || []}
               valueKey="total_corridas"
@@ -592,7 +670,7 @@ const DashboardEstrategico = () => {
           </ChartCard>
 
           {/* Gráfico 18: Atletas com Maior Pontuação */}
-          <ChartCard title="18. Atletas com Maior Pontuação" loading={!graficos['atletas-maior-pontuacao']} icon={Trophy}>
+          <ChartCard title="18. Atletas com Maior Pontuação" loading={!graficos['atletas-maior-pontuacao']} icon={Trophy} height={420}>
             <RankingList 
               data={graficos['atletas-maior-pontuacao']?.dados || []}
               valueKey="pontos"

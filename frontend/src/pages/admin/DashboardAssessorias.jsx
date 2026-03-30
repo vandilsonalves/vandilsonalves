@@ -168,10 +168,11 @@ const DashboardAssessorias = ({
   // Gerar PDF do relatório
   const gerarRelatorioPDF = async () => {
     setGeneratingPDF(true);
+    setShowReportModal(true);
     toast.info('Gerando relatório PDF...');
 
     try {
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await new Promise(resolve => setTimeout(resolve, 1500));
 
       const element = reportRef.current;
       if (!element) {
@@ -183,7 +184,8 @@ const DashboardAssessorias = ({
         scale: 2,
         useCORS: true,
         logging: false,
-        backgroundColor: '#ffffff'
+        backgroundColor: '#ffffff',
+        windowWidth: 800
       });
 
       const imgData = canvas.toDataURL('image/png');
@@ -198,9 +200,11 @@ const DashboardAssessorias = ({
       const imgY = 10;
 
       pdf.addImage(imgData, 'PNG', imgX, imgY, imgWidth * ratio, imgHeight * ratio);
-      pdf.save(`relatorio_assessorias_${new Date().toISOString().slice(0,10)}.pdf`);
+      
+      const filename = `relatorio_assessorias_${new Date().toISOString().slice(0,10)}.pdf`;
+      pdf.save(filename);
 
-      toast.success('Relatório PDF gerado com sucesso!');
+      toast.success('PDF gerado com sucesso!');
       setShowReportModal(false);
     } catch (error) {
       console.error('Erro ao gerar PDF:', error);
@@ -269,12 +273,11 @@ const DashboardAssessorias = ({
 
   // Exportar lista de assessorias
   const handleExportAssessorias = (tipoExport) => {
+    const dados = assessoriasFiltradas;
     let dadosParaExportar = [];
     let nomeArquivo = '';
-    const dados = assessoriasFiltradas;
 
     if (tipoExport === 'estado') {
-      // Agrupar por estado
       const porEstado = {};
       dados.forEach(eq => {
         const estado = eq.estado || 'N/A';
@@ -282,29 +285,21 @@ const DashboardAssessorias = ({
         porEstado[estado].push(eq);
       });
 
-      const header = ['Estado', 'Posição', 'Assessoria', 'Dono', 'Cidade', 'Atletas', '1º Lugares', 'Resultados', 'Pontos', 'Selo'];
-      dadosParaExportar = [header.join(';')];
+      const header = ['Estado', 'Posicao', 'Assessoria', 'Dono', 'Cidade', 'Atletas', '1 Lugares', 'Resultados', 'Pontos', 'Selo'];
+      dadosParaExportar = [header.join('\t')];
 
       Object.keys(porEstado).sort().forEach(estado => {
         porEstado[estado].forEach((eq, idx) => {
           dadosParaExportar.push([
-            estado,
-            eq.posicao || idx + 1,
-            eq.nome || '',
-            eq.dono_nome || 'N/A',
-            eq.cidade || '',
-            eq.total_atletas || 0,
-            eq.total_primeiros || 0,
-            eq.total_resultados || 0,
-            eq.pontos_total || 0,
-            eq.selo?.toUpperCase() || 'N/A'
-          ].join(';'));
+            estado, eq.posicao || idx + 1, eq.nome || '', eq.dono_nome || 'N/A',
+            eq.cidade || '', eq.total_atletas || 0, eq.total_primeiros || 0,
+            eq.total_resultados || 0, eq.pontos_total || 0, eq.selo?.toUpperCase() || 'N/A'
+          ].join('\t'));
         });
       });
 
-      nomeArquivo = `assessorias_por_estado_${new Date().toISOString().slice(0,10)}.csv`;
+      nomeArquivo = `assessorias_por_estado_${new Date().toISOString().slice(0,10)}.xls`;
     } else if (tipoExport === 'cidade') {
-      // Agrupar por cidade
       const porCidade = {};
       dados.forEach(eq => {
         const cidade = eq.cidade || 'N/A';
@@ -312,40 +307,36 @@ const DashboardAssessorias = ({
         porCidade[cidade].push(eq);
       });
 
-      const header = ['Cidade', 'Estado', 'Posição', 'Assessoria', 'Dono', 'Atletas', '1º Lugares', 'Resultados', 'Pontos', 'Selo'];
-      dadosParaExportar = [header.join(';')];
+      const header = ['Cidade', 'Estado', 'Posicao', 'Assessoria', 'Dono', 'Atletas', '1 Lugares', 'Resultados', 'Pontos', 'Selo'];
+      dadosParaExportar = [header.join('\t')];
 
       Object.keys(porCidade).sort().forEach(cidade => {
         porCidade[cidade].forEach((eq, idx) => {
           dadosParaExportar.push([
-            cidade,
-            eq.estado || '',
-            eq.posicao || idx + 1,
-            eq.nome || '',
-            eq.dono_nome || 'N/A',
-            eq.total_atletas || 0,
-            eq.total_primeiros || 0,
-            eq.total_resultados || 0,
-            eq.pontos_total || 0,
-            eq.selo?.toUpperCase() || 'N/A'
-          ].join(';'));
+            cidade, eq.estado || '', eq.posicao || idx + 1, eq.nome || '',
+            eq.dono_nome || 'N/A', eq.total_atletas || 0, eq.total_primeiros || 0,
+            eq.total_resultados || 0, eq.pontos_total || 0, eq.selo?.toUpperCase() || 'N/A'
+          ].join('\t'));
         });
       });
 
-      nomeArquivo = `assessorias_por_cidade_${new Date().toISOString().slice(0,10)}.csv`;
+      nomeArquivo = `assessorias_por_cidade_${new Date().toISOString().slice(0,10)}.xls`;
     }
 
-    // Criar e baixar arquivo
-    const csvContent = '\ufeff' + dadosParaExportar.join('\n'); // BOM para UTF-8
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = nomeArquivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    const content = '\ufeff' + dadosParaExportar.join('\n');
+    const blob = new Blob([content], { type: 'application/vnd.ms-excel;charset=utf-8;' });
+    
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.style.display = 'none';
+    a.href = url;
+    a.download = nomeArquivo;
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }, 500);
 
     toast.success(`Exportado ${dados.length} assessorias com sucesso!`);
   };
@@ -617,7 +608,7 @@ const DashboardAssessorias = ({
               <Select onValueChange={(v) => handleExportAssessorias(v)}>
                 <SelectTrigger className="w-[150px]" data-testid="btn-exportar-assessorias">
                   <Download className="w-4 h-4 mr-2" />
-                  <SelectValue placeholder="Exportar CSV" />
+                  <SelectValue placeholder="Exportar Excel" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="estado">Por Estado</SelectItem>

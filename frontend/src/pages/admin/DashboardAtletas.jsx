@@ -74,7 +74,8 @@ const DashboardAtletas = ({
       const matchSearch = !searchQuery || 
         a.nome?.toLowerCase().includes(searchQuery.toLowerCase()) ||
         a.equipe?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        a.cidade?.toLowerCase().includes(searchQuery.toLowerCase());
+        a.cidade?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        a.email?.toLowerCase().includes(searchQuery.toLowerCase());
       
       const matchModalidade = filtroModalidade === 'all' || 
         (filtroModalidade === 'profissional_amador' && a.modalidade_usuario !== 'povao_pace_livre') ||
