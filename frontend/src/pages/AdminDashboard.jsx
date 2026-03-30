@@ -499,8 +499,6 @@ const AdminDashboard = () => {
   };
 
   const handleExcluirCorrida = async (corridaId) => {
-    if (!confirm('Excluir esta corrida? Todas as avaliações serão perdidas.')) return;
-    
     try {
       await axios.delete(`${API}/corridas-eventos/${corridaId}`, {
         headers: { Authorization: `Bearer ${token}` }
@@ -1007,7 +1005,7 @@ const AdminDashboard = () => {
             setCorridaEditando={setCorridaEditando}
             onSaveCorrida={handleSalvarCorrida}
             onDeleteCorrida={handleExcluirCorrida}
-            onRefresh={fetchRankingCorridasDashboard}
+            onRefresh={() => { fetchRankingCorridasDashboard(); fetchCorridasEventos(); }}
           />
         )}
 

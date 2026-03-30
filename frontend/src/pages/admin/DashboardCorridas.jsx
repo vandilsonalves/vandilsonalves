@@ -362,10 +362,6 @@ const DashboardCorridas = ({
       return;
     }
 
-    if (!window.confirm(`Deseja excluir ${selectedCorridas.length} corrida(s)?`)) {
-      return;
-    }
-
     setLoadingExcluirLote(true);
     try {
       const token = localStorage.getItem('token');
