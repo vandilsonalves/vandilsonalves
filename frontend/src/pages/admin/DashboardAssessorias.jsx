@@ -17,6 +17,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { triggerDownload } from '@/utils/downloadHelper';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import CidadeCombobox from '@/components/CidadeCombobox';
@@ -325,18 +326,7 @@ const DashboardAssessorias = ({
 
     const content = '\ufeff' + dadosParaExportar.join('\n');
     const blob = new Blob([content], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    
-    const url = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.style.display = 'none';
-    a.href = url;
-    a.download = nomeArquivo;
-    document.body.appendChild(a);
-    a.click();
-    setTimeout(() => {
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-    }, 500);
+    triggerDownload(blob, nomeArquivo);
 
     toast.success(`Exportado ${dados.length} assessorias com sucesso!`);
   };

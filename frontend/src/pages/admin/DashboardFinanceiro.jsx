@@ -10,6 +10,7 @@ import {
   Download, FileSpreadsheet, FileText, HelpCircle, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { triggerDownload } from '@/utils/downloadHelper';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -259,14 +260,7 @@ export default function DashboardFinanceiro() {
       });
       if (res.ok) {
         const blob = await res.blob();
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `financeiro_ranking_run.${formato === 'excel' ? 'xlsx' : 'pdf'}`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-        URL.revokeObjectURL(url);
+        triggerDownload(blob, `financeiro_ranking_run.${formato === 'excel' ? 'xlsx' : 'pdf'}`);
         toast.success(`Relatorio ${formato.toUpperCase()} exportado!`);
       } else {
         toast.error('Erro ao exportar');

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
+import { triggerDownload } from '@/utils/downloadHelper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -260,14 +261,7 @@ const DashboardCorridas = ({
 
       // Criar download
       const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = formato === 'excel' ? 'corridas_scraping.xlsx' : 'corridas_scraping.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      triggerDownload(blob, formato === 'excel' ? 'corridas_scraping.xlsx' : 'corridas_scraping.csv');
 
       toast.success(`Arquivo ${formato.toUpperCase()} baixado com sucesso!`);
     } catch (error) {
@@ -319,14 +313,7 @@ const DashboardCorridas = ({
       });
 
       const blob = new Blob([response.data]);
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = formato === 'excel' ? 'template_corridas.xlsx' : 'template_corridas.csv';
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
+      triggerDownload(blob, formato === 'excel' ? 'template_corridas.xlsx' : 'template_corridas.csv');
 
       toast.success('Template baixado!');
     } catch (error) {
@@ -557,14 +544,7 @@ const DashboardCorridas = ({
     // Criar e baixar arquivo
     const csvContent = '\ufeff' + dadosParaExportar.join('\n'); // BOM para UTF-8
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = nomeArquivo;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    triggerDownload(blob, nomeArquivo);
 
     toast.success(`Exportado ${corridasFiltradas.length} corridas com sucesso!`);
   };

@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { triggerDownload } from '@/utils/downloadHelper';
 import SelosAtleta from '@/components/SelosAtleta';
 import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
 import IndicarAmigos from '@/components/IndicarAmigos';
@@ -449,14 +450,8 @@ const PerfilAtletaPage = () => {
         responseType: 'blob'
       });
       
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `meu_ranking_${atleta?.nome?.replace(/\s+/g, '_')}.xlsx`);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-      window.URL.revokeObjectURL(url);
+      const blob = new Blob([response.data]);
+      triggerDownload(blob, `meu_ranking_${atleta?.nome?.replace(/\s+/g, '_')}.xlsx`);
       
       setSuccess('Ação Concluída - Dados exportados com sucesso!');
       toast.success('Ação Concluída', { description: 'Dados exportados com sucesso!' });

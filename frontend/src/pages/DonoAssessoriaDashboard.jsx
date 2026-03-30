@@ -21,6 +21,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
+import { triggerDownload } from '@/utils/downloadHelper';
 import html2canvas from 'html2canvas';
 import RelatoriosAssessoria from '@/components/RelatoriosAssessoria';
 
@@ -237,14 +238,7 @@ const DonoAssessoriaDashboard = () => {
       const blob = new Blob([response.data], { 
         type: mimeTypes[formato] || 'application/octet-stream'
       });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${formato === 'pdf' ? 'relatorio' : 'assessoria'}_${user.equipe?.replace(/\s+/g, '_')}.${extensoes[formato] || formato}`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
+      triggerDownload(blob, `${formato === 'pdf' ? 'relatorio' : 'assessoria'}_${user.equipe?.replace(/\s+/g, '_')}.${extensoes[formato] || formato}`);
       
       const nomeFormato = formato === 'xlsx' ? 'Excel' : formato.toUpperCase();
       toast.success(`Dados exportados em ${nomeFormato} com sucesso!`);
@@ -264,14 +258,7 @@ const DonoAssessoriaDashboard = () => {
       const blob = new Blob([JSON.stringify(response.data, null, 2)], { 
         type: 'application/json'
       });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `graficos_${user.equipe?.replace(/\s+/g, '_')}.json`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      a.remove();
+      triggerDownload(blob, `graficos_${user.equipe?.replace(/\s+/g, '_')}.json`);
       
       toast.success('Dados dos gráficos exportados com sucesso!');
     } catch (error) {
@@ -460,14 +447,7 @@ const DonoAssessoriaDashboard = () => {
     
     const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
     const blob = new Blob([csv], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `atletas_${user.equipe.replace(/\s+/g, '_')}.csv`;
-    link.click();
-    
-    URL.revokeObjectURL(url);
+    triggerDownload(blob, `atletas_${user.equipe.replace(/\s+/g, '_')}.csv`);
     toast.success('Lista de atletas exportada!');
   };
 
