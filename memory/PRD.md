@@ -75,16 +75,26 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Feature: Gráficos 31 (Tipo de Corredor) e 32 (Terreno Preferido) em pizza no Dashboard Estratégico ✅
 - Testado: Backend 12/12 PASSED, Frontend 100% (iteration_92)
 
+### Sessão Refatoração + Dashboard Retenção (30/03/2026)
+- Refatoração: `triggerDownload` extraído para `src/utils/downloadHelper.js` (DRY) ✅
+- Feature: **Dashboard de Retenção** no Admin ✅
+  - Stats cards: Taxa de Retenção, Atletas Inativos, Pararam de Competir, Nunca Submeteram
+  - Lista "Equipes com Mais Inativos" com ranking e botão "Alertar Dono"
+  - Tabela de atletas inativos com busca por nome/email, filtro por equipe, ordenação
+  - Seletor de período (7, 15, 30, 60, 90 dias)
+  - Endpoint: `GET /api/admin/retencao/inativos?dias=30`
+  - Endpoint: `POST /api/admin/retencao/alertar-assessoria` (envia notificação ao dono da equipe)
+- Testado: Backend 11/11 PASSED, Frontend 100% (iteration_93)
+
 ## Backlog Priorizado
 
 ### P2
-- Exportar Raio-X como PDF (usar canvasShareGenerator.js)
-- Corrigir `atletas.forEach` error residual no fetchStats
-- Mover helper `triggerDownload` de AdminDashboard.jsx para `src/utils/downloadHelper.js`
+- Exportar Raio-X como PDF (já implementado via jsPDF no RaioXPage.jsx — validar que funciona corretamente)
 
 ### P3
 - ~~Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe~~ ✅ (Removido em 29/03)
 - ~~Limpeza de states obsoletos no AdminDashboard.jsx~~ ✅ (Removido em 29/03)
+- ~~Mover helper triggerDownload para src/utils/~~ ✅ (Movido em 30/03)
 - Continuar quebra do AdminDashboard.jsx (+1600 linhas) em componentes menores
 
 ## Credenciais de Teste
