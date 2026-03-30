@@ -453,8 +453,8 @@ const AdminDashboard = () => {
 
   const fetchCorridasEventos = async () => {
     try {
-      const response = await axios.get(`${API}/ranking-corridas`);
-      setCorridasEventos(response.data.ranking || []);
+      const response = await axios.get(`${API}/corridas-eventos`);
+      setCorridasEventos(Array.isArray(response.data) ? response.data : (response.data?.corridas || []));
     } catch (error) {
       console.error('Erro ao buscar corridas:', error);
     }

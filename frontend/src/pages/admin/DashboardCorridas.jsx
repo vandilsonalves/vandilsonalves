@@ -349,10 +349,16 @@ const DashboardCorridas = ({
 
   const handleSelectAll = () => {
     const corridasFiltradas = getCorridasFiltradas();
-    if (selectedCorridas.length === corridasFiltradas.length) {
-      setSelectedCorridas([]);
+    const paginadas = corridasFiltradas.slice(
+      (paginaAtual - 1) * itensPorPagina,
+      paginaAtual * itensPorPagina
+    );
+    const idsPage = paginadas.map(c => c.id);
+    const allSelected = idsPage.every(id => selectedCorridas.includes(id));
+    if (allSelected) {
+      setSelectedCorridas(prev => prev.filter(id => !idsPage.includes(id)));
     } else {
-      setSelectedCorridas(corridasFiltradas.map(c => c.id));
+      setSelectedCorridas(prev => [...new Set([...prev, ...idsPage])]);
     }
   };
 
@@ -476,6 +482,15 @@ const DashboardCorridas = ({
   };
 
   const corridasFiltradas = getCorridasFiltradas();
+
+  // Paginação frontend
+  const [paginaAtual, setPaginaAtual] = useState(1);
+  const itensPorPagina = 50;
+  const totalPaginas = Math.ceil(corridasFiltradas.length / itensPorPagina);
+  const corridasPaginadas = corridasFiltradas.slice(
+    (paginaAtual - 1) * itensPorPagina,
+    paginaAtual * itensPorPagina
+  );
 
   // ==================== EXPORTAÇÃO DE DADOS ====================
 
@@ -1298,7 +1313,7 @@ const DashboardCorridas = ({
 
                 {/* Info de resultados */}
                 <div className="mt-2 text-xs text-slate-500">
-                  Mostrando {corridasFiltradas.length} de {corridasEventos.length} corridas
+                  Mostrando {(paginaAtual - 1) * itensPorPagina + 1}-{Math.min(paginaAtual * itensPorPagina, corridasFiltradas.length)} de {corridasFiltradas.length} corridas (total: {corridasEventos.length})
                 </div>
               </div>
 
@@ -1324,7 +1339,7 @@ const DashboardCorridas = ({
                     </tr>
                   </thead>
                   <tbody>
-                    {corridasFiltradas.map((corrida) => (
+                    {corridasPaginadas.map((corrida) => (
                       <tr 
                         key={corrida.id} 
                         className={`border-b hover:bg-slate-50 dark:hover:bg-slate-800 ${selectedCorridas.includes(corrida.id) ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
@@ -1384,6 +1399,53 @@ const DashboardCorridas = ({
                   </tbody>
                 </table>
               </div>
+
+              {/* Paginação */}
+              {totalPaginas > 1 && (
+                <div className="flex items-center justify-between mt-4 px-2">
+                  <span className="text-sm text-slate-500">
+                    Página {paginaAtual} de {totalPaginas}
+                  </span>
+                  <div className="flex gap-1">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={paginaAtual === 1}
+                      onClick={() => setPaginaAtual(1)}
+                      className="text-xs h-8"
+                    >
+                      Primeira
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={paginaAtual === 1}
+                      onClick={() => setPaginaAtual(p => Math.max(1, p - 1))}
+                      className="text-xs h-8"
+                    >
+                      Anterior
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={paginaAtual === totalPaginas}
+                      onClick={() => setPaginaAtual(p => Math.min(totalPaginas, p + 1))}
+                      className="text-xs h-8"
+                    >
+                      Próxima
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      disabled={paginaAtual === totalPaginas}
+                      onClick={() => setPaginaAtual(totalPaginas)}
+                      className="text-xs h-8"
+                    >
+                      Última
+                    </Button>
+                  </div>
+                </div>
+              )}
             </>
           )}
         </CardContent>
