@@ -65,11 +65,27 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Admin Dashboard: Gráficos **31. Tipo de Corredor** e **32. Terreno Preferido** em pizza no Dashboard Estratégico ✅
 - Header: Fix do overflow na barra de navegação (badges não cortam mais) ✅
 
+### Sessão Admin Dashboard Fixes (30/03/2026)
+- Fix: Gráficos sobrepostos no Dashboard Estratégico — ChartCard com `overflowY: auto` ✅
+- Fix: Mapa coroplético do Brasil com SVG (27 estados, escala de cores, legenda) no seção 8 ✅
+- Fix: Busca por e-mail no Admin Atletas ✅
+- Fix: `KeyError: 'faixa_etaria'` e `KeyError: 'seguindo'` nos exports/análises do Instagram ✅
+- Feature: Helper unificado `triggerDownload(blob, filename)` para forçar download de arquivos via Blob ✅
+- Fix: Exportações (Excel/CSV/PDF) no Admin — todas funcionando via Blob download ✅
+- Feature: Gráficos 31 (Tipo de Corredor) e 32 (Terreno Preferido) em pizza no Dashboard Estratégico ✅
+- Testado: Backend 12/12 PASSED, Frontend 100% (iteration_92)
+
 ## Backlog Priorizado
+
+### P2
+- Exportar Raio-X como PDF (usar canvasShareGenerator.js)
+- Corrigir `atletas.forEach` error residual no fetchStats
+- Mover helper `triggerDownload` de AdminDashboard.jsx para `src/utils/downloadHelper.js`
 
 ### P3
 - ~~Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe~~ ✅ (Removido em 29/03)
 - ~~Limpeza de states obsoletos no AdminDashboard.jsx~~ ✅ (Removido em 29/03)
+- Continuar quebra do AdminDashboard.jsx (+1600 linhas) em componentes menores
 
 ## Credenciais de Teste
 - Dono Assessoria: marcos_martins_3@email.com / marcos123 (equipe: Victory Run PE)
