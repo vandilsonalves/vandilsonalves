@@ -1,0 +1,67 @@
+{
+  "summary": "Iteration 93: Validated all 3 tasks - (1) triggerDownload helper moved to utils/downloadHelper.js and imported in AdminDashboard.jsx, (2) atletas.forEach working without errors, (3) Dashboard de Retenção fully functional with backend endpoints and frontend component. All 11 backend tests PASSED. All frontend features verified via Playwright.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter93_retencao.py",
+    "/app/test_reports/pytest/pytest_iter93_retencao.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "triggerDownload helper (utils/downloadHelper.js) - VERIFIED: Creates blob URL, triggers download via anchor click, cleans up after 500ms",
+    "AdminDashboard.jsx line 24 - VERIFIED: import { triggerDownload } from '@/utils/downloadHelper'",
+    "handleExportAtletas (lines 708-733) - VERIFIED: Uses responseType: 'blob' and triggerDownload helper",
+    "handleExportRanking (lines 736-752) - VERIFIED: Supports both Excel and CSV formats with blob download",
+    "DashboardRetencao.jsx - VERIFIED: Complete component with stats cards, equipes list, atletas table, filters",
+    "retencao_routes.py - VERIFIED: GET /admin/retencao/inativos and POST /admin/retencao/alertar-assessoria endpoints",
+    "server.py line 177 - VERIFIED: retencao_router included in api_router"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter93_retencao.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (All UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin"
+  },
+  "seed_data_creation": "None - used existing data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 93 verified all retention dashboard features. The triggerDownload helper is now in utils/downloadHelper.js and imported in AdminDashboard.jsx. Dashboard de Retenção shows: Taxa de Retenção (1.3%), Atletas Inativos (387), Pararam de Competir (7), Nunca Submeteram (380). Equipes com Mais Inativos section has 'Alertar Dono' buttons that send notifications to team owners. Period selector supports 7, 15, 30, 60, 90 days. Search and team filter work correctly.",
+  "features_verified": {
+    "Admin Login": "VERIFIED - Dashboard Geral loads correctly",
+    "triggerDownload Helper": "VERIFIED - Moved to utils/downloadHelper.js, imported in AdminDashboard.jsx",
+    "Export Atletas Excel": "VERIFIED - Button works, blob download triggered",
+    "Export Ranking CSV": "VERIFIED - Button works, blob download triggered",
+    "Export Ranking Excel": "VERIFIED - Button works, blob download triggered",
+    "Dashboard Retenção": "VERIFIED - Loads with all stats cards",
+    "Stats Cards": "VERIFIED - Taxa de Retenção (1.3%), Atletas Inativos (387), Pararam de Competir (7), Nunca Submeteram (380)",
+    "Equipes com Mais Inativos": "VERIFIED - Shows top 5 teams with inactive count and Alertar Dono buttons",
+    "Alertar Dono Button": "VERIFIED - Sends notification to team owner (tested with Maratona Club RJ)",
+    "Period Selector": "VERIFIED - Supports 7, 15, 30, 60, 90 days",
+    "Search Input": "VERIFIED - Filters by name/email",
+    "Team Filter": "VERIFIED - Dropdown with all teams",
+    "Refresh Button": "VERIFIED - Reloads data"
+  },
+  "api_endpoints_tested": {
+    "POST /api/auth/login": "200 OK",
+    "GET /api/admin/retencao/inativos": "200 OK - Returns resumo + atletas_inativos + equipes_com_inativos",
+    "GET /api/admin/retencao/inativos?dias=7": "200 OK",
+    "GET /api/admin/retencao/inativos?dias=15": "200 OK",
+    "GET /api/admin/retencao/inativos?dias=60": "200 OK",
+    "GET /api/admin/retencao/inativos?dias=90": "200 OK",
+    "POST /api/admin/retencao/alertar-assessoria": "200 OK - Sends notification to team owner",
+    "GET /api/admin/atletas/export": "200 OK - Returns Excel blob",
+    "GET /api/ranking/export/excel": "200 OK - Returns Excel blob",
+    "GET /api/ranking/export/csv": "200 OK - Returns CSV blob"
+  }
+}

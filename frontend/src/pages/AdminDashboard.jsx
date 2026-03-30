@@ -16,28 +16,15 @@ import {
   Activity, Home, Settings, FileText,
   Edit, Download, Plus, X,
   Cake, Send, ArrowRightLeft, RefreshCw, Loader2,
-  Crown, MessageSquare, CreditCard
+  Crown, MessageSquare, CreditCard, TrendingDown
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
+import { triggerDownload } from '@/utils/downloadHelper';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
-
-// Helper robusto para download de arquivos
-const triggerDownload = (blob, filename) => {
-  const url = window.URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.style.display = 'none';
-  a.href = url;
-  a.download = filename;
-  document.body.appendChild(a);
-  a.click();
-  setTimeout(() => {
-    document.body.removeChild(a);
-    window.URL.revokeObjectURL(url);
-  }, 500);
-};
 
 const ESTADOS_BR = [
   'AC', 'AL', 'AP', 'AM', 'BA', 'CE', 'DF', 'ES', 'GO', 'MA', 
@@ -66,6 +53,7 @@ import DashboardMensagens from './admin/DashboardMensagens';
 import DashboardResumoSemanal from './admin/DashboardResumoSemanal';
 import DashboardEngajamento from './admin/DashboardEngajamento';
 import DashboardFinanceiro from './admin/DashboardFinanceiro';
+import DashboardRetencao from './admin/DashboardRetencao';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 import CidadeCombobox from '@/components/CidadeCombobox';
@@ -89,6 +77,7 @@ const menuSections = [
       { id: 'financeiro', label: 'Financeiro', icon: CreditCard, permissoes: [] },
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
       { id: 'engajamento', label: 'Engajamento', icon: BarChart3, permissoes: [] },
+      { id: 'retencao', label: 'Retenção', icon: TrendingDown, permissoes: [] },
     ]
   },
   {
@@ -1096,6 +1085,11 @@ const AdminDashboard = () => {
         {/* Resumo Semanal - Disparo manual para atletas */}
         {activeMenu === 'resumo-semanal' && (
           <DashboardResumoSemanal token={token} />
+        )}
+
+        {/* Dashboard de Retenção */}
+        {activeMenu === 'retencao' && (
+          <DashboardRetencao />
         )}
 
         {/* Modal Editar Atleta */}
