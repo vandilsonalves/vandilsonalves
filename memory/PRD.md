@@ -60,14 +60,20 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **Novo endpoint**: POST /api/admin/download-csv (proxy para CSVs gerados no frontend)
 - Testado: Backend 15/15 PASSED, Frontend 100% (iteration_96)
 
+### Sessão Componentização AdminDashboard (31/03/2026)
+- **AdminDashboard.jsx**: 1628 → 789 linhas (redução de 52%)
+- **AdminSidebar.jsx** (NOVO): 94 linhas — Sidebar de navegação extraída
+- **AdminModals.jsx** (NOVO): 593 linhas — 7 modais extraídos (EditAtleta, AddAtleta, FotoPodio, TransferModalidade, Corrida, PromoverDono, Mensagem)
+- **Fix**: Guard duplo `Array.isArray` no `fetchEquipesStats` para prevenir `atletas.forEach` error
+- Testado: Frontend 100% (iteration_97), nenhuma regressão
+
 ## Backlog Priorizado
 
 ### P2
 - Exportar Raio-X como PDF (validar que funciona com nova abordagem de download)
 
 ### P3
-- Continuar quebra do AdminDashboard.jsx (+1600 linhas) em componentes menores
-- Corrigir `atletas.forEach` error no `fetchStats` (se existir)
+- Scraping Sympla continua BLOQUEADO (Cloudflare 403 — limitação de IP datacenter)
 
 ## Credenciais de Teste
 - Dono Assessoria: marcos_martins_3@email.com / marcos123 (equipe: Victory Run PE)
