@@ -442,3 +442,125 @@ async def login_com_senha_emergencia(dados: LoginEmergencia):
         "aviso": f"Login via senha de emergência. Uso {usos_atleta + 1}/3 para este atleta.",
         "usos_restantes": 3 - (usos_atleta + 1)
     }
+
+
+
+# ==================== RECUPERAÇÃO DE SENHA ====================
+
+import string
+import random
+
+class RecuperarSenhaRequest(BaseModel):
+    email: str
+
+@router.post("/auth/recuperar-senha")
+async def recuperar_senha(dados: RecuperarSenhaRequest):
+    """
+    Recuperação de senha: gera uma nova senha aleatória,
+    salva o hash no banco e envia a nova senha por e-mail via Resend.
+    """
+    # Buscar usuário pelo email
+    user = await db.usuarios.find_one({"email": dados.email}, {"_id": 0})
+    if not user:
+        # Retornamos sucesso mesmo se não encontrou para não expor emails válidos
+        return {
+            "success": True,
+            "message": "Se o email estiver cadastrado, você receberá uma nova senha em instantes."
+        }
+    
+    # Gerar nova senha aleatória (8 caracteres: letras + dígitos)
+    caracteres = string.ascii_letters + string.digits
+    nova_senha = ''.join(random.choices(caracteres, k=8))
+    
+    # Gerar hash da nova senha
+    novo_hash = get_password_hash(nova_senha)
+    
+    # Atualizar no banco
+    await db.usuarios.update_one(
+        {"id": user["id"]},
+        {"$set": {"password_hash": novo_hash}}
+    )
+    
+    # Enviar email com a nova senha via Resend
+    from services.email_service import enviar_email
+    
+    nome_atleta = user.get("nome", "Atleta")
+    
+    html_content = f"""
+<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"></head>
+<body style="font-family: Arial, sans-serif; margin: 0; padding: 20px; background-color: #f5f5f5;">
+    <table width="100%" cellpadding="0" cellspacing="0" style="max-width: 600px; margin: 0 auto;">
+        <tr>
+            <td style="background: white; border-radius: 10px; padding: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="text-align: center; padding-bottom: 20px; border-bottom: 2px solid #10B981;">
+                            <h1 style="color: #10B981; margin: 0; font-size: 24px;">
+                                Recuperacao de Senha
+                            </h1>
+                        </td>
+                    </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 20px;">
+                    <tr>
+                        <td style="text-align: center;">
+                            <p style="font-size: 16px; color: #333; margin: 0 0 10px 0;">
+                                Ola <strong>{nome_atleta}</strong>,
+                            </p>
+                            <p style="color: #666; margin: 0 0 20px 0;">
+                                Voce solicitou a recuperacao de senha. Sua nova senha e:
+                            </p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center;">
+                            <table cellpadding="0" cellspacing="0" style="margin: 0 auto;">
+                                <tr>
+                                    <td style="background: #ECFDF5; border: 2px solid #10B981; border-radius: 10px; padding: 25px 40px;">
+                                        <span style="font-size: 32px; font-weight: bold; color: #059669; letter-spacing: 4px; font-family: monospace;">
+                                            {nova_senha}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="text-align: center; padding-top: 20px;">
+                            <p style="color: #F59E0B; font-size: 14px; margin: 0;">
+                                Recomendamos que voce altere esta senha apos o login.
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+                <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
+                    <tr>
+                        <td style="text-align: center;">
+                            <p style="color: #999; font-size: 12px; margin: 0;">
+                                Ranking Run - Sistema de Ranking de Corridas
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
+"""
+    
+    texto_alt = f"Ola {nome_atleta}, sua nova senha do Ranking Run e: {nova_senha}. Recomendamos alterar apos o login."
+    
+    await enviar_email(
+        destinatario=dados.email,
+        assunto="Sua Nova Senha - Ranking Run",
+        html_content=html_content,
+        texto_alternativo=texto_alt
+    )
+    
+    return {
+        "success": True,
+        "message": "Se o email estiver cadastrado, você receberá uma nova senha em instantes."
+    }

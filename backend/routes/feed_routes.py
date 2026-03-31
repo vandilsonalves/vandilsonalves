@@ -1341,6 +1341,7 @@ async def criar_story(
         "id": str(uuid.uuid4()),
         "autor_id": current_user["id"],
         "autor_nome": current_user.get("nome", ""),
+        "autor_foto": current_user.get("foto_url", ""),
         "imagem_url": f"/uploads/stories/{nome_arquivo}",
         "texto": texto.strip(),
         "data_criacao": datetime.now(timezone.utc).isoformat(),
@@ -1363,6 +1364,17 @@ async def listar_stories(current_user: dict = Depends(get_current_user)):
         {"_id": 0}
     ).sort("data_criacao", -1).to_list(100)
 
+    # Buscar fotos de perfil dos autores
+    autor_ids = list(set(s["autor_id"] for s in stories))
+    autores_info = {}
+    if autor_ids:
+        usuarios_cursor = db.usuarios.find(
+            {"id": {"$in": autor_ids}},
+            {"_id": 0, "id": 1, "foto_url": 1}
+        )
+        async for u in usuarios_cursor:
+            autores_info[u["id"]] = u.get("foto_url", "")
+
     # Agrupar por autor
     autores = {}
     for s in stories:
@@ -1371,6 +1383,7 @@ async def listar_stories(current_user: dict = Depends(get_current_user)):
             autores[aid] = {
                 "autor_id": aid,
                 "autor_nome": s["autor_nome"],
+                "autor_foto": s.get("autor_foto") or autores_info.get(aid, ""),
                 "stories": [],
                 "tem_nao_visto": False
             }

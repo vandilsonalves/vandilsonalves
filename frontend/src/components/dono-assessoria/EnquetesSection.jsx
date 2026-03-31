@@ -134,12 +134,12 @@ const EnqueteForm = ({ token, headers, onCreated, onCancel }) => {
         ))}
         <div className="flex gap-2">
           {opcoes.length < 6 && (
-            <Button variant="outline" size="sm" onClick={addOpcao} className="text-xs border-slate-600">
+            <Button variant="outline" size="sm" onClick={addOpcao} className="text-xs border-violet-500 text-violet-300 bg-violet-600/20 hover:bg-violet-600/40 hover:text-white font-semibold" data-testid="btn-adicionar-opcao">
               <Plus className="w-3.5 h-3.5 mr-1" /> Adicionar opção
             </Button>
           )}
           <div className="flex-1" />
-          <Button variant="ghost" size="sm" onClick={onCancel}>Cancelar</Button>
+          <Button variant="outline" size="sm" onClick={onCancel} className="border-red-500/50 text-red-400 hover:bg-red-500/20 hover:text-red-300 font-semibold" data-testid="btn-cancelar-enquete">Cancelar</Button>
           <Button size="sm" onClick={criar} disabled={sending} className="bg-violet-600 hover:bg-violet-700" data-testid="btn-criar-enquete">
             {sending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Criar Enquete'}
           </Button>

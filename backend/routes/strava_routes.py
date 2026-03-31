@@ -21,11 +21,11 @@ from services.strava_service import (
 router = APIRouter()
 
 # URL do frontend para redirecionamento após autenticação
-FRONTEND_URL = os.environ.get("FRONTEND_URL", "https://geo-filtered-admin.preview.emergentagent.com")
+FRONTEND_URL = os.environ.get("FRONTEND_URL") or os.environ.get("REACT_APP_BACKEND_URL", "https://geo-filtered-admin.preview.emergentagent.com")
 
 
 @router.get("/strava/authorize")
-async def strava_authorize(current_user: dict = Depends(require_premium_access)):
+async def strava_authorize(current_user: dict = Depends(get_current_user)):
     """
     Inicia o fluxo de autenticação OAuth2 do Strava.
     Redireciona o usuário para a página de autorização do Strava.

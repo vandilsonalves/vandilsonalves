@@ -1,11 +1,18 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { X, ChevronLeft, ChevronRight, Camera, Plus, Heart, Send, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
 import { toast } from 'sonner';
 import axios from 'axios';
 
-const API = process.env.REACT_APP_BACKEND_URL + '/api';
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = BACKEND_URL + '/api';
+
+const getFullPhotoUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${BACKEND_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+};
 
 const REACOES_STORY = [
   { tipo: 'coracao', emoji: '❤️' },
@@ -124,6 +131,9 @@ const StoryViewer = ({ autores, startIndex, token, userId, onClose }) => {
         {/* Header */}
         <div className="flex items-center gap-3 px-3 py-2 z-10">
           <Avatar className="w-8 h-8 border-2 border-white">
+            {autor.autor_foto && (
+              <AvatarImage src={getFullPhotoUrl(autor.autor_foto)} alt={autor.autor_nome} />
+            )}
             <AvatarFallback className="bg-amber-500 text-white text-xs">
               {autor.autor_nome?.charAt(0) || '?'}
             </AvatarFallback>
@@ -326,6 +336,9 @@ const StoriesBar = ({ token, userId }) => {
             }`}>
               <div className="w-full h-full rounded-full bg-slate-900 flex items-center justify-center overflow-hidden">
                 <Avatar className="w-full h-full">
+                  {autor.autor_foto && (
+                    <AvatarImage src={getFullPhotoUrl(autor.autor_foto)} alt={autor.autor_nome} />
+                  )}
                   <AvatarFallback className="bg-slate-700 text-white text-lg">
                     {autor.autor_nome?.charAt(0) || '?'}
                   </AvatarFallback>

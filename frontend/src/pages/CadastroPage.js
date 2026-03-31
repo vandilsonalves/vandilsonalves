@@ -245,6 +245,12 @@ const CadastroPage = () => {
         return;
       }
     }
+
+    // Validar equipe selecionada
+    if (!formData.equipe) {
+      setError('Selecione uma equipe ou a opção INDIVIDUAL');
+      return;
+    }
     
     setLoading(true);
 
@@ -405,19 +411,38 @@ const CadastroPage = () => {
                     )}
                   </div>
                   
-                  {/* Dropdown de equipes - APENAS cadastradas + INDIVIDUAL */}
+                  {/* Dropdown de equipes - INDIVIDUAL + SOU DONO + equipes cadastradas */}
                   {showEquipeDropdown && (
                     <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg shadow-lg max-h-60 overflow-y-auto">
                       {/* Opção INDIVIDUAL - sempre primeiro */}
                       <div
-                        className="px-3 py-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 cursor-pointer border-b-2 border-amber-200 bg-amber-50/50"
-                        onClick={() => handleEquipeSelect('Individual')}
+                        className="px-3 py-3 hover:bg-amber-50 dark:hover:bg-amber-900/30 cursor-pointer border-b border-slate-200"
+                        onClick={() => {
+                          handleEquipeSelect('Individual');
+                          setIsDonoAssessoria(false);
+                        }}
                         data-testid="option-individual"
                       >
                         <div className="flex items-center gap-2">
                           <span className="font-semibold text-amber-700">INDIVIDUAL</span>
                           <span className="text-xs text-amber-600 bg-amber-100 px-2 py-0.5 rounded">Sem equipe</span>
                         </div>
+                      </div>
+
+                      {/* Opção SOU DONO DE UMA ASSESSORIA */}
+                      <div
+                        className="px-3 py-3 hover:bg-orange-50 dark:hover:bg-orange-900/30 cursor-pointer border-b-2 border-orange-200 bg-orange-50/50"
+                        onClick={() => {
+                          handleEquipeSelect('Dono de Assessoria');
+                          setIsDonoAssessoria(true);
+                        }}
+                        data-testid="option-dono-assessoria"
+                      >
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-orange-600" />
+                          <span className="font-semibold text-orange-700">SOU DONO DE UMA ASSESSORIA / EQUIPE</span>
+                        </div>
+                        <p className="text-xs text-orange-500 mt-1 ml-6">Cadastre sua assessoria agora mesmo</p>
                       </div>
                       
                       {/* Lista de equipes cadastradas */}
@@ -426,7 +451,10 @@ const CadastroPage = () => {
                           <div
                             key={idx}
                             className="px-3 py-2 hover:bg-emerald-50 dark:hover:bg-emerald-900/30 cursor-pointer border-b border-slate-100 dark:border-slate-700"
-                            onClick={() => handleEquipeSelect(equipe.nome)}
+                            onClick={() => {
+                              handleEquipeSelect(equipe.nome);
+                              setIsDonoAssessoria(false);
+                            }}
                           >
                             <div className="font-medium">{equipe.nome}</div>
                             {(equipe.cidade || equipe.estado) && (
@@ -439,7 +467,7 @@ const CadastroPage = () => {
                       ) : equipeSearchTerm.length > 0 ? (
                         <div className="px-3 py-3 text-slate-500 text-sm bg-slate-50">
                           <p className="font-medium text-slate-600">Equipe não encontrada</p>
-                          <p className="text-xs mt-1">Selecione "INDIVIDUAL" e peça ao dono da assessoria para cadastrá-la.</p>
+                          <p className="text-xs mt-1">Selecione "INDIVIDUAL" ou "SOU DONO DE UMA ASSESSORIA".</p>
                         </div>
                       ) : null}
                     </div>
@@ -621,132 +649,99 @@ const CadastroPage = () => {
                   </Select>
                 </div>
 
-                {/* Seção Dono de Assessoria - Aparece APENAS quando selecionou INDIVIDUAL */}
-                {formData.equipe === 'Individual' && (
+                {/* Seção Dono de Assessoria - Aparece quando selecionou SOU DONO no dropdown */}
+                {formData.equipe === 'Dono de Assessoria' && isDonoAssessoria === true && (
                   <div className="md:col-span-2 bg-orange-100 dark:bg-orange-900/30 border-2 border-orange-300 rounded-xl p-4 space-y-4">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <Building2 className="w-5 h-5 text-orange-600" />
-                        <Label className="text-base font-semibold text-orange-800 dark:text-orange-200">
-                          Você é Dono de Uma Assessoria/Equipe?
-                        </Label>
-                        <div className="relative group">
-                          <HelpCircle className="w-4 h-4 text-orange-500 cursor-help" />
-                          <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block bg-slate-800 text-white text-xs p-2 rounded-lg w-48 z-50">
-                            Se "SIM", realize o cadastro agora mesmo
-                          </div>
-                        </div>
+                    <div className="flex items-center gap-2">
+                      <Building2 className="w-5 h-5 text-orange-600" />
+                      <Label className="text-base font-semibold text-orange-800 dark:text-orange-200">
+                        Cadastro da Assessoria/Equipe
+                      </Label>
+                    </div>
+
+                    <div className="space-y-4">
+                      <div>
+                        <Label className="text-orange-800">Nome da Assessoria/Equipe *</Label>
+                        <Input
+                          value={assessoriaData.nome_assessoria}
+                          onChange={(e) => setAssessoriaData({...assessoriaData, nome_assessoria: e.target.value})}
+                          placeholder="Ex: Team Running Brasil"
+                          className="bg-white"
+                          data-testid="input-nome-assessoria"
+                        />
                       </div>
-                    </div>
 
-                    {/* Seleção SIM/NÃO */}
-                    <div className="flex gap-3">
-                      <Button
-                        type="button"
-                        variant={isDonoAssessoria === true ? "default" : "outline"}
-                        className={`flex-1 ${isDonoAssessoria === true ? 'bg-orange-500 hover:bg-orange-600' : 'border-orange-300 hover:bg-orange-50'}`}
-                        onClick={() => setIsDonoAssessoria(true)}
-                        data-testid="btn-dono-sim"
-                      >
-                        SIM
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={isDonoAssessoria === false ? "default" : "outline"}
-                        className={`flex-1 ${isDonoAssessoria === false ? 'bg-slate-500 hover:bg-slate-600' : 'border-orange-300 hover:bg-orange-50'}`}
-                        onClick={() => setIsDonoAssessoria(false)}
-                        data-testid="btn-dono-nao"
-                      >
-                        NÃO
-                      </Button>
-                    </div>
-
-                    {/* Campos da Assessoria - Aparecem apenas se SIM */}
-                    {isDonoAssessoria === true && (
-                      <div className="space-y-4 pt-4 border-t border-orange-300">
+                      <div className="grid grid-cols-2 gap-4">
                         <div>
-                          <Label className="text-orange-800">Nome da Assessoria/Equipe *</Label>
-                          <Input
-                            value={assessoriaData.nome_assessoria}
-                            onChange={(e) => setAssessoriaData({...assessoriaData, nome_assessoria: e.target.value})}
-                            placeholder="Ex: Team Running Brasil"
-                            className="bg-white"
-                            data-testid="input-nome-assessoria"
+                          <Label className="text-orange-800">Estado (UF) *</Label>
+                          <Select 
+                            value={assessoriaData.estado_assessoria} 
+                            onValueChange={(v) => setAssessoriaData({...assessoriaData, estado_assessoria: v, cidade_assessoria: ''})}
+                          >
+                            <SelectTrigger className="bg-white">
+                              <SelectValue placeholder="Selecione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {ESTADOS_BR.map((estado) => (
+                                <SelectItem key={estado.uf} value={estado.uf}>{estado.uf} - {estado.nome}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </div>
+
+                        <div>
+                          <Label className="text-orange-800">Cidade *</Label>
+                          <CidadeCombobox
+                            cidades={cidadesAssessoria}
+                            value={assessoriaData.cidade_assessoria}
+                            onValueChange={(v) => setAssessoriaData({...assessoriaData, cidade_assessoria: v})}
+                            loading={loadingCidadesAssessoria}
+                            disabled={!assessoriaData.estado_assessoria}
+                            triggerClassName="bg-white"
                           />
                         </div>
+                      </div>
 
-                        <div className="grid grid-cols-2 gap-4">
-                          <div>
-                            <Label className="text-orange-800">Estado (UF) *</Label>
-                            <Select 
-                              value={assessoriaData.estado_assessoria} 
-                              onValueChange={(v) => setAssessoriaData({...assessoriaData, estado_assessoria: v, cidade_assessoria: ''})}
-                            >
-                              <SelectTrigger className="bg-white">
-                                <SelectValue placeholder="Selecione" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {ESTADOS_BR.map((estado) => (
-                                  <SelectItem key={estado.uf} value={estado.uf}>{estado.uf} - {estado.nome}</SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
-                          </div>
-
-                          <div>
-                            <Label className="text-orange-800">Cidade *</Label>
-                            <CidadeCombobox
-                              cidades={cidadesAssessoria}
-                              value={assessoriaData.cidade_assessoria}
-                              onValueChange={(v) => setAssessoriaData({...assessoriaData, cidade_assessoria: v})}
-                              loading={loadingCidadesAssessoria}
-                              disabled={!assessoriaData.estado_assessoria}
-                              triggerClassName="bg-white"
+                      <div>
+                        <Label className="text-orange-800">Envie uma Foto da Sua Equipe/Assessoria</Label>
+                        <div className="mt-1">
+                          <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-orange-300 rounded-lg bg-white cursor-pointer hover:bg-orange-50 transition">
+                            <input
+                              type="file"
+                              accept="image/*"
+                              className="hidden"
+                              onChange={(e) => setAssessoriaData({...assessoriaData, foto_assessoria: e.target.files[0]})}
                             />
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-orange-800">Envie uma Foto da Sua Equipe/Assessoria</Label>
-                          <div className="mt-1">
-                            <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-orange-300 rounded-lg bg-white cursor-pointer hover:bg-orange-50 transition">
-                              <input
-                                type="file"
-                                accept="image/*"
-                                className="hidden"
-                                onChange={(e) => setAssessoriaData({...assessoriaData, foto_assessoria: e.target.files[0]})}
-                              />
-                              {assessoriaData.foto_assessoria ? (
-                                <div className="flex items-center gap-2 text-orange-700">
-                                  <FileImage className="w-5 h-5" />
-                                  <span className="text-sm">{assessoriaData.foto_assessoria.name}</span>
-                                </div>
-                              ) : (
-                                <div className="flex items-center gap-2 text-orange-500">
-                                  <Upload className="w-5 h-5" />
-                                  <span className="text-sm">Imagem Retangular (opcional)</span>
-                                </div>
-                              )}
-                            </label>
-                          </div>
-                        </div>
-
-                        <div>
-                          <Label className="text-orange-800">Mensagem da BIO *</Label>
-                          <textarea
-                            value={assessoriaData.mensagem_bio}
-                            onChange={(e) => setAssessoriaData({...assessoriaData, mensagem_bio: e.target.value})}
-                            placeholder="Ex: Ajudamos milhares de Atletas pelo Brasil, faça parte do nosso Time!"
-                            className="w-full mt-1 p-3 border border-orange-300 rounded-lg bg-white resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-400"
-                            maxLength={200}
-                            data-testid="input-bio-assessoria"
-                          />
-                          <p className="text-xs text-orange-600 mt-1">
-                            {assessoriaData.mensagem_bio.length}/200 caracteres
-                          </p>
+                            {assessoriaData.foto_assessoria ? (
+                              <div className="flex items-center gap-2 text-orange-700">
+                                <FileImage className="w-5 h-5" />
+                                <span className="text-sm">{assessoriaData.foto_assessoria.name}</span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-orange-500">
+                                <Upload className="w-5 h-5" />
+                                <span className="text-sm">Imagem Retangular (opcional)</span>
+                              </div>
+                            )}
+                          </label>
                         </div>
                       </div>
-                    )}
+
+                      <div>
+                        <Label className="text-orange-800">Mensagem da BIO *</Label>
+                        <textarea
+                          value={assessoriaData.mensagem_bio}
+                          onChange={(e) => setAssessoriaData({...assessoriaData, mensagem_bio: e.target.value})}
+                          placeholder="Ex: Ajudamos milhares de Atletas pelo Brasil, faça parte do nosso Time!"
+                          className="w-full mt-1 p-3 border border-orange-300 rounded-lg bg-white resize-none h-20 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                          maxLength={200}
+                          data-testid="input-bio-assessoria"
+                        />
+                        <p className="text-xs text-orange-600 mt-1">
+                          {assessoriaData.mensagem_bio.length}/200 caracteres
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 )}
 
