@@ -10,6 +10,7 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **Agendamento**: APScheduler (nativo Python)
 - **Pagamentos**: Efí Bank (PRODUÇÃO REAL)
 - **Compressão**: GZip Middleware
+- **Downloads**: window.open(url?token=...) — NÃO usa Blob/createObjectURL (bloqueado por iframe)
 
 ## O que foi implementado
 
@@ -20,95 +21,53 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Insígnias 3D, compartilhamento 9:16, GZip, índices MongoDB
 
 ### Sessão Redes Sociais no Perfil (29/03/2026)
-- **8 botões de redes sociais** no "Acesso Rápido" do Meu Perfil: Instagram, Club Strava, Facebook, Grupo WhatsApp, TikTok, YouTube, Canal WhatsApp, Telegram ✅
-- Todos com links oficiais do Ranking Run e ícones lucide-react (sem emojis) ✅
-- Botão Instagram removido de "Compartilhar minha posição" (só WhatsApp permanece) ✅
-- Paginação "Carregar Mais" em todos os 4 rankings (Profissional, Galera, Equipes, Corridas) ✅
-- Scroll infinito automático via IntersectionObserver ✅
-- Componente reutilizável LoadMoreButton.jsx com barra de progresso ✅
-- **Chat da Assessoria** com upload de PDF/Excel/Imagens ✅
-- **Feed da Equipe** (grupo fechado tipo WhatsApp) com curtidas e anexos ✅
-- **Botão "Desvincular Atleta"** com motivo e notificação ✅
-- **Nomes com apelido** (prioriza apelido, senão primeiro+segundo nome) ✅
-- Feed acessível tanto no painel do dono quanto no perfil do atleta ✅
-- **Botão "Feed da Equipe"** no header e mobile nav (só para atletas com equipe) ✅
-- **Página dedicada /feed-equipe** fora do AccessGate (sempre acessível) ✅
-- **Badge de posts não lidos** (vermelho) no botão Feed da Equipe com polling 15s ✅
-- **Auto marca como lido** ao entrar no feed, badge desaparece ✅
-- **Threads de resposta** nos posts do Feed (respostas indentadas com borda lateral) ✅
-- **Menções @nome** com autocomplete dropdown e notificação push ao mencionado ✅
-- **Header reestruturado** em 2 linhas: top (logo+user+ações) + bottom (navegação com scroll) ✅
-- **Enquetes (Polls) no Feed da Equipe** ✅ — Criar enquetes, votar, ver %, encerrar (testado 29/03)
-- Testes: Backend 17/17 PASSED, Frontend 100% (iteration_91)
+- 8 botões de redes sociais no "Acesso Rápido" do Meu Perfil
+- Paginação "Carregar Mais" em todos os 4 rankings
+- Chat da Assessoria com upload de PDF/Excel/Imagens
+- Feed da Equipe com curtidas, anexos, threads, menções, enquetes
+- Badge de posts não lidos com polling 15s
+- Header reestruturado em 2 linhas
 
 ### Sessão Resumo Semanal + Instagram Fix (29/03/2026)
-- **Link Instagram corrigido** no Meu Perfil (trailing slash adicionado) ✅
-- **Resumo Semanal automático para atletas** via notificação push ✅
-  - Agendado: toda segunda-feira às 08:00 (APScheduler CronTrigger)
-  - Conteúdo: corridas da semana, pontos ganhos, posição no ranking, total acumulado
-  - Endpoint admin: `POST /api/admin/resumo-semanal/disparar` (disparo manual)
-  - Endpoint admin: `GET /api/admin/resumo-semanal/historico` (historico de disparos)
-  - Painel Admin: Menu "Resumo Semanal" em Ferramentas com botao "Disparar Agora", preview e historico ✅
-  - Testado: 392/392 atletas notificados, 0 erros
-
-### Regra de Notificações (29/03/2026)
-- Atletas recebem notificações APENAS de Admin e Dono de Assessoria ✅
-- Removidas: notificações de reação, comentário, parabéns, conquista de colega (feed_routes.py)
-- Condicionadas: menções no Feed da Equipe só notificam se remetente for dono/admin (equipe_chat_routes.py)
-- Chat da Assessoria já era restrito a dono/admin (sem alteração)
-- Testado: 3/3 cenários validados via curl
-
-
-### Tipo de Corredor + Terreno Preferido (29/03/2026)
-- Novos campos no "Meu Perfil": **Tipo de Corredor** (Velocista/Resistencia/Endurance/Pace Leve) e **Seu Terreno Preferido** (Rua-Asfalto/Trilha/Esteira) ✅
-- Backend: Model `PerfilUpdate` atualizado + endpoints de atualização ✅
-- Admin Dashboard: Gráficos **31. Tipo de Corredor** e **32. Terreno Preferido** em pizza no Dashboard Estratégico ✅
-- Header: Fix do overflow na barra de navegação (badges não cortam mais) ✅
+- Link Instagram corrigido, Resumo Semanal automático via APScheduler
 
 ### Sessão Admin Dashboard Fixes (30/03/2026)
-- Fix: Gráficos sobrepostos no Dashboard Estratégico — ChartCard com `overflowY: auto` ✅
-- Fix: Mapa coroplético do Brasil com SVG (27 estados, escala de cores, legenda) no seção 8 ✅
-- Fix: Busca por e-mail no Admin Atletas ✅
-- Fix: `KeyError: 'faixa_etaria'` e `KeyError: 'seguindo'` nos exports/análises do Instagram ✅
-- Feature: Helper unificado `triggerDownload(blob, filename)` para forçar download de arquivos via Blob ✅
-- Fix: Exportações (Excel/CSV/PDF) no Admin — todas funcionando via Blob download ✅
-- Feature: Gráficos 31 (Tipo de Corredor) e 32 (Terreno Preferido) em pizza no Dashboard Estratégico ✅
-- Testado: Backend 12/12 PASSED, Frontend 100% (iteration_92)
+- Fix: Gráficos sobrepostos, Mapa coroplético SVG, Busca por email
+- Tipo de Corredor + Terreno Preferido no perfil
 
 ### Sessão Refatoração + Dashboard Retenção (30/03/2026)
-- Refatoração: `triggerDownload` extraído para `src/utils/downloadHelper.js` (DRY) ✅
-- Feature: **Dashboard de Retenção** no Admin ✅
-  - Stats cards: Taxa de Retenção, Atletas Inativos, Pararam de Competir, Nunca Submeteram
-  - Lista "Equipes com Mais Inativos" com ranking e botão "Alertar Dono"
-  - Tabela de atletas inativos com busca por nome/email, filtro por equipe, ordenação
-  - Seletor de período (7, 15, 30, 60, 90 dias)
-  - Endpoint: `GET /api/admin/retencao/inativos?dias=30`
-  - Endpoint: `POST /api/admin/retencao/alertar-assessoria` (envia notificação ao dono da equipe)
-- Testado: Backend 11/11 PASSED, Frontend 100% (iteration_93)
+- Dashboard de Retenção no Admin (Taxa, Inativos, Equipes com mais inativos)
+- triggerDownload extraído para downloadHelper.js (DRY)
 
 ### Sessão Scraping Avançado de Corridas (30/03/2026)
-- Feature: **Sistema de Busca e Varredura Avançada de Corridas** ✅
-  - Scraping inteligente com fallback: API → HTML → Playwright (headless browser)
-  - Parsers específicos: Ticket Sports (API JSON), Central das Inscrições (HTML), Genérico
-  - Auto-detecção de sites JS-heavy (Sympla, Minhas Inscrições, etc.) → Playwright
-  - **Anti-duplicidade**: verifica nome+data e link contra o banco antes de cadastrar
-  - **Status automático**: "ativa" (futuro) ou "encerrada" (passado) baseado na data
-  - **Fontes monitoradas**: salvar URLs para monitoramento automático a cada 12h via APScheduler
-  - **Cadastro automático**: corridas novas são cadastradas direto no banco
-  - UI no Admin > Corridas: barra de URL, botões Fontes/Atualizar Todas, tabela com Status/Nome/Org/Cidade/Data/Situação
-  - Endpoints: POST /api/scraping/buscar, GET/POST/DELETE /api/scraping/fontes, POST /api/scraping/atualizar-todas
-- Testado: Backend 9/9 PASSED, Frontend 100% (iteration_94)
+- Sistema de Busca e Varredura com fallback: API → HTML → Playwright
+- Parsers específicos: Ticket Sports (API JSON), Central das Inscrições (HTML), Genérico
+- Anti-duplicidade, Status automático (ativa/encerrada)
+
+### Sessão Fix Downloads + Scraping Manual (31/03/2026)
+- **FIX P0**: Todos os botões de exportação (PDF, CSV, Excel) agora fazem download real
+  - Auth modificada para aceitar token via query parameter (?token=...)
+  - Frontend usa window.open(url?token=...) em vez de Blob/createObjectURL
+  - Funciona corretamente dentro de iframes (ambiente preview)
+  - Todos os componentes atualizados: AdminDashboard, DashboardFinanceiro, DashboardCorridas, PerfilAtletaPage, DonoAssessoriaDashboard, DashboardAssessorias
+- **Scraping agora é MANUAL**: 
+  - Removido job automático a cada 12h do APScheduler
+  - /scraping/buscar NÃO insere corridas no banco (cadastradas=0)
+  - /scraping/atualizar-todas retorna Excel para download manual
+  - Admin baixa o Excel e importa via "Importar Dados"
+  - UI atualizada: "Busca e Varredura Manual de Corridas"
+- **Novo endpoint**: GET /api/corridas-eventos/exportar/{formato} (CSV/Excel com filtros)
+- **Novo endpoint**: POST /api/admin/download-csv (proxy para CSVs gerados no frontend)
+- Testado: Backend 15/15 PASSED, Frontend 100% (iteration_96)
 
 ## Backlog Priorizado
 
 ### P2
-- Exportar Raio-X como PDF (já implementado via jsPDF no RaioXPage.jsx — validar que funciona corretamente)
+- Exportar Raio-X como PDF (validar que funciona com nova abordagem de download)
 
 ### P3
-- ~~Limpeza de código morto: pasta tasks/, celery_app.py, rotas antigas Stripe~~ ✅ (Removido em 29/03)
-- ~~Limpeza de states obsoletos no AdminDashboard.jsx~~ ✅ (Removido em 29/03)
-- ~~Mover helper triggerDownload para src/utils/~~ ✅ (Movido em 30/03)
 - Continuar quebra do AdminDashboard.jsx (+1600 linhas) em componentes menores
+- Corrigir `atletas.forEach` error no `fetchStats` (se existir)
 
 ## Credenciais de Teste
 - Dono Assessoria: marcos_martins_3@email.com / marcos123 (equipe: Victory Run PE)
@@ -122,11 +81,16 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 
 ## Notas Importantes
 - NÃO iniciar Redis ou Celery (removidos da arquitetura)
+- NÃO usar Blob/createObjectURL para downloads (bloqueado por iframe)
+- Usar window.open(url?token=...) para todos os downloads
 - Pagamentos em PRODUÇÃO REAL (não testar com dados falsos)
 - App.js usa imports diretos (sem React.lazy)
 - Acesso 90% via celular - performance é prioridade
+- Scraping é MANUAL - não insere automaticamente no banco
 
 ## Collections MongoDB Relevantes
 - `mensagens_assessoria`: Chat + Feed posts (diferenciados por campo `tipo`)
-- `feed_enquetes`: Enquetes do feed da equipe (pergunta, opções, votos, ativa)
-- `notificacoes`: Notificações push (menções, desvinculação, splash, etc.)
+- `feed_enquetes`: Enquetes do feed da equipe
+- `notificacoes`: Notificações push
+- `corridas_eventos`: Central de corridas e avaliações
+- `scraping_fontes`: URLs monitoradas para varredura manual
