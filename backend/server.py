@@ -176,6 +176,7 @@ from routes.financeiro_routes import router as financeiro_router
 from routes.equipe_chat_routes import router as equipe_chat_router
 from routes.retencao_routes import router as retencao_router
 from routes.scraping_routes import router as scraping_router
+from routes.backup_routes import router as backup_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -213,6 +214,7 @@ api_router.include_router(financeiro_router)
 api_router.include_router(equipe_chat_router)
 api_router.include_router(retencao_router)
 api_router.include_router(scraping_router)
+api_router.include_router(backup_router)
 
 
 # Endpoint genérico para download de conteúdo CSV gerado no frontend
@@ -2139,6 +2141,23 @@ async def startup_event():
     logger.info("📊 Resumo semanal para atletas agendado para segundas às 08:00")
     
     # Varredura automática de corridas REMOVIDA (agora é manual)
+    
+    # Agendar backup automático toda quarta-feira às 02:30
+    from routes.backup_routes import executar_backup
+    async def job_backup_semanal():
+        try:
+            await executar_backup(tipo="automatico", admin_id="system")
+            logger.info("Backup semanal automático concluído com sucesso")
+        except Exception as e:
+            logger.error(f"Erro no backup semanal automático: {e}")
+
+    scheduler.add_job(
+        job_backup_semanal,
+        CronTrigger(day_of_week='wed', hour=2, minute=30),
+        id="backup_semanal_quarta",
+        replace_existing=True
+    )
+    logger.info("Backup semanal agendado para quartas às 02:30")
     
     scheduler.start()
     logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza dom 23:59, Strava 1h, Relatório dom 20h")

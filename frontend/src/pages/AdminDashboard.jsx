@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 import { downloadFile } from '@/utils/downloadHelper';
-import { Instagram, Star } from 'lucide-react';
+import { Instagram, Star, HardDrive } from 'lucide-react';
 
 // Componentes extraídos
 import AdminSidebar from './admin/AdminSidebar';
@@ -40,6 +40,7 @@ import DashboardResumoSemanal from './admin/DashboardResumoSemanal';
 import DashboardEngajamento from './admin/DashboardEngajamento';
 import DashboardFinanceiro from './admin/DashboardFinanceiro';
 import DashboardRetencao from './admin/DashboardRetencao';
+import DashboardBackup from './admin/DashboardBackup';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 
@@ -76,6 +77,7 @@ const menuSections = [
       { id: 'autorizacoes', label: 'Autorizações', icon: Shield, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
       { id: 'administradores', label: 'Administradores', icon: Crown, permissoes: ['criar_admins'], superAdminOnly: true },
       { id: 'regulamento', label: 'Regulamento', icon: FileText, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+      { id: 'backup', label: 'Backup', icon: HardDrive, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
     ]
   },
   {
@@ -755,6 +757,7 @@ const AdminDashboard = () => {
         {activeMenu === 'instagram' && <DashboardInstagram token={token} />}
         {activeMenu === 'resumo-semanal' && <DashboardResumoSemanal token={token} />}
         {activeMenu === 'retencao' && <DashboardRetencao />}
+        {activeMenu === 'backup' && <DashboardBackup />}
 
         {/* Modais extraídos */}
         <AdminModals
