@@ -75,6 +75,7 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Histórico de backups com download (.zip) e exclusão
 - Arquivos armazenados no disco (/app/backups/), NÃO no banco de dados
 - Segurança: apenas Super Admin pode acessar (verificação role + tipo_admin)
+- **Retenção automática**: mantém apenas os últimos 4 backups, excluindo os mais antigos automaticamente (disco + banco)
 - Testado: Backend 11/11 PASSED, Frontend 100% (iteration_98)
 
 ## Backlog Priorizado

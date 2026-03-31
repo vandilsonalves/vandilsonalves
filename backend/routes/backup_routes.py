@@ -33,6 +33,21 @@ async def get_super_admin(current_user: dict = Depends(get_current_user)):
     return current_user
 
 
+async def limpar_backups_antigos(max_backups: int = 4):
+    """Remove backups excedentes, mantendo apenas os N mais recentes"""
+    todos = await db.backups.find({}, {"_id": 0}).sort("data_criacao", -1).to_list(None)
+    if len(todos) <= max_backups:
+        return
+
+    excedentes = todos[max_backups:]
+    for b in excedentes:
+        zip_path = b.get("caminho", os.path.join(BACKUPS_DIR, b["nome_arquivo"]))
+        if os.path.exists(zip_path):
+            os.remove(zip_path)
+        await db.backups.delete_one({"id": b["id"]})
+        logger.info(f"Backup antigo removido (retenção {max_backups}): {b['nome_arquivo']}")
+
+
 async def executar_backup(tipo: str = "manual", admin_id: str = "system"):
     """
     Executa backup completo: MongoDB (JSON) + Arquivos de Upload.
@@ -117,6 +132,10 @@ async def executar_backup(tipo: str = "manual", admin_id: str = "system"):
         await db.backups.insert_one(registro)
 
         logger.info(f"Backup {tipo} concluído: {backup_name}.zip ({file_size / 1024 / 1024:.1f} MB)")
+
+        # 8. Retenção: manter apenas os últimos 4 backups
+        await limpar_backups_antigos(max_backups=4)
+
         return registro
 
     except Exception as e:
