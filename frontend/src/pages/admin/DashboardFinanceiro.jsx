@@ -576,7 +576,7 @@ export default function DashboardFinanceiro() {
       </Card>
 
       {/* Funil de Conversao */}
-      <Card className="bg-gray-900/50 border-gray-800 p-6" data-testid="painel-conversao">
+      <Card className="bg-gray-900 border-gray-800 p-6" data-testid="painel-conversao">
         <div className="flex items-center justify-between mb-6">
           <div className="flex items-center gap-2">
             <TrendingUp className="w-5 h-5 text-blue-400" />
