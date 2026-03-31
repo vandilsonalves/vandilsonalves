@@ -214,6 +214,29 @@ api_router.include_router(equipe_chat_router)
 api_router.include_router(retencao_router)
 api_router.include_router(scraping_router)
 
+
+# Endpoint genérico para download de conteúdo CSV gerado no frontend
+@api_router.post("/admin/download-csv")
+async def download_csv_content(
+    request: Request,
+    current_user: dict = Depends(get_admin_user)
+):
+    """Recebe conteúdo CSV do frontend e retorna como arquivo para download"""
+    form = await request.form()
+    csv_content = form.get("csv_content", "")
+    filename = request.query_params.get("filename", "export.csv")
+    
+    if not csv_content:
+        raise HTTPException(status_code=400, detail="Conteúdo CSV vazio")
+    
+    csv_bytes = csv_content.encode('utf-8')
+    
+    return StreamingResponse(
+        io.BytesIO(csv_bytes),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f"attachment; filename={filename}"}
+    )
+
 # ==================== ADMIN ENDPOINTS ====================
 # [REFATORADO] Endpoints migrados para routes/admin_routes.py:
 # - /admin/pendentes (GET)
@@ -2115,46 +2138,7 @@ async def startup_event():
     )
     logger.info("📊 Resumo semanal para atletas agendado para segundas às 08:00")
     
-    # Agendar varredura automática de fontes de corridas a cada 12h
-    async def job_scraping_auto():
-        """Executa varredura automática das fontes monitoradas"""
-        try:
-            fontes = await db.scraping_fontes.find({"ativa": True}, {"_id": 0}).to_list(None)
-            if not fontes:
-                return
-            total_novas = 0
-            for fonte in fontes:
-                try:
-                    from services.scraping_corridas import fazer_scraping as _scrape
-                    resultado = _scrape(fonte["url"])
-                    if resultado["success"] and resultado["total_encontradas"] > 0:
-                        from routes.scraping_routes import verificar_duplicatas, cadastrar_corridas_novas
-                        check = await verificar_duplicatas(resultado["corridas"])
-                        novas = check["novas"]
-                        cadastradas = await cadastrar_corridas_novas(novas, "system", fonte["url"])
-                        total_novas += cadastradas
-                        await db.scraping_fontes.update_one(
-                            {"id": fonte["id"]},
-                            {"$set": {
-                                "ultima_varredura": datetime.now(timezone.utc).isoformat(),
-                                "total_corridas_encontradas": resultado["total_encontradas"],
-                                "total_novas_ultima": cadastradas,
-                            }}
-                        )
-                except Exception as e:
-                    logger.error(f"Erro scraping auto {fonte.get('url')}: {e}")
-            logger.info(f"🔍 Varredura automática: {total_novas} novas corridas de {len(fontes)} fontes")
-        except Exception as e:
-            logger.error(f"Erro no job de scraping automático: {e}")
-
-    scheduler.add_job(
-        job_scraping_auto,
-        'interval',
-        hours=12,
-        id="scraping_auto_12h",
-        replace_existing=True
-    )
-    logger.info("🔍 Varredura automática de corridas agendada a cada 12h")
+    # Varredura automática de corridas REMOVIDA (agora é manual)
     
     scheduler.start()
     logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza dom 23:59, Strava 1h, Relatório dom 20h")

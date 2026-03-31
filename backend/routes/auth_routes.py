@@ -1,10 +1,11 @@
 # /app/backend/routes/auth_routes.py
 # Módulo de Autenticação - Rotas de login, registro e perfil
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from datetime import datetime, timezone, timedelta
 from jose import JWTError, jwt
+from typing import Optional
 import uuid
 
 from config import db, security
@@ -13,6 +14,9 @@ from services import (
     verify_password, get_password_hash, create_access_token,
     calcular_faixa_etaria, gerar_foto_url, SECRET_KEY, ALGORITHM
 )
+
+# Security scheme that doesn't auto-error (allows query param fallback)
+security_optional = HTTPBearer(auto_error=False)
 
 # Função auxiliar para registrar indicação
 async def registrar_indicacao_interna(indicado_id: str, indicado_nome: str, codigo_indicacao: str):
@@ -126,10 +130,21 @@ router = APIRouter(tags=["Autenticação"])
 
 # ==================== AUTH HELPERS ====================
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)):
-    """Verifica token JWT e retorna usuário atual"""
-    try:
+async def get_current_user(
+    request: Request,
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
+):
+    """Verifica token JWT via Header OU Query Param (?token=...) e retorna usuário atual"""
+    token = None
+    if credentials:
         token = credentials.credentials
+    else:
+        token = request.query_params.get("token")
+    
+    if not token:
+        raise HTTPException(status_code=401, detail="Token não fornecido")
+    
+    try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:

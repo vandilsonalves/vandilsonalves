@@ -10,7 +10,7 @@ import {
   Download, FileSpreadsheet, FileText, HelpCircle, UserCheck
 } from 'lucide-react';
 import { toast } from 'sonner';
-import { triggerDownload } from '@/utils/downloadHelper';
+import { downloadFile, downloadCSVContent } from '@/utils/downloadHelper';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
 
@@ -255,18 +255,10 @@ export default function DashboardFinanceiro() {
     setExporting(true);
     setShowExport(false);
     try {
-      const res = await fetch(`${API}/admin/financeiro/exportar/${formato}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.ok) {
-        const blob = await res.blob();
-        triggerDownload(blob, `financeiro_ranking_run.${formato === 'excel' ? 'xlsx' : 'pdf'}`);
-        toast.success(`Relatorio ${formato.toUpperCase()} exportado!`);
-      } else {
-        toast.error('Erro ao exportar');
-      }
+      downloadFile(`/api/admin/financeiro/exportar/${formato}`);
+      toast.success(`Relatório ${formato.toUpperCase()} exportado!`);
     } catch {
-      toast.error('Erro de conexao');
+      toast.error('Erro ao exportar');
     } finally {
       setExporting(false);
     }

@@ -18,7 +18,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { triggerDownload } from '@/utils/downloadHelper';
+import { downloadFile } from '@/utils/downloadHelper';
 import SelosAtleta from '@/components/SelosAtleta';
 import ReputacaoAvaliador from '@/components/ReputacaoAvaliador';
 import IndicarAmigos from '@/components/IndicarAmigos';
@@ -445,13 +445,7 @@ const PerfilAtletaPage = () => {
   const handleExportData = async () => {
     setExportingData(true);
     try {
-      const response = await axios.get(`${API}/atletas/meu-ranking/export`, {
-        headers: { Authorization: `Bearer ${token}` },
-        responseType: 'blob'
-      });
-      
-      const blob = new Blob([response.data]);
-      triggerDownload(blob, `meu_ranking_${atleta?.nome?.replace(/\s+/g, '_')}.xlsx`);
+      downloadFile('/api/atletas/meu-ranking/export');
       
       setSuccess('Ação Concluída - Dados exportados com sucesso!');
       toast.success('Ação Concluída', { description: 'Dados exportados com sucesso!' });

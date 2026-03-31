@@ -17,7 +17,7 @@ import {
 } from 'recharts';
 import { toast } from 'sonner';
 import axios from 'axios';
-import { triggerDownload } from '@/utils/downloadHelper';
+import { downloadFile, downloadCSVContent } from '@/utils/downloadHelper';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import CidadeCombobox from '@/components/CidadeCombobox';
@@ -325,8 +325,7 @@ const DashboardAssessorias = ({
     }
 
     const content = '\ufeff' + dadosParaExportar.join('\n');
-    const blob = new Blob([content], { type: 'application/vnd.ms-excel;charset=utf-8;' });
-    triggerDownload(blob, nomeArquivo);
+    downloadCSVContent(content, nomeArquivo);
 
     toast.success(`Exportado ${dados.length} assessorias com sucesso!`);
   };

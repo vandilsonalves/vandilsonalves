@@ -1,0 +1,78 @@
+{
+  "summary": "Iteration 96: Validated export functionality with token via query parameter (?token=...) for window.open() downloads. All 15 backend tests PASSED. All frontend export buttons verified via Playwright. Scraping is now MANUAL (not auto-cadastrar).",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": []
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter96_export_token_query.py",
+    "/app/test_reports/pytest/pytest_iter96_export_token_query.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "auth_routes.py get_current_user - VERIFIED: Uses HTTPBearer(auto_error=False) and falls back to query param token",
+    "downloadHelper.js downloadFile() - VERIFIED: Uses window.open(url?token=...) instead of Blob/createObjectURL",
+    "downloadHelper.js downloadCSVContent() - VERIFIED: Uses form submit with token in query param",
+    "DashboardFinanceiro.jsx - VERIFIED: Uses downloadFile() for PDF/Excel exports",
+    "DashboardCorridas.jsx - VERIFIED: Shows 'Busca e Varredura Manual de Corridas' (not 'automático')",
+    "scraping_routes.py buscar - VERIFIED: Does NOT auto-cadastrar (cadastradas=0)",
+    "All export endpoints accept token via query param and return correct Content-Disposition headers"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter96_export_token_query.py"
+  ],
+  "success_rate": {
+    "backend": "100% (15/15 tests passed)",
+    "frontend": "100% (All export buttons and scraping manual mode verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "atleta": "teste.dono@teste.com / 123456 (may not exist)"
+  },
+  "seed_data_creation": "None - used existing data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 96 verified the new authentication mechanism that accepts token via query parameter (?token=...). This allows window.open() to work for downloads instead of Blob/createObjectURL (which is blocked in iframes). The downloadFile() helper in downloadHelper.js now uses window.open(url?token=...). The scraping system is now MANUAL - /scraping/buscar does NOT auto-cadastrar (cadastradas=0), and /scraping/atualizar-todas returns Excel for download. All export endpoints (ranking CSV/Excel, financeiro PDF/Excel, atletas export, corridas CSV/Excel, template) work with token via query param.",
+  "features_verified": {
+    "Admin Login": "VERIFIED - admin@runpro.com / admin returns token",
+    "Auth Bearer Header": "VERIFIED - Still works for backward compatibility",
+    "Auth Query Param Token": "VERIFIED - All export endpoints accept ?token=...",
+    "Invalid Token 401": "VERIFIED - Returns 401 for invalid tokens",
+    "Ranking Export CSV": "VERIFIED - GET /api/ranking/export/csv?todas_modalidades=true&token=TOKEN",
+    "Ranking Export Excel": "VERIFIED - GET /api/ranking/export/excel?todas_modalidades=true&token=TOKEN",
+    "Financeiro Export Excel": "VERIFIED - GET /api/admin/financeiro/exportar/excel?token=TOKEN",
+    "Financeiro Export PDF": "VERIFIED - GET /api/admin/financeiro/exportar/pdf?token=TOKEN",
+    "Atletas Export": "VERIFIED - GET /api/admin/atletas/export?token=TOKEN",
+    "Corridas Export CSV": "VERIFIED - GET /api/corridas-eventos/exportar/csv?token=TOKEN",
+    "Corridas Export Excel": "VERIFIED - GET /api/corridas-eventos/exportar/excel?token=TOKEN",
+    "Corridas Template Excel": "VERIFIED - GET /api/corridas-eventos/template?formato=excel&token=TOKEN",
+    "Download CSV Endpoint": "VERIFIED - POST /api/admin/download-csv?token=TOKEN&filename=teste.csv",
+    "Scraping Manual Mode": "VERIFIED - /scraping/buscar does NOT auto-cadastrar (cadastradas=0)",
+    "Scraping Status": "VERIFIED - GET /api/scraping/status returns fontes ativas count",
+    "Frontend Financeiro Export": "VERIFIED - Exportar Dados button with PDF/Excel dropdown",
+    "Frontend Corridas Manual Text": "VERIFIED - Shows 'Busca e Varredura Manual de Corridas'",
+    "Frontend Atletas Export": "VERIFIED - Exportar Dados button visible",
+    "Frontend Exportar Ranking": "VERIFIED - Exportar CSV and Exportar Excel buttons"
+  },
+  "api_endpoints_tested": {
+    "POST /api/auth/login (admin)": "200 OK - Returns token",
+    "GET /api/auth/me (Bearer)": "200 OK - Backward compatible",
+    "GET /api/admin/financeiro/exportar/excel?token=INVALID": "401 Unauthorized",
+    "GET /api/ranking/export/csv?todas_modalidades=true&token=TOKEN": "200 OK - CSV content",
+    "GET /api/ranking/export/excel?todas_modalidades=true&token=TOKEN": "200 OK - Excel content",
+    "GET /api/admin/financeiro/exportar/excel?token=TOKEN": "200 OK - Excel content",
+    "GET /api/admin/financeiro/exportar/pdf?token=TOKEN": "200 OK - PDF content",
+    "GET /api/admin/atletas/export?token=TOKEN": "200 OK - Excel content",
+    "GET /api/corridas-eventos/exportar/csv?token=TOKEN": "200 OK - CSV content",
+    "GET /api/corridas-eventos/exportar/excel?token=TOKEN": "200 OK - Excel content",
+    "GET /api/corridas-eventos/template?formato=excel&token=TOKEN": "200 OK - Excel template",
+    "POST /api/admin/download-csv?token=TOKEN&filename=teste.csv": "200 OK - CSV download",
+    "POST /api/scraping/buscar": "200 OK - cadastradas=0 (manual mode)",
+    "GET /api/scraping/status": "200 OK - Returns fontes ativas"
+  }
+}

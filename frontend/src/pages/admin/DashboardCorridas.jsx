@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
-import { triggerDownload } from '@/utils/downloadHelper';
+import { downloadFile, downloadCSVContent } from '@/utils/downloadHelper';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -170,7 +170,7 @@ const DashboardCorridas = ({
       const response = await axios.post(`${API}/scraping/buscar`, {
         url: scrapingUrl,
         usar_playwright: false,
-        cadastrar_automaticamente: true
+        cadastrar_automaticamente: false
       }, {
         headers: { Authorization: `Bearer ${token}` },
         timeout: 120000
@@ -180,8 +180,7 @@ const DashboardCorridas = ({
         const novas = response.data.novas || 0;
         const dups = response.data.duplicatas || 0;
         if (novas > 0) {
-          toast.success(`${novas} corridas novas cadastradas! (${dups} duplicatas ignoradas)`);
-          if (onRefresh) onRefresh();
+          toast.success(`${novas} corridas novas encontradas! (${dups} duplicatas). Exporte o Excel e importe via "Importar Dados".`);
         } else {
           toast.info(`${response.data.total_encontradas} corridas encontradas, mas todas já existem no banco.`);
         }
@@ -228,15 +227,9 @@ const DashboardCorridas = ({
   const handleAtualizarTodas = async () => {
     setLoadingAtualizarTodas(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.post(`${API}/scraping/atualizar-todas`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-        timeout: 300000
-      });
-      const data = res.data;
-      toast.success(`Varredura completa: ${data.total_novas} novas corridas de ${data.total_fontes} fontes`);
+      downloadFile('/api/scraping/atualizar-todas');
+      toast.success('Varredura iniciada! O arquivo Excel será baixado automaticamente.');
       fetchFontes();
-      if (data.total_novas > 0 && onRefresh) onRefresh();
     } catch (e) {
       toast.error('Erro na atualização geral');
     } finally {
@@ -246,24 +239,29 @@ const DashboardCorridas = ({
 
   const handleExportarScraping = async (formato) => {
     try {
-      const token = localStorage.getItem('token');
-      const formData = new FormData();
-      formData.append('url', scrapingUrl);
-      formData.append('formato', formato);
-
-      const response = await axios.post(`${API}/corridas-eventos/scraping/exportar`, formData, {
-        headers: { 
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data'
-        },
-        responseType: 'blob'
-      });
-
-      // Criar download
-      const blob = new Blob([response.data]);
-      triggerDownload(blob, formato === 'excel' ? 'corridas_scraping.xlsx' : 'corridas_scraping.csv');
-
-      toast.success(`Arquivo ${formato.toUpperCase()} baixado com sucesso!`);
+      // Usar os dados já em memória do scraping
+      const corridas = scrapingResultado?.corridas_novas || scrapingResultado?.corridas || [];
+      if (corridas.length === 0) {
+        toast.error('Nenhuma corrida para exportar');
+        return;
+      }
+      
+      // Gerar CSV no frontend e enviar para download via backend
+      const header = ['Nome da Corrida', 'Organizador', 'Cidade', 'Estado', 'Link da Página', 'Data do Evento', 'Status'];
+      const rows = corridas.map(c => [
+        c.nome_corrida || '',
+        c.organizador || '',
+        c.cidade || '',
+        c.estado || '',
+        c.pagina_link || '',
+        c.data_corrida || '',
+        c.status || 'ativa'
+      ].join(';'));
+      
+      const csvContent = '\ufeff' + [header.join(';'), ...rows].join('\n');
+      downloadCSVContent(csvContent, formato === 'excel' ? 'corridas_scraping.csv' : 'corridas_scraping.csv');
+      
+      toast.success(`Arquivo exportado com sucesso!`);
     } catch (error) {
       console.error('Erro ao exportar:', error);
       toast.error('Erro ao exportar arquivo');
@@ -308,13 +306,7 @@ const DashboardCorridas = ({
 
   const handleDownloadTemplate = async (formato) => {
     try {
-      const response = await axios.get(`${API}/corridas-eventos/template?formato=${formato}`, {
-        responseType: 'blob'
-      });
-
-      const blob = new Blob([response.data]);
-      triggerDownload(blob, formato === 'excel' ? 'template_corridas.xlsx' : 'template_corridas.csv');
-
+      downloadFile(`/api/corridas-eventos/template`, { formato });
       toast.success('Template baixado!');
     } catch (error) {
       console.error('Erro ao baixar template:', error);
@@ -482,71 +474,15 @@ const DashboardCorridas = ({
   // ==================== EXPORTAÇÃO DE DADOS ====================
 
   const exportarDados = (tipoExport) => {
-    let dadosParaExportar = [];
-    let nomeArquivo = '';
-
-    if (tipoExport === 'estado') {
-      // Agrupar por estado
-      const porEstado = {};
-      corridasFiltradas.forEach(c => {
-        const estado = c.estado || 'N/A';
-        if (!porEstado[estado]) porEstado[estado] = [];
-        porEstado[estado].push(c);
-      });
-
-      // Criar CSV com dados por estado
-      const header = ['Estado', 'Nome da Corrida', 'Organizador', 'Cidade', 'Data', 'Status', 'Avaliações', 'Média'];
-      dadosParaExportar = [header.join(';')];
-
-      Object.keys(porEstado).sort().forEach(estado => {
-        porEstado[estado].forEach(c => {
-          dadosParaExportar.push([
-            estado,
-            c.nome_corrida || '',
-            c.organizador || '',
-            c.cidade || '',
-            c.data_corrida || '',
-            c.status || '',
-            c.total_avaliacoes || 0,
-            c.media_nota?.toFixed(1) || '0.0'
-          ].join(';'));
-        });
-      });
-
-      nomeArquivo = `corridas_por_estado_${new Date().toISOString().slice(0,10)}.csv`;
-    } else if (tipoExport === 'data') {
-      // Ordenar por data
-      const ordenadoPorData = [...corridasFiltradas].sort((a, b) => {
-        const dataA = new Date(a.data_corrida || '1900-01-01');
-        const dataB = new Date(b.data_corrida || '1900-01-01');
-        return dataA - dataB;
-      });
-
-      const header = ['Data', 'Nome da Corrida', 'Organizador', 'Cidade', 'Estado', 'Status', 'Avaliações', 'Média'];
-      dadosParaExportar = [header.join(';')];
-
-      ordenadoPorData.forEach(c => {
-        dadosParaExportar.push([
-          c.data_corrida || 'Sem data',
-          c.nome_corrida || '',
-          c.organizador || '',
-          c.cidade || '',
-          c.estado || '',
-          c.status || '',
-          c.total_avaliacoes || 0,
-          c.media_nota?.toFixed(1) || '0.0'
-        ].join(';'));
-      });
-
-      nomeArquivo = `corridas_por_data_${new Date().toISOString().slice(0,10)}.csv`;
-    }
-
-    // Criar e baixar arquivo
-    const csvContent = '\ufeff' + dadosParaExportar.join('\n'); // BOM para UTF-8
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    triggerDownload(blob, nomeArquivo);
-
-    toast.success(`Exportado ${corridasFiltradas.length} corridas com sucesso!`);
+    // Usar o novo endpoint backend com filtros
+    const params = {};
+    if (filtroEstado) params.estado = filtroEstado;
+    if (filtroCidade) params.cidade = filtroCidade;
+    if (filtroStatus) params.status_corrida = filtroStatus;
+    params.ordenar_por = tipoExport === 'estado' ? 'estado' : 'data';
+    
+    downloadFile('/api/corridas-eventos/exportar/csv', params);
+    toast.success(`Exportando ${corridasFiltradas.length} corridas...`);
   };
 
   // Dados para gráficos do relatório
@@ -872,7 +808,7 @@ const DashboardCorridas = ({
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Globe className="w-5 h-5 text-purple-600" />
-                <span className="font-semibold text-purple-700 dark:text-purple-300">Busca e Varredura Avançada de Corridas</span>
+                <span className="font-semibold text-purple-700 dark:text-purple-300">Busca e Varredura Manual de Corridas</span>
               </div>
               <div className="flex gap-2">
                 <Button
@@ -894,7 +830,7 @@ const DashboardCorridas = ({
                   data-testid="btn-atualizar-todas"
                 >
                   {loadingAtualizarTodas ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
-                  Atualizar Todas
+                  Atualizar e Baixar Excel
                 </Button>
               </div>
             </div>
@@ -940,7 +876,7 @@ const DashboardCorridas = ({
                 <div className="flex items-center justify-between mb-2">
                   <span className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-1">
                     <Clock className="w-4 h-4" />
-                    Fontes Monitoradas (atualização a cada 12h)
+                    Fontes Salvas
                   </span>
                 </div>
                 {fontesMonitoradas.length === 0 ? (
@@ -998,11 +934,11 @@ const DashboardCorridas = ({
                       <div className="flex items-center gap-3 mt-1">
                         <span className="text-xs flex items-center gap-1 text-green-600">
                           <ShieldCheck className="w-3 h-3" />
-                          {scrapingResultado.novas || 0} novas cadastradas
+                          {scrapingResultado.novas || 0} novas
                         </span>
                         <span className="text-xs flex items-center gap-1 text-orange-500">
                           <AlertOctagon className="w-3 h-3" />
-                          {scrapingResultado.duplicatas || 0} duplicatas ignoradas
+                          {scrapingResultado.duplicatas || 0} já existentes
                         </span>
                       </div>
                     )}
@@ -1090,7 +1026,7 @@ const DashboardCorridas = ({
             
             <p className="text-xs text-purple-600 dark:text-purple-400 mt-2">
               <AlertCircle className="w-3 h-3 inline mr-1" />
-              Detecção automática: Sites com JavaScript (Sympla, Ticket Sports, etc.) usam Playwright. Anti-duplicidade ativa. Monitoramento a cada 12h.
+              Varredura manual: busque corridas, exporte o Excel e importe via "Importar Dados". Anti-duplicidade ativa.
             </p>
           </div>
         </CardHeader>

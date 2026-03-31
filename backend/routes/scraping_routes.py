@@ -122,12 +122,11 @@ async def buscar_corridas_url(req: BuscarCorridasRequest, admin: dict = Depends(
     Busca corridas em uma URL usando scraping inteligente.
     - Auto-detecta se precisa de Playwright
     - Verifica duplicatas contra o banco
-    - Cadastra automaticamente as novas
+    - NÃO cadastra automaticamente (manual via Importar Dados)
     """
     resultado = fazer_scraping(req.url, usar_playwright=req.usar_playwright)
 
     if not resultado["success"] or resultado["total_encontradas"] == 0:
-        # Log
         await db.logs_sistema.insert_one({
             "id": str(uuid4()),
             "tipo": "scraping_busca",
@@ -145,11 +144,6 @@ async def buscar_corridas_url(req: BuscarCorridasRequest, admin: dict = Depends(
     novas = check["novas"]
     duplicatas = check["duplicatas"]
 
-    # Cadastrar automaticamente
-    cadastradas = 0
-    if req.cadastrar_automaticamente and novas:
-        cadastradas = await cadastrar_corridas_novas(novas, admin["id"], req.url)
-
     # Log
     await db.logs_sistema.insert_one({
         "id": str(uuid4()),
@@ -159,7 +153,7 @@ async def buscar_corridas_url(req: BuscarCorridasRequest, admin: dict = Depends(
         "corridas_encontradas": resultado["total_encontradas"],
         "novas": len(novas),
         "duplicatas": len(duplicatas),
-        "cadastradas": cadastradas,
+        "cadastradas": 0,
         "metodo": resultado.get("metodo", ""),
         "sucesso": True,
         "data": datetime.now(timezone.utc).isoformat()
@@ -169,7 +163,7 @@ async def buscar_corridas_url(req: BuscarCorridasRequest, admin: dict = Depends(
         **resultado,
         "novas": len(novas),
         "duplicatas": len(duplicatas),
-        "cadastradas": cadastradas,
+        "cadastradas": 0,
         "corridas_novas": [
             {k: v for k, v in c.items() if k != "_duplicata"} for c in novas
         ],
@@ -220,16 +214,22 @@ async def remover_fonte(fonte_id: str, admin: dict = Depends(get_admin_user)):
     return {"mensagem": "Fonte removida"}
 
 
-@router.post("/scraping/atualizar-todas")
+@router.get("/scraping/atualizar-todas")
 async def atualizar_todas_fontes(admin: dict = Depends(get_admin_user)):
-    """Executa varredura em todas as fontes ativas"""
+    """
+    Executa varredura em todas as fontes ativas e retorna Excel para download.
+    NÃO cadastra automaticamente - o admin baixa o Excel e importa manualmente.
+    """
+    import io
+    import openpyxl
+    from fastapi.responses import StreamingResponse
+
     fontes = await db.scraping_fontes.find({"ativa": True}, {"_id": 0}).to_list(None)
 
     if not fontes:
-        return {"mensagem": "Nenhuma fonte ativa cadastrada", "total_fontes": 0}
+        raise HTTPException(status_code=400, detail="Nenhuma fonte ativa cadastrada")
 
-    resultados = []
-    total_novas = 0
+    todas_corridas = []
     total_duplicatas = 0
 
     for fonte in fontes:
@@ -238,46 +238,59 @@ async def atualizar_todas_fontes(admin: dict = Depends(get_admin_user)):
             if resultado["success"] and resultado["total_encontradas"] > 0:
                 check = await verificar_duplicatas(resultado["corridas"])
                 novas = check["novas"]
-                cadastradas = await cadastrar_corridas_novas(novas, admin["id"], fonte["url"])
-                total_novas += cadastradas
                 total_duplicatas += len(check["duplicatas"])
 
-                # Atualizar fonte
+                for c in novas:
+                    c["_fonte"] = fonte.get("nome", fonte["url"])
+                    todas_corridas.append(c)
+
                 await db.scraping_fontes.update_one(
                     {"id": fonte["id"]},
                     {"$set": {
                         "ultima_varredura": datetime.now(timezone.utc).isoformat(),
                         "total_corridas_encontradas": resultado["total_encontradas"],
-                        "total_novas_ultima": cadastradas,
+                        "total_novas_ultima": len(novas),
                     }}
                 )
-                resultados.append({
-                    "fonte": fonte["nome"],
-                    "url": fonte["url"],
-                    "encontradas": resultado["total_encontradas"],
-                    "novas": cadastradas,
-                    "duplicatas": len(check["duplicatas"]),
-                    "metodo": resultado.get("metodo", ""),
-                })
-            else:
-                resultados.append({
-                    "fonte": fonte["nome"],
-                    "url": fonte["url"],
-                    "encontradas": 0,
-                    "novas": 0,
-                    "duplicatas": 0,
-                    "erro": resultado.get("mensagem", ""),
-                })
         except Exception as e:
             logger.error(f"Erro ao atualizar fonte {fonte['url']}: {e}")
-            resultados.append({
-                "fonte": fonte["nome"],
-                "url": fonte["url"],
-                "encontradas": 0,
-                "novas": 0,
-                "duplicatas": 0,
-                "erro": str(e),
-            })
+
+    if not todas_corridas:
+        raise HTTPException(status_code=400, detail=f"Nenhuma corrida nova encontrada nas {len(fontes)} fontes ({total_duplicatas} duplicatas ignoradas)")
+
+    # Gerar Excel
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Corridas Encontradas"
+
+    headers = ["Nome da Corrida", "Organizador", "Cidade", "Estado", "Link da Página", "Data do Evento", "Status"]
+    ws.append(headers)
+
+    for c in todas_corridas:
+        ws.append([
+            c.get("nome_corrida", ""),
+            c.get("organizador", ""),
+            c.get("cidade", ""),
+            c.get("estado", ""),
+            c.get("pagina_link", ""),
+            c.get("data_corrida", ""),
+            c.get("status", "ativa"),
+        ])
+
+    for col in ws.columns:
+        max_length = 0
+        column = col[0].column_letter
+        for cell in col:
+            try:
+                if len(str(cell.value)) > max_length:
+                    max_length = len(str(cell.value))
+            except Exception:
+                pass
+        ws.column_dimensions[column].width = min(max_length + 2, 50)
+
+    output = io.BytesIO()
+    wb.save(output)
+    output.seek(0)
 
     # Log
     await db.logs_sistema.insert_one({
@@ -285,18 +298,16 @@ async def atualizar_todas_fontes(admin: dict = Depends(get_admin_user)):
         "tipo": "scraping_atualizacao_geral",
         "admin_id": admin["id"],
         "total_fontes": len(fontes),
-        "total_novas": total_novas,
+        "total_novas": len(todas_corridas),
         "total_duplicatas": total_duplicatas,
         "data": datetime.now(timezone.utc).isoformat()
     })
 
-    return {
-        "mensagem": f"Varredura completa: {total_novas} novas corridas cadastradas",
-        "total_fontes": len(fontes),
-        "total_novas": total_novas,
-        "total_duplicatas": total_duplicatas,
-        "resultados": resultados,
-    }
+    return StreamingResponse(
+        output,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=corridas_varredura_{datetime.now().strftime('%Y%m%d_%H%M')}.xlsx"}
+    )
 
 
 @router.get("/scraping/status")

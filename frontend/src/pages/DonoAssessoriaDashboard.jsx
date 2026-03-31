@@ -21,7 +21,7 @@ import {
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart as RechartsPieChart, Pie, Cell, Legend, RadarChart, PolarGrid, PolarAngleAxis, Radar } from 'recharts';
 import { useAuth } from '@/context/AuthContext';
 import { toast } from 'sonner';
-import { triggerDownload } from '@/utils/downloadHelper';
+import { downloadFile, downloadCSVContent } from '@/utils/downloadHelper';
 import html2canvas from 'html2canvas';
 import RelatoriosAssessoria from '@/components/RelatoriosAssessoria';
 
@@ -211,35 +211,7 @@ const DonoAssessoriaDashboard = () => {
   // Funções de exportação de dados
   const handleExportarDados = async (formato) => {
     try {
-      const response = await axios.get(
-        `${API}/liga-assessorias/exportar-dados/${encodeURIComponent(user.equipe)}?formato=${formato}`,
-        { 
-          headers: { Authorization: `Bearer ${token}` },
-          responseType: 'blob'
-        }
-      );
-      
-      // Determinar o tipo MIME correto para cada formato
-      const mimeTypes = {
-        csv: 'text/csv',
-        json: 'application/json',
-        xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        pdf: 'application/pdf'
-      };
-      
-      // Determinar a extensão do arquivo
-      const extensoes = {
-        csv: 'csv',
-        json: 'json',
-        xlsx: 'xlsx',
-        pdf: 'pdf'
-      };
-      
-      const blob = new Blob([response.data], { 
-        type: mimeTypes[formato] || 'application/octet-stream'
-      });
-      triggerDownload(blob, `${formato === 'pdf' ? 'relatorio' : 'assessoria'}_${user.equipe?.replace(/\s+/g, '_')}.${extensoes[formato] || formato}`);
-      
+      downloadFile(`/api/liga-assessorias/exportar-dados/${encodeURIComponent(user.equipe)}`, { formato });
       const nomeFormato = formato === 'xlsx' ? 'Excel' : formato.toUpperCase();
       toast.success(`Dados exportados em ${nomeFormato} com sucesso!`);
     } catch (error) {
@@ -250,16 +222,7 @@ const DonoAssessoriaDashboard = () => {
 
   const handleExportarGraficos = async () => {
     try {
-      const response = await axios.get(
-        `${API}/liga-assessorias/exportar-graficos/${encodeURIComponent(user.equipe)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      
-      const blob = new Blob([JSON.stringify(response.data, null, 2)], { 
-        type: 'application/json'
-      });
-      triggerDownload(blob, `graficos_${user.equipe?.replace(/\s+/g, '_')}.json`);
-      
+      downloadFile(`/api/liga-assessorias/exportar-graficos/${encodeURIComponent(user.equipe)}`);
       toast.success('Dados dos gráficos exportados com sucesso!');
     } catch (error) {
       console.error('Erro ao exportar gráficos:', error);
@@ -441,13 +404,10 @@ const DonoAssessoriaDashboard = () => {
   };
 
   const exportarAtletas = () => {
-    // Criar CSV dos atletas
     const headers = ['Nome', 'Categoria', 'Gênero', 'Pontos'];
     const rows = atletas.map(a => [a.nome, a.categoria || '', a.genero || '', a.pontos || 0]);
-    
-    const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    const blob = new Blob([csv], { type: 'text/csv' });
-    triggerDownload(blob, `atletas_${user.equipe.replace(/\s+/g, '_')}.csv`);
+    const csvContent = '\ufeff' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+    downloadCSVContent(csvContent, `atletas_${user.equipe.replace(/\s+/g, '_')}.csv`);
     toast.success('Lista de atletas exportada!');
   };
 

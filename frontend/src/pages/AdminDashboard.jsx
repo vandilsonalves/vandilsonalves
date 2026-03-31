@@ -21,7 +21,7 @@ import {
 import { toast } from 'sonner';
 import axios from 'axios';
 
-import { triggerDownload } from '@/utils/downloadHelper';
+import { downloadFile, downloadCSVContent } from '@/utils/downloadHelper';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -710,21 +710,7 @@ const AdminDashboard = () => {
       if (filtroModalidade !== 'all') params.modalidade = filtroModalidade;
       if (filtroEquipe !== 'all') params.equipe = filtroEquipe;
       
-      const response = await axios.get(`${API}/admin/atletas/export`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params,
-        responseType: 'blob'
-      });
-      
-      const filtros = [];
-      if (filtroModalidade !== 'all') filtros.push(filtroModalidade);
-      if (filtroEquipe !== 'all') filtros.push(filtroEquipe);
-      const nomeArquivo = `atletas_${filtros.length ? filtros.join('_') : 'todos'}.xlsx`;
-      
-      const blob = new Blob([response.data], { 
-        type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-      });
-      triggerDownload(blob, nomeArquivo);
+      downloadFile('/api/admin/atletas/export', params);
       toast.success('Download iniciado!');
     } catch (error) {
       toast.error('Erro ao exportar dados');
@@ -733,17 +719,7 @@ const AdminDashboard = () => {
 
   const handleExportRanking = async (format) => {
     try {
-      const response = await axios.get(`${API}/ranking/export/${format}`, {
-        headers: { Authorization: `Bearer ${token}` },
-        params: { todas_modalidades: true },
-        responseType: 'blob'
-      });
-      
-      const mimeType = format === 'excel' 
-        ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' 
-        : 'text/csv';
-      const blob = new Blob([response.data], { type: mimeType });
-      triggerDownload(blob, `ranking_todas_modalidades.${format === 'excel' ? 'xlsx' : 'csv'}`);
+      downloadFile(`/api/ranking/export/${format}`, { todas_modalidades: true });
       toast.success('Download iniciado!');
     } catch (error) {
       toast.error('Erro ao exportar ranking');

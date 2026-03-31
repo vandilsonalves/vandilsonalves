@@ -127,6 +127,103 @@ async def download_template(formato: str = "csv"):
         )
 
 
+@router.get("/corridas-eventos/exportar/{formato}")
+async def exportar_corridas_eventos(
+    formato: str,
+    estado: str = None,
+    cidade: str = None,
+    status_corrida: str = None,
+    ordenar_por: str = "data",
+    admin: dict = Depends(get_admin_user)
+):
+    """
+    Exporta corridas filtradas como Excel ou CSV para download direto.
+    Suporta token via query param para funcionar com window.open.
+    """
+    import openpyxl
+    
+    filtro = {}
+    if estado:
+        filtro["estado"] = estado
+    if cidade:
+        filtro["cidade"] = {"$regex": cidade, "$options": "i"}
+    if status_corrida:
+        filtro["status"] = status_corrida
+    
+    sort_field = "data_corrida" if ordenar_por == "data" else "estado"
+    corridas = await db.corridas_eventos.find(filtro, {"_id": 0}).sort(sort_field, 1).to_list(None)
+    
+    if not corridas:
+        raise HTTPException(status_code=400, detail="Nenhuma corrida encontrada com os filtros aplicados")
+    
+    headers_list = ["Nome da Corrida", "Organizador", "Cidade", "Estado", "Data", "Status", "Avaliações", "Média"]
+    
+    if formato == "excel":
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "Corridas"
+        ws.append(headers_list)
+        
+        for c in corridas:
+            ws.append([
+                c.get("nome_corrida", ""),
+                c.get("organizador", ""),
+                c.get("cidade", ""),
+                c.get("estado", ""),
+                c.get("data_corrida", ""),
+                c.get("status", ""),
+                c.get("total_avaliacoes", 0),
+                round(c.get("media_geral", 0), 1)
+            ])
+        
+        for col in ws.columns:
+            max_length = 0
+            column = col[0].column_letter
+            for cell in col:
+                try:
+                    if len(str(cell.value)) > max_length:
+                        max_length = len(str(cell.value))
+                except Exception:
+                    pass
+            ws.column_dimensions[column].width = min(max_length + 2, 50)
+        
+        output = io.BytesIO()
+        wb.save(output)
+        output.seek(0)
+        
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f"attachment; filename=corridas_{ordenar_por}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.xlsx"}
+        )
+    else:
+        output = io.StringIO()
+        writer = csv.writer(output, delimiter=';')
+        writer.writerow(headers_list)
+        
+        for c in corridas:
+            writer.writerow([
+                c.get("nome_corrida", ""),
+                c.get("organizador", ""),
+                c.get("cidade", ""),
+                c.get("estado", ""),
+                c.get("data_corrida", ""),
+                c.get("status", ""),
+                c.get("total_avaliacoes", 0),
+                round(c.get("media_geral", 0), 1)
+            ])
+        
+        output.seek(0)
+        csv_bytes = ('\ufeff' + output.getvalue()).encode('utf-8')
+        
+        return StreamingResponse(
+            io.BytesIO(csv_bytes),
+            media_type="text/csv; charset=utf-8",
+            headers={"Content-Disposition": f"attachment; filename=corridas_{ordenar_por}_{datetime.now(timezone.utc).strftime('%Y%m%d')}.csv"}
+        )
+
+
+
 @router.get("/corridas-eventos/{corrida_id}")
 async def get_corrida_evento(corrida_id: str):
     """Retorna detalhes de uma corrida específica"""
