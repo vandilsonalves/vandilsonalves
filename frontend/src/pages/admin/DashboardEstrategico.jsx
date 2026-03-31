@@ -85,138 +85,115 @@ const RankingList = ({ data, valueKey, labelKey, icon: Icon }) => (
   </div>
 );
 
-// Mapa Coroplético do Brasil com legenda
+// Mapa Coroplético do Brasil com legenda (CSS Grid)
 const BrazilMap = ({ data }) => {
   const [hoveredState, setHoveredState] = useState(null);
-  
-  // Cores fortes para legenda
-  const colorScale = ['#1a1a2e', '#16213e', '#0f3460', '#1a6b4a', '#2d8f4e', '#4caf50', '#8bc34a', '#ffeb3b', '#ff9800', '#f44336'];
-  
+
   const getColor = (count, maxCount) => {
-    if (!count || count === 0) return '#374151';
+    if (!count || count === 0) return '#1e3a5f';
     const ratio = count / maxCount;
-    const idx = Math.min(Math.floor(ratio * (colorScale.length - 1)), colorScale.length - 1);
-    return colorScale[idx];
+    if (ratio < 0.2) return '#065f46';
+    if (ratio < 0.4) return '#059669';
+    if (ratio < 0.6) return '#10b981';
+    if (ratio < 0.8) return '#34d399';
+    return '#6ee7b7';
   };
 
   const maxCount = Math.max(...data.map(d => d.count || 0), 1);
   const stateData = {};
   data.forEach(d => { stateData[d.estado] = d.count; });
 
-  // Posições dos estados para labels
-  const labelPos = {
-    'AC': [68, 245], 'AL': [530, 285], 'AP': [315, 75], 'AM': [165, 155],
-    'BA': [490, 300], 'CE': [520, 215], 'DF': [395, 330], 'ES': [500, 370],
-    'GO': [380, 340], 'MA': [430, 185], 'MT': [280, 290], 'MS': [310, 395],
-    'MG': [440, 360], 'PA': [330, 150], 'PB': [550, 245], 'PR': [365, 440],
-    'PE': [540, 260], 'PI': [465, 225], 'RJ': [470, 400], 'RN': [545, 225],
-    'RS': [345, 500], 'RO': [170, 260], 'RR': [195, 65], 'SC': [375, 470],
-    'SP': [395, 400], 'SE': [530, 275], 'TO': [385, 255]
-  };
+  // Layout do mapa como grid 8x7
+  const layout = [
+    [null, null, 'RR', 'AP', null, null, null],
+    ['AM', 'AM', 'PA', 'PA', 'MA', null, null],
+    ['AC', 'RO', 'MT', 'TO', 'PI', 'CE', 'RN'],
+    [null, null, 'MS', 'GO', 'BA', 'PE', 'PB'],
+    [null, null, null, 'DF', 'MG', 'AL', 'SE'],
+    [null, null, null, 'SP', 'RJ', 'ES', null],
+    [null, null, null, 'PR', 'SC', null, null],
+    [null, null, null, 'RS', null, null, null],
+  ];
 
-  // SVG paths simplificados dos estados do Brasil
-  const statePaths = {
-    'AM': 'M50,80 L280,80 L300,120 L290,180 L240,200 L190,210 L120,200 L70,210 L40,180 L30,140 Z',
-    'PA': 'M280,80 L420,80 L440,120 L420,180 L380,190 L340,200 L300,190 L290,180 L300,120 Z',
-    'MA': 'M420,120 L480,120 L490,150 L480,200 L440,210 L400,200 L380,190 L420,180 Z',
-    'PI': 'M440,210 L480,200 L500,220 L490,260 L460,270 L440,250 Z',
-    'CE': 'M490,150 L540,160 L560,200 L540,230 L500,220 L480,200 L490,150 Z',
-    'RN': 'M540,200 L580,200 L580,240 L550,245 L540,230 Z',
-    'PB': 'M540,230 L580,240 L575,260 L540,265 L530,250 Z',
-    'PE': 'M500,250 L575,260 L570,280 L520,290 L490,280 Z',
-    'AL': 'M520,290 L555,285 L545,305 L520,305 Z',
-    'SE': 'M520,305 L545,305 L540,320 L520,315 Z',
-    'BA': 'M440,250 L520,290 L530,320 L530,370 L500,380 L460,370 L430,340 L420,300 Z',
-    'MG': 'M380,310 L460,370 L500,380 L510,400 L470,420 L410,420 L370,400 L350,370 Z',
-    'ES': 'M500,380 L530,370 L535,400 L510,415 L500,400 Z',
-    'RJ': 'M460,400 L510,415 L500,430 L460,430 Z',
-    'SP': 'M350,370 L410,420 L420,450 L380,460 L340,440 L330,410 Z',
-    'PR': 'M330,410 L380,460 L380,480 L330,490 L300,475 Z',
-    'SC': 'M330,490 L380,480 L390,510 L340,520 Z',
-    'RS': 'M300,500 L370,510 L380,530 L350,560 L300,560 L280,530 Z',
-    'MS': 'M250,340 L330,410 L340,440 L310,460 L260,440 L240,400 Z',
-    'GO': 'M330,270 L380,310 L370,370 L350,370 L330,340 L310,310 Z',
-    'TO': 'M340,200 L400,200 L420,250 L380,270 L340,270 L330,240 Z',
-    'MT': 'M140,220 L290,200 L310,270 L290,340 L250,340 L200,350 L160,310 Z',
-    'RO': 'M70,210 L170,200 L180,260 L160,310 L120,300 L70,280 Z',
-    'AC': 'M20,200 L70,210 L70,280 L50,290 L20,270 Z',
-    'RR': 'M140,30 L220,30 L230,80 L190,100 L140,80 Z',
-    'AP': 'M280,30 L350,30 L370,70 L340,100 L290,80 Z',
-    'DF': 'M370,325 L395,325 L395,345 L370,345 Z'
-  };
+  const positions = {};
+  layout.forEach((row, ri) => {
+    row.forEach((uf, ci) => {
+      if (!uf) return;
+      if (positions[uf]) {
+        positions[uf].colSpan = Math.max(positions[uf].colSpan, ci - positions[uf].col + 1);
+        positions[uf].rowSpan = Math.max(positions[uf].rowSpan, ri - positions[uf].row + 1);
+      } else {
+        positions[uf] = { row: ri, col: ci, rowSpan: 1, colSpan: 1 };
+      }
+    });
+  });
 
-  // Calcular faixas para legenda
   const step = Math.ceil(maxCount / 5);
-  const legendItems = [];
-  for (let i = 0; i < 5; i++) {
+  const legendItems = Array.from({ length: 5 }, (_, i) => {
     const min = i * step;
     const max = Math.min((i + 1) * step, maxCount);
-    legendItems.push({
-      color: getColor(min + step / 2, maxCount),
-      label: min === 0 ? '0' : `${min}-${max}`
-    });
-  }
+    return { color: getColor(min + step / 2, maxCount), label: min === 0 ? '0' : `${min}–${max}` };
+  });
 
   return (
-    <div className="relative w-full h-full flex flex-col">
-      <svg viewBox="0 0 600 580" className="w-full flex-1">
-        {Object.entries(statePaths).map(([uf, path]) => {
+    <div className="w-full flex flex-col items-center gap-3">
+      <div style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(7, 1fr)',
+        gridTemplateRows: 'repeat(8, 38px)',
+        gap: '3px',
+        width: '100%',
+        maxWidth: '420px'
+      }}>
+        {Object.entries(positions).map(([uf, pos]) => {
           const count = stateData[uf] || 0;
           const color = getColor(count, maxCount);
           const isHovered = hoveredState === uf;
           return (
-            <g key={uf} 
-               onMouseEnter={() => setHoveredState(uf)} 
-               onMouseLeave={() => setHoveredState(null)}
-               className="cursor-pointer"
+            <div
+              key={uf}
+              data-testid={`mapa-estado-${uf}`}
+              onMouseEnter={() => setHoveredState(uf)}
+              onMouseLeave={() => setHoveredState(null)}
+              style={{
+                gridRow: `${pos.row + 1} / span ${pos.rowSpan}`,
+                gridColumn: `${pos.col + 1} / span ${pos.colSpan}`,
+                backgroundColor: color,
+                border: isHovered ? '2px solid #fbbf24' : '1px solid #374151',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s',
+                transform: isHovered ? 'scale(1.08)' : 'scale(1)',
+                zIndex: isHovered ? 10 : 1,
+                position: 'relative'
+              }}
             >
-              <path 
-                d={path} 
-                fill={color} 
-                stroke={isHovered ? '#fff' : '#1f2937'} 
-                strokeWidth={isHovered ? 2 : 1}
-                opacity={isHovered ? 1 : 0.9}
-              />
-              <text 
-                x={labelPos[uf]?.[0] || 0} 
-                y={labelPos[uf]?.[1] || 0} 
-                textAnchor="middle" 
-                fill="white" 
-                fontSize="10" 
-                fontWeight="bold"
-                style={{ pointerEvents: 'none' }}
-              >
-                {uf}
-              </text>
+              <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700, lineHeight: 1 }}>{uf}</span>
               {count > 0 && (
-                <text 
-                  x={labelPos[uf]?.[0] || 0} 
-                  y={(labelPos[uf]?.[1] || 0) + 12} 
-                  textAnchor="middle" 
-                  fill="#fbbf24" 
-                  fontSize="9" 
-                  fontWeight="bold"
-                  style={{ pointerEvents: 'none' }}
-                >
-                  {count}
-                </text>
+                <span style={{ color: '#fbbf24', fontSize: '10px', fontWeight: 700, lineHeight: 1, marginTop: '2px' }}>{count}</span>
               )}
-            </g>
+              {isHovered && (
+                <div style={{
+                  position: 'absolute', bottom: '105%', left: '50%', transform: 'translateX(-50%)',
+                  background: '#0f172a', border: '1px solid #475569', borderRadius: '6px',
+                  padding: '4px 10px', whiteSpace: 'nowrap', zIndex: 20
+                }}>
+                  <span style={{ color: '#fff', fontSize: '11px', fontWeight: 700 }}>{uf}: </span>
+                  <span style={{ color: '#fbbf24', fontSize: '11px' }}>{count} registros</span>
+                </div>
+              )}
+            </div>
           );
         })}
-        {hoveredState && stateData[hoveredState] !== undefined && (
-          <g>
-            <rect x="10" y="10" width="140" height="35" rx="6" fill="#111827" stroke="#374151" />
-            <text x="80" y="25" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="bold">{hoveredState}</text>
-            <text x="80" y="40" textAnchor="middle" fill="#fbbf24" fontSize="10">{stateData[hoveredState] || 0} registros</text>
-          </g>
-        )}
-      </svg>
-      {/* Legenda */}
-      <div className="flex items-center justify-center gap-2 mt-2 flex-wrap">
+      </div>
+      <div className="flex items-center justify-center gap-3 flex-wrap">
         {legendItems.map((item, i) => (
           <div key={i} className="flex items-center gap-1">
-            <div className="w-4 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
+            <div className="w-4 h-3 rounded-sm border border-gray-600" style={{ backgroundColor: item.color }} />
             <span className="text-[10px] text-gray-400">{item.label}</span>
           </div>
         ))}

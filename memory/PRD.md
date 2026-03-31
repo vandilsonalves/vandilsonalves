@@ -65,6 +65,7 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **AdminSidebar.jsx** (NOVO): 94 linhas — Sidebar de navegação extraída
 - **AdminModals.jsx** (NOVO): 593 linhas — 7 modais extraídos (EditAtleta, AddAtleta, FotoPodio, TransferModalidade, Corrida, PromoverDono, Mensagem)
 - **Fix**: Guard duplo `Array.isArray` no `fetchEquipesStats` para prevenir `atletas.forEach` error
+- **Fix**: Gráficos 8 e 30 do Dashboard Estratégico — mapa coroplético do Brasil reescrito (SVG invisível → CSS Grid visível com cores contrastantes e hover interativo)
 - Testado: Frontend 100% (iteration_97), nenhuma regressão
 
 ### Sessão Sistema de Backup (31/03/2026)
