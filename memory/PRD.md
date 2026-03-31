@@ -67,6 +67,16 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - **Fix**: Guard duplo `Array.isArray` no `fetchEquipesStats` para prevenir `atletas.forEach` error
 - Testado: Frontend 100% (iteration_97), nenhuma regressão
 
+### Sessão Sistema de Backup (31/03/2026)
+- **Nova aba "Backup"** no painel Admin (Super Admin only, seção Sistema)
+- Backup completo: MongoDB (todas as 50+ collections como JSON) + arquivos de upload (~65MB)
+- Botão "Fazer Backup" para backup manual sob demanda
+- Backup automático agendado via APScheduler: toda **quarta-feira às 02:30h**
+- Histórico de backups com download (.zip) e exclusão
+- Arquivos armazenados no disco (/app/backups/), NÃO no banco de dados
+- Segurança: apenas Super Admin pode acessar (verificação role + tipo_admin)
+- Testado: Backend 11/11 PASSED, Frontend 100% (iteration_98)
+
 ## Backlog Priorizado
 
 ### P2
