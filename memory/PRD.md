@@ -46,38 +46,31 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 
 ### Sessão Fix Downloads + Scraping Manual (31/03/2026)
 - **FIX P0**: Todos os botões de exportação (PDF, CSV, Excel) agora fazem download real
-  - Auth modificada para aceitar token via query parameter (?token=...)
-  - Frontend usa window.open(url?token=...) em vez de Blob/createObjectURL
-  - Funciona corretamente dentro de iframes (ambiente preview)
-  - Todos os componentes atualizados: AdminDashboard, DashboardFinanceiro, DashboardCorridas, PerfilAtletaPage, DonoAssessoriaDashboard, DashboardAssessorias
-- **Scraping agora é MANUAL**: 
-  - Removido job automático a cada 12h do APScheduler
-  - /scraping/buscar NÃO insere corridas no banco (cadastradas=0)
-  - /scraping/atualizar-todas retorna Excel para download manual
-  - Admin baixa o Excel e importa via "Importar Dados"
-  - UI atualizada: "Busca e Varredura Manual de Corridas"
-- **Novo endpoint**: GET /api/corridas-eventos/exportar/{formato} (CSV/Excel com filtros)
-- **Novo endpoint**: POST /api/admin/download-csv (proxy para CSVs gerados no frontend)
-- Testado: Backend 15/15 PASSED, Frontend 100% (iteration_96)
+- **Scraping agora é MANUAL**: Removido job automático, admin baixa Excel manualmente
 
 ### Sessão Componentização AdminDashboard (31/03/2026)
 - **AdminDashboard.jsx**: 1628 → 789 linhas (redução de 52%)
-- **AdminSidebar.jsx** (NOVO): 94 linhas — Sidebar de navegação extraída
-- **AdminModals.jsx** (NOVO): 593 linhas — 7 modais extraídos (EditAtleta, AddAtleta, FotoPodio, TransferModalidade, Corrida, PromoverDono, Mensagem)
-- **Fix**: Guard duplo `Array.isArray` no `fetchEquipesStats` para prevenir `atletas.forEach` error
-- **Fix**: Gráficos 8 e 30 do Dashboard Estratégico — mapa coroplético do Brasil reescrito (SVG invisível → CSS Grid visível com cores contrastantes e hover interativo)
-- Testado: Frontend 100% (iteration_97), nenhuma regressão
+- **AdminSidebar.jsx** e **AdminModals.jsx** (NOVOS)
+- Fix Gráficos 8 e 30, Fix Funil de Conversão
 
 ### Sessão Sistema de Backup (31/03/2026)
-- **Nova aba "Backup"** no painel Admin (Super Admin only, seção Sistema)
-- Backup completo: MongoDB (todas as 50+ collections como JSON) + arquivos de upload (~65MB)
-- Botão "Fazer Backup" para backup manual sob demanda
-- Backup automático agendado via APScheduler: toda **quarta-feira às 02:30h**
-- Histórico de backups com download (.zip) e exclusão
-- Arquivos armazenados no disco (/app/backups/), NÃO no banco de dados
-- Segurança: apenas Super Admin pode acessar (verificação role + tipo_admin)
-- **Retenção automática**: mantém apenas os últimos 4 backups, excluindo os mais antigos automaticamente (disco + banco)
-- Testado: Backend 11/11 PASSED, Frontend 100% (iteration_98)
+- Backup completo MongoDB + uploads com retenção automática de 4 backups
+- APScheduler: toda quarta-feira às 02:30h
+
+### Sessão 5 Features UI/UX (31/03/2026)
+- **Feature 1 - Stories Profile Photo**: Foto de perfil do atleta agora aparece nos Stories do Feed Social
+  - Backend: campo `autor_foto` adicionado ao criar e listar stories (feed_routes.py)
+  - Frontend: `AvatarImage` renderiza a foto no `StoriesBar.jsx` (viewer + barra)
+- **Feature 2 - Botões Enquetes Visíveis**: Botões "Adicionar Opção" (violeta) e "Cancelar" (vermelho) com cores fortes em `EnquetesSection.jsx`
+- **Feature 3 - "SOU DONO DE UMA ASSESSORIA" no Cadastro**: Nova opção no dropdown de Equipe/Assessoria
+  - Ao selecionar, campos de cadastro de assessoria (nome, UF, cidade, foto, bio) aparecem automaticamente
+  - Opção separada de "INDIVIDUAL" para melhor UX
+- **Feature 4 - "Esqueci minha Senha"**: Link no Login + modal de recuperação
+  - Backend: `POST /api/auth/recuperar-senha` gera nova senha aleatória, salva hash, envia em texto plano via Resend
+  - Frontend: Modal com campo de email, feedback visual de sucesso
+- **Feature 5 - Fix Strava**: Removido `require_premium_access` do `/strava/authorize` (agora usa `get_current_user`)
+  - FRONTEND_URL fallback melhorado para ler REACT_APP_BACKEND_URL do env
+- Testado: Backend 100% (5/5), Frontend 100% (iteration_99)
 
 ## Backlog Priorizado
 
@@ -94,8 +87,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 
 ## Integrações
 - Efí Bank (Pagamentos) - PRODUÇÃO REAL
-- Resend (Emails)
-- Strava (Atividades)
+- Resend (Emails) - Usado para recuperação de senha, relatórios, alertas
+- Strava (Atividades) - OAuth2 com callback
 
 ## Notas Importantes
 - NÃO iniciar Redis ou Celery (removidos da arquitetura)
@@ -112,3 +105,9 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - `notificacoes`: Notificações push
 - `corridas_eventos`: Central de corridas e avaliações
 - `scraping_fontes`: URLs monitoradas para varredura manual
+- `stories`: Stories do feed social (inclui `autor_foto` desde 31/03/2026)
+
+## API Endpoints Relevantes (Novos)
+- `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
+- `GET /api/feed/stories` - Retorna `autor_foto` para cada autor
+- `GET /api/strava/authorize` - Usa `get_current_user` (sem premium required)
