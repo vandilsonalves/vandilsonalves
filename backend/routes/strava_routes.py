@@ -9,7 +9,7 @@ import os
 import uuid
 
 from config import db
-from routes.auth_routes import get_current_user, require_premium_access
+from routes.auth_routes import get_current_user, require_premium_access, get_admin_user
 from services.strava_service import (
     get_authorization_url,
     exchange_code_for_token,
@@ -371,3 +371,41 @@ async def strava_disconnect(current_user: dict = Depends(get_current_user)):
     # await db.strava_activities.delete_many({"usuario_id": current_user["id"]})
     
     return {"message": "Strava desconectado com sucesso"}
+
+
+
+@router.delete("/strava/admin/limpar-todos")
+async def strava_limpar_todos(admin_user: dict = Depends(get_admin_user)):
+    """
+    [ADMIN] Remove TODOS os tokens Strava de todos os usuários.
+    Útil para liberar o limite de 100 usuários do Strava API.
+    """
+    # Contar quantos têm Strava conectado
+    total_conectados = await db.usuarios.count_documents({"strava_conectado": True})
+    
+    # Remover campos Strava de TODOS os usuários
+    result = await db.usuarios.update_many(
+        {"strava_conectado": {"$exists": True}},
+        {"$unset": {
+            "strava_conectado": "",
+            "strava_athlete_id": "",
+            "strava_username": "",
+            "strava_firstname": "",
+            "strava_lastname": "",
+            "strava_profile_picture": "",
+            "strava_city": "",
+            "strava_state": "",
+            "strava_country": "",
+            "strava_access_token": "",
+            "strava_refresh_token": "",
+            "strava_token_expires_at": "",
+            "strava_conectado_em": "",
+            "strava_ultima_sincronizacao": ""
+        }}
+    )
+    
+    return {
+        "message": f"Tokens Strava removidos com sucesso",
+        "usuarios_desconectados": total_conectados,
+        "documentos_atualizados": result.modified_count
+    }
