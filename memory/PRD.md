@@ -111,3 +111,4 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
 - `GET /api/feed/stories` - Retorna `autor_foto` para cada autor
 - `GET /api/strava/authorize` - Usa `get_current_user` (sem premium required)
+- WhatsApp recovery: usa link `wa.me/5577998626875` com mensagem pre-preenchida (sem API)
