@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
-import { LogIn, KeyRound, Loader2, CheckCircle2 } from 'lucide-react';
+import { LogIn, KeyRound, Loader2, CheckCircle2, Phone, Mail, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
@@ -21,11 +21,14 @@ const LoginPage = () => {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
-  // Estados do modal de recuperação de senha
+  // Modal de recuperação
   const [showRecuperarModal, setShowRecuperarModal] = useState(false);
+  const [metodoRecuperacao, setMetodoRecuperacao] = useState(null); // 'email' | 'whatsapp' | null
   const [emailRecuperar, setEmailRecuperar] = useState('');
+  const [telefoneRecuperar, setTelefoneRecuperar] = useState('');
   const [recuperarLoading, setRecuperarLoading] = useState(false);
   const [recuperarSucesso, setRecuperarSucesso] = useState(false);
+  const [recuperarMensagem, setRecuperarMensagem] = useState('');
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -34,7 +37,6 @@ const LoginPage = () => {
 
     try {
       const userData = await login(email, password);
-      
       if (userData.role === 'admin') {
         navigate('/admin');
       } else {
@@ -47,27 +49,59 @@ const LoginPage = () => {
     }
   };
 
-  const handleRecuperarSenha = async () => {
+  const handleRecuperarEmail = async () => {
     if (!emailRecuperar || !emailRecuperar.includes('@')) {
       toast.error('Digite um email válido');
       return;
     }
-
     setRecuperarLoading(true);
     try {
-      await axios.post(`${API}/auth/recuperar-senha`, { email: emailRecuperar });
+      const res = await axios.post(`${API}/auth/recuperar-senha`, { email: emailRecuperar });
       setRecuperarSucesso(true);
-    } catch (err) {
-      toast.error('Erro ao processar solicitação. Tente novamente.');
+      setRecuperarMensagem(res.data.message);
+    } catch {
+      toast.error('Erro ao processar. Tente novamente.');
     } finally {
       setRecuperarLoading(false);
     }
   };
 
-  const fecharModalRecuperar = () => {
+  const handleRecuperarWhatsApp = async () => {
+    const nums = telefoneRecuperar.replace(/\D/g, '');
+    if (nums.length < 10) {
+      toast.error('Digite um telefone válido com DDD');
+      return;
+    }
+    setRecuperarLoading(true);
+    try {
+      const res = await axios.post(`${API}/auth/recuperar-senha-whatsapp`, { telefone: telefoneRecuperar });
+      if (res.data.success) {
+        setRecuperarSucesso(true);
+        setRecuperarMensagem(res.data.message);
+      } else {
+        toast.error(res.data.message || 'Erro ao enviar via WhatsApp. Tente por email.');
+      }
+    } catch {
+      toast.error('Erro ao processar. Tente por email.');
+    } finally {
+      setRecuperarLoading(false);
+    }
+  };
+
+  const fecharModal = () => {
     setShowRecuperarModal(false);
+    setMetodoRecuperacao(null);
     setEmailRecuperar('');
+    setTelefoneRecuperar('');
     setRecuperarSucesso(false);
+    setRecuperarMensagem('');
+  };
+
+  const formatarTelefone = (value) => {
+    const nums = value.replace(/\D/g, '');
+    if (nums.length <= 2) return `(${nums}`;
+    if (nums.length <= 7) return `(${nums.slice(0, 2)}) ${nums.slice(2)}`;
+    return `(${nums.slice(0, 2)}) ${nums.slice(2, 7)}-${nums.slice(7, 11)}`;
   };
 
   return (
@@ -75,9 +109,9 @@ const LoginPage = () => {
       <Card className="w-full max-w-md shadow-xl">
         <CardHeader className="text-center">
           <CardTitle className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">
-            Ranking Run Pró
+            Ranking Run Pro
           </CardTitle>
-          <p className="text-slate-600 dark:text-slate-400 mt-2">Faça login para continuar</p>
+          <p className="text-slate-600 dark:text-slate-400 mt-2">Faca login para continuar</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -105,7 +139,7 @@ const LoginPage = () => {
               <Input
                 id="password"
                 type="password"
-                placeholder="••••••••"
+                placeholder="........"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
@@ -139,7 +173,7 @@ const LoginPage = () => {
 
             <div className="text-center mt-4">
               <p className="text-sm text-slate-600 dark:text-slate-400">
-                Não tem conta?{' '}
+                Nao tem conta?{' '}
                 <Link to="/cadastro" className="text-emerald-600 hover:underline font-semibold">
                   Cadastre-se aqui
                 </Link>
@@ -156,22 +190,81 @@ const LoginPage = () => {
       </Card>
 
       {/* Modal Recuperar Senha */}
-      <Dialog open={showRecuperarModal} onOpenChange={fecharModalRecuperar}>
+      <Dialog open={showRecuperarModal} onOpenChange={fecharModal}>
         <DialogContent className="max-w-sm" data-testid="modal-recuperar-senha">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <KeyRound className="w-5 h-5 text-emerald-600" />
               Recuperar Senha
             </DialogTitle>
-            <DialogDescription>
-              Informe seu email cadastrado. Enviaremos uma nova senha para você.
-            </DialogDescription>
+            {!metodoRecuperacao && !recuperarSucesso && (
+              <DialogDescription>
+                Como voce prefere receber sua nova senha?
+              </DialogDescription>
+            )}
           </DialogHeader>
 
-          {!recuperarSucesso ? (
+          {/* Estado: Sucesso */}
+          {recuperarSucesso && (
+            <div className="py-4 text-center space-y-3" data-testid="recuperar-sucesso">
+              <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
+              <p className="text-base font-semibold text-emerald-700">Nova senha enviada!</p>
+              <p className="text-sm text-slate-500">
+                {metodoRecuperacao === 'email'
+                  ? <>Verifique seu email <strong>{emailRecuperar}</strong>.</>
+                  : <>Verifique seu WhatsApp <strong>{telefoneRecuperar}</strong>.</>
+                }
+              </p>
+              <Button onClick={fecharModal} className="mt-2 bg-emerald-600 hover:bg-emerald-700">
+                Voltar ao Login
+              </Button>
+            </div>
+          )}
+
+          {/* Estado: Escolha do método */}
+          {!metodoRecuperacao && !recuperarSucesso && (
+            <div className="space-y-3 py-2">
+              <button
+                onClick={() => setMetodoRecuperacao('email')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-emerald-400 hover:bg-emerald-50 transition-all group"
+                data-testid="btn-recuperar-email"
+              >
+                <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center group-hover:bg-emerald-200 transition-colors">
+                  <Mail className="w-6 h-6 text-emerald-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-800">Recuperar por Email</p>
+                  <p className="text-xs text-slate-500">Receba a nova senha no seu email cadastrado</p>
+                </div>
+              </button>
+
+              <button
+                onClick={() => setMetodoRecuperacao('whatsapp')}
+                className="w-full flex items-center gap-4 p-4 rounded-xl border-2 border-slate-200 hover:border-green-400 hover:bg-green-50 transition-all group"
+                data-testid="btn-recuperar-whatsapp"
+              >
+                <div className="w-12 h-12 rounded-full bg-green-100 flex items-center justify-center group-hover:bg-green-200 transition-colors">
+                  <Phone className="w-6 h-6 text-green-600" />
+                </div>
+                <div className="text-left">
+                  <p className="font-semibold text-slate-800">Recuperar via WhatsApp</p>
+                  <p className="text-xs text-slate-500">Receba a nova senha direto no seu WhatsApp</p>
+                </div>
+              </button>
+            </div>
+          )}
+
+          {/* Estado: Formulário Email */}
+          {metodoRecuperacao === 'email' && !recuperarSucesso && (
             <div className="space-y-4 py-2">
+              <button
+                onClick={() => setMetodoRecuperacao(null)}
+                className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
+              >
+                <ArrowLeft className="w-3 h-3" /> Voltar
+              </button>
               <div>
-                <Label htmlFor="email-recuperar">Email</Label>
+                <Label htmlFor="email-recuperar">Email cadastrado</Label>
                 <Input
                   id="email-recuperar"
                   type="email"
@@ -182,40 +275,54 @@ const LoginPage = () => {
                 />
               </div>
               <DialogFooter>
-                <Button variant="outline" onClick={fecharModalRecuperar}>
-                  Cancelar
-                </Button>
+                <Button variant="outline" onClick={fecharModal}>Cancelar</Button>
                 <Button
-                  onClick={handleRecuperarSenha}
+                  onClick={handleRecuperarEmail}
                   disabled={recuperarLoading}
                   className="bg-emerald-600 hover:bg-emerald-700"
-                  data-testid="btn-enviar-recuperar"
+                  data-testid="btn-enviar-recuperar-email"
                 >
-                  {recuperarLoading ? (
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                  ) : (
-                    <KeyRound className="w-4 h-4 mr-2" />
-                  )}
-                  {recuperarLoading ? 'Enviando...' : 'Enviar Nova Senha'}
+                  {recuperarLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Mail className="w-4 h-4 mr-2" />}
+                  {recuperarLoading ? 'Enviando...' : 'Enviar por Email'}
                 </Button>
               </DialogFooter>
             </div>
-          ) : (
-            <div className="py-4 text-center space-y-3" data-testid="recuperar-sucesso">
-              <CheckCircle2 className="w-12 h-12 text-emerald-500 mx-auto" />
-              <p className="text-base font-semibold text-emerald-700">
-                Nova senha enviada!
-              </p>
-              <p className="text-sm text-slate-500">
-                Verifique seu email <strong>{emailRecuperar}</strong>. 
-                A nova senha foi enviada para você.
-              </p>
-              <Button
-                onClick={fecharModalRecuperar}
-                className="mt-2 bg-emerald-600 hover:bg-emerald-700"
+          )}
+
+          {/* Estado: Formulário WhatsApp */}
+          {metodoRecuperacao === 'whatsapp' && !recuperarSucesso && (
+            <div className="space-y-4 py-2">
+              <button
+                onClick={() => setMetodoRecuperacao(null)}
+                className="text-xs text-slate-500 hover:text-slate-700 flex items-center gap-1"
               >
-                Voltar ao Login
-              </Button>
+                <ArrowLeft className="w-3 h-3" /> Voltar
+              </button>
+              <div>
+                <Label htmlFor="telefone-recuperar">Telefone com DDD</Label>
+                <Input
+                  id="telefone-recuperar"
+                  type="tel"
+                  placeholder="(11) 99999-9999"
+                  value={telefoneRecuperar}
+                  onChange={(e) => setTelefoneRecuperar(formatarTelefone(e.target.value))}
+                  maxLength={15}
+                  data-testid="input-telefone-recuperar"
+                />
+                <p className="text-xs text-slate-400 mt-1">Informe o telefone cadastrado na sua conta</p>
+              </div>
+              <DialogFooter>
+                <Button variant="outline" onClick={fecharModal}>Cancelar</Button>
+                <Button
+                  onClick={handleRecuperarWhatsApp}
+                  disabled={recuperarLoading}
+                  className="bg-green-600 hover:bg-green-700"
+                  data-testid="btn-enviar-recuperar-whatsapp"
+                >
+                  {recuperarLoading ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Phone className="w-4 h-4 mr-2" />}
+                  {recuperarLoading ? 'Enviando...' : 'Enviar via WhatsApp'}
+                </Button>
+              </DialogFooter>
             </div>
           )}
         </DialogContent>

@@ -177,6 +177,7 @@ from routes.equipe_chat_routes import router as equipe_chat_router
 from routes.retencao_routes import router as retencao_router
 from routes.scraping_routes import router as scraping_router
 from routes.backup_routes import router as backup_router
+from routes.whatsapp_routes import router as whatsapp_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -215,6 +216,7 @@ api_router.include_router(equipe_chat_router)
 api_router.include_router(retencao_router)
 api_router.include_router(scraping_router)
 api_router.include_router(backup_router)
+api_router.include_router(whatsapp_router)
 
 
 # Endpoint genérico para download de conteúdo CSV gerado no frontend
