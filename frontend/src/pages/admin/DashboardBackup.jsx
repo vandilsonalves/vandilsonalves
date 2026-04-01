@@ -308,7 +308,91 @@ const DashboardBackup = () => {
           </div>
         </div>
       </Card>
+
+      {/* Seção Strava - Limpeza de Tokens */}
+      <StravaCleanup token={token} />
     </div>
+  );
+};
+
+// ==================== Componente de Limpeza Strava ====================
+const StravaCleanup = ({ token }) => {
+  const [limpando, setLimpando] = useState(false);
+  const [resultado, setResultado] = useState(null);
+  const [confirmar, setConfirmar] = useState(false);
+
+  const handleLimparStrava = async () => {
+    if (!confirmar) {
+      setConfirmar(true);
+      return;
+    }
+    setLimpando(true);
+    setConfirmar(false);
+    try {
+      const res = await axios.delete(`${API}/strava/admin/limpar-todos`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setResultado(res.data);
+      toast.success(`${res.data.usuarios_desconectados} conexões Strava removidas!`);
+    } catch (err) {
+      toast.error('Erro ao limpar tokens Strava');
+      console.error(err);
+    } finally {
+      setLimpando(false);
+    }
+  };
+
+  return (
+    <Card className="bg-orange-50 dark:bg-orange-900/20 border-orange-300 dark:border-orange-700 p-5">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex gap-3">
+          <div className="w-10 h-10 rounded-lg bg-orange-500/20 flex items-center justify-center flex-shrink-0">
+            <RefreshCw className="w-5 h-5 text-orange-600" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-orange-800 dark:text-orange-200">Limpar Conexões Strava</h3>
+            <p className="text-xs text-orange-600 dark:text-orange-400 mt-1">
+              Remove TODOS os tokens de acesso ao Strava de todos os atletas.
+              Use quando atingir o limite de 100 usuários conectados.
+            </p>
+            {resultado && (
+              <div className="mt-2 flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-green-600" />
+                <span className="text-xs text-green-700 font-medium">
+                  {resultado.usuarios_desconectados} usuários desconectados ({resultado.documentos_atualizados} registros atualizados)
+                </span>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col items-end gap-1">
+          <Button
+            onClick={handleLimparStrava}
+            disabled={limpando}
+            variant={confirmar ? "destructive" : "outline"}
+            size="sm"
+            className={confirmar ? '' : 'border-orange-400 text-orange-700 hover:bg-orange-100'}
+            data-testid="btn-limpar-strava"
+          >
+            {limpando ? (
+              <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Limpando...</>
+            ) : confirmar ? (
+              'Confirmar Limpeza'
+            ) : (
+              'Limpar Tokens'
+            )}
+          </Button>
+          {confirmar && (
+            <button
+              onClick={() => setConfirmar(false)}
+              className="text-xs text-slate-500 hover:text-slate-700"
+            >
+              Cancelar
+            </button>
+          )}
+        </div>
+      </div>
+    </Card>
   );
 };
 
