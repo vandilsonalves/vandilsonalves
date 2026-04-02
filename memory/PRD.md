@@ -106,9 +106,21 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - `corridas_eventos`: Central de corridas e avaliações
 - `scraping_fontes`: URLs monitoradas para varredura manual
 - `stories`: Stories do feed social (inclui `autor_foto` desde 31/03/2026)
+- `corridas_parceiras`: Corridas parceiras cadastradas pelo admin (CRUD completo)
+- `clicks_corridas_parceiras`: Tracking de clicks por corrida, tipo, região
+- `config_corridas_parceiras`: Link WhatsApp, cupom editável
 
 ## API Endpoints Relevantes (Novos)
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
 - `GET /api/feed/stories` - Retorna `autor_foto` para cada autor
 - `GET /api/strava/authorize` - Usa `get_current_user` (sem premium required)
+- `DELETE /api/strava/admin/limpar-todos` - Remove todos os tokens Strava (admin)
 - WhatsApp recovery: usa link `wa.me/5577998626875` com mensagem pre-preenchida (sem API)
+- `GET /api/corridas-parceiras` - Lista corridas parceiras (público, ordenadas por data)
+- `GET /api/corridas-parceiras/config` - Config pública (link WhatsApp, cupom)
+- `POST /api/admin/corridas-parceiras` - Cria corrida (admin, multipart/form-data)
+- `PUT /api/admin/corridas-parceiras/{id}` - Edita corrida (admin)
+- `DELETE /api/admin/corridas-parceiras/{id}` - Exclui corrida (admin)
+- `POST /api/corridas-parceiras/{id}/click?tipo=X` - Registra click (autenticado)
+- `GET /api/admin/corridas-parceiras/stats` - Dashboard de métricas de clicks (admin)
+- `PUT /api/admin/corridas-parceiras/config` - Atualiza config (admin)

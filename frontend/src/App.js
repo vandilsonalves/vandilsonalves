@@ -19,6 +19,7 @@ import RegrasPage from "@/pages/RegrasPage";
 import HistoricoSubmissoesPage from "@/pages/HistoricoSubmissoesPage";
 import RankingCidadePage from "@/pages/RankingCidadePage";
 import StravaAtividadesPage from "@/pages/StravaAtividadesPage";
+import CorridasParceirasPage from "@/pages/CorridasParceirasPage";
 import RaioXPage from "@/pages/RaioXPage";
 import PagamentoPage from "@/pages/PagamentoPage";
 import PagamentoSucessoPage from "@/pages/PagamentoSucessoPage";
@@ -69,6 +70,7 @@ function App() {
               <Route path="/historico" element={<HistoricoSubmissoesPage />} />
               <Route path="/ranking-cidade" element={<RankingCidadePage />} />
               <Route path="/strava-clube" element={<AccessGate recurso="Integracao Strava"><StravaAtividadesPage /></AccessGate>} />
+              <Route path="/corridas-parceiras" element={<CorridasParceirasPage />} />
               <Route path="/raio-x" element={<AccessGate recurso="Raio-X do Atleta"><RaioXPage /></AccessGate>} />
               <Route path="/pagamento" element={<PagamentoPage />} />
               <Route path="/pagamento/sucesso" element={<PagamentoSucessoPage />} />

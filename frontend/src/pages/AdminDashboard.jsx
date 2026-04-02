@@ -14,7 +14,7 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 import { downloadFile } from '@/utils/downloadHelper';
-import { Instagram, Star, HardDrive } from 'lucide-react';
+import { Instagram, Star, HardDrive, Handshake } from 'lucide-react';
 
 // Componentes extraídos
 import AdminSidebar from './admin/AdminSidebar';
@@ -41,6 +41,7 @@ import DashboardEngajamento from './admin/DashboardEngajamento';
 import DashboardFinanceiro from './admin/DashboardFinanceiro';
 import DashboardRetencao from './admin/DashboardRetencao';
 import DashboardBackup from './admin/DashboardBackup';
+import DashboardCorridasParceiras from './admin/DashboardCorridasParceiras';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 
@@ -62,6 +63,7 @@ const menuSections = [
       { id: 'atletas', label: 'Atletas', icon: Users, permissoes: ['visualizar_atletas'] },
       { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
       { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
+      { id: 'corridas-parceiras', label: 'Corridas Parceiras', icon: Handshake, permissoes: [] },
       { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
       { id: 'financeiro', label: 'Financeiro', icon: CreditCard, permissoes: [] },
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
@@ -758,6 +760,7 @@ const AdminDashboard = () => {
         {activeMenu === 'resumo-semanal' && <DashboardResumoSemanal token={token} />}
         {activeMenu === 'retencao' && <DashboardRetencao />}
         {activeMenu === 'backup' && <DashboardBackup />}
+        {activeMenu === 'corridas-parceiras' && <DashboardCorridasParceiras token={token} />}
 
         {/* Modais extraídos */}
         <AdminModals

@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useFeedNaoLidos } from '@/hooks/useFeedNaoLidos';
 import {
   Menu, X, MessageSquare, HelpCircle, History, MapPin, Activity,
-  Zap, User, Upload, LogOut, Shield, Award, Home, CreditCard, UsersRound
+  Zap, User, Upload, LogOut, Shield, Award, Home, CreditCard, UsersRound, Trophy
 } from 'lucide-react';
 
 /**
@@ -32,6 +32,7 @@ export default function MobileNav() {
     { label: 'Historico', icon: History, path: '/historico', color: 'text-purple-400' },
     { label: 'Por Cidade', icon: MapPin, path: '/ranking-cidade', color: 'text-teal-400' },
     { label: 'Strava', icon: Activity, path: '/strava-clube', color: 'text-orange-400' },
+    { label: 'Corridas Parceiras', icon: Trophy, path: '/corridas-parceiras', color: 'text-emerald-400' },
     { label: 'Raio-X', icon: Zap, path: '/raio-x', color: 'text-violet-400' },
     { label: 'Meu Perfil', icon: User, path: '/perfil', color: 'text-sky-400' },
     { label: 'Submeter Resultado', icon: Upload, path: '/submeter-resultado', color: 'text-emerald-400' },
