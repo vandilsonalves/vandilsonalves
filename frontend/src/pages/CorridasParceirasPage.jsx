@@ -129,13 +129,19 @@ const CorridaCard = ({ corrida, onClickBtn }) => {
     );
   };
 
+  const getImageUrl = (url) => {
+    if (!url) return '';
+    if (url.startsWith('http')) return url;
+    return `${BACKEND_URL}${url}`;
+  };
+
   return (
     <Card className="overflow-hidden bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md transition" data-testid={`corrida-atleta-${c.id}`}>
       {/* Imagem 1:1 */}
       <div className="aspect-square w-full overflow-hidden bg-slate-100 dark:bg-slate-900">
         {c.imagem_url ? (
           <img
-            src={`${BACKEND_URL}${c.imagem_url}`}
+            src={getImageUrl(c.imagem_url)}
             alt={c.nome_evento}
             className="w-full h-full object-cover"
             loading="lazy"

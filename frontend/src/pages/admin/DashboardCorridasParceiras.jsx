@@ -203,7 +203,7 @@ const DashboardCorridasParceiras = ({ token }) => {
                   {c.imagem_url && (
                     <div className="aspect-square w-full overflow-hidden bg-slate-900">
                       <img
-                        src={`${BACKEND_URL}${c.imagem_url}`}
+                        src={c.imagem_url.startsWith('http') ? c.imagem_url : `${BACKEND_URL}${c.imagem_url}`}
                         alt={c.nome_evento}
                         className="w-full h-full object-cover"
                       />

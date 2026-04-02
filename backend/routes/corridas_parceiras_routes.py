@@ -107,7 +107,7 @@ async def criar_corrida(
         with open(caminho, "wb") as f:
             content = await imagem.read()
             f.write(content)
-        imagem_url = f"/uploads/corridas_parceiras/{nome_arquivo}"
+        imagem_url = f"/api/uploads/corridas_parceiras/{nome_arquivo}"
 
     corrida = {
         "id": corrida_id,
@@ -178,7 +178,7 @@ async def editar_corrida(
         with open(caminho, "wb") as f:
             content = await imagem.read()
             f.write(content)
-        update_data["imagem_url"] = f"/uploads/corridas_parceiras/{nome_arquivo}"
+        update_data["imagem_url"] = f"/api/uploads/corridas_parceiras/{nome_arquivo}"
 
     if update_data:
         await db.corridas_parceiras.update_one(
