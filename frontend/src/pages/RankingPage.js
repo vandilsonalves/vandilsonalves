@@ -136,6 +136,10 @@ const RankingPage = () => {
                 <Activity className="w-4 h-4 mr-1" />
                 Strava
               </Button>
+              <Button onClick={() => navigate('/corridas-parceiras')} variant="ghost" size="sm" className="shrink-0 text-emerald-500 hover:text-emerald-600" data-testid="btn-corridas-parceiras">
+                <Trophy className="w-4 h-4 mr-1" />
+                Corridas Parceiras
+              </Button>
               <Button onClick={() => navigate('/raio-x')} variant="ghost" size="sm" className="shrink-0 text-purple-500 hover:text-purple-600" data-testid="btn-raio-x">
                 <Zap className="w-4 h-4 mr-1" />
                 RAIO-X
