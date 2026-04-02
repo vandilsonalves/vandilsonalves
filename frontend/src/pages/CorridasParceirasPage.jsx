@@ -101,6 +101,20 @@ const CorridasParceirasPage = () => {
 const CorridaCard = ({ corrida, onClickBtn }) => {
   const c = corrida;
 
+  // Calcular dias restantes
+  const calcularDiasRestantes = (dataStr) => {
+    if (!dataStr) return null;
+    const partes = dataStr.split('/');
+    if (partes.length !== 3) return null;
+    const dataEvento = new Date(partes[2], partes[1] - 1, partes[0]);
+    const hoje = new Date();
+    hoje.setHours(0, 0, 0, 0);
+    const diff = Math.ceil((dataEvento - hoje) / (1000 * 60 * 60 * 24));
+    return diff;
+  };
+
+  const diasRestantes = calcularDiasRestantes(c.data_evento);
+
   const BotaoAcao = ({ tipo, label, link, icone: Icon }) => {
     if (!link) return null;
     return (
@@ -135,7 +149,25 @@ const CorridaCard = ({ corrida, onClickBtn }) => {
 
       {/* Info */}
       <div className="p-3 space-y-1.5">
-        <p className="text-xs text-slate-500">Data: {c.data_evento}</p>
+        <div className="flex items-center justify-between">
+          <p className="text-xs text-slate-500">Data: {c.data_evento}</p>
+          {diasRestantes !== null && diasRestantes >= 0 && (
+            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
+              diasRestantes <= 7 ? 'bg-red-100 text-red-600' :
+              diasRestantes <= 30 ? 'bg-orange-100 text-orange-600' :
+              'bg-emerald-100 text-emerald-600'
+            }`}>
+              {diasRestantes === 0 ? 'HOJE!' :
+               diasRestantes === 1 ? 'Amanha!' :
+               `Faltam ${diasRestantes} dias!`}
+            </span>
+          )}
+          {diasRestantes !== null && diasRestantes < 0 && (
+            <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">
+              Encerrada
+            </span>
+          )}
+        </div>
         <h3 className="text-sm font-bold text-slate-800 dark:text-white leading-tight line-clamp-2">
           {c.nome_evento}
         </h3>
