@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { ExternalLink, Camera, Trophy, Loader2 } from 'lucide-react';
+import { ExternalLink, Camera, Trophy, Loader2, ArrowLeft } from 'lucide-react';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
@@ -10,6 +11,7 @@ const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
 const CorridasParceirasPage = () => {
   const { token } = useAuth();
+  const navigate = useNavigate();
   const [corridas, setCorridas] = useState([]);
   const [config, setConfig] = useState({});
   const [loading, setLoading] = useState(true);
@@ -54,6 +56,18 @@ const CorridasParceirasPage = () => {
 
   return (
     <div className="space-y-6 pb-8" data-testid="corridas-parceiras-page">
+      {/* Botão Voltar */}
+      <Button
+        onClick={() => navigate('/')}
+        variant="ghost"
+        size="sm"
+        className="text-slate-500 hover:text-slate-700"
+        data-testid="btn-voltar"
+      >
+        <ArrowLeft className="w-4 h-4 mr-1" />
+        Voltar
+      </Button>
+
       {/* Banner "Gostaria de Divulgar Seu Evento Aqui?" */}
       <div className="bg-gradient-to-r from-slate-800 to-slate-900 rounded-2xl p-8 text-center shadow-lg border border-slate-700">
         <h2 className="text-xl sm:text-2xl font-bold text-white mb-4">
