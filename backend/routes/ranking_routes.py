@@ -681,6 +681,12 @@ async def get_ranking_por_categoria(
         {"_id": 0}
     ).sort([("pontos_total", -1), ("total_corridas", -1)]).limit(limit).to_list(None)
     
+    # Buscar IDs de atletas com autorização ativa
+    autorizacoes_ativas = set()
+    auth_cursor = db.autorizacoes.find({"status": "ativa"}, {"_id": 0, "atleta_id": 1})
+    async for auth in auth_cursor:
+        autorizacoes_ativas.add(auth["atleta_id"])
+
     result = []
     for rank in ranking_list:
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
@@ -704,7 +710,8 @@ async def get_ranking_por_categoria(
                 total_corridas=rank.get("total_corridas", 0),
                 pontos=rank.get("pontos_total", 0),
                 is_elite=rank.get("pontos_total", 0) >= 100,
-                is_pendente=rank.get("total_corridas", 0) < 3
+                is_pendente=rank.get("total_corridas", 0) < 3,
+                is_premium=(rank["usuario_id"] in autorizacoes_ativas)
             ))
     
     total = len(result)

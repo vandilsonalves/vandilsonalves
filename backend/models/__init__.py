@@ -178,6 +178,7 @@ class RankingResponse(BaseModel):
     pontos: int
     is_elite: bool
     is_pendente: bool
+    is_premium: bool = False
 
 class AtletaDetalhes(BaseModel):
     id: str

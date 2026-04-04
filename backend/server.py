@@ -1087,6 +1087,12 @@ async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
     ).sort("pontos_total", -1).to_list(None)
     
     response = []
+    # Buscar IDs de atletas com autorização ativa
+    autorizacoes_ativas = set()
+    auth_cursor = db.autorizacoes.find({"status": "ativa"}, {"_id": 0, "atleta_id": 1})
+    async for auth in auth_cursor:
+        autorizacoes_ativas.add(auth["atleta_id"])
+
     for rank in ranking_list:
         usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
         if usuario:
@@ -1103,7 +1109,8 @@ async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
                 total_corridas=rank.get("total_corridas", 0),
                 pontos=rank.get("pontos_total", 0),
                 is_elite=(rank.get("pontos_total", 0) >= 100),
-                is_pendente=(rank.get("total_corridas", 0) < min_corridas)
+                is_pendente=(rank.get("total_corridas", 0) < min_corridas),
+                is_premium=(usuario["id"] in autorizacoes_ativas)
             ))
     
     return response
