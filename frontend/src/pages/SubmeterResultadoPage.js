@@ -277,7 +277,7 @@ const SubmeterResultadoPage = () => {
                   <AlertDescription>
                     <strong>Ranking da Galera</strong><br />
                     Você compete pela distância percorrida, não pela colocação!<br />
-                    <strong>Pontuação:</strong> 5-9km = 5pts | 10-20km = 10pts | 21km+ = distância em pts<br />
+                    <strong>Pontuação:</strong> 5-9km = 5 pts | 10-20km = 7 pts | 21km+ = 9 pts<br />
                     <strong>Prazo:</strong> Você tem até 30 dias após a corrida para submeter o resultado.
                   </AlertDescription>
                 </Alert>
