@@ -99,6 +99,8 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Acesso 90% via celular - performance é prioridade
 - Scraping é MANUAL - não insere automaticamente no banco
 
+- `autorizacoes`: Gerencia assinaturas premium (campo `atleta_id`, `status: ativa`, `data_expiracao`)
+
 ## Collections MongoDB Relevantes
 - `mensagens_assessoria`: Chat + Feed posts (diferenciados por campo `tipo`)
 - `feed_enquetes`: Enquetes do feed da equipe
@@ -109,6 +111,14 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - `corridas_parceiras`: Corridas parceiras cadastradas pelo admin (CRUD completo)
 - `clicks_corridas_parceiras`: Tracking de clicks por corrida, tipo, região
 - `config_corridas_parceiras`: Link WhatsApp, cupom editável
+
+### Sessão Selo Premium Verificado (04/04/2026)
+- Selo de verificado (BadgeCheck azul) exibido no avatar de atletas premium na RankingTable
+- Backend: `is_premium: bool` adicionado ao `RankingResponse` (models/__init__.py)
+- Backend: Endpoints de ranking (`server.py`, `ranking_routes.py`) cruzam `autorizacoes` com status='ativa' para determinar premium
+- Frontend: `RankingTable.js` renderiza ícone `BadgeCheck` (lucide-react) azul no avatar + anel `ring-blue-500`
+- Quando atleta é premium E pendente: verified badge em `-bottom-1 -right-1`, PendingBadge em `-top-1 -right-1`
+- Testado com testing agent: 100% de sucesso (iteração 100)
 
 ## API Endpoints Relevantes (Novos)
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
