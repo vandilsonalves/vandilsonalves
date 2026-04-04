@@ -4,6 +4,7 @@ import MedalIcon from '@/components/MedalIcon';
 import UFBadge from '@/components/UFBadge';
 import PendingBadge from '@/components/PendingBadge';
 import { BadgesMini } from '@/components/BadgesDisplay';
+import { BadgeCheck } from 'lucide-react';
 
 // Cores por modalidade
 const MODALIDADE_COLORS = {
@@ -95,9 +96,11 @@ const RankingTable = ({ data, onAtletaClick, modalidade = 'profissional' }) => {
                   <div className="relative">
                     <Avatar
                       className={`h-12 w-12 ring-2 ring-offset-2 ring-offset-white dark:ring-offset-slate-900 ${
-                        atleta.is_elite
-                          ? 'ring-amber-500'
-                          : colors.border
+                        atleta.is_premium
+                          ? 'ring-blue-500'
+                          : atleta.is_elite
+                            ? 'ring-amber-500'
+                            : colors.border
                       }`}
                     >
                       <AvatarImage src={atleta.foto_url} alt={atleta.nome} />
@@ -108,8 +111,13 @@ const RankingTable = ({ data, onAtletaClick, modalidade = 'profissional' }) => {
                         {atleta.nome.split(' ').map(n => n[0]).join('').substring(0, 2)}
                       </AvatarFallback>
                     </Avatar>
+                    {atleta.is_premium && (
+                      <div className="absolute -bottom-1 -right-1" data-testid={`premium-badge-${index}`}>
+                        <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 stroke-white drop-shadow-sm" />
+                      </div>
+                    )}
                     {atleta.is_pendente && (
-                      <div className="absolute -bottom-1 -right-1">
+                      <div className={`absolute ${atleta.is_premium ? '-top-1 -right-1' : '-bottom-1 -right-1'}`}>
                         <PendingBadge />
                       </div>
                     )}
