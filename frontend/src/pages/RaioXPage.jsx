@@ -63,20 +63,30 @@ const ICON_MAP = {
 
 // Definição das insígnias para o guia de ajuda
 const TODAS_INSIGNIAS = [
-  { id: 'primeiro_lugar', nome: 'Campeão', emoji: '🥇', cor: '#FFD700', descricao: 'Conquistou o 1º lugar em uma corrida oficial', como_conquistar: 'Fique em 1º lugar na sua categoria em qualquer corrida aprovada', pontos_bonus: 5 },
-  { id: 'podio', nome: 'Pódio', emoji: '🏆', cor: '#F59E0B', descricao: 'Subiu ao pódio (top 3) em uma corrida', como_conquistar: 'Fique entre os 3 primeiros lugares na sua categoria', pontos_bonus: 2 },
-  { id: '10_corridas', nome: 'Veterano', emoji: '🏃', cor: '#10B981', descricao: 'Completou 10 corridas', como_conquistar: 'Participe e complete 10 corridas registradas no ranking', pontos_bonus: 10 },
-  { id: '12_resultados', nome: 'Atleta Bronze', emoji: '🥉', cor: '#CD7F32', descricao: 'Lançou 12 resultados no ranking', como_conquistar: 'Registre 12 resultados de corridas aprovados no sistema', pontos_bonus: 12 },
-  { id: '20_resultados', nome: 'Atleta Prata', emoji: '🥈', cor: '#C0C0C0', descricao: 'Lançou 20 resultados no ranking', como_conquistar: 'Registre 20 resultados de corridas aprovados no sistema', pontos_bonus: 20 },
-  { id: '30_resultados', nome: 'Atleta Ouro', emoji: '🥇', cor: '#FFD700', descricao: 'Lançou 30 resultados no ranking', como_conquistar: 'Registre 30 resultados de corridas aprovados no sistema', pontos_bonus: 30 },
-  { id: 'elite', nome: 'Atleta Elite', emoji: '⭐', cor: '#FFD700', descricao: 'Alcançou 100 pontos no ranking', como_conquistar: 'Acumule 100 pontos ou mais no ranking geral', pontos_bonus: 20 },
-  { id: 'maratonista', nome: 'Maratonista', emoji: '🎯', cor: '#8B5CF6', descricao: 'Completou uma maratona (42KM)', como_conquistar: 'Complete uma corrida de 42KM ou mais', pontos_bonus: 15 },
-  { id: 'consistente', nome: 'Consistente', emoji: '📅', cor: '#3B82F6', descricao: 'Completou corridas em 6 meses diferentes', como_conquistar: 'Participe de pelo menos uma corrida em 6 meses distintos', pontos_bonus: 10 },
-  { id: 'embaixador', nome: 'Embaixador Run', emoji: '🎖️', cor: '#EC4899', descricao: 'Embaixador oficial do Ranking Run', como_conquistar: 'Seja selecionado como embaixador oficial da plataforma', pontos_bonus: 25 }
+  // === Performance (5 - 4 exclusivo profissional) ===
+  { id: 'atleta_elite', nome: 'Atleta Elite', icone: 'star', cor_primaria: '#FFD700', cor_secundaria: '#FFA500', descricao: 'Conquistou 100+ pontos no ranking', como_conquistar: 'Acumule 100 pontos ou mais no ranking geral', pontos_bonus: 20, exclusivo_profissional: false },
+  { id: 'corredor_maratona', nome: 'Corredor de Maratona', icone: 'medal', cor_primaria: '#8B5CF6', cor_secundaria: '#6D28D9', descricao: 'Completou uma prova de 42km', como_conquistar: 'Complete uma corrida de 42km ou mais', pontos_bonus: 15, exclusivo_profissional: false },
+  { id: 'top_10_mes', nome: 'Top 10 do Mes', icone: 'trophy', cor_primaria: '#10B981', cor_secundaria: '#059669', descricao: 'Ficou entre os 10 melhores do mes na sua modalidade', como_conquistar: 'Fique entre os 10 primeiros do ranking mensal', pontos_bonus: 5, exclusivo_profissional: true },
+  { id: 'podio', nome: 'Podio', icone: 'award', cor_primaria: '#F59E0B', cor_secundaria: '#D97706', descricao: 'Conquistou 1o, 2o ou 3o lugar em uma corrida', como_conquistar: 'Fique entre os 3 primeiros na sua categoria', pontos_bonus: 2, exclusivo_profissional: true },
+  { id: 'rei_velocidade', nome: 'Rei da Velocidade', icone: 'zap', cor_primaria: '#EF4444', cor_secundaria: '#DC2626', descricao: 'Maior pontuacao semanal na sua modalidade', como_conquistar: 'Tenha a maior pontuacao semanal da sua modalidade', pontos_bonus: 5, exclusivo_profissional: true },
+  // === Participação (5) ===
+  { id: 'iniciante', nome: 'Iniciante', icone: 'play', cor_primaria: '#06B6D4', cor_secundaria: '#0891B2', descricao: 'Primeira corrida registrada', como_conquistar: 'Registre sua primeira corrida no ranking', pontos_bonus: 1, exclusivo_profissional: false },
+  { id: 'veterano', nome: 'Veterano', icone: 'shield', cor_primaria: '#3B82F6', cor_secundaria: '#2563EB', descricao: 'Completou 10+ corridas', como_conquistar: 'Participe e complete 10 corridas', pontos_bonus: 10, exclusivo_profissional: false },
+  { id: 'maratonista', nome: 'Maratonista', icone: 'target', cor_primaria: '#8B5CF6', cor_secundaria: '#7C3AED', descricao: 'Completou 20+ corridas', como_conquistar: 'Participe e complete 20 corridas', pontos_bonus: 15, exclusivo_profissional: false },
+  { id: 'lenda', nome: 'Lenda', icone: 'crown', cor_primaria: '#FFD700', cor_secundaria: '#FFC000', descricao: 'Completou 50+ corridas', como_conquistar: 'Participe e complete 50 corridas', pontos_bonus: 25, exclusivo_profissional: false },
+  { id: 'consistente', nome: 'Consistente', icone: 'calendar', cor_primaria: '#14B8A6', cor_secundaria: '#0D9488', descricao: 'Participou de corridas em 6 meses consecutivos', como_conquistar: 'Corra pelo menos uma vez em 6 meses seguidos', pontos_bonus: 10, exclusivo_profissional: false },
+  // === Especiais (7 - 1 exclusivo profissional) ===
+  { id: 'embaixador_run', nome: 'Embaixador Run', icone: 'users', cor_primaria: '#EC4899', cor_secundaria: '#DB2777', descricao: 'Indicou 5+ atletas para a plataforma', como_conquistar: 'Indique 5 atletas que se cadastrem na plataforma', pontos_bonus: 10, exclusivo_profissional: false },
+  { id: 'indicador_bronze', nome: 'Indicador Bronze', icone: 'award', cor_primaria: '#CD7F32', cor_secundaria: '#B87333', descricao: 'Indicou 10+ atletas', como_conquistar: 'Indique 10 atletas que se cadastrem na plataforma', pontos_bonus: 12, exclusivo_profissional: false },
+  { id: 'indicador_prata', nome: 'Indicador Prata', icone: 'medal', cor_primaria: '#C0C0C0', cor_secundaria: '#A8A8A8', descricao: 'Indicou 20+ atletas', como_conquistar: 'Indique 20 atletas que se cadastrem na plataforma', pontos_bonus: 20, exclusivo_profissional: false },
+  { id: 'indicador_ouro', nome: 'Indicador Ouro', icone: 'trophy', cor_primaria: '#FFD700', cor_secundaria: '#FFC000', descricao: 'Indicou 30+ atletas', como_conquistar: 'Indique 30 atletas que se cadastrem na plataforma', pontos_bonus: 30, exclusivo_profissional: false },
+  { id: 'indicador_diamante', nome: 'Indicador Diamante', icone: 'gem', cor_primaria: '#B9F2FF', cor_secundaria: '#00CED1', descricao: 'Indicou 50+ atletas', como_conquistar: 'Indique 50 atletas que se cadastrem na plataforma', pontos_bonus: 50, exclusivo_profissional: false },
+  { id: 'influencer', nome: 'Influencer', icone: 'eye', cor_primaria: '#F472B6', cor_secundaria: '#EC4899', descricao: 'Perfil mais visualizado do mes', como_conquistar: 'Tenha o perfil mais visualizado do mes', pontos_bonus: 10, exclusivo_profissional: false },
+  { id: 'estrela_assessoria', nome: 'Estrela da Assessoria', icone: 'sparkles', cor_primaria: '#FBBF24', cor_secundaria: '#F59E0B', descricao: 'Maior pontuacao da equipe', como_conquistar: 'Tenha a maior pontuacao da sua assessoria/equipe', pontos_bonus: 5, exclusivo_profissional: true },
 ];
 
 // Componente de Badge Individual
-const BadgeItem = ({ badge, size = 'md' }) => {
+const BadgeItem = ({ badge, size = 'md', onClick }) => {
   const IconComponent = ICON_MAP[badge.icone] || Star;
   
   const sizeClasses = {
@@ -91,73 +101,65 @@ const BadgeItem = ({ badge, size = 'md' }) => {
     lg: 'w-10 h-10'
   };
   
+  const handleClick = () => {
+    if (onClick) onClick(badge);
+  };
+
   return (
-    <TooltipProvider>
-      <TooltipUI>
-        <TooltipTrigger asChild>
+    <div className="flex flex-col items-center gap-1" onClick={handleClick}>
+      <div 
+        className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center transition-all duration-300 ${
+          badge.conquistado 
+            ? 'cursor-pointer hover:scale-110 shadow-lg hover:shadow-xl' 
+            : 'opacity-40 grayscale cursor-pointer hover:opacity-60'
+        }`}
+        style={{
+          background: badge.conquistado 
+            ? `linear-gradient(135deg, ${badge.cor_primaria}, ${badge.cor_secundaria})` 
+            : '#475569'
+        }}
+      >
+        {/* Anel externo */}
+        <div 
+          className="absolute inset-0 rounded-full"
+          style={{
+            border: badge.conquistado ? `3px solid ${badge.cor_primaria}40` : '3px solid #47556940',
+            transform: 'scale(1.12)'
+          }}
+        />
+        
+        {/* Brilho interno */}
+        {badge.conquistado && (
           <div 
-            className={`relative ${sizeClasses[size]} rounded-full flex items-center justify-center transition-all duration-300 ${
-              badge.conquistado 
-                ? 'cursor-pointer hover:scale-110 shadow-lg hover:shadow-xl' 
-                : 'opacity-40 grayscale cursor-not-allowed'
-            }`}
-            style={{
-              background: badge.conquistado 
-                ? `linear-gradient(135deg, ${badge.cor_primaria}, ${badge.cor_secundaria})` 
-                : '#475569'
-            }}
+            className="absolute top-1 left-1/4 w-1/3 h-1/4 rounded-full opacity-40"
+            style={{ background: 'linear-gradient(to bottom, white, transparent)' }}
+          />
+        )}
+        
+        {/* Ícone */}
+        <IconComponent 
+          className={`${iconSizes[size]} ${badge.conquistado ? 'text-white' : 'text-slate-400'}`}
+          strokeWidth={2}
+        />
+            
+        {/* Indicador */}
+        {badge.conquistado ? (
+          <div 
+            className="absolute -bottom-1 -right-1 rounded-full p-1"
+            style={{ background: badge.cor_primaria }}
           >
-            {/* Anel externo */}
-            <div 
-              className="absolute inset-0 rounded-full"
-              style={{
-                border: badge.conquistado ? `3px solid ${badge.cor_primaria}40` : '3px solid #47556940',
-                transform: 'scale(1.12)'
-              }}
-            />
-            
-            {/* Brilho interno */}
-            {badge.conquistado && (
-              <div 
-                className="absolute top-1 left-1/4 w-1/3 h-1/4 rounded-full opacity-40"
-                style={{ background: 'linear-gradient(to bottom, white, transparent)' }}
-              />
-            )}
-            
-            {/* Ícone */}
-            <IconComponent 
-              className={`${iconSizes[size]} ${badge.conquistado ? 'text-white' : 'text-slate-400'}`}
-              strokeWidth={2}
-            />
-            
-            {/* Indicador */}
-            {badge.conquistado ? (
-              <div 
-                className="absolute -bottom-1 -right-1 rounded-full p-1"
-                style={{ background: badge.cor_primaria }}
-              >
-                <Check className="w-3 h-3 text-white" />
-              </div>
-            ) : (
-              <div className="absolute -bottom-1 -right-1 bg-slate-600 rounded-full p-1">
-                <Lock className="w-3 h-3 text-white" />
-              </div>
-            )}
+            <Check className="w-3 h-3 text-white" />
           </div>
-        </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs bg-slate-800 border-slate-700">
-          <div className="text-center p-1">
-            <p className="font-bold text-white">{badge.nome}</p>
-            <p className="text-xs text-slate-400">{badge.descricao}</p>
-            {badge.data_conquista && (
-              <p className="text-xs text-emerald-400 mt-1">
-                Conquistado em {new Date(badge.data_conquista).toLocaleDateString('pt-BR')}
-              </p>
-            )}
+        ) : (
+          <div className="absolute -bottom-1 -right-1 bg-slate-600 rounded-full p-1">
+            <Lock className="w-3 h-3 text-white" />
           </div>
-        </TooltipContent>
-      </TooltipUI>
-    </TooltipProvider>
+        )}
+      </div>
+      <p className={`text-xs text-center max-w-[70px] leading-tight ${badge.conquistado ? 'text-white' : 'text-slate-500'}`}>
+        {badge.nome}
+      </p>
+    </div>
   );
 };
 
@@ -229,6 +231,7 @@ const RaioXPage = () => {
   const [badges, setBadges] = useState([]);
   const [badgesLoading, setBadgesLoading] = useState(false);
   const [showHelpModal, setShowHelpModal] = useState(false);
+  const [badgeSelecionado, setBadgeSelecionado] = useState(null);
   
   // Estados para comparativo personalizado
   const anoAtual = new Date().getFullYear();
@@ -1526,7 +1529,7 @@ const RaioXPage = () => {
                       <CardContent>
                         <div className="flex flex-wrap gap-4">
                           {badges.filter(b => b.conquistado).map(badge => (
-                            <BadgeItem key={badge.id} badge={badge} size="md" />
+                            <BadgeItem key={badge.id} badge={badge} size="md" onClick={setBadgeSelecionado} />
                           ))}
                         </div>
                       </CardContent>
@@ -1542,13 +1545,13 @@ const RaioXPage = () => {
                           A Conquistar ({badges.filter(b => !b.conquistado).length})
                         </CardTitle>
                         <CardDescription className="text-slate-500">
-                          Continue participando para desbloquear mais insígnias!
+                          Toque em uma insignia para ver como conquistar!
                         </CardDescription>
                       </CardHeader>
                       <CardContent>
                         <div className="flex flex-wrap gap-4">
                           {badges.filter(b => !b.conquistado).map(badge => (
-                            <BadgeItem key={badge.id} badge={badge} size="md" />
+                            <BadgeItem key={badge.id} badge={badge} size="md" onClick={setBadgeSelecionado} />
                           ))}
                         </div>
                       </CardContent>
@@ -1750,63 +1753,158 @@ const RaioXPage = () => {
 
       {/* Modal de Ajuda - Como Conquistar Insígnias */}
       <Dialog open={showHelpModal} onOpenChange={setShowHelpModal}>
-        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto bg-slate-800 border-slate-700">
+        <DialogContent className="max-w-2xl max-h-[85vh] overflow-y-auto bg-slate-800 border-slate-700">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl text-white">
               <Trophy className="w-6 h-6 text-amber-500" />
-              Guia de Insígnias & Conquistas
+              Guia de Insignias & Conquistas
             </DialogTitle>
           </DialogHeader>
           
-          <div className="space-y-4 mt-4">
-            <p className="text-slate-400 text-sm">
-              As insígnias são conquistas especiais que você pode ganhar ao participar de corridas e atingir marcos importantes. 
-              Cada insígnia concede pontos bônus ao ser conquistada!
-            </p>
-            
-            <div className="grid gap-3">
-              {TODAS_INSIGNIAS.map((insignia) => (
-                <div 
-                  key={insignia.id}
-                  className="flex items-start gap-4 p-4 rounded-xl border border-slate-700 hover:bg-slate-700/50 transition-colors"
-                >
-                  {/* Badge visual */}
-                  <div 
-                    className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg"
-                    style={{ background: `linear-gradient(135deg, ${insignia.cor}, ${insignia.cor}dd)` }}
-                  >
-                    <span className="text-2xl">{insignia.emoji}</span>
-                  </div>
-                  
-                  {/* Info */}
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="font-bold text-white">{insignia.nome}</h3>
-                      <Badge className="text-xs" style={{ backgroundColor: `${insignia.cor}20`, color: insignia.cor }}>
-                        +{insignia.pontos_bonus} pts
-                      </Badge>
+          <div className="space-y-6 mt-4">
+            {/* RANKING DA GALERA - 13 insígnias */}
+            <div>
+              <h3 className="text-base font-bold text-emerald-400 mb-3 flex items-center gap-2">
+                <Star className="w-4 h-4" />
+                Ranking da Galera (13 insignias)
+              </h3>
+              <div className="grid gap-3">
+                {TODAS_INSIGNIAS.filter(i => !i.exclusivo_profissional).map(insignia => {
+                  const IconComp = ICON_MAP[insignia.icone] || Star;
+                  return (
+                    <div key={insignia.id} className="flex items-center gap-4 p-3 rounded-xl border border-slate-700 hover:bg-slate-700/50 transition-colors">
+                      <div
+                        className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg relative"
+                        style={{ background: `linear-gradient(135deg, ${insignia.cor_primaria}, ${insignia.cor_secundaria})` }}
+                      >
+                        <div className="absolute inset-0 rounded-full" style={{ border: `3px solid ${insignia.cor_primaria}40`, transform: 'scale(1.12)' }} />
+                        <div className="absolute top-1 left-1/4 w-1/3 h-1/4 rounded-full opacity-40" style={{ background: 'linear-gradient(to bottom, white, transparent)' }} />
+                        <IconComp className="w-7 h-7 text-white" strokeWidth={2} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-white text-sm">{insignia.nome}</h4>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: `${insignia.cor_primaria}20`, color: insignia.cor_primaria }}>+{insignia.pontos_bonus} pts</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">{insignia.descricao}</p>
+                        <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          <strong>Como:</strong> {insignia.como_conquistar}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-sm text-slate-400 mt-1">{insignia.descricao}</p>
-                    <p className="text-xs text-emerald-400 mt-2 flex items-center gap-1">
-                      <Sparkles className="w-3 h-3" />
-                      <strong>Como conquistar:</strong> {insignia.como_conquistar}
-                    </p>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* RANKING PROFISSIONAL/AMADOR - 17 insígnias (todas) */}
+            <div>
+              <h3 className="text-base font-bold text-amber-400 mb-3 flex items-center gap-2">
+                <Trophy className="w-4 h-4" />
+                Ranking Profissional/Amador (17 insignias)
+              </h3>
+              <p className="text-xs text-slate-500 mb-3">Inclui todas as 13 da Galera + 4 exclusivas:</p>
+              <div className="grid gap-3">
+                {TODAS_INSIGNIAS.filter(i => i.exclusivo_profissional).map(insignia => {
+                  const IconComp = ICON_MAP[insignia.icone] || Star;
+                  return (
+                    <div key={insignia.id} className="flex items-center gap-4 p-3 rounded-xl border border-amber-700/50 bg-amber-900/10 hover:bg-amber-900/20 transition-colors">
+                      <div
+                        className="w-14 h-14 rounded-full flex items-center justify-center flex-shrink-0 shadow-lg relative"
+                        style={{ background: `linear-gradient(135deg, ${insignia.cor_primaria}, ${insignia.cor_secundaria})` }}
+                      >
+                        <div className="absolute inset-0 rounded-full" style={{ border: `3px solid ${insignia.cor_primaria}40`, transform: 'scale(1.12)' }} />
+                        <div className="absolute top-1 left-1/4 w-1/3 h-1/4 rounded-full opacity-40" style={{ background: 'linear-gradient(to bottom, white, transparent)' }} />
+                        <IconComp className="w-7 h-7 text-white" strokeWidth={2} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <h4 className="font-bold text-white text-sm">{insignia.nome}</h4>
+                          <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 font-bold">EXCLUSIVA</span>
+                          <span className="text-xs px-2 py-0.5 rounded-full font-bold" style={{ backgroundColor: `${insignia.cor_primaria}20`, color: insignia.cor_primaria }}>+{insignia.pontos_bonus} pts</span>
+                        </div>
+                        <p className="text-xs text-slate-400 mt-0.5">{insignia.descricao}</p>
+                        <p className="text-xs text-emerald-400 mt-1 flex items-center gap-1">
+                          <Sparkles className="w-3 h-3" />
+                          <strong>Como:</strong> {insignia.como_conquistar}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             
-            <div className="mt-6 p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30">
+            <div className="p-4 bg-emerald-500/10 rounded-xl border border-emerald-500/30">
               <h4 className="font-bold text-emerald-400 flex items-center gap-2">
                 <Star className="w-4 h-4" />
                 Dica
               </h4>
               <p className="text-sm text-emerald-300/80 mt-1">
-                Continue participando de corridas e registrando seus resultados para desbloquear mais insígnias. 
+                Continue participando de corridas e registrando seus resultados para desbloquear mais insignias. 
                 Cada conquista te aproxima do status de Atleta Elite!
               </p>
             </div>
           </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Modal detalhe de badge individual (ao tocar) */}
+      <Dialog open={!!badgeSelecionado} onOpenChange={() => setBadgeSelecionado(null)}>
+        <DialogContent className="max-w-xs bg-slate-800 border-slate-700 text-center">
+          {badgeSelecionado && (() => {
+            const IconComp = ICON_MAP[badgeSelecionado.icone] || Star;
+            return (
+              <div className="flex flex-col items-center gap-4 py-4">
+                <div
+                  className="w-24 h-24 rounded-full flex items-center justify-center shadow-xl relative"
+                  style={{
+                    background: badgeSelecionado.conquistado
+                      ? `linear-gradient(135deg, ${badgeSelecionado.cor_primaria}, ${badgeSelecionado.cor_secundaria})`
+                      : '#475569',
+                    opacity: badgeSelecionado.conquistado ? 1 : 0.5
+                  }}
+                >
+                  <div className="absolute inset-0 rounded-full" style={{ border: `3px solid ${badgeSelecionado.cor_primaria || '#475569'}40`, transform: 'scale(1.12)' }} />
+                  {badgeSelecionado.conquistado && (
+                    <div className="absolute top-2 left-1/4 w-1/3 h-1/4 rounded-full opacity-40" style={{ background: 'linear-gradient(to bottom, white, transparent)' }} />
+                  )}
+                  <IconComp className={`w-12 h-12 ${badgeSelecionado.conquistado ? 'text-white' : 'text-slate-400'}`} strokeWidth={2} />
+                </div>
+
+                <h3 className="text-lg font-bold text-white">{badgeSelecionado.nome}</h3>
+                <p className="text-sm text-slate-400">{badgeSelecionado.descricao}</p>
+
+                {badgeSelecionado.conquistado ? (
+                  <div className="flex items-center gap-2 text-emerald-400">
+                    <Check className="w-5 h-5" />
+                    <span className="text-sm font-semibold">Conquistada!</span>
+                    {badgeSelecionado.data_conquista && (
+                      <span className="text-xs text-slate-500">
+                        em {new Date(badgeSelecionado.data_conquista).toLocaleDateString('pt-BR')}
+                      </span>
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-slate-700/50 rounded-lg p-3 w-full">
+                    <p className="text-xs text-emerald-400 flex items-center justify-center gap-1">
+                      <Sparkles className="w-3 h-3" />
+                      Como conquistar:
+                    </p>
+                    {(() => {
+                      const info = TODAS_INSIGNIAS.find(i => i.id === badgeSelecionado.id);
+                      return (
+                        <p className="text-sm text-slate-300 mt-1">
+                          {info?.como_conquistar || badgeSelecionado.descricao}
+                        </p>
+                      );
+                    })()}
+                  </div>
+                )}
+              </div>
+            );
+          })()}
         </DialogContent>
       </Dialog>
     </div>
