@@ -31,9 +31,14 @@ async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20):
         {"_id": 0}
     ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).to_list(None)
     
+    # Batch fetch usuarios (evita N+1 queries)
+    user_ids = [r["usuario_id"] for r in ranking_list]
+    usuarios_list = await db.usuarios.find({"id": {"$in": user_ids}}, {"_id": 0}).to_list(None)
+    user_map = {u["id"]: u for u in usuarios_list}
+    
     result = []
     for rank in ranking_list:
-        usuario = await db.usuarios.find_one({"id": rank["usuario_id"]}, {"_id": 0})
+        usuario = user_map.get(rank["usuario_id"])
         if usuario:
             result.append({
                 "colocacao": rank.get("ranking_genero", 0),
@@ -124,9 +129,14 @@ async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10):
     
     resultados = await db.corridas.aggregate(pipeline).to_list(None)
     
+    # Batch fetch usuarios (evita N+1 queries)
+    user_ids = [r["_id"] for r in resultados]
+    usuarios_list = await db.usuarios.find({"id": {"$in": user_ids}, "genero": genero}, {"_id": 0}).to_list(None)
+    user_map = {u["id"]: u for u in usuarios_list}
+    
     ranking = []
     for idx, r in enumerate(resultados):
-        usuario = await db.usuarios.find_one({"id": r["_id"], "genero": genero}, {"_id": 0})
+        usuario = user_map.get(r["_id"])
         if usuario:
             ranking.append({
                 "posicao": idx + 1,
@@ -178,9 +188,14 @@ async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10):
     
     resultados = await db.corridas.aggregate(pipeline).to_list(None)
     
+    # Batch fetch usuarios (evita N+1 queries)
+    user_ids = [r["_id"] for r in resultados]
+    usuarios_list = await db.usuarios.find({"id": {"$in": user_ids}, "genero": genero}, {"_id": 0}).to_list(None)
+    user_map = {u["id"]: u for u in usuarios_list}
+    
     ranking = []
     for idx, r in enumerate(resultados):
-        usuario = await db.usuarios.find_one({"id": r["_id"], "genero": genero}, {"_id": 0})
+        usuario = user_map.get(r["_id"])
         if usuario:
             ranking.append({
                 "posicao": idx + 1,

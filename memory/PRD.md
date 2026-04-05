@@ -129,6 +129,12 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
   - Botão "Desconectar do Strava" presente em ambos os locais (Perfil + aba Strava)
 - Testado: iterações 101 e 102 (100% frontend verified - 8/8 features)
 
+### Sessão Code Quality Review (05/04/2026)
+- SSL verify=False removido, mutable defaults corrigidos, random→secrets, circular import refatorado
+- MD5→SHA256 em 3 arquivos, N+1 queries otimizadas (batch fetch) em ranking_routes.py
+- Empty catch blocks corrigidos em 3 dashboards, test config centralizada
+- Deploy health check: APROVADO (blockers anteriores eram falsos positivos)
+
 ## API Endpoints Relevantes (Novos)
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
 - `GET /api/feed/stories` - Retorna `autor_foto` para cada autor
