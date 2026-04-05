@@ -123,16 +123,24 @@ Em caso de dúvidas ou solicitações relacionadas a dados, entre em contato:
 suporte@rankingrun.com.br`;
 
 // Tela de consentimento/autorização antes de conectar o Strava
-const StravaConsentScreen = ({ onConnect, onCancel }) => {
+export const StravaConsentScreen = ({ onConnect, onCancel, onDisconnect, isConnected = false }) => {
   const [accepted, setAccepted] = useState(false);
   const [showPolicy, setShowPolicy] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [disconnecting, setDisconnecting] = useState(false);
 
   const handleConnect = async () => {
     if (!accepted) return;
     setConnecting(true);
     await onConnect();
     setConnecting(false);
+  };
+
+  const handleDisconnect = async () => {
+    if (!confirm('Deseja realmente desconectar o Strava?')) return;
+    setDisconnecting(true);
+    if (onDisconnect) await onDisconnect();
+    setDisconnecting(false);
   };
 
   return (
@@ -234,29 +242,47 @@ const StravaConsentScreen = ({ onConnect, onCancel }) => {
       </div>
 
       {/* Botões */}
-      <div className="flex gap-3">
-        <Button
-          onClick={handleConnect}
-          disabled={!accepted || connecting}
-          className="flex-1 bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
-          data-testid="strava-consent-connect-btn"
-        >
-          {connecting ? (
-            <Loader2 className="w-4 h-4 animate-spin mr-2" />
-          ) : (
-            <StravaIcon className="w-5 h-5 mr-2" />
-          )}
-          Conectar com Strava
-        </Button>
-        <Button
-          onClick={onCancel}
-          variant="outline"
-          className="border-slate-600 text-slate-300 hover:bg-slate-700"
-          data-testid="strava-consent-cancel-btn"
-        >
-          <X className="w-4 h-4 mr-1" />
-          Cancelar
-        </Button>
+      <div className="space-y-3">
+        <div className="flex gap-3">
+          <Button
+            onClick={handleConnect}
+            disabled={!accepted || connecting}
+            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white disabled:opacity-50 disabled:cursor-not-allowed"
+            data-testid="strava-consent-connect-btn"
+          >
+            {connecting ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <StravaIcon className="w-5 h-5 mr-2" />
+            )}
+            Conectar com Strava
+          </Button>
+          <Button
+            onClick={onCancel}
+            variant="outline"
+            className="border-slate-600 text-slate-300 hover:bg-slate-700"
+            data-testid="strava-consent-cancel-btn"
+          >
+            <X className="w-4 h-4 mr-1" />
+            Cancelar
+          </Button>
+        </div>
+        {isConnected && onDisconnect && (
+          <Button
+            onClick={handleDisconnect}
+            disabled={disconnecting}
+            variant="outline"
+            className="w-full border-red-500/40 text-red-400 hover:bg-red-500/10"
+            data-testid="strava-consent-disconnect-btn"
+          >
+            {disconnecting ? (
+              <Loader2 className="w-4 h-4 animate-spin mr-2" />
+            ) : (
+              <Unlink className="w-4 h-4 mr-2" />
+            )}
+            Desconectar do Strava
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -426,20 +452,38 @@ const StravaIntegration = ({ token }) => {
             <StravaConsentScreen 
               onConnect={handleConnect}
               onCancel={() => setShowConsentScreen(false)}
+              onDisconnect={handleDisconnect}
+              isConnected={false}
             />
           ) : (
             <div className="text-center py-4">
               <p className="text-slate-400 mb-4">
                 Conecte sua conta do Strava para importar suas corridas e acompanhar seu progresso.
               </p>
-              <Button 
-                onClick={() => setShowConsentScreen(true)}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
-                data-testid="connect-strava-btn"
-              >
-                <StravaIcon className="w-5 h-5 mr-2" />
-                Conectar com Strava
-              </Button>
+              <div className="flex flex-col gap-3 items-center">
+                <Button 
+                  onClick={() => setShowConsentScreen(true)}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                  data-testid="connect-strava-btn"
+                >
+                  <StravaIcon className="w-5 h-5 mr-2" />
+                  Conectar com Strava
+                </Button>
+                <Button
+                  onClick={handleDisconnect}
+                  disabled={disconnecting}
+                  variant="outline"
+                  className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+                  data-testid="disconnect-strava-initial-btn"
+                >
+                  {disconnecting ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Unlink className="w-4 h-4 mr-2" />
+                  )}
+                  Desconectar do Strava
+                </Button>
+              </div>
             </div>
           )
         ) : (

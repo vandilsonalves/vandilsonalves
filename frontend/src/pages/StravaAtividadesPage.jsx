@@ -6,13 +6,14 @@ import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { 
   Loader2, Trophy, Activity, Timer, Mountain, TrendingUp,
-  ChevronLeft, Users, Calendar, ArrowUpDown, RefreshCw
+  ChevronLeft, Users, Calendar, ArrowUpDown, RefreshCw, Unlink
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
+import { useAuth } from '@/context/AuthContext';
+import { StravaConsentScreen } from '@/components/StravaIntegration';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
@@ -108,6 +109,7 @@ const ClassificacaoRow = ({ atleta, index }) => (
 
 const StravaAtividadesPage = () => {
   const navigate = useNavigate();
+  const { token } = useAuth();
   const [loading, setLoading] = useState(true);
   const [periodo, setPeriodo] = useState('esta_semana');
   const [ordenarPor, setOrdenarPor] = useState('distancia');
@@ -117,11 +119,63 @@ const StravaAtividadesPage = () => {
   const [totalMembros, setTotalMembros] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [syncStatus, setSyncStatus] = useState(null);
+  const [stravaStatus, setStravaStatus] = useState(null);
+  const [showConsentScreen, setShowConsentScreen] = useState(false);
+  const [checkingStrava, setCheckingStrava] = useState(true);
+
+  // Verificar se o Strava está conectado
+  useEffect(() => {
+    checkStravaConnection();
+  }, [token]);
 
   useEffect(() => {
-    fetchData();
-    fetchSyncStatus();
-  }, [periodo, ordenarPor]);
+    if (stravaStatus?.conectado) {
+      fetchData();
+      fetchSyncStatus();
+    }
+  }, [periodo, ordenarPor, stravaStatus?.conectado]);
+
+  const checkStravaConnection = async () => {
+    if (!token) {
+      setCheckingStrava(false);
+      return;
+    }
+    try {
+      const response = await axios.get(`${API}/strava/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setStravaStatus(response.data);
+    } catch (error) {
+      console.error('Erro ao verificar Strava:', error);
+      setStravaStatus({ conectado: false });
+    } finally {
+      setCheckingStrava(false);
+    }
+  };
+
+  const handleConnect = async () => {
+    try {
+      const response = await axios.get(`${API}/strava/authorize`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      window.location.href = response.data.auth_url;
+    } catch (error) {
+      toast.error('Erro ao iniciar conexão com Strava');
+    }
+  };
+
+  const handleDisconnect = async () => {
+    try {
+      await axios.delete(`${API}/strava/disconnect`, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      toast.success('Strava desconectado');
+      setStravaStatus({ conectado: false });
+      setShowConsentScreen(false);
+    } catch (error) {
+      toast.error('Erro ao desconectar');
+    }
+  };
 
   const fetchSyncStatus = async () => {
     try {
@@ -195,39 +249,90 @@ const StravaAtividadesPage = () => {
               </div>
             </div>
             
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2">
-                <Users className="w-4 h-4" />
-                <span className="font-medium">{totalMembros} membros</span>
-              </div>
-              
-              {/* Indicador de Sync Automático */}
-              {syncStatus?.running && (
-                <div className="hidden sm:flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-lg px-3 py-2 text-sm">
-                  <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                  <span>Sync automático ativo</span>
+            {stravaStatus?.conectado && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2 bg-white/20 rounded-lg px-3 py-2">
+                  <Users className="w-4 h-4" />
+                  <span className="font-medium">{totalMembros} membros</span>
                 </div>
-              )}
-              
-              <Button 
-                variant="ghost" 
-                size="icon"
-                onClick={handleRefresh}
-                disabled={refreshing}
-                className="text-white hover:bg-white/20"
-                title="Atualizar dados"
-                data-testid="strava-refresh-btn"
-              >
-                <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
-              </Button>
-            </div>
+                
+                {syncStatus?.running && (
+                  <div className="hidden sm:flex items-center gap-2 bg-green-500/20 border border-green-400/30 rounded-lg px-3 py-2 text-sm">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                    <span>Sync automático ativo</span>
+                  </div>
+                )}
+                
+                <Button 
+                  variant="ghost" 
+                  size="icon"
+                  onClick={handleRefresh}
+                  disabled={refreshing}
+                  className="text-white hover:bg-white/20"
+                  title="Atualizar dados"
+                  data-testid="strava-refresh-btn"
+                >
+                  <RefreshCw className={`w-5 h-5 ${refreshing ? 'animate-spin' : ''}`} />
+                </Button>
+              </div>
+            )}
           </div>
         </div>
       </div>
 
       {/* Conteúdo */}
       <div className="container mx-auto px-4 py-6">
-        {loading ? (
+        {checkingStrava ? (
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+          </div>
+        ) : !stravaStatus?.conectado ? (
+          /* Tela de consentimento/autorização */
+          <Card className="max-w-2xl mx-auto bg-slate-800 border-slate-700">
+            <CardContent className="pt-6">
+              {showConsentScreen ? (
+                <StravaConsentScreen
+                  onConnect={handleConnect}
+                  onCancel={() => setShowConsentScreen(false)}
+                  onDisconnect={handleDisconnect}
+                  isConnected={false}
+                />
+              ) : (
+                <div className="text-center py-8">
+                  <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-orange-500/15 border border-orange-500/30 mb-6">
+                    <StravaIcon className="w-12 h-12 text-orange-400" />
+                  </div>
+                  <h2 className="text-xl font-bold text-white mb-2">
+                    Conecte seu Strava
+                  </h2>
+                  <p className="text-slate-400 mb-6 max-w-md mx-auto">
+                    Para visualizar as atividades do clube e participar do ranking semanal, 
+                    conecte sua conta do Strava à plataforma.
+                  </p>
+                  <div className="flex flex-col gap-3 items-center">
+                    <Button
+                      onClick={() => setShowConsentScreen(true)}
+                      className="bg-orange-500 hover:bg-orange-600 text-white px-8"
+                      data-testid="strava-page-connect-btn"
+                    >
+                      <StravaIcon className="w-5 h-5 mr-2" />
+                      Conectar com Strava
+                    </Button>
+                    <Button
+                      onClick={handleDisconnect}
+                      variant="outline"
+                      className="border-red-500/40 text-red-400 hover:bg-red-500/10"
+                      data-testid="strava-page-disconnect-btn"
+                    >
+                      <Unlink className="w-4 h-4 mr-2" />
+                      Desconectar do Strava
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        ) : loading ? (
           <div className="flex items-center justify-center py-20">
             <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
           </div>
