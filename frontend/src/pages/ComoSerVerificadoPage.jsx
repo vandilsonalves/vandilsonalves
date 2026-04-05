@@ -1,287 +1,199 @@
 import { useNavigate } from 'react-router-dom';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { 
-  BadgeCheck, Users, CheckCircle, Crown, ArrowLeft, Trophy, 
-  Target, Star, Zap, Shield, Award, TrendingUp, UserPlus, Medal
+  BadgeCheck, ArrowLeft, Trophy, Star, Zap, Shield, 
+  BarChart3, Activity, Eye, Crown, ChevronRight
 } from 'lucide-react';
 
 const ComoSerVerificadoPage = () => {
   const navigate = useNavigate();
 
-  const criterios = [
-    {
-      id: 1,
-      titulo: '10+ Atletas Cadastrados',
-      descricao: 'Tenha pelo menos 10 atletas vinculados à sua assessoria',
-      icone: Users,
-      cor: 'text-blue-500',
-      bgCor: 'bg-blue-50',
-      borderCor: 'border-blue-200',
-      dica: 'Convide atletas da sua equipe para se cadastrarem na plataforma e selecionarem sua assessoria durante o cadastro.'
-    },
-    {
-      id: 2,
-      titulo: '5+ Resultados Aprovados',
-      descricao: 'Seus atletas devem ter pelo menos 5 resultados aprovados',
-      icone: CheckCircle,
-      cor: 'text-green-500',
-      bgCor: 'bg-green-50',
-      borderCor: 'border-green-200',
-      dica: 'Incentive seus atletas a submeterem seus resultados de corridas. Cada resultado aprovado conta para a verificação.'
-    },
-    {
-      id: 3,
-      titulo: 'Dono de Assessoria Definido',
-      descricao: 'A assessoria deve ter um responsável oficial cadastrado',
-      icone: Crown,
-      cor: 'text-amber-500',
-      bgCor: 'bg-amber-50',
-      borderCor: 'border-amber-200',
-      dica: 'Entre em contato com a administração para ser promovido a Dono de Assessoria, ou aguarde ser identificado automaticamente.'
-    }
-  ];
-
   const beneficios = [
     {
-      titulo: 'Credibilidade',
-      descricao: 'Selo de verificação visível em toda a plataforma',
-      icone: Shield
+      icone: BadgeCheck,
+      titulo: 'Selo de Verificado',
+      descricao: 'Destaque-se no ranking com o selo azul de atleta premium ao lado do seu nome e avatar.',
+      cor: 'text-blue-400',
+      bg: 'bg-blue-500/10',
+      border: 'border-blue-500/20'
     },
     {
-      titulo: 'Destaque',
-      descricao: 'Maior visibilidade no ranking de assessorias',
-      icone: Star
+      icone: BarChart3,
+      titulo: 'Raio-X Completo',
+      descricao: 'Acesso ao Raio-X com estatísticas detalhadas, gráficos de evolução e insígnias exclusivas.',
+      cor: 'text-emerald-400',
+      bg: 'bg-emerald-500/10',
+      border: 'border-emerald-500/20'
     },
     {
-      titulo: 'Confiança',
-      descricao: 'Atletas preferem equipes verificadas',
-      icone: Award
+      icone: Activity,
+      titulo: 'Integração Strava',
+      descricao: 'Conecte sua conta do Strava e importe suas corridas automaticamente para o ranking.',
+      cor: 'text-orange-400',
+      bg: 'bg-orange-500/10',
+      border: 'border-orange-500/20'
     },
     {
-      titulo: 'Reconhecimento',
-      descricao: 'Prova de compromisso com o esporte',
-      icone: Medal
+      icone: Eye,
+      titulo: 'Feed Social',
+      descricao: 'Participe do feed social da sua equipe, compartilhe conquistas e interaja com outros atletas.',
+      cor: 'text-purple-400',
+      bg: 'bg-purple-500/10',
+      border: 'border-purple-500/20'
+    },
+    {
+      icone: Trophy,
+      titulo: 'Ranking Exclusivo',
+      descricao: 'Submeta seus resultados e concorra no ranking nacional e estadual com atletas de todo o Brasil.',
+      cor: 'text-amber-400',
+      bg: 'bg-amber-500/10',
+      border: 'border-amber-500/20'
+    },
+    {
+      icone: Shield,
+      titulo: 'Suporte Prioritário',
+      descricao: 'Atendimento prioritário pela equipe Ranking Run para qualquer dúvida ou problema.',
+      cor: 'text-cyan-400',
+      bg: 'bg-cyan-500/10',
+      border: 'border-cyan-500/20'
     }
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900">
-      <div className="container mx-auto px-4 py-8 max-w-5xl">
-        {/* Header */}
-        <div className="mb-8">
-          <Button onClick={() => navigate(-1)} variant="outline" size="sm" className="mb-4">
+    <div className="min-h-screen bg-slate-950" data-testid="como-ser-verificado-page">
+      {/* Header */}
+      <div className="bg-gradient-to-b from-blue-600/20 to-transparent">
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+          <Button 
+            onClick={() => navigate(-1)} 
+            variant="ghost" 
+            size="sm" 
+            className="text-slate-400 hover:text-white mb-6"
+            data-testid="btn-voltar-verificado"
+          >
             <ArrowLeft className="w-4 h-4 mr-2" />
             Voltar
           </Button>
-          
-          <div className="text-center">
-            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-100 mb-4">
-              <BadgeCheck className="w-12 h-12 text-blue-500" />
+
+          {/* Hero */}
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-blue-500/20 border-2 border-blue-500/30 mb-6">
+              <BadgeCheck className="w-10 h-10 text-blue-400" />
             </div>
-            <h1 className="text-3xl md:text-4xl font-bold text-slate-800 dark:text-white mb-3">
-              Como ser uma Assessoria Verificada
+            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-3">
+              Seja um Atleta <span className="text-blue-400">Verificado</span>
             </h1>
-            <p className="text-lg text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
-              O selo de verificação é um reconhecimento para assessorias que demonstram 
-              compromisso, organização e engajamento na plataforma Ranking Run.
+            <p className="text-slate-400 max-w-xl mx-auto text-base">
+              Assine o Ranking Run e ganhe o selo de verificado, acesso completo 
+              à plataforma e muito mais para sua jornada esportiva.
             </p>
           </div>
-        </div>
 
-        {/* O que é o Selo */}
-        <Card className="mb-8 border-2 border-blue-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="flex-shrink-0">
-                <div className="w-24 h-24 rounded-2xl bg-blue-500 flex items-center justify-center shadow-lg">
-                  <BadgeCheck className="w-14 h-14 text-white" />
+          {/* Preview do selo */}
+          <Card className="bg-slate-800/50 border-slate-700/50 mb-12 max-w-md mx-auto">
+            <CardContent className="pt-6">
+              <p className="text-xs text-slate-500 uppercase tracking-wider mb-4 text-center font-medium">
+                Como aparece no ranking
+              </p>
+              <div className="flex items-center gap-3 bg-slate-900/50 rounded-lg p-4">
+                <div className="relative">
+                  <Avatar className="h-12 w-12 ring-2 ring-blue-500 ring-offset-2 ring-offset-slate-800">
+                    <AvatarFallback className="bg-emerald-600 text-white font-bold">VC</AvatarFallback>
+                  </Avatar>
+                  <div className="absolute -bottom-1 -right-1">
+                    <BadgeCheck className="w-5 h-5 text-blue-500 fill-blue-500 stroke-white drop-shadow" />
+                  </div>
                 </div>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-bold text-white text-sm">Seu Nome</span>
+                    <Badge className="bg-amber-500/20 text-amber-400 text-[10px]">Elite</Badge>
+                  </div>
+                  <span className="text-xs text-slate-500">Sua Equipe</span>
+                </div>
+                <span className="text-2xl font-bold text-amber-400">98</span>
               </div>
-              <div className="flex-1 text-center md:text-left">
-                <h2 className="text-2xl font-bold text-slate-800 mb-2 flex items-center justify-center md:justify-start gap-2">
-                  <span>Selo de Verificação</span>
-                  <Badge className="bg-blue-500 text-white">Oficial</Badge>
-                </h2>
-                <p className="text-slate-600">
-                  O selo de verificação aparece ao lado do nome da sua assessoria em toda a plataforma: 
-                  na lista de rankings, na página da assessoria e no painel administrativo. 
-                  É a forma de mostrar que sua equipe é séria e comprometida com o esporte.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
 
-        {/* Critérios */}
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-          <Target className="w-6 h-6 text-blue-500" />
-          Critérios para Verificação
+      {/* Benefícios */}
+      <div className="container mx-auto px-4 max-w-4xl pb-12">
+        <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+          <Star className="w-5 h-5 text-amber-400" />
+          Benefícios do Plano Premium
         </h2>
-        
-        <div className="grid gap-6 mb-10">
-          {criterios.map((criterio, idx) => (
-            <Card key={criterio.id} className={`${criterio.bgCor} ${criterio.borderCor} border-2`}>
-              <CardContent className="pt-6">
-                <div className="flex flex-col md:flex-row gap-4">
-                  <div className="flex-shrink-0 flex items-start gap-4">
-                    <div className={`w-12 h-12 rounded-xl ${criterio.bgCor} border-2 ${criterio.borderCor} flex items-center justify-center`}>
-                      <criterio.icone className={`w-6 h-6 ${criterio.cor}`} />
-                    </div>
-                    <div className="w-8 h-8 rounded-full bg-white border-2 border-slate-200 flex items-center justify-center font-bold text-slate-600">
-                      {idx + 1}
-                    </div>
-                  </div>
-                  <div className="flex-1">
-                    <h3 className="text-xl font-bold text-slate-800 mb-1">{criterio.titulo}</h3>
-                    <p className="text-slate-600 mb-3">{criterio.descricao}</p>
-                    <div className="bg-white/70 rounded-lg p-3 border border-slate-200">
-                      <p className="text-sm text-slate-500 flex items-start gap-2">
-                        <Zap className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-                        <span><strong>Dica:</strong> {criterio.dica}</span>
-                      </p>
-                    </div>
-                  </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-12">
+          {beneficios.map((b, i) => (
+            <Card key={i} className={`${b.bg} border ${b.border} hover:scale-[1.02] transition-transform`}>
+              <CardContent className="pt-5 pb-5 flex items-start gap-4">
+                <div className={`w-10 h-10 rounded-lg ${b.bg} border ${b.border} flex items-center justify-center flex-shrink-0`}>
+                  <b.icone className={`w-5 h-5 ${b.cor}`} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-white text-sm mb-1">{b.titulo}</h3>
+                  <p className="text-xs text-slate-400 leading-relaxed">{b.descricao}</p>
                 </div>
               </CardContent>
             </Card>
           ))}
         </div>
 
-        {/* Exemplo Visual */}
-        <Card className="mb-10 overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-amber-500 to-orange-500 text-white">
-            <CardTitle className="flex items-center gap-2">
-              <Trophy className="w-5 h-5" />
-              Como aparece o Selo
-            </CardTitle>
-          </CardHeader>
+        {/* Como funciona */}
+        <Card className="bg-slate-800/30 border-slate-700/50 mb-12">
           <CardContent className="pt-6">
+            <h2 className="text-lg font-bold text-white mb-6 flex items-center gap-2">
+              <Zap className="w-5 h-5 text-yellow-400" />
+              Como funciona?
+            </h2>
             <div className="space-y-4">
-              {/* Exemplo na Lista */}
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <p className="text-sm text-slate-500 mb-2">Na lista de assessorias:</p>
-                <div className="flex items-center gap-3 bg-white p-3 rounded-lg border">
-                  <span className="w-8 h-8 rounded-full bg-amber-400 text-amber-900 flex items-center justify-center font-bold">1</span>
-                  <span className="text-lg">🥇</span>
-                  <span className="font-semibold text-amber-700">Sua Assessoria</span>
-                  <BadgeCheck className="w-5 h-5 text-blue-500" />
-                  <span className="text-slate-400">|</span>
-                  <span className="text-slate-600">São Paulo, SP</span>
-                </div>
-              </div>
-
-              {/* Exemplo na Página */}
-              <div className="p-4 bg-slate-50 rounded-lg">
-                <p className="text-sm text-slate-500 mb-2">Na página da assessoria:</p>
-                <div className="bg-gradient-to-r from-amber-500 to-orange-500 p-4 rounded-lg text-white">
-                  <div className="flex items-center gap-3">
-                    <h3 className="text-xl font-bold">Sua Assessoria</h3>
-                    <Badge className="bg-blue-500 text-white flex items-center gap-1">
-                      <BadgeCheck className="w-4 h-4" />
-                      Verificada
-                    </Badge>
-                    <Badge className="bg-white/20">SELO OURO</Badge>
+              {[
+                { num: '1', texto: 'Escolha seu plano e realize o pagamento via Pix ou Cartão de Crédito.' },
+                { num: '2', texto: 'Sua conta é ativada instantaneamente com todos os recursos premium.' },
+                { num: '3', texto: 'O selo de verificado aparece automaticamente no seu avatar em toda a plataforma.' }
+              ].map((step) => (
+                <div key={step.num} className="flex items-start gap-4">
+                  <div className="w-8 h-8 rounded-full bg-blue-500/20 border border-blue-500/30 flex items-center justify-center flex-shrink-0">
+                    <span className="text-sm font-bold text-blue-400">{step.num}</span>
                   </div>
+                  <p className="text-sm text-slate-300 pt-1">{step.texto}</p>
                 </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Benefícios */}
-        <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6 flex items-center gap-2">
-          <Star className="w-6 h-6 text-amber-500" />
-          Benefícios de ser Verificada
-        </h2>
-        
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-10">
-          {beneficios.map((beneficio, idx) => (
-            <Card key={idx} className="text-center hover:shadow-lg transition-shadow">
-              <CardContent className="pt-6">
-                <beneficio.icone className="w-10 h-10 mx-auto text-blue-500 mb-3" />
-                <h3 className="font-bold text-slate-800 mb-1">{beneficio.titulo}</h3>
-                <p className="text-sm text-slate-500">{beneficio.descricao}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-
-        {/* Progresso Example */}
-        <Card className="mb-10 border-2 border-emerald-200 bg-emerald-50">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-emerald-700">
-              <TrendingUp className="w-5 h-5" />
-              Acompanhe seu Progresso
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-slate-600 mb-4">
-              Se você é dono de uma assessoria, pode acompanhar o progresso dos critérios 
-              no painel administrativo. Veja um exemplo:
-            </p>
-            <div className="space-y-4 bg-white p-4 rounded-lg">
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-600">Atletas (8/10)</span>
-                  <span className="text-blue-600 font-medium">80%</span>
-                </div>
-                <Progress value={80} className="h-2" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-600">Resultados (5/5)</span>
-                  <span className="text-green-600 font-medium">100% ✓</span>
-                </div>
-                <Progress value={100} className="h-2 bg-green-100" />
-              </div>
-              <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span className="text-slate-600">Dono Definido</span>
-                  <span className="text-green-600 font-medium">✓ Completo</span>
-                </div>
-                <Progress value={100} className="h-2 bg-green-100" />
-              </div>
+              ))}
             </div>
           </CardContent>
         </Card>
 
         {/* CTA */}
-        <Card className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
-          <CardContent className="pt-6 text-center">
-            <h2 className="text-2xl font-bold mb-3">Pronto para começar?</h2>
-            <p className="text-blue-100 mb-6 max-w-xl mx-auto">
-              Convide seus atletas, incentive a submissão de resultados e conquiste 
-              o selo de verificação para sua assessoria!
+        <Card className="bg-gradient-to-r from-blue-600 to-blue-700 border-0 overflow-hidden relative">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHZpZXdCb3g9IjAgMCA0MCA0MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48Y2lyY2xlIGN4PSIyMCIgY3k9IjIwIiByPSIxIiBmaWxsPSJyZ2JhKDI1NSwyNTUsMjU1LDAuMDUpIi8+PC9zdmc+')] opacity-50" />
+          <CardContent className="pt-8 pb-8 text-center relative">
+            <Crown className="w-10 h-10 text-amber-300 mx-auto mb-4" />
+            <h2 className="text-2xl font-bold text-white mb-2">
+              Torne-se Premium hoje!
+            </h2>
+            <p className="text-blue-100 mb-6 max-w-md mx-auto text-sm">
+              Assine o Ranking Run e desbloqueie todos os recursos da plataforma 
+              com o selo de atleta verificado.
             </p>
-            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Button 
-                onClick={() => navigate('/cadastro')} 
-                className="bg-white text-blue-600 hover:bg-blue-50"
-              >
-                <UserPlus className="w-4 h-4 mr-2" />
-                Cadastrar Atleta
-              </Button>
-              <Button 
-                onClick={() => navigate('/')} 
-                variant="outline"
-                className="border-white text-white hover:bg-white/10"
-              >
-                <Trophy className="w-4 h-4 mr-2" />
-                Ver Ranking de Equipes
-              </Button>
-            </div>
+            <Button 
+              onClick={() => navigate('/pagamento')} 
+              className="bg-white text-blue-700 hover:bg-blue-50 font-bold px-8 py-3 text-base"
+              data-testid="btn-assinar-premium"
+            >
+              Assinar agora
+              <ChevronRight className="w-5 h-5 ml-1" />
+            </Button>
           </CardContent>
         </Card>
 
-        {/* Footer Info */}
-        <div className="mt-8 text-center text-sm text-slate-500">
-          <p>
-            Dúvidas? Entre em contato com a administração do Ranking Run.
-          </p>
-        </div>
+        <p className="text-center text-xs text-slate-600 mt-6">
+          Dúvidas? Entre em contato com o suporte pelo e-mail suporte@rankingrun.com.br
+        </p>
       </div>
     </div>
   );
