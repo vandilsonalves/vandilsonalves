@@ -123,9 +123,11 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
   - 6 cards de benefícios, preview do selo no ranking, CTA "Assinar agora" → /pagamento
 - Tela de consentimento Strava (StravaIntegration.jsx):
   - Aparece ANTES de conectar o Strava, com explicação de uso de dados
-  - Checkbox obrigatório + Política de Privacidade expandível
-  - Botões: "Conectar com Strava" (desabilitado até checkbox), "Cancelar", "Desconectar"
-- Testado: iteração 101 (100% como-ser-verificado, Strava code-verified)
+  - Checkbox obrigatório + Política de Privacidade expandível completa (LGPD)
+  - Botões: "Conectar com Strava" (desabilitado até checkbox), "Cancelar", "Desconectar do Strava"
+  - Mesma estrutura replicada na aba Strava (/strava-clube) via StravaConsentScreen (named export)
+  - Botão "Desconectar do Strava" presente em ambos os locais (Perfil + aba Strava)
+- Testado: iterações 101 e 102 (100% frontend verified - 8/8 features)
 
 ## API Endpoints Relevantes (Novos)
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
