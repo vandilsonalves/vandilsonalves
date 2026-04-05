@@ -115,10 +115,17 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 ### Sessão Selo Premium Verificado (04/04/2026)
 - Selo de verificado (BadgeCheck azul) exibido no avatar de atletas premium na RankingTable
 - Backend: `is_premium: bool` adicionado ao `RankingResponse` (models/__init__.py)
-- Backend: Endpoints de ranking (`server.py`, `ranking_routes.py`) cruzam `autorizacoes` com status='ativa' para determinar premium
-- Frontend: `RankingTable.js` renderiza ícone `BadgeCheck` (lucide-react) azul no avatar + anel `ring-blue-500`
-- Quando atleta é premium E pendente: verified badge em `-bottom-1 -right-1`, PendingBadge em `-top-1 -right-1`
-- Testado com testing agent: 100% de sucesso (iteração 100)
+- Frontend: `RankingTable.js` renderiza ícone `BadgeCheck` azul + anel `ring-blue-500`
+- Testado: 100% sucesso (iteração 100)
+
+### Sessão Página Premium + Strava Consent (05/04/2026)
+- Página "Como ser Verificado" (/como-ser-verificado) reescrita para atletas premium
+  - 6 cards de benefícios, preview do selo no ranking, CTA "Assinar agora" → /pagamento
+- Tela de consentimento Strava (StravaIntegration.jsx):
+  - Aparece ANTES de conectar o Strava, com explicação de uso de dados
+  - Checkbox obrigatório + Política de Privacidade expandível
+  - Botões: "Conectar com Strava" (desabilitado até checkbox), "Cancelar", "Desconectar"
+- Testado: iteração 101 (100% como-ser-verificado, Strava code-verified)
 
 ## API Endpoints Relevantes (Novos)
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
