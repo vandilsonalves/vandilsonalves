@@ -21,7 +21,7 @@ from services.strava_service import (
 router = APIRouter()
 
 # URL do frontend para redirecionamento após autenticação
-FRONTEND_URL = os.environ.get("FRONTEND_URL") or os.environ.get("REACT_APP_BACKEND_URL", "https://geo-filtered-admin.preview.emergentagent.com")
+FRONTEND_URL = os.environ.get("FRONTEND_URL") or os.environ.get("APP_URL") or os.environ.get("REACT_APP_BACKEND_URL", "")
 
 
 @router.get("/strava/authorize")
