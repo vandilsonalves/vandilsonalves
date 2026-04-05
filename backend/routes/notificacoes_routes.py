@@ -174,8 +174,10 @@ async def get_notificacao_detalhes(notificacao_id: str, current_user: dict = Dep
 
 # ==================== HELPER FUNCTION ====================
 
-async def criar_notificacao(usuario_id: str, tipo: str, titulo: str, mensagem: str, dados_extras: dict = {}):
+async def criar_notificacao(usuario_id: str, tipo: str, titulo: str, mensagem: str, dados_extras: dict = None):
     """Helper para criar notificação e enviar via WebSocket"""
+    if dados_extras is None:
+        dados_extras = {}
     notificacao = Notificacao(
         usuario_id=usuario_id,
         tipo=tipo,

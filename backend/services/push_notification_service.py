@@ -24,7 +24,7 @@ async def enviar_notificacao_tempo_real(
     tipo: str,
     titulo: str,
     mensagem: str,
-    dados_extras: dict = {}
+    dados_extras: dict = None
 ):
     """
     Envia notificação em tempo real via WebSocket.
@@ -35,6 +35,9 @@ async def enviar_notificacao_tempo_real(
     if not sio:
         print("Socket.IO não inicializado")
         return False
+    
+    if dados_extras is None:
+        dados_extras = {}
     
     # Verificar se é um tipo importante
     tipos_importantes = ['conquista', 'aprovacao', 'reprovacao', 'mensagem_assessoria', 'parabens', 'promocao']

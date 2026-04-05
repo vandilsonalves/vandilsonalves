@@ -27,7 +27,7 @@ class MetricsMiddleware(BaseHTTPMiddleware):
                 from datetime import datetime, timezone
                 client_ip = request.headers.get("x-forwarded-for", request.client.host if request.client else "unknown")
                 ua = request.headers.get("user-agent", "")
-                visitor_hash = hashlib.md5(f"{client_ip}:{ua}".encode()).hexdigest()
+                visitor_hash = hashlib.sha256(f"{client_ip}:{ua}".encode()).hexdigest()
                 hoje = datetime.now(timezone.utc).strftime("%Y-%m-%d")
                 await _db.visitas_diarias.update_one(
                     {"data": hoje},

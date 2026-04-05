@@ -225,7 +225,8 @@ export default function DashboardFinanceiro() {
       } else {
         toast.error('Erro ao carregar dados financeiros');
       }
-    } catch {
+    } catch (err) {
+      console.error('Erro de conexão financeiro:', err);
       toast.error('Erro de conexao');
     } finally {
       setLoading(false);
@@ -242,8 +243,8 @@ export default function DashboardFinanceiro() {
         const d = await res.json();
         setConversao(d);
       }
-    } catch {
-      // silent
+    } catch (err) {
+      console.error('Erro ao carregar conversão:', err);
     } finally {
       setLoadingConversao(false);
     }
@@ -257,7 +258,8 @@ export default function DashboardFinanceiro() {
     try {
       downloadFile(`/api/admin/financeiro/exportar/${formato}`);
       toast.success(`Relatório ${formato.toUpperCase()} exportado!`);
-    } catch {
+    } catch (err) {
+      console.error('Erro ao exportar:', err);
       toast.error('Erro ao exportar');
     } finally {
       setExporting(false);

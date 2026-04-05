@@ -295,7 +295,7 @@ def scrape_central_inscricoes_html(url: str) -> List[Dict]:
 def scrape_generico_html(url: str) -> List[Dict]:
     """Scraper genérico para qualquer site HTML"""
     try:
-        resp = requests.get(url, headers=HEADERS, timeout=30, verify=False)
+        resp = requests.get(url, headers=HEADERS, timeout=30)
         resp.raise_for_status()
         soup = BeautifulSoup(resp.content, 'lxml')
         domain = urlparse(url).netloc.replace('www.', '')

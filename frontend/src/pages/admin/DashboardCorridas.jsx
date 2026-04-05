@@ -152,7 +152,7 @@ const DashboardCorridas = ({
         headers: { Authorization: `Bearer ${token}` }
       });
       setFontesMonitoradas(res.data);
-    } catch (e) { /* silently fail */ }
+    } catch (e) { console.error('Erro ao buscar fontes:', e); }
     finally { setLoadingFontes(false); }
   };
 

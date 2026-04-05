@@ -37,7 +37,7 @@ def gerar_codigo_indicacao(usuario_id: str, nome: str) -> str:
     prefixo = ''.join([p[0] for p in nome_parts[:2]]) if len(nome_parts) >= 2 else nome[:2].upper()
     
     # Gerar hash curto do ID
-    hash_id = hashlib.md5(usuario_id.encode()).hexdigest()[:6].upper()
+    hash_id = hashlib.sha256(usuario_id.encode()).hexdigest()[:6].upper()
     
     return f"REF-{prefixo}{hash_id}"
 

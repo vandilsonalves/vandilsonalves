@@ -277,9 +277,14 @@ async def strava_sync_scheduler_status():
     """
     Retorna o status do scheduler de sincronização automática.
     """
-    # Importar scheduler do server.py
+    # Acessar scheduler via app state (evita import circular com server.py)
     try:
-        from server import scheduler as main_scheduler
+        import sys
+        server_module = sys.modules.get("server")
+        if server_module and hasattr(server_module, "scheduler"):
+            main_scheduler = server_module.scheduler
+        else:
+            return {"running": False, "strava_jobs": [], "message": "Scheduler não disponível"}
         
         jobs = []
         for job in main_scheduler.get_jobs():
@@ -405,7 +410,7 @@ async def strava_limpar_todos(admin_user: dict = Depends(get_admin_user)):
     )
     
     return {
-        "message": f"Tokens Strava removidos com sucesso",
+        "message": "Tokens Strava removidos com sucesso",
         "usuarios_desconectados": total_conectados,
         "documentos_atualizados": result.modified_count
     }

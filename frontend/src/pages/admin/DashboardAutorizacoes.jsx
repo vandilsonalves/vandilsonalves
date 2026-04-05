@@ -97,7 +97,9 @@ const DashboardAutorizacoes = () => {
     try {
       const res = await axios.get(`${API}/admin/autorizacoes/mensagens/historico`, { headers });
       setHistorico(res.data.mensagens || []);
-    } catch {}
+    } catch (err) {
+      console.error('Erro ao carregar histórico:', err);
+    }
   };
 
   useEffect(() => {

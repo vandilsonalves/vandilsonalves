@@ -448,7 +448,7 @@ async def login_com_senha_emergencia(dados: LoginEmergencia):
 # ==================== RECUPERAÇÃO DE SENHA ====================
 
 import string
-import random
+import secrets
 
 class RecuperarSenhaRequest(BaseModel):
     email: str
@@ -470,7 +470,7 @@ async def recuperar_senha(dados: RecuperarSenhaRequest):
     
     # Gerar nova senha aleatória (8 caracteres: letras + dígitos)
     caracteres = string.ascii_letters + string.digits
-    nova_senha = ''.join(random.choices(caracteres, k=8))
+    nova_senha = ''.join(secrets.choice(caracteres) for _ in range(8))
     
     # Gerar hash da nova senha
     novo_hash = get_password_hash(nova_senha)

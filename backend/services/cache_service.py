@@ -63,7 +63,7 @@ class CacheService:
 
     def _generate_key(self, prefix: str, *args, **kwargs) -> str:
         key_data = json.dumps({'args': args, 'kwargs': kwargs}, sort_keys=True, default=str)
-        key_hash = hashlib.md5(key_data.encode()).hexdigest()[:12]
+        key_hash = hashlib.sha256(key_data.encode()).hexdigest()[:12]
         return f"{prefix}{key_hash}"
 
     async def get(self, key: str) -> Optional[Any]:
