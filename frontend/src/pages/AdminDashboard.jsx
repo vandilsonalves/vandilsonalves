@@ -7,7 +7,7 @@ import {
   Trophy, Users, AlertCircle, BarChart3, Shield,
   Activity, Home, Settings, FileText,
   Download, Plus,
-  Cake, Send, RefreshCw, Loader2,
+  Cake, Send, Loader2,
   Crown, MessageSquare, CreditCard, TrendingDown
 } from 'lucide-react';
 import { toast } from 'sonner';

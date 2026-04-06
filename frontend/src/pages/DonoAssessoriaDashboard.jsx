@@ -34,6 +34,12 @@ import { FotoEquipeTab } from '@/components/dono-assessoria/FotoEquipeTab';
 import { ChatAssessoria } from '@/components/dono-assessoria/ChatAssessoria';
 import { FeedEquipe } from '@/components/dono-assessoria/FeedEquipe';
 
+import DonoVerificacaoCard from '@/components/assessoria/DonoVerificacaoCard';
+import DonoComparacaoMensal from '@/components/assessoria/DonoComparacaoMensal';
+import DonoGraficosAvancados from '@/components/assessoria/DonoGraficosAvancados';
+import DonoFotoTab from '@/components/assessoria/DonoFotoTab';
+import { DonoRankingsTab, DonoSeloTab } from '@/components/assessoria/DonoRankingsSeloTabs';
+
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
@@ -564,634 +570,78 @@ const DonoAssessoriaDashboard = () => {
             {/* Métricas */}
             <MetricasCards assessoria={assessoria} />
 
-            {/* Card de Progresso para Verificação */}
-            {(() => {
-              const isVerificada = assessoria.responsavel_nome && 
-                                   assessoria.total_atletas >= 10 && 
-                                   assessoria.total_resultados >= 5;
-              const atletasProgress = Math.min((assessoria.total_atletas / 10) * 100, 100);
-              const resultadosProgress = Math.min((assessoria.total_resultados / 5) * 100, 100);
-              const donoProgress = assessoria.responsavel_nome ? 100 : 0;
-              const progressoTotal = Math.round((atletasProgress + resultadosProgress + donoProgress) / 3);
-              
-              return (
-                <Card className={`border-2 ${isVerificada ? 'bg-gradient-to-br from-blue-900/50 to-indigo-900/50 border-blue-500' : 'bg-slate-800/50 border-slate-600'}`}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between">
-                      <CardTitle className="text-white flex items-center gap-2">
-                        <ShieldCheck className={`w-5 h-5 ${isVerificada ? 'text-blue-400' : 'text-slate-400'}`} />
-                        Progresso para Verificação
-                      </CardTitle>
-                      {isVerificada ? (
-                        <Badge className="bg-blue-500 text-white flex items-center gap-1">
-                          <BadgeCheck className="w-4 h-4" />
-                          Verificada
-                        </Badge>
-                      ) : (
-                        <Badge variant="outline" className="text-slate-400 border-slate-500">
-                          {progressoTotal}% completo
-                        </Badge>
-                      )}
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    {isVerificada ? (
-                      <div className="text-center py-4">
-                        <div className="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center mx-auto mb-3">
-                          <BadgeCheck className="w-10 h-10 text-blue-400" />
-                        </div>
-                        <p className="text-blue-300 font-medium">Parabéns! Sua assessoria é verificada!</p>
-                        <p className="text-slate-400 text-sm mt-1">
-                          O selo de verificação aparece em toda a plataforma.
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        <p className="text-slate-400 text-sm mb-4">
-                          Complete os critérios abaixo para obter o selo de verificação da sua assessoria.
-                        </p>
-                        
-                        {/* Critério 1: Atletas */}
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center gap-2">
-                              <Users className={`w-4 h-4 ${assessoria.total_atletas >= 10 ? 'text-emerald-400' : 'text-slate-400'}`} />
-                              <span className="text-sm text-slate-300">10+ Atletas</span>
-                            </div>
-                            <span className={`text-sm font-medium ${assessoria.total_atletas >= 10 ? 'text-emerald-400' : 'text-slate-400'}`}>
-                              {assessoria.total_atletas}/10
-                              {assessoria.total_atletas >= 10 && <CheckCircle className="w-4 h-4 inline ml-1" />}
-                            </span>
-                          </div>
-                          <Progress value={atletasProgress} className="h-2" />
-                          {assessoria.total_atletas < 10 && (
-                            <p className="text-xs text-slate-500 mt-1">
-                              Faltam {10 - assessoria.total_atletas} atletas para completar
-                            </p>
-                          )}
-                        </div>
-                        
-                        {/* Critério 2: Resultados */}
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center gap-2">
-                              <CheckCircle className={`w-4 h-4 ${assessoria.total_resultados >= 5 ? 'text-emerald-400' : 'text-slate-400'}`} />
-                              <span className="text-sm text-slate-300">5+ Resultados</span>
-                            </div>
-                            <span className={`text-sm font-medium ${assessoria.total_resultados >= 5 ? 'text-emerald-400' : 'text-slate-400'}`}>
-                              {assessoria.total_resultados}/5
-                              {assessoria.total_resultados >= 5 && <CheckCircle className="w-4 h-4 inline ml-1" />}
-                            </span>
-                          </div>
-                          <Progress value={resultadosProgress} className="h-2" />
-                          {assessoria.total_resultados < 5 && (
-                            <p className="text-xs text-slate-500 mt-1">
-                              Faltam {5 - assessoria.total_resultados} resultados para completar
-                            </p>
-                          )}
-                        </div>
-                        
-                        {/* Critério 3: Dono */}
-                        <div>
-                          <div className="flex justify-between items-center mb-2">
-                            <div className="flex items-center gap-2">
-                              <Crown className={`w-4 h-4 ${assessoria.responsavel_nome ? 'text-emerald-400' : 'text-slate-400'}`} />
-                              <span className="text-sm text-slate-300">Dono Definido</span>
-                            </div>
-                            <span className={`text-sm font-medium ${assessoria.responsavel_nome ? 'text-emerald-400' : 'text-slate-400'}`}>
-                              {assessoria.responsavel_nome ? (
-                                <>Completo <CheckCircle className="w-4 h-4 inline ml-1" /></>
-                              ) : (
-                                'Pendente'
-                              )}
-                            </span>
-                          </div>
-                          <Progress value={donoProgress} className="h-2" />
-                        </div>
-                        
-                        {/* Link para página de ajuda */}
-                        <div className="pt-2 border-t border-slate-700">
-                          <Button 
-                            variant="link" 
-                            className="text-blue-400 hover:text-blue-300 p-0 h-auto"
-                            onClick={() => navigate('/como-ser-verificado')}
-                          >
-                            Saiba mais sobre como ser verificado →
-                          </Button>
-                        </div>
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              );
-            })()}
+            {/* Card de Progresso para Verificação - Extraído */}
+            <DonoVerificacaoCard assessoria={assessoria} />
+            {/* Comparação Mensal - Extraído */}
+            <DonoComparacaoMensal comparacaoMensal={comparacaoMensal} />
+            {/* Grid de Gráficos Adicionais - Extraído */}
+            <DonoGraficosAvancados 
+              graficosAvancados={graficosAvancados} 
+              atletas={atletas} 
+              assessoria={assessoria} 
+            />
 
-            {/* Comparação Mensal */}
-            {comparacaoMensal && (
-              <Card className="bg-gradient-to-br from-slate-800 to-slate-900 border-amber-500/30">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <BarChart3 className="w-5 h-5 text-amber-500" />
-                    Comparação de Desempenho: {comparacaoMensal.mes_atual.nome} vs {comparacaoMensal.mes_anterior.nome}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    {/* Resultados */}
-                    <div className="bg-slate-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 text-sm">Resultados</span>
-                        <span className={`flex items-center text-xs font-medium ${
-                          comparacaoMensal.variacoes.resultados > 0 ? 'text-green-400' :
-                          comparacaoMensal.variacoes.resultados < 0 ? 'text-red-400' : 'text-slate-400'
-                        }`}>
-                          {comparacaoMensal.variacoes.resultados > 0 ? <ArrowUpRight className="w-3 h-3" /> :
-                           comparacaoMensal.variacoes.resultados < 0 ? <ArrowDownRight className="w-3 h-3" /> :
-                           <Minus className="w-3 h-3" />}
-                          {Math.abs(comparacaoMensal.variacoes.resultados)}%
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-white">{comparacaoMensal.mes_atual.resultados}</span>
-                        <span className="text-sm text-slate-500">vs {comparacaoMensal.mes_anterior.resultados}</span>
-                      </div>
-                    </div>
-
-                    {/* Pontos */}
-                    <div className="bg-slate-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 text-sm">Pontos Conquistados</span>
-                        <span className={`flex items-center text-xs font-medium ${
-                          comparacaoMensal.variacoes.pontos > 0 ? 'text-green-400' :
-                          comparacaoMensal.variacoes.pontos < 0 ? 'text-red-400' : 'text-slate-400'
-                        }`}>
-                          {comparacaoMensal.variacoes.pontos > 0 ? <ArrowUpRight className="w-3 h-3" /> :
-                           comparacaoMensal.variacoes.pontos < 0 ? <ArrowDownRight className="w-3 h-3" /> :
-                           <Minus className="w-3 h-3" />}
-                          {Math.abs(comparacaoMensal.variacoes.pontos)}%
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-amber-500">{comparacaoMensal.mes_atual.pontos}</span>
-                        <span className="text-sm text-slate-500">vs {comparacaoMensal.mes_anterior.pontos}</span>
-                      </div>
-                    </div>
-
-                    {/* Novos Atletas */}
-                    <div className="bg-slate-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 text-sm">Novos Atletas</span>
-                        <span className={`flex items-center text-xs font-medium ${
-                          comparacaoMensal.variacoes.novos_atletas > 0 ? 'text-green-400' :
-                          comparacaoMensal.variacoes.novos_atletas < 0 ? 'text-red-400' : 'text-slate-400'
-                        }`}>
-                          {comparacaoMensal.variacoes.novos_atletas > 0 ? <ArrowUpRight className="w-3 h-3" /> :
-                           comparacaoMensal.variacoes.novos_atletas < 0 ? <ArrowDownRight className="w-3 h-3" /> :
-                           <Minus className="w-3 h-3" />}
-                          {Math.abs(comparacaoMensal.variacoes.novos_atletas)}%
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-blue-400">{comparacaoMensal.mes_atual.novos_atletas}</span>
-                        <span className="text-sm text-slate-500">vs {comparacaoMensal.mes_anterior.novos_atletas}</span>
-                      </div>
-                    </div>
-
-                    {/* Posição no Ranking */}
-                    <div className="bg-slate-800 rounded-lg p-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <span className="text-slate-400 text-sm">Posição Ranking</span>
-                        <span className={`flex items-center text-xs font-medium ${
-                          comparacaoMensal.variacoes.posicao > 0 ? 'text-green-400' :
-                          comparacaoMensal.variacoes.posicao < 0 ? 'text-red-400' : 'text-slate-400'
-                        }`}>
-                          {comparacaoMensal.variacoes.posicao > 0 ? <ArrowUpRight className="w-3 h-3" /> :
-                           comparacaoMensal.variacoes.posicao < 0 ? <ArrowDownRight className="w-3 h-3" /> :
-                           <Minus className="w-3 h-3" />}
-                          {Math.abs(comparacaoMensal.variacoes.posicao)} pos
-                        </span>
-                      </div>
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-2xl font-bold text-purple-400">
-                          {comparacaoMensal.mes_atual.posicao_ranking || '-'}º
-                        </span>
-                        <span className="text-sm text-slate-500">
-                          vs {comparacaoMensal.mes_anterior.posicao_ranking || '-'}º
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Mensagem de Performance */}
-                  <div className="mt-4 p-4 rounded-lg bg-gradient-to-r from-amber-500/10 to-orange-500/10 border border-amber-500/20">
-                    <p className="text-amber-200 text-sm">
-                      {comparacaoMensal.variacoes.pontos > 0 
-                        ? `Parabéns! Sua assessoria cresceu ${comparacaoMensal.variacoes.pontos}% em pontos este mês.`
-                        : comparacaoMensal.variacoes.pontos < 0
-                        ? `Atenção: Queda de ${Math.abs(comparacaoMensal.variacoes.pontos)}% nos pontos. Incentive seus atletas a participar de mais corridas!`
-                        : `Desempenho estável. Continue motivando seus atletas!`
-                      }
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Botões de Exportação */}
+            {assessoria && (
+              <ExportacaoCard
+                onExportarDados={handleExportarDados}
+                onExportarGraficos={handleExportarGraficos}
+              />
             )}
 
-            {/* Evolução */}
-            {assessoria.evolucao_mensal && assessoria.evolucao_mensal.length > 0 && (
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <TrendingUp className="w-5 h-5 text-amber-500" />
-                    Evolução Mensal
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ResponsiveContainer width="100%" height={250}>
-                    <AreaChart data={assessoria.evolucao_mensal}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                      <XAxis dataKey="mes" stroke="#9CA3AF" tick={{ fontSize: 12 }} />
-                      <YAxis stroke="#9CA3AF" />
-                      <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                      <Area type="monotone" dataKey="resultados" fill="#F59E0B" stroke="#D97706" fillOpacity={0.3} name="Resultados" />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Grid de Gráficos Adicionais */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              
-              {/* Distribuição por Cidade */}
-              {atletas.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-emerald-500" />
-                      Distribuição por Cidade
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {(() => {
-                      const cidadeCount = atletas.reduce((acc, atleta) => {
-                        const cidade = atleta.cidade || 'Não informada';
-                        acc[cidade] = (acc[cidade] || 0) + 1;
-                        return acc;
-                      }, {});
-                      const cidadeData = Object.entries(cidadeCount)
-                        .map(([cidade, count]) => ({ cidade: cidade.substring(0, 15), total: count }))
-                        .sort((a, b) => b.total - a.total)
-                        .slice(0, 6);
-                      
-                      return (
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={cidadeData} layout="vertical">
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis type="number" stroke="#9CA3AF" />
-                            <YAxis dataKey="cidade" type="category" stroke="#9CA3AF" width={100} tick={{ fontSize: 11 }} />
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                            <Bar dataKey="total" fill="#10B981" radius={[0, 4, 4, 0]} name="Atletas" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Top Atletas Pontuadores */}
-              {atletas.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Medal className="w-5 h-5 text-amber-500" />
-                      Top 5 Atletas - Mais Pontos
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    {(() => {
-                      const topAtletas = [...atletas]
-                        .sort((a, b) => (b.pontos_total || 0) - (a.pontos_total || 0))
-                        .slice(0, 5)
-                        .map(a => ({
-                          nome: a.nome?.split(' ').slice(0, 2).join(' ') || 'Atleta',
-                          pontos: a.pontos_total || 0
-                        }));
-                      
-                      return (
-                        <ResponsiveContainer width="100%" height={200}>
-                          <BarChart data={topAtletas}>
-                            <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                            <XAxis dataKey="nome" stroke="#9CA3AF" tick={{ fontSize: 10 }} />
-                            <YAxis stroke="#9CA3AF" />
-                            <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                            <Bar dataKey="pontos" fill="#F59E0B" radius={[4, 4, 0, 0]} name="Pontos" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      );
-                    })()}
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Resumo de Resultados por Tipo */}
-              {atletas.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-yellow-500" />
-                      Conquistas da Equipe
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-3 gap-4 text-center">
-                      <div className="bg-gradient-to-br from-yellow-500/20 to-amber-500/20 rounded-lg p-4">
-                        <div className="text-3xl mb-1">🥇</div>
-                        <p className="text-2xl font-bold text-yellow-400">{assessoria.total_primeiros || 0}</p>
-                        <p className="text-xs text-slate-400">Primeiros Lugares</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-slate-400/20 to-slate-500/20 rounded-lg p-4">
-                        <div className="text-3xl mb-1">🥈</div>
-                        <p className="text-2xl font-bold text-slate-300">
-                          {Math.floor((assessoria.total_podios || 0) * 0.4)}
-                        </p>
-                        <p className="text-xs text-slate-400">Segundos Lugares</p>
-                      </div>
-                      <div className="bg-gradient-to-br from-amber-700/20 to-orange-700/20 rounded-lg p-4">
-                        <div className="text-3xl mb-1">🥉</div>
-                        <p className="text-2xl font-bold text-amber-600">
-                          {(assessoria.total_podios || 0) - (assessoria.total_primeiros || 0) - Math.floor((assessoria.total_podios || 0) * 0.4)}
-                        </p>
-                        <p className="text-xs text-slate-400">Terceiros Lugares</p>
+            {/* Posições nos Rankings */}
+            <Card className="bg-slate-800 border-slate-700">
+              <CardHeader>
+                <CardTitle className="text-white flex items-center gap-2">
+                  <Target className="w-5 h-5 text-blue-500" />
+                  Posições nos Rankings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+                    <div className="flex items-center gap-3">
+                      <Trophy className="w-6 h-6 text-amber-500" />
+                      <div>
+                        <p className="text-sm text-slate-400">Nacional</p>
+                        <p className="text-white font-medium">Todas as Assessorias</p>
                       </div>
                     </div>
-                    <div className="mt-4 p-3 bg-slate-700/50 rounded-lg">
-                      <div className="flex justify-between items-center">
-                        <span className="text-slate-400">Total de Pódios</span>
-                        <span className="text-xl font-bold text-white">{assessoria.total_podios || 0}</span>
-                      </div>
-                      <div className="flex justify-between items-center mt-2">
-                        <span className="text-slate-400">Total de Resultados</span>
-                        <span className="text-xl font-bold text-white">{assessoria.total_resultados || 0}</span>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-amber-500">{rankingNacional || '-'}º</p>
+                    </div>
+                  </div>
+                  
+                  <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg border border-blue-500/20">
+                    <div className="flex items-center gap-3">
+                      <MapPin className="w-6 h-6 text-blue-500" />
+                      <div>
+                        <p className="text-sm text-slate-400">Estadual ({assessoria.estado})</p>
+                        <p className="text-white font-medium">No seu Estado</p>
                       </div>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* NOVOS GRÁFICOS AVANÇADOS */}
-              
-              {/* Distribuição por Gênero */}
-              {graficosAvancados?.grafico_genero && graficosAvancados.grafico_genero.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Users className="w-5 h-5 text-pink-500" />
-                      Distribuição por Gênero
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={graficosAvancados.grafico_genero}
-                          cx="50%"
-                          cy="50%"
-                          innerRadius={50}
-                          outerRadius={80}
-                          paddingAngle={5}
-                          dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`}
-                        >
-                          {graficosAvancados.grafico_genero.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Distribuição por Categoria */}
-              {graficosAvancados?.grafico_categoria && graficosAvancados.grafico_categoria.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Award className="w-5 h-5 text-green-500" />
-                      Distribuição por Categoria
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={graficosAvancados.grafico_categoria}
-                          cx="50%"
-                          cy="50%"
-                          outerRadius={80}
-                          dataKey="value"
-                          label={({ name, value }) => `${name}: ${value}`}
-                        >
-                          {graficosAvancados.grafico_categoria.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.fill} />
-                          ))}
-                        </Pie>
-                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Distribuição por Faixa Etária */}
-              {graficosAvancados?.grafico_faixa_etaria && graficosAvancados.grafico_faixa_etaria.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <Calendar className="w-5 h-5 text-purple-500" />
-                      Distribuição por Faixa Etária
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={graficosAvancados.grafico_faixa_etaria}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="faixa" stroke="#9CA3AF" tick={{ fontSize: 10 }} />
-                        <YAxis stroke="#9CA3AF" />
-                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                        <Bar dataKey="atletas" fill="#8B5CF6" radius={[4, 4, 0, 0]} name="Atletas" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Resultados por Mês */}
-              {graficosAvancados?.resultados_por_mes && graficosAvancados.resultados_por_mes.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <BarChart3 className="w-5 h-5 text-cyan-500" />
-                      Resultados por Mês (Últimos 6 meses)
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <AreaChart data={graficosAvancados.resultados_por_mes}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="mes" stroke="#9CA3AF" />
-                        <YAxis stroke="#9CA3AF" />
-                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                        <Area type="monotone" dataKey="resultados" stroke="#06B6D4" fill="#06B6D4" fillOpacity={0.3} name="Resultados" />
-                      </AreaChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Distâncias Mais Corridas */}
-              {graficosAvancados?.grafico_distancias && graficosAvancados.grafico_distancias.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <MapPin className="w-5 h-5 text-red-500" />
-                      Distâncias Mais Corridas
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={graficosAvancados.grafico_distancias.slice(0, 6)} layout="vertical">
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis type="number" stroke="#9CA3AF" />
-                        <YAxis dataKey="distancia" type="category" stroke="#9CA3AF" width={60} tick={{ fontSize: 10 }} />
-                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                        <Bar dataKey="corridas" fill="#EF4444" radius={[0, 4, 4, 0]} name="Corridas" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Evolução de Novos Atletas */}
-              {graficosAvancados?.evolucao_atletas && graficosAvancados.evolucao_atletas.length > 0 && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <UserPlus className="w-5 h-5 text-emerald-500" />
-                      Novos Atletas por Mês
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <ResponsiveContainer width="100%" height={200}>
-                      <BarChart data={graficosAvancados.evolucao_atletas}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                        <XAxis dataKey="mes" stroke="#9CA3AF" />
-                        <YAxis stroke="#9CA3AF" />
-                        <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none' }} />
-                        <Bar dataKey="novos_atletas" fill="#10B981" radius={[4, 4, 0, 0]} name="Novos Atletas" />
-                      </BarChart>
-                    </ResponsiveContainer>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Estatísticas de Performance */}
-              {graficosAvancados?.estatisticas && (
-                <Card className="bg-slate-800 border-slate-700">
-                  <CardHeader>
-                    <CardTitle className="text-white flex items-center gap-2">
-                      <TrendingUp className="w-5 h-5 text-amber-500" />
-                      Indicadores de Performance
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold text-white">{graficosAvancados.estatisticas.media_pontos_atleta}</p>
-                        <p className="text-xs text-slate-400">Média Pontos/Atleta</p>
-                      </div>
-                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold text-white">{graficosAvancados.estatisticas.media_corridas_atleta}</p>
-                        <p className="text-xs text-slate-400">Média Corridas/Atleta</p>
-                      </div>
-                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold text-amber-400">{graficosAvancados.estatisticas.total_vitorias}</p>
-                        <p className="text-xs text-slate-400">Total Vitórias</p>
-                      </div>
-                      <div className="bg-slate-700/50 rounded-lg p-3 text-center">
-                        <p className="text-2xl font-bold text-green-400">{graficosAvancados.estatisticas.taxa_podio}%</p>
-                        <p className="text-xs text-slate-400">Taxa de Pódio</p>
-                      </div>
+                    <div className="text-right">
+                      <p className="text-3xl font-bold text-blue-500">{rankingEstadual || '-'}º</p>
                     </div>
-                  </CardContent>
-                </Card>
-              )}
-
-              {/* Botões de Exportação */}
-              {assessoria && (
-                <ExportacaoCard
-                  onExportarDados={handleExportarDados}
-                  onExportarGraficos={handleExportarGraficos}
-                />
-              )}
-
-              {/* Posições nos Rankings */}
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Target className="w-5 h-5 text-blue-500" />
-                    Posições nos Rankings
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-lg border border-amber-500/20">
+                  </div>
+                  
+                  {rankingMensal && (
+                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg border border-emerald-500/20">
                       <div className="flex items-center gap-3">
-                        <Trophy className="w-6 h-6 text-amber-500" />
+                        <Calendar className="w-6 h-6 text-emerald-500" />
                         <div>
-                          <p className="text-sm text-slate-400">Nacional</p>
-                          <p className="text-white font-medium">Todas as Assessorias</p>
+                          <p className="text-sm text-slate-400">Mensal</p>
+                          <p className="text-white font-medium">Este Mês</p>
                         </div>
                       </div>
                       <div className="text-right">
-                        <p className="text-3xl font-bold text-amber-500">{rankingNacional || '-'}º</p>
+                        <p className="text-3xl font-bold text-emerald-500">{rankingMensal}º</p>
                       </div>
                     </div>
-                    
-                    <div className="flex items-center justify-between p-3 bg-gradient-to-r from-blue-500/10 to-indigo-500/10 rounded-lg border border-blue-500/20">
-                      <div className="flex items-center gap-3">
-                        <MapPin className="w-6 h-6 text-blue-500" />
-                        <div>
-                          <p className="text-sm text-slate-400">Estadual ({assessoria.estado})</p>
-                          <p className="text-white font-medium">No seu Estado</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-3xl font-bold text-blue-500">{rankingEstadual || '-'}º</p>
-                      </div>
-                    </div>
-                    
-                    {rankingMensal && (
-                      <div className="flex items-center justify-between p-3 bg-gradient-to-r from-emerald-500/10 to-green-500/10 rounded-lg border border-emerald-500/20">
-                        <div className="flex items-center gap-3">
-                          <Calendar className="w-6 h-6 text-emerald-500" />
-                          <div>
-                            <p className="text-sm text-slate-400">Mensal</p>
-                            <p className="text-white font-medium">Este Mês</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-3xl font-bold text-emerald-500">{rankingMensal}º</p>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </div>
         )}
 
@@ -1221,170 +671,14 @@ const DonoAssessoriaDashboard = () => {
 
         {/* Foto da Equipe Tab */}
         {activeTab === 'foto' && (
-          <div className="space-y-6" data-testid="foto-tab">
-            <h2 className="text-2xl font-bold text-white">Foto da Assessoria</h2>
-            <p className="text-slate-400">
-              A foto da sua assessoria aparecerá na página pública e no selo oficial.
-            </p>
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Preview da Foto Atual */}
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Image className="w-5 h-5 text-amber-500" />
-                    Foto Atual
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <div className="flex flex-col items-center">
-                    {assessoria.foto_url ? (
-                      <div className="relative group">
-                        <img 
-                          src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
-                          alt={assessoria.nome}
-                          className="w-48 h-48 object-cover rounded-2xl shadow-lg border-4 border-amber-500/30"
-                        />
-                        <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-2xl flex items-center justify-center">
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={handleRemoverFoto}
-                            disabled={uploadingFoto}
-                          >
-                            <Trash2 className="w-4 h-4 mr-1" />
-                            Remover
-                          </Button>
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="w-48 h-48 bg-slate-700 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-600">
-                        <Camera className="w-12 h-12 text-slate-500 mb-2" />
-                        <p className="text-sm text-slate-500">Sem foto</p>
-                      </div>
-                    )}
-
-                    <p className="mt-4 text-sm text-slate-400 text-center">
-                      {assessoria.foto_url 
-                        ? 'Passe o mouse sobre a foto para ver a opção de remover'
-                        : 'Sua assessoria ainda não tem foto'
-                      }
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Upload de Nova Foto */}
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader>
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Upload className="w-5 h-5 text-emerald-500" />
-                    {assessoria.foto_url ? 'Trocar Foto' : 'Enviar Foto'}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6">
-                  <input
-                    type="file"
-                    ref={fotoInputRef}
-                    onChange={handleUploadFoto}
-                    accept="image/jpeg,image/png,image/webp,image/gif"
-                    className="hidden"
-                    id="foto-upload"
-                  />
-
-                  <div 
-                    className="border-2 border-dashed border-slate-600 rounded-xl p-8 text-center hover:border-amber-500 transition-colors cursor-pointer"
-                    onClick={() => fotoInputRef.current?.click()}
-                  >
-                    {uploadingFoto ? (
-                      <div className="flex flex-col items-center">
-                        <Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" />
-                        <p className="text-white font-medium">Enviando foto...</p>
-                      </div>
-                    ) : (
-                      <>
-                        <Camera className="w-12 h-12 text-slate-500 mx-auto mb-4" />
-                        <p className="text-white font-medium mb-2">
-                          Clique para selecionar uma foto
-                        </p>
-                        <p className="text-sm text-slate-400">
-                          JPEG, PNG, WebP ou GIF - Máximo 5MB
-                        </p>
-                      </>
-                    )}
-                  </div>
-
-                  <div className="mt-4 space-y-2">
-                    <p className="text-xs text-slate-500">
-                      <strong>Dica:</strong> Use uma imagem quadrada (1:1) para melhor visualização.
-                    </p>
-                    <p className="text-xs text-slate-500">
-                      A foto aparecerá na página pública da assessoria e no selo oficial.
-                    </p>
-                  </div>
-
-                  <Button
-                    className="w-full mt-4 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600"
-                    onClick={() => fotoInputRef.current?.click()}
-                    disabled={uploadingFoto}
-                  >
-                    {uploadingFoto ? (
-                      <>
-                        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                        Enviando...
-                      </>
-                    ) : (
-                      <>
-                        <Upload className="w-4 h-4 mr-2" />
-                        {assessoria.foto_url ? 'Trocar Foto' : 'Selecionar Foto'}
-                      </>
-                    )}
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Preview de como aparece na página */}
-            <Card className="bg-slate-800 border-slate-700">
-              <CardHeader>
-                <CardTitle className="text-white">Preview - Como sua assessoria aparece</CardTitle>
-              </CardHeader>
-              <CardContent className="p-6">
-                <div className="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-6 text-white">
-                  <div className="flex items-center gap-6">
-                    {assessoria.foto_url ? (
-                      <div className="relative">
-                        <img 
-                          src={assessoria.foto_url.startsWith('http') ? assessoria.foto_url : `${BACKEND_URL}${assessoria.foto_url}`}
-                          alt={assessoria.nome}
-                          className="w-24 h-24 object-cover rounded-2xl shadow-lg border-4 border-white/30"
-                        />
-                        <div className={`absolute -bottom-2 -right-2 w-10 h-10 ${getSeloColor(assessoria.selo)} rounded-full flex items-center justify-center text-2xl shadow-md border-2 border-white`}>
-                          {getSeloIcon(assessoria.selo)}
-                        </div>
-                      </div>
-                    ) : (
-                      <div className={`w-24 h-24 rounded-2xl ${getSeloColor(assessoria.selo)} flex items-center justify-center text-5xl shadow-lg border-4 border-white/30`}>
-                        {getSeloIcon(assessoria.selo)}
-                      </div>
-                    )}
-                    <div>
-                      <h3 className="text-2xl font-bold">{assessoria.nome}</h3>
-                      <p className="text-amber-100 flex items-center gap-2">
-                        <MapPin className="w-4 h-4" />
-                        {assessoria.cidade}, {assessoria.estado}
-                      </p>
-                      <Badge className="mt-2 bg-white/20 text-white">
-                        SELO {assessoria.selo?.toUpperCase()}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          <DonoFotoTab 
+            assessoria={assessoria}
+            token={token}
+            onFotoUpdated={fetchAssessoriaData}
+            getSeloColor={getSeloColor}
+            getSeloIcon={getSeloIcon}
+          />
         )}
-
         {/* Relatórios Tab */}
         {activeTab === 'relatorios' && (
           <RelatoriosAssessoria equipe={user?.equipe} token={token} />
@@ -1392,65 +686,14 @@ const DonoAssessoriaDashboard = () => {
 
         {/* Rankings Tab */}
         {activeTab === 'rankings' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Posição nos Rankings</h2>
-            
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader className="border-b border-slate-700">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Trophy className="w-5 h-5 text-amber-500" />
-                    Ranking Nacional
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 text-center">
-                  <p className="text-6xl font-bold text-amber-500 mb-2">{rankingNacional || '-'}º</p>
-                  <p className="text-slate-400">de todas as assessorias do Brasil</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader className="border-b border-slate-700">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <MapPin className="w-5 h-5 text-blue-500" />
-                    Ranking Estadual ({assessoria.estado})
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 text-center">
-                  <p className="text-6xl font-bold text-blue-500 mb-2">{rankingEstadual || '-'}º</p>
-                  <p className="text-slate-400">no estado de {assessoria.estado}</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader className="border-b border-slate-700">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Calendar className="w-5 h-5 text-emerald-500" />
-                    Ranking Mensal
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 text-center">
-                  <p className="text-6xl font-bold text-emerald-500 mb-2">{rankingMensal || '-'}º</p>
-                  <p className="text-slate-400">neste mês</p>
-                </CardContent>
-              </Card>
-              
-              <Card className="bg-slate-800 border-slate-700">
-                <CardHeader className="border-b border-slate-700">
-                  <CardTitle className="text-white flex items-center gap-2">
-                    <Target className="w-5 h-5 text-purple-500" />
-                    Ranking Anual
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="p-6 text-center">
-                  <p className="text-6xl font-bold text-purple-500 mb-2">{rankingAnual || '-'}º</p>
-                  <p className="text-slate-400">no ano de 2026</p>
-                </CardContent>
-              </Card>
-            </div>
-          </div>
+          <DonoRankingsTab 
+            assessoria={assessoria}
+            rankingNacional={rankingNacional}
+            rankingEstadual={rankingEstadual}
+            rankingMensal={rankingMensal}
+            rankingAnual={rankingAnual}
+          />
         )}
-
         {/* Mensagens/Chat Tab */}
         {activeTab === 'mensagens' && (
           <ChatAssessoria 
@@ -1472,47 +715,13 @@ const DonoAssessoriaDashboard = () => {
 
         {/* Selo Tab */}
         {activeTab === 'selo' && (
-          <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-white">Selo Oficial ROE-RR</h2>
-
-            <div className="max-w-md mx-auto">
-              {/* Certificado */}
-              <div 
-                ref={certificadoRef}
-                className={`${getSeloColor(assessoria.selo)} text-white p-8 rounded-xl text-center shadow-2xl`}
-              >
-                <div className="text-6xl mb-4">{getSeloIcon(assessoria.selo)}</div>
-                <h3 className="text-2xl font-bold mb-2">{getSeloTitle(assessoria.selo)}</h3>
-                <p className="text-xl font-semibold mb-4">{assessoria.nome}</p>
-                <div className="border-t border-white/30 pt-4">
-                  <p className="text-sm opacity-90">Liga Nacional de Assessorias</p>
-                  <p className="text-lg font-semibold">Ranking Run</p>
-                  <p className="text-xs opacity-75 mt-2">Classificação Oficial ROE-RR – 2026</p>
-                </div>
-              </div>
-
-              <Button 
-                className="w-full mt-6 bg-amber-500 hover:bg-amber-600" 
-                onClick={downloadCertificado}
-                disabled={downloadingCertificado}
-              >
-                {downloadingCertificado ? (
-                  <>
-                    <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                    Gerando...
-                  </>
-                ) : (
-                  <>
-                    <Download className="w-4 h-4 mr-2" />
-                    Baixar Selo Oficial
-                  </>
-                )}
-              </Button>
-            </div>
-          </div>
+          <DonoSeloTab 
+            assessoria={assessoria} 
+            getSeloColor={getSeloColor} 
+            getSeloIcon={getSeloIcon} 
+            getSeloTitle={getSeloTitle} 
+          />
         )}
-      </div>
-
       {/* Modal Mensagem */}
       <Dialog open={showMensagemModal} onOpenChange={setShowMensagemModal}>
         <DialogContent className="bg-slate-800 border-slate-700">
@@ -1537,6 +746,7 @@ const DonoAssessoriaDashboard = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      </div>
     </div>
   );
 };

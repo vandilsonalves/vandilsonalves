@@ -135,6 +135,16 @@ Plataforma de ranking de corridas de rua no Brasil. Sistema full-stack (React/Fa
 - Empty catch blocks corrigidos em 3 dashboards, test config centralizada
 - Deploy health check: APROVADO (blockers anteriores eram falsos positivos)
 
+### Sessão Refatoração de Componentes Oversized (06/04/2026)
+- AdminDashboard.jsx: 796→795 (removido import RefreshCw não utilizado)
+- DonoAssessoriaDashboard.jsx: 1544→754 (redução de 51%)
+  - Extraídos: DonoVerificacaoCard, DonoComparacaoMensal, DonoGraficosAvancados, DonoFotoTab, DonoRankingsSeloTabs
+- FeedPage.jsx: 1172→882 (redução de 25%)
+  - Extraídos: FeedPostCard, FeedAdminSidebar
+- CadastroPage.js: 1077→954 (redução de 11%)
+  - Extraído: CadastroTermoModal
+- Total de 8 novos componentes criados em assessoria/, feed/, cadastro/
+
 ## API Endpoints Relevantes (Novos)
 - `POST /api/auth/recuperar-senha` - Gera nova senha e envia por email
 - `GET /api/feed/stories` - Retorna `autor_foto` para cada autor
