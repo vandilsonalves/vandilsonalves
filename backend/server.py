@@ -179,6 +179,7 @@ from routes.scraping_routes import router as scraping_router
 from routes.backup_routes import router as backup_router
 from routes.whatsapp_routes import router as whatsapp_router
 from routes.corridas_parceiras_routes import router as corridas_parceiras_router
+from routes.exportacoes_routes import router as exportacoes_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -219,6 +220,7 @@ api_router.include_router(scraping_router)
 api_router.include_router(backup_router)
 api_router.include_router(whatsapp_router)
 api_router.include_router(corridas_parceiras_router)
+api_router.include_router(exportacoes_router)
 
 
 # Endpoint genérico para download de conteúdo CSV gerado no frontend

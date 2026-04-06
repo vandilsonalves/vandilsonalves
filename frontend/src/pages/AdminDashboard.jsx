@@ -746,6 +746,43 @@ const AdminDashboard = () => {
                 </Button>
               </div>
             </Card>
+
+            <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 p-6">
+              <h3 className="text-lg font-semibold mb-4">Exportar Dados do Sistema</h3>
+              <p className="text-slate-500 mb-6">
+                Exporte dados detalhados de cada módulo do sistema em formato Excel.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                {[
+                  { label: 'Atletas Profissional/Amador', path: '/api/admin/exportar/atletas-profissional', icon: Users },
+                  { label: 'Atletas da Galera', path: '/api/admin/exportar/atletas-galera', icon: Users },
+                  { label: 'Donos de Assessoria', path: '/api/admin/exportar/donos-assessoria', icon: Crown },
+                  { label: 'Assessorias', path: '/api/admin/exportar/assessorias', icon: Shield },
+                  { label: 'Corridas Parceiras', path: '/api/admin/exportar/corridas-parceiras', icon: Handshake },
+                  { label: 'Corridas Avaliadas', path: '/api/admin/exportar/corridas-avaliadas', icon: Star },
+                  { label: 'Média das Avaliações', path: '/api/admin/exportar/media-avaliacoes', icon: BarChart3 },
+                  { label: 'Engajamento', path: '/api/admin/exportar/engajamento', icon: Activity },
+                  { label: 'Retenção', path: '/api/admin/exportar/retencao', icon: TrendingDown },
+                  { label: 'Aprovações com Logs', path: '/api/admin/exportar/aprovacoes-logs', icon: AlertCircle },
+                  { label: 'Autorizações', path: '/api/admin/exportar/autorizacoes', icon: Shield },
+                  { label: 'Financeiro', path: '/api/admin/exportar/financeiro', icon: CreditCard },
+                  { label: 'Mensagens Enviadas', path: '/api/admin/exportar/mensagens', icon: MessageSquare },
+                  { label: 'Logs Administrativos', path: '/api/admin/exportar/logs-admin', icon: FileText },
+                ].map(({ label, path, icon: Icon }) => (
+                  <Button
+                    key={path}
+                    variant="outline"
+                    className="justify-start h-auto py-3 px-4 text-left"
+                    onClick={() => { downloadFile(path); toast.success(`Exportando ${label}...`); }}
+                    data-testid={`export-btn-${path.split('/').pop()}`}
+                  >
+                    <Icon className="w-4 h-4 mr-2 shrink-0 text-emerald-600" />
+                    <span className="text-sm">{label}</span>
+                  </Button>
+                ))}
+              </div>
+            </Card>
+
             <div className="text-center py-12">
               <Trophy className="h-16 w-16 text-emerald-500 mx-auto mb-4" />
               <h3 className="text-xl font-semibold mb-2">Gerenciar Ranking</h3>
