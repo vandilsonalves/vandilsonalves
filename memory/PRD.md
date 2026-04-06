@@ -40,7 +40,9 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 ## Backlog
 - P3: Exportar Raio-X como PDF
 - P3: Investigar scraping Sympla bloqueado por Cloudflare
-- P3: Testes unitários (Jest/RTL) para componentes críticos
+
+## Testes Unitários
+- `/app/backend/tests/test_critical_features.py` — 29 testes cobrindo: Senha Mestra (4), Submissão/Aprovação de Corridas (7), Anti-Duplicidade (2), Exportações Excel (16)
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
