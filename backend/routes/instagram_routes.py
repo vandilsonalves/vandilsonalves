@@ -311,12 +311,145 @@ def calcular_crescimento_estimado(seguidores: int, total_posts: int, engagement_
 
 # Stubs para funções de busca Instagram (não implementadas - requer API keys)
 async def buscar_instagram_api_direta(username: str) -> dict:
-    """Stub - API direta do Instagram não configurada"""
-    return {"success": False, "error": "not_implemented", "message": "API direta do Instagram não configurada"}
+    """Busca dados do Instagram via endpoint web_profile_info e fallback HTML parsing"""
+    import httpx
+    from bs4 import BeautifulSoup
+    import json
+    import re
+    
+    headers_api = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "X-IG-App-ID": "936619743392459",
+        "X-Requested-With": "XMLHttpRequest",
+        "Referer": f"https://www.instagram.com/{username}/",
+        "Accept": "*/*",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Sec-Fetch-Dest": "empty",
+        "Sec-Fetch-Mode": "cors",
+        "Sec-Fetch-Site": "same-origin"
+    }
+    
+    headers_html = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Referer": "https://www.instagram.com/"
+    }
+    
+    try:
+        async with httpx.AsyncClient(timeout=15, follow_redirects=True) as client:
+            # Método 1: API endpoint web_profile_info
+            try:
+                url = f"https://www.instagram.com/api/v1/users/web_profile_info/?username={username}"
+                resp = await client.get(url, headers=headers_api)
+                if resp.status_code == 200:
+                    data = resp.json()
+                    user = data.get("data", {}).get("user")
+                    if user:
+                        logging.info(f"Instagram API direta: sucesso para @{username}")
+                        return {"success": True, "user": user}
+                elif resp.status_code == 429:
+                    logging.warning(f"Instagram rate limited para @{username}")
+                    return {"success": False, "error": "rate_limited"}
+            except Exception as e:
+                logging.warning(f"Método 1 (API) falhou para @{username}: {e}")
+            
+            # Método 2: HTML parsing com JSON-LD
+            try:
+                html_url = f"https://www.instagram.com/{username}/"
+                resp_html = await client.get(html_url, headers=headers_html)
+                if resp_html.status_code == 200:
+                    soup = BeautifulSoup(resp_html.text, "html.parser")
+                    
+                    # Tentar JSON-LD
+                    script_tag = soup.find("script", type="application/ld+json")
+                    if script_tag and script_tag.string:
+                        try:
+                            ld_data = json.loads(script_tag.string)
+                            stats = ld_data.get("author", {}).get("interactionStatistic", [])
+                            followers = 0
+                            posts_count = 0
+                            for stat in stats:
+                                if stat.get("interactionType") == "http://schema.org/FollowAction":
+                                    followers = int(stat.get("userInteractionCount", 0))
+                                elif "interactionCount" in str(stat):
+                                    posts_count = int(stat.get("userInteractionCount", 0))
+                            
+                            if followers > 0 or posts_count > 0:
+                                user = {
+                                    "username": username,
+                                    "full_name": ld_data.get("name", ""),
+                                    "biography": ld_data.get("description", ""),
+                                    "edge_followed_by": {"count": followers},
+                                    "edge_follow": {"count": 0},
+                                    "edge_owner_to_timeline_media": {"count": posts_count, "edges": []},
+                                    "is_verified": False,
+                                    "is_business_account": False,
+                                    "external_url": ld_data.get("url", ""),
+                                    "profile_pic_url": ld_data.get("image", "")
+                                }
+                                logging.info(f"HTML JSON-LD parse: sucesso para @{username}")
+                                return {"success": True, "user": user}
+                        except json.JSONDecodeError:
+                            pass
+                    
+                    # Tentar extrair meta tags
+                    meta_desc = soup.find("meta", {"name": "description"}) or soup.find("meta", {"property": "og:description"})
+                    if meta_desc:
+                        desc = meta_desc.get("content", "")
+                        # Parse "1,234 Followers, 567 Following, 89 Posts"
+                        nums = re.findall(r'([\d,.]+[KkMm]?)\s*(Followers|Following|Posts)', desc)
+                        if nums:
+                            def parse_num(s):
+                                s = s.replace(",", "").replace(".", "")
+                                if s.upper().endswith("K"):
+                                    return int(float(s[:-1]) * 1000)
+                                elif s.upper().endswith("M"):
+                                    return int(float(s[:-1]) * 1000000)
+                                return int(s)
+                            
+                            followers = 0
+                            following = 0
+                            posts_ct = 0
+                            for val, typ in nums:
+                                if typ == "Followers":
+                                    followers = parse_num(val)
+                                elif typ == "Following":
+                                    following = parse_num(val)
+                                elif typ == "Posts":
+                                    posts_ct = parse_num(val)
+                            
+                            # Extrair bio do resto da description
+                            bio_match = re.search(r'Posts\s*-\s*(.+)', desc)
+                            bio = bio_match.group(1).strip() if bio_match else ""
+                            
+                            meta_title = soup.find("meta", {"property": "og:title"})
+                            full_name = meta_title.get("content", "").replace(f"(@{username})", "").strip() if meta_title else ""
+                            
+                            user = {
+                                "username": username,
+                                "full_name": full_name,
+                                "biography": bio,
+                                "edge_followed_by": {"count": followers},
+                                "edge_follow": {"count": following},
+                                "edge_owner_to_timeline_media": {"count": posts_ct, "edges": []},
+                                "is_verified": False,
+                                "is_business_account": False,
+                                "external_url": ""
+                            }
+                            logging.info(f"HTML meta parse: sucesso para @{username}")
+                            return {"success": True, "user": user}
+            except Exception as e:
+                logging.warning(f"Método 2 (HTML) falhou para @{username}: {e}")
+            
+            return {"success": False, "error": "not_found", "message": "Não foi possível obter dados do perfil."}
+    except Exception as e:
+        logging.error(f"Erro geral no scraping Instagram: {e}")
+        return {"success": False, "error": str(e)}
 
 
 async def buscar_instagram_rapidapi(username: str) -> dict:
-    """Stub - RapidAPI não configurada"""
+    """Fallback - RapidAPI não configurada"""
     return {"success": False, "error": "not_implemented", "message": "RapidAPI não configurada"}
 
 
@@ -392,15 +525,32 @@ async def deletar_analise_instagram(analysis_id: str, admin: dict = Depends(get_
     return {"message": "Análise deletada com sucesso"}
 
 
+
+def extrair_username_do_link(link_ou_username: str) -> str:
+    """Extrai o username de um link do Instagram ou de um @username"""
+    import re
+    texto = link_ou_username.strip()
+    # Remove @ se presente
+    if texto.startswith('@'):
+        return texto[1:].strip().lower()
+    # Extrai de URLs como https://instagram.com/username ou https://www.instagram.com/username/
+    match = re.search(r'(?:instagram\.com|instagr\.am)/([A-Za-z0-9_.]+)', texto)
+    if match:
+        return match.group(1).lower()
+    # Se não é link nem @, assume que é username direto
+    return texto.lower().replace(' ', '')
+
+
+
 # ==================== BUSCAR DADOS INSTAGRAM ====================
 
-@router.get("/admin/instagram/buscar/{username}")
+@router.get("/admin/instagram/buscar/{username:path}")
 async def buscar_dados_instagram(username: str, admin: dict = Depends(get_admin_user)):
     """
     Busca dados completos de um perfil Instagram automaticamente.
-    Tenta primeiro a API direta, depois RapidAPI como fallback.
+    Aceita: @username, username, ou link completo do Instagram.
     """
-    username = username.strip().lstrip('@').lower()
+    username = extrair_username_do_link(username)
     
     if not username:
         raise HTTPException(status_code=400, detail="Username é obrigatório")
@@ -438,8 +588,8 @@ async def buscar_dados_instagram(username: str, admin: dict = Depends(get_admin_
         if not user:
             return {
                 "success": False,
-                "error": "not_found",
-                "message": f"API de busca não configurada. Por favor, insira os dados manualmente."
+                "error": "scraping_failed",
+                "message": f"Não foi possível obter dados de @{username}. O perfil pode ser privado ou o Instagram bloqueou a requisição. Use a inserção manual."
             }
         
         # Extrair dados
@@ -509,17 +659,19 @@ async def buscar_dados_instagram(username: str, admin: dict = Depends(get_admin_
 
 # ==================== ANÁLISE AUTOMÁTICA ====================
 
-@router.post("/admin/instagram/analisar-automatico/{username}")
-async def analisar_instagram_automatico(username: str, admin: dict = Depends(get_admin_user)):
+@router.post("/admin/instagram/analisar-automatico/{username:path}")
+async def analisar_instagram_automatico(username: str, nicho: str = "corrida", admin: dict = Depends(get_admin_user)):
     """
     Busca dados do Instagram e faz análise completa automaticamente.
+    Aceita: @username, username, ou link completo do Instagram.
     """
+    username = extrair_username_do_link(username)
     busca_result = await buscar_dados_instagram(username, admin)
     
     if not busca_result.get('success'):
         raise HTTPException(
             status_code=400,
-            detail=busca_result.get('message', 'Erro ao buscar dados do Instagram')
+            detail=busca_result.get('message', 'Não foi possível obter dados do perfil. O Instagram pode estar bloqueando as requisições. Use a inserção manual.')
         )
     
     profile = busca_result['profile']
@@ -527,7 +679,7 @@ async def analisar_instagram_automatico(username: str, admin: dict = Depends(get
     analise_bio = busca_result['analise_bio']
     analise_posts = busca_result.get('analise_posts', {})
     
-    media_nicho = MEDIAS_NICHO.get('corrida', MEDIAS_NICHO['corrida'])
+    media_nicho = MEDIAS_NICHO.get(nicho, MEDIAS_NICHO['corrida'])
     
     # Calcular notas
     nota_bio = analise_bio.get('nota', 5.0)

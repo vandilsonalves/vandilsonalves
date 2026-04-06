@@ -62,13 +62,22 @@ const DashboardInstagram = ({ token }) => {
   };
 
   const handleInstagramSearch = async () => {
-    if (!instagramSearchUsername.trim()) { toast.error('Digite o @username do perfil'); return; }
+    if (!instagramSearchUsername.trim()) { toast.error('Cole o link do perfil do Instagram'); return; }
     setInstagramSearchLoading(true);
     setInstagramSearchError('');
     try {
-      const cleanUsername = instagramSearchUsername.trim().replace('@', '');
+      // Extrair username do link ou @username
+      let input = instagramSearchUsername.trim();
+      let cleanUsername = input;
+      const linkMatch = input.match(/instagram\.com\/([A-Za-z0-9_.]+)/);
+      if (linkMatch) {
+        cleanUsername = linkMatch[1];
+      } else {
+        cleanUsername = input.replace('@', '').replace(/\s/g, '');
+      }
+      
       const response = await axios.post(
-        `${API}/admin/instagram/analisar-automatico/${cleanUsername}?nicho=${instagramFormData.nicho}`,
+        `${API}/admin/instagram/analisar-automatico/${encodeURIComponent(cleanUsername)}?nicho=${instagramFormData.nicho}`,
         {}, { headers: { Authorization: `Bearer ${token}` } }
       );
       setInstagramResult(response.data);
@@ -77,9 +86,9 @@ const DashboardInstagram = ({ token }) => {
       toast.success(`@${cleanUsername}: Score ${response.data.analysis.score_final}/100 - ${response.data.analysis.classificacao}`);
     } catch (error) {
       const errorMsg = typeof error.response?.data?.detail === 'string'
-        ? error.response.data.detail : 'Não foi possível analisar o perfil.';
+        ? error.response.data.detail : 'Não foi possível analisar o perfil. Use a inserção manual.';
       setInstagramSearchError(errorMsg);
-      toast.error(errorMsg);
+      toast.error('Scraping bloqueado pelo Instagram. Use inserção manual.');
     } finally {
       setInstagramSearchLoading(false);
     }
@@ -157,12 +166,12 @@ const DashboardInstagram = ({ token }) => {
           <CardContent className="p-6">
             <div className="text-center mb-6">
               <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-2">Analisar Perfil do Instagram</h3>
-              <p className="text-slate-600 dark:text-slate-400 text-sm">Digite o @username para análise automática completa</p>
+              <p className="text-slate-600 dark:text-slate-400 text-sm">Cole o link do perfil Instagram para análise automática</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                <Input placeholder="@username (ex: rankingrun)" value={instagramSearchUsername}
+                <Input placeholder="https://instagram.com/username" value={instagramSearchUsername}
                   onChange={(e) => setInstagramSearchUsername(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && handleInstagramSearch()}
                   className="pl-10 h-12 text-lg" disabled={instagramSearchLoading} />
@@ -176,16 +185,20 @@ const DashboardInstagram = ({ token }) => {
               </select>
               <Button onClick={handleInstagramSearch} disabled={instagramSearchLoading || !instagramSearchUsername.trim()}
                 className="h-12 px-6 bg-gradient-to-r from-pink-500 to-purple-500 hover:from-pink-600 hover:to-purple-600">
-                {instagramSearchLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analisando...</> : <><Activity className="w-4 h-4 mr-2" />Analisar</>}
+                {instagramSearchLoading ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Analisando...</> : <><Activity className="w-4 h-4 mr-2" />Analisar Perfil</>}
               </Button>
             </div>
             {instagramSearchError && (
               <div className="mt-4 p-3 bg-red-100 dark:bg-red-900/30 rounded-lg text-center">
                 <p className="text-red-700 dark:text-red-300 text-sm">{instagramSearchError}</p>
+                <button onClick={() => { resetInstagramForm(); setShowInstagramForm(true); setInstagramSearchError(''); }}
+                  className="mt-2 text-pink-600 dark:text-pink-400 hover:underline font-medium text-sm">
+                  Inserir dados manualmente
+                </button>
               </div>
             )}
             <div className="mt-6 text-center text-sm text-slate-500">
-              <p>O sistema busca automaticamente: seguidores, posts, engajamento, crescimento, análise da bio e indicadores anti-fake.</p>
+              <p>Cole o link do perfil (ex: https://instagram.com/username) e o sistema busca automaticamente os dados públicos.</p>
               <button onClick={() => { resetInstagramForm(); setShowInstagramForm(true); }}
                 className="mt-2 text-pink-600 dark:text-pink-400 hover:underline font-medium">
                 Ou inserir dados manualmente
@@ -196,7 +209,15 @@ const DashboardInstagram = ({ token }) => {
       )}
 
       {/* Result */}
-      {instagramResult && (
+      {instagramResult && (() => {
+        const gd = instagramResult.graficos_data || {};
+        const radar = gd.radar || { labels: [], values: [] };
+        const formatos = gd.formatos || { labels: ['Feed', 'Reels', 'Carrossel'], values: [40, 35, 25] };
+        const comparativo = gd.comparativo || { labels: ['Engajamento', 'Frequência', 'Crescimento'], perfil: [5, 5, 5], media_nicho: [5, 5, 5] };
+        const metricas = gd.metricas || {};
+        const analysis = instagramResult.analysis || {};
+        const recomendacoes = instagramResult.recomendacoes || [];
+        return (
         <div className="space-y-6">
           <Card className="bg-gradient-to-br from-slate-900 to-slate-800 text-white border-0 shadow-2xl overflow-hidden">
             <CardContent className="p-6">
@@ -205,13 +226,13 @@ const DashboardInstagram = ({ token }) => {
                   <div className="flex items-center justify-center lg:justify-start gap-4 mb-4">
                     <div className="w-16 h-16 rounded-full bg-gradient-to-r from-pink-500 to-purple-500 flex items-center justify-center text-2xl font-bold">@</div>
                     <div>
-                      <h3 className="text-2xl font-bold">@{instagramResult.analysis.username}</h3>
-                      <p className="text-slate-400">{instagramResult.analysis.nome_completo || 'Influenciador'}</p>
+                      <h3 className="text-2xl font-bold">@{analysis.username}</h3>
+                      <p className="text-slate-400">{analysis.nome_completo || 'Influenciador'}</p>
                     </div>
                   </div>
                   <div className="flex flex-wrap gap-2 justify-center lg:justify-start">
-                    <Badge className="bg-slate-700 text-slate-200">{instagramResult.analysis.nicho}</Badge>
-                    <Badge className={getClassificacaoColor(instagramResult.analysis.classificacao)}>{instagramResult.analysis.classificacao}</Badge>
+                    <Badge className="bg-slate-700 text-slate-200">{analysis.nicho}</Badge>
+                    <Badge className={getClassificacaoColor(analysis.classificacao)}>{analysis.classificacao}</Badge>
                   </div>
                 </div>
                 <div className="text-center">
@@ -219,13 +240,13 @@ const DashboardInstagram = ({ token }) => {
                     <svg className="w-full h-full transform -rotate-90">
                       <circle cx="80" cy="80" r="70" stroke="#334155" strokeWidth="12" fill="none" />
                       <circle cx="80" cy="80" r="70"
-                        stroke={instagramResult.analysis.score_final >= 80 ? '#10B981' : instagramResult.analysis.score_final >= 60 ? '#F59E0B' : '#EF4444'}
+                        stroke={analysis.score_final >= 80 ? '#10B981' : analysis.score_final >= 60 ? '#F59E0B' : '#EF4444'}
                         strokeWidth="12" fill="none"
-                        strokeDasharray={`${(instagramResult.analysis.score_final / 100) * 440} 440`}
+                        strokeDasharray={`${(analysis.score_final / 100) * 440} 440`}
                         strokeLinecap="round" />
                     </svg>
                     <div className="absolute inset-0 flex flex-col items-center justify-center">
-                      <span className="text-4xl font-bold">{instagramResult.analysis.score_final}</span>
+                      <span className="text-4xl font-bold">{analysis.score_final}</span>
                       <span className="text-sm text-slate-400">/100</span>
                     </div>
                   </div>
@@ -233,19 +254,19 @@ const DashboardInstagram = ({ token }) => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="bg-slate-700/50 p-4 rounded-xl text-center">
-                    <div className="text-2xl font-bold text-pink-400">{instagramResult.analysis.seguidores.toLocaleString()}</div>
+                    <div className="text-2xl font-bold text-pink-400">{(analysis.seguidores || 0).toLocaleString()}</div>
                     <div className="text-sm text-slate-400">Seguidores</div>
                   </div>
                   <div className="bg-slate-700/50 p-4 rounded-xl text-center">
-                    <div className="text-2xl font-bold text-blue-400">{instagramResult.analysis.engagement_rate}%</div>
+                    <div className="text-2xl font-bold text-blue-400">{analysis.engagement_rate}%</div>
                     <div className="text-sm text-slate-400">Engajamento</div>
                   </div>
                   <div className="bg-slate-700/50 p-4 rounded-xl text-center">
-                    <div className="text-2xl font-bold text-green-400">{instagramResult.analysis.total_posts}</div>
+                    <div className="text-2xl font-bold text-green-400">{analysis.total_posts}</div>
                     <div className="text-sm text-slate-400">Posts</div>
                   </div>
                   <div className="bg-slate-700/50 p-4 rounded-xl text-center">
-                    <div className="text-2xl font-bold text-amber-400">{((instagramResult.graficos_data?.metricas?.indice_anomalia || 0)).toFixed(1)}%</div>
+                    <div className="text-2xl font-bold text-amber-400">{((metricas.indice_anomalia || 0)).toFixed(1)}%</div>
                     <div className="text-sm text-slate-400">Índice Anomalia</div>
                   </div>
                 </div>
@@ -260,7 +281,7 @@ const DashboardInstagram = ({ token }) => {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <RadarChart data={instagramResult.graficos_data.radar.labels.map((label, i) => ({ metric: label, value: instagramResult.graficos_data.radar.values[i], fullMark: 10 }))}>
+                    <RadarChart data={radar.labels.map((label, i) => ({ metric: label, value: radar.values[i], fullMark: 10 }))}>
                       <PolarGrid stroke="#E5E7EB" /><PolarAngleAxis dataKey="metric" tick={{ fill: '#6B7280', fontSize: 11 }} />
                       <PolarRadiusAxis angle={30} domain={[0, 10]} tick={{ fill: '#9CA3AF', fontSize: 10 }} />
                       <RechartsRadar name="Perfil" dataKey="value" stroke="#8B5CF6" fill="#8B5CF6" fillOpacity={0.5} />
@@ -275,13 +296,13 @@ const DashboardInstagram = ({ token }) => {
               <CardContent>
                 <div className="h-[300px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={instagramResult.graficos_data.radar.labels.map((label, i) => ({ name: label, nota: instagramResult.graficos_data.radar.values[i] }))} layout="vertical">
+                    <BarChart data={radar.labels.map((label, i) => ({ name: label, nota: radar.values[i] }))} layout="vertical">
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                       <XAxis type="number" domain={[0, 10]} stroke="#9CA3AF" />
                       <YAxis dataKey="name" type="category" stroke="#9CA3AF" width={90} tick={{ fontSize: 11 }} />
                       <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
                       <Bar dataKey="nota" radius={[0, 4, 4, 0]}>
-                        {instagramResult.graficos_data.radar.values.map((value, index) => (
+                        {radar.values.map((value, index) => (
                           <Cell key={`cell-${index}`} fill={value >= 7 ? '#10B981' : value >= 5 ? '#F59E0B' : '#EF4444'} />
                         ))}
                       </Bar>
@@ -297,7 +318,7 @@ const DashboardInstagram = ({ token }) => {
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
                     <RechartsPie>
-                      <Pie data={instagramResult.graficos_data.formatos.labels.map((label, i) => ({ name: label, value: instagramResult.graficos_data.formatos.values[i] }))}
+                      <Pie data={formatos.labels.map((label, i) => ({ name: label, value: formatos.values[i] }))}
                         cx="50%" cy="50%" innerRadius={50} outerRadius={90} paddingAngle={5} dataKey="value"
                         label={({ name, value }) => `${name}: ${value}%`}>
                         <Cell fill="#EC4899" /><Cell fill="#8B5CF6" /><Cell fill="#3B82F6" />
@@ -314,8 +335,8 @@ const DashboardInstagram = ({ token }) => {
               <CardContent>
                 <div className="h-[280px]">
                   <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={instagramResult.graficos_data.comparativo.labels.map((label, i) => ({
-                      name: label, perfil: instagramResult.graficos_data.comparativo.perfil[i], media: instagramResult.graficos_data.comparativo.media_nicho[i]
+                    <BarChart data={comparativo.labels.map((label, i) => ({
+                      name: label, perfil: comparativo.perfil[i], media: comparativo.media_nicho[i]
                     }))}>
                       <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
                       <XAxis dataKey="name" stroke="#9CA3AF" /><YAxis stroke="#9CA3AF" />
@@ -335,7 +356,7 @@ const DashboardInstagram = ({ token }) => {
             <CardHeader><CardTitle className="flex items-center gap-2"><AlertCircle className="w-5 h-5 text-blue-500" /> Recomendações Personalizadas</CardTitle></CardHeader>
             <CardContent>
               <ul className="space-y-2">
-                {instagramResult.recomendacoes.map((rec, i) => (
+                {recomendacoes.map((rec, i) => (
                   <li key={i} className="flex items-start gap-2 text-slate-700 dark:text-slate-300">
                     <span className="mt-1 w-2 h-2 rounded-full bg-blue-500 flex-shrink-0" />{rec}
                   </li>
@@ -346,16 +367,17 @@ const DashboardInstagram = ({ token }) => {
 
           {/* Action buttons */}
           <div className="flex flex-wrap gap-3">
-            <Button onClick={() => handleExportInstagram(instagramResult.analysis.id, 'xlsx')} className="bg-emerald-600 hover:bg-emerald-700">
+            <Button onClick={() => handleExportInstagram(analysis.id, 'xlsx')} className="bg-emerald-600 hover:bg-emerald-700">
               <Download className="w-4 h-4 mr-2" /> Exportar XLSX
             </Button>
-            <Button onClick={() => handleExportInstagram(instagramResult.analysis.id, 'csv')} variant="outline">
+            <Button onClick={() => handleExportInstagram(analysis.id, 'csv')} variant="outline">
               <Download className="w-4 h-4 mr-2" /> Exportar CSV
             </Button>
             <Button onClick={() => setInstagramResult(null)} variant="outline">Fechar Resultado</Button>
           </div>
         </div>
-      )}
+        );
+      })()}
 
       {/* History */}
       {!instagramResult && (
