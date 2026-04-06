@@ -192,6 +192,9 @@ const RegrasPage = () => {
                           Você tem até <strong>{regras?.configuracoes_gerais?.prazo_submissao_dias || 30}</strong> dias após 
                           a corrida para submeter o resultado
                         </p>
+                        <p className="text-sm text-red-500 font-semibold mt-1">
+                          OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS
+                        </p>
                       </CardContent>
                     </Card>
                   </div>

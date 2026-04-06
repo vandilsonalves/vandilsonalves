@@ -125,7 +125,9 @@ const SubmeterResultadoPage = () => {
       const diffTime = hoje - dataCompeticao;
       const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
       
-      if (diffDays > 30) {
+      // Isenção: Para corridas do ano de 2026, não aplicar o limite de 30 dias
+      const anoCompeticao = dataCompeticao.getFullYear();
+      if (diffDays > 30 && anoCompeticao !== 2026) {
         setError(`Não é permitido submeter resultados de corridas com mais de 30 dias. A corrida foi há ${diffDays} dias.`);
         toast.error('Data inválida', { description: `A corrida foi há ${diffDays} dias. O limite é 30 dias.` });
         return;
@@ -257,6 +259,9 @@ const SubmeterResultadoPage = () => {
                 : 'Preencha os dados da corrida (Prazo: ate 30 dias apos o evento)'
               }
             </p>
+            <p className="text-red-500 text-sm font-semibold mt-1">
+              OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS
+            </p>
             {isPovao && (
               <div className="mt-3 inline-flex items-center px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm">
                 <span className="font-semibold">Modalidade: Ranking da Galera</span>
@@ -279,12 +284,16 @@ const SubmeterResultadoPage = () => {
                     Você compete pela distância percorrida, não pela colocação!<br />
                     <strong>Pontuação:</strong> 5-9km = 5 pts | 10-20km = 7 pts | 21km+ = 9 pts<br />
                     <strong>Prazo:</strong> Você tem até 30 dias após a corrida para submeter o resultado.
+                    <br />
+                    <span className="text-red-600 font-semibold">OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS</span>
                   </AlertDescription>
                 </Alert>
               ) : (
                 <Alert className="bg-amber-50 border-amber-200">
                   <AlertDescription>
                     <strong>Atenção:</strong> Você tem até 30 dias após a competição para enviar o resultado.
+                    <br />
+                    <span className="text-red-600 font-semibold">OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS</span>
                     <br />
                     <strong>Colocações válidas:</strong> {user?.categoria === 'pcd' || user?.categoria === 'cadeirante' 
                       ? '1º a 3º lugar (PCD/Cadeirante)' 

@@ -1,0 +1,90 @@
+{
+  "summary": "Iteration 103: Successfully tested all 7 features for the 30-day rule bypass for 2026 and the 'Foto da Assessoria' bug fix. All backend tests passed (5/5) and all frontend features verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Console",
+        "issues": ["Hydration warning: '<tr> cannot be child of <span>' - Known React hydration issue in RankingTable, doesn't affect functionality"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_30_dias_rule.py",
+    "/app/test_reports/pytest/pytest_iter103_30dias.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (resultados_routes.py lines 35-46): 30-day rule correctly bypassed for 2026 races using `ano_competicao != 2026`",
+    "Frontend (SubmeterResultadoPage.js): Same bypass logic + red text 'OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS' correctly added in 3 places",
+    "Frontend (RegrasPage.jsx lines 191-197): Red text correctly added in 'Prazo de Envio' card",
+    "Frontend (RankingGalera.jsx line 403-404): Red text correctly added in Regulamento modal under 'Submissão de Resultados'",
+    "Frontend (DonoAssessoriaDashboard.jsx line 677): Bug fixed - changed `fetchAssessoriaData` to `fetchDados` in DonoFotoTab onFotoUpdated prop"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_30_dias_rule.py"
+  ],
+  "success_rate": {
+    "backend": "100% (5/5 tests passed)",
+    "frontend": "100% (All 7 features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "atleta_dono": "teste.dono@teste.com / 123456"
+  },
+  "seed_data_creation": "None",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 103 validated all features for the 30-day rule bypass for 2026 races and the 'Foto da Assessoria' bug fix. Backend tests confirm: 2026 races >30 days are ACCEPTED, 2025/2027 races >30 days are REJECTED, future dates are REJECTED. Frontend shows red text 'OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS' on /submeter-resultado, /regras, and in the Galera Regulamento modal. The 'Foto da Equipe' tab in /minha-assessoria now opens without crash.",
+  "features_verified": {
+    "Feature 1 - Backend: 2026 race >30 days ACCEPTED": {
+      "status": "VERIFIED",
+      "test": "test_2026_race_over_30_days_should_be_accepted",
+      "result": "PASSED - 2026 race with date 2026-01-01 was accepted (not rejected with 30-day error)"
+    },
+    "Feature 2 - Backend: 2025 race >30 days REJECTED": {
+      "status": "VERIFIED",
+      "test": "test_2025_race_over_30_days_should_be_rejected",
+      "result": "PASSED - 2025 race returned 400 with '30 dias' error message"
+    },
+    "Feature 3 - Backend: 2027 race >30 days REJECTED": {
+      "status": "VERIFIED",
+      "test": "test_2027_race_over_30_days_should_be_rejected",
+      "result": "PASSED - 2027 race returned 400 (future date error)"
+    },
+    "Feature 4 - Backend: Future date REJECTED": {
+      "status": "VERIFIED",
+      "test": "test_future_date_should_be_rejected",
+      "result": "PASSED - Future date returned 400 with 'futura' error message"
+    },
+    "Feature 5 - Frontend: /submeter-resultado red text": {
+      "status": "VERIFIED",
+      "details": "Red text 'OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS' visible in 2 places on the page"
+    },
+    "Feature 6 - Frontend: /minha-assessoria 'Foto da Equipe' tab no crash": {
+      "status": "VERIFIED",
+      "details": "Tab opens without crash, no 'fetchAssessoriaData is not defined' error, foto-tab content visible"
+    },
+    "Feature 7 - Frontend: /regras red text": {
+      "status": "VERIFIED",
+      "details": "Red text visible in 'Prazo de Envio' card on the Profissional/Amador tab"
+    },
+    "Feature 8 - Frontend: Galera Regulamento modal red text": {
+      "status": "VERIFIED",
+      "details": "Red text visible in Regulamento modal under 'Submissão de Resultados' section"
+    }
+  },
+  "screenshots": [
+    ".screenshots/submeter_resultado_logged_in.png",
+    ".screenshots/regras_page.png",
+    ".screenshots/minha_assessoria_dashboard.png",
+    ".screenshots/foto_equipe_tab.png",
+    ".screenshots/ranking_galera_tab.png",
+    ".screenshots/regulamento_modal_galera.png"
+  ]
+}

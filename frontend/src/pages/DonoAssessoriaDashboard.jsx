@@ -674,7 +674,7 @@ const DonoAssessoriaDashboard = () => {
           <DonoFotoTab 
             assessoria={assessoria}
             token={token}
-            onFotoUpdated={fetchAssessoriaData}
+            onFotoUpdated={fetchDados}
             getSeloColor={getSeloColor}
             getSeloIcon={getSeloIcon}
           />

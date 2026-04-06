@@ -38,7 +38,9 @@ async def submeter_resultado(
         data_competicao_dt = datetime.strptime(data_competicao, "%Y-%m-%d")
         dias_desde_competicao = (hoje - data_competicao_dt).days
         
-        if dias_desde_competicao > 30:
+        # Isenção: Para corridas do ano de 2026, não aplicar o limite de 30 dias
+        ano_competicao = data_competicao_dt.year
+        if dias_desde_competicao > 30 and ano_competicao != 2026:
             raise HTTPException(
                 status_code=400,
                 detail=f"Não é permitido submeter resultados de corridas com mais de 30 dias. A corrida foi há {dias_desde_competicao} dias."

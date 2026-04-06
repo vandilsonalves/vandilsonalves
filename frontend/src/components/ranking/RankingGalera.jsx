@@ -401,6 +401,7 @@ const RankingGalera = () => {
                     <h3 className="font-semibold text-base mb-2">4. Submissão de Resultados</h3>
                     <ul className="list-disc list-inside space-y-1">
                       <li>Os resultados devem ser submetidos em até 30 dias após a prova</li>
+                      <li className="text-red-500 font-semibold list-none">OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS</li>
                       <li>É obrigatório anexar comprovante (foto do certificado ou print do resultado)</li>
                       <li>Resultados são verificados pela equipe antes da aprovação</li>
                     </ul>
