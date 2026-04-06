@@ -201,7 +201,7 @@ const RankingCorridasPage = () => {
         form.append(key, formData[key]);
       });
 
-      await axios.post(`${API}/corridas-eventos`, form, {
+      const response = await axios.post(`${API}/corridas-eventos`, form, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data'

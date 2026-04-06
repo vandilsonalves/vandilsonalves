@@ -49,6 +49,33 @@ async def criar_corrida_evento(
     
     is_admin = current_user.get("role") in ["admin", "super_admin"]
     
+    # Verificar duplicidade: mesma corrida (nome similar) na mesma cidade/estado
+    import re
+    nome_normalizado = re.sub(r'\s+', ' ', nome_corrida.strip().lower())
+    existente = await db.corridas_eventos.find_one({
+        "estado": estado,
+        "cidade": {"$regex": f"^{re.escape(cidade.strip())}$", "$options": "i"},
+        "aprovacao": {"$ne": "rejeitada"}
+    }, {"_id": 0, "nome_corrida": 1, "id": 1})
+    
+    # Buscar todas as corridas da mesma cidade/estado para comparar nomes
+    corridas_mesma_cidade = await db.corridas_eventos.find(
+        {
+            "estado": estado,
+            "cidade": {"$regex": f"^{re.escape(cidade.strip())}$", "$options": "i"},
+            "aprovacao": {"$ne": "rejeitada"}
+        },
+        {"_id": 0, "nome_corrida": 1}
+    ).to_list(None)
+    
+    for c in corridas_mesma_cidade:
+        nome_existente = re.sub(r'\s+', ' ', c.get("nome_corrida", "").strip().lower())
+        if nome_normalizado == nome_existente:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Já existe uma corrida com o nome \"{c['nome_corrida']}\" em {cidade}/{estado}. Não é possível cadastrar corridas duplicadas na mesma cidade."
+            )
+    
     corrida = {
         "id": str(uuid.uuid4()),
         "nome_corrida": nome_corrida,
