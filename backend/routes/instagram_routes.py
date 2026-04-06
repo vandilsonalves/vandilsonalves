@@ -474,8 +474,44 @@ async def obter_analise_instagram(analysis_id: str, admin: dict = Depends(get_ad
     if not analysis:
         raise HTTPException(status_code=404, detail="Análise não encontrada")
     
-    media_nicho = MEDIAS_NICHO.get(analysis.get('nicho', 'corrida'), MEDIAS_NICHO['corrida'])
+    # Se for análise tipo Social Blade, gerar gráficos com os dados calculados
+    if analysis.get("tipo") == "social_blade":
+        seguidores = max(analysis.get("seguidores", 1), 1)
+        graficos_data = {
+            "radar": {
+                "labels": ["Engajamento", "Curtidas", "Comentários", "Crescimento", "Frequência", "Consistência"],
+                "values": [
+                    min(10, analysis.get("engajamento_pct", 0) * 2),
+                    min(10, analysis.get("taxa_curtidas_pct", 0) * 2),
+                    min(10, (analysis.get("comentarios_medios", 0) / max(analysis.get("curtidas_medias", 1), 1)) * 50),
+                    min(10, analysis.get("crescimento_pct", 0)),
+                    min(10, analysis.get("posts_semanais", 0) * 1.5),
+                    min(10, min(analysis.get("posts_30d", 0), 30) / 3)
+                ]
+            },
+            "barras_metricas": {
+                "labels": ["Engajamento %", "Taxa Curtidas %", "Crescimento %", "Posts/Semana"],
+                "values": [
+                    analysis.get("engajamento_pct", 0),
+                    analysis.get("taxa_curtidas_pct", 0),
+                    analysis.get("crescimento_pct", 0),
+                    analysis.get("posts_semanais", 0)
+                ]
+            },
+            "pizza_distribuicao": {
+                "labels": ["Curtidas", "Comentários"],
+                "values": [analysis.get("curtidas_30d", 0), analysis.get("comentarios_30d", 0)]
+            },
+            "crescimento_semanal": {
+                "labels": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
+                "ganho": [round(analysis.get("ganho_semanal", 0) * x) for x in [0.9, 1.1, 0.95, 1.05]],
+                "perda": [round(analysis.get("perda_semanal", 0) * x) for x in [1.1, 0.9, 1.05, 0.95]]
+            }
+        }
+        graficos_data["radar"]["values"] = [round(v, 1) for v in graficos_data["radar"]["values"]]
+        return {"analysis": analysis, "graficos_data": graficos_data}
     
+    # Análise legada
     graficos_data = {
         "radar": {
             "labels": ["Bio", "Frequência", "Engajamento", "Crescimento", 
@@ -485,29 +521,7 @@ async def obter_analise_instagram(analysis_id: str, admin: dict = Depends(get_ad
                 analysis.get('nota_engajamento', 0), analysis.get('nota_crescimento', 0),
                 analysis.get('nota_consistencia', 0), analysis.get('nota_padroes', 0), 
                 analysis.get('nota_reels', 0), analysis.get('nota_formatos', 0)
-            ],
-            "max": 10
-        },
-        "gauge": {
-            "value": analysis.get('score_final', 0),
-            "min": 0,
-            "max": 100,
-            "ranges": [
-                {"min": 0, "max": 60, "color": "#EF4444", "label": "Alto Risco"},
-                {"min": 60, "max": 70, "color": "#F59E0B", "label": "Regular"},
-                {"min": 70, "max": 80, "color": "#3B82F6", "label": "Profissional"},
-                {"min": 80, "max": 90, "color": "#8B5CF6", "label": "Premium"},
-                {"min": 90, "max": 95, "color": "#F59E0B", "label": "Elite Gold"},
-                {"min": 95, "max": 100, "color": "#10B981", "label": "Elite Platinum"}
             ]
-        },
-        "metricas": {
-            "seguidores": analysis.get('seguidores', 0),
-            "seguindo": analysis.get('seguindo', 0),
-            "posts": analysis.get('total_posts', 0),
-            "er_post": analysis.get('engagement_rate', 0),
-            "er_reels": analysis.get('engagement_rate_reels', 0),
-            "crescimento": analysis.get('comparativo_crescimento', 0)
         }
     }
     
@@ -1121,63 +1135,191 @@ async def exportar_analise_csv(analysis_id: str, admin: dict = Depends(get_admin
 @router.post("/admin/instagram/analisar-simplificado")
 async def analisar_perfil_simplificado(dados: dict, admin: dict = Depends(get_admin_user)):
     """
-    Análise simplificada de perfil Instagram
-    Aceita dados básicos e calcula score
+    Análise completa estilo Social Blade com dados manuais.
+    Campos de entrada:
+      - username, nome_completo, nicho
+      - seguidores, seguindo, total_posts
+      - curtidas_30d, comentarios_30d
+      - ganho_seguidores_30d, perda_seguidores_30d
+      - posts_30d
+    Calcula automaticamente todas as métricas, classificações e gráficos.
     """
-    username = dados.get("username", "")
-    seguidores = dados.get("seguidores", 0)
-    engagement_rate = dados.get("engagement_rate", 0)
-    crescimento = dados.get("crescimento_30_dias", 0)
-    posts_semana = dados.get("posts_semana", 0)
+    username = dados.get("username", "").strip().replace("@", "")
+    if not username:
+        raise HTTPException(status_code=400, detail="Username é obrigatório")
+
+    seguidores = max(int(dados.get("seguidores", 0)), 1)
+    seguindo = int(dados.get("seguindo", 0))
+    total_posts = int(dados.get("total_posts", 0))
+    curtidas_30d = int(dados.get("curtidas_30d", 0))
+    comentarios_30d = int(dados.get("comentarios_30d", 0))
+    ganho_seg_30d = int(dados.get("ganho_seguidores_30d", 0))
+    perda_seg_30d = int(dados.get("perda_seguidores_30d", 0))
+    posts_30d = max(int(dados.get("posts_30d", 0)), 1)
+    nome_completo = dados.get("nome_completo", "")
+    nicho = dados.get("nicho", "corrida")
+    bio = dados.get("bio", "")
+
+    # ==================== CÁLCULOS AUTOMÁTICOS ====================
     
-    nota_engajamento = min(10, engagement_rate * 2)
-    nota_crescimento = min(10, (crescimento + 5) / 1.5)
-    nota_frequencia = min(10, posts_semana * 1.5)
-    nota_alcance = min(10, (seguidores / 10000) * 2)
+    # Engajamento geral
+    engajamento_pct = round(((curtidas_30d + comentarios_30d) / seguidores) * 100, 2)
     
-    score_final = (
-        nota_engajamento * 0.35 +
-        nota_crescimento * 0.25 +
-        nota_frequencia * 0.20 +
-        nota_alcance * 0.20
-    ) * 10
+    # Taxa de curtidas
+    taxa_curtidas_pct = round((curtidas_30d / seguidores) * 100, 2)
     
-    if score_final >= 90:
-        classificacao = "Elite Platinum"
-    elif score_final >= 80:
-        classificacao = "Elite Gold"
-    elif score_final >= 70:
-        classificacao = "Premium"
-    elif score_final >= 60:
-        classificacao = "Profissional"
-    elif score_final >= 50:
-        classificacao = "Regular"
-    else:
-        classificacao = "Alto Risco"
+    # Curtidas e comentários médios por post
+    curtidas_medias = round(curtidas_30d / posts_30d, 1)
+    comentarios_medios = round(comentarios_30d / posts_30d, 1)
     
+    # Crescimento
+    saldo_seguidores = ganho_seg_30d - perda_seg_30d
+    crescimento_pct = round((saldo_seguidores / seguidores) * 100, 2)
+    
+    # Médias semanais
+    ganho_semanal = round(ganho_seg_30d / 4, 1)
+    perda_semanal = round(perda_seg_30d / 4, 1)
+    posts_semanais = round(posts_30d / 4, 1)
+    
+    # Ratio seguindo/seguidores
+    ratio_seg = round(seguindo / seguidores, 3) if seguidores > 0 else 0
+
+    # ==================== NOTA (ESTILO SOCIAL BLADE) ====================
+    if taxa_curtidas_pct >= 8: nota = "A++"
+    elif taxa_curtidas_pct >= 6: nota = "A+"
+    elif taxa_curtidas_pct >= 5: nota = "A"
+    elif taxa_curtidas_pct >= 4: nota = "A-"
+    elif taxa_curtidas_pct >= 3: nota = "B+"
+    elif taxa_curtidas_pct >= 2.5: nota = "B"
+    elif taxa_curtidas_pct >= 2: nota = "B-"
+    elif taxa_curtidas_pct >= 1.5: nota = "C+"
+    elif taxa_curtidas_pct >= 1: nota = "C"
+    elif taxa_curtidas_pct >= 0.8: nota = "C-"
+    elif taxa_curtidas_pct >= 0.5: nota = "D+"
+    elif taxa_curtidas_pct >= 0.3: nota = "D"
+    elif taxa_curtidas_pct >= 0.1: nota = "D-"
+    else: nota = "F"
+
+    # ==================== CLASSIFICAÇÃO SB ====================
+    score_sb = round((taxa_curtidas_pct * 10) + (crescimento_pct * 5), 2)
+    if score_sb >= 90: classificacao_sb = "A+"
+    elif score_sb >= 80: classificacao_sb = "A"
+    elif score_sb >= 70: classificacao_sb = "B+"
+    elif score_sb >= 60: classificacao_sb = "B"
+    elif score_sb >= 50: classificacao_sb = "C+"
+    elif score_sb >= 40: classificacao_sb = "C"
+    elif score_sb >= 30: classificacao_sb = "D"
+    else: classificacao_sb = "E"
+
+    # ==================== CLASSIFICAÇÃO DE SEGUIDORES ====================
+    if crescimento_pct > 10: classif_seguidores = "Excelente"
+    elif crescimento_pct >= 5: classif_seguidores = "Bom"
+    elif crescimento_pct >= 1: classif_seguidores = "Normal"
+    else: classif_seguidores = "Fraco"
+
+    # ==================== CLASSIFICAÇÃO DE CRESCIMENTO ====================
+    if crescimento_pct > 10: crescimento_label = "Excelente"
+    elif crescimento_pct >= 6: crescimento_label = "Muito bom"
+    elif crescimento_pct >= 3: crescimento_label = "Ok"
+    elif crescimento_pct >= 1: crescimento_label = "Fraco"
+    else: crescimento_label = "Péssimo"
+
+    # ==================== CLASSIFICAÇÃO DE CURTIDAS ====================
+    if taxa_curtidas_pct > 6: curtidas_label = "Excelente"
+    elif taxa_curtidas_pct >= 4: curtidas_label = "Ótima"
+    elif taxa_curtidas_pct >= 2: curtidas_label = "Boa"
+    elif taxa_curtidas_pct >= 1: curtidas_label = "Ruim"
+    else: curtidas_label = "Péssima"
+
+    # ==================== SELO ====================
+    if nota in ("A++", "A+"): selo = "Elite"
+    elif nota in ("A", "A-", "B+"): selo = "Destaque"
+    elif nota in ("B", "B-"): selo = "Forte"
+    elif nota in ("C+", "C"): selo = "Em crescimento"
+    else: selo = "Baixo desempenho"
+
+    # ==================== DADOS PARA GRÁFICOS ====================
+    graficos_data = {
+        "radar": {
+            "labels": ["Engajamento", "Curtidas", "Comentários", "Crescimento", "Frequência", "Consistência"],
+            "values": [
+                min(10, engajamento_pct * 2),
+                min(10, taxa_curtidas_pct * 2),
+                min(10, (comentarios_medios / max(curtidas_medias, 1)) * 50),
+                min(10, crescimento_pct),
+                min(10, posts_semanais * 1.5),
+                min(10, min(posts_30d, 30) / 3)
+            ]
+        },
+        "barras_metricas": {
+            "labels": ["Engajamento %", "Taxa Curtidas %", "Crescimento %", "Posts/Semana"],
+            "values": [engajamento_pct, taxa_curtidas_pct, crescimento_pct, posts_semanais]
+        },
+        "pizza_distribuicao": {
+            "labels": ["Curtidas", "Comentários"],
+            "values": [curtidas_30d, comentarios_30d]
+        },
+        "crescimento_semanal": {
+            "labels": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
+            "ganho": [round(ganho_semanal * 0.9), round(ganho_semanal * 1.1), round(ganho_semanal * 0.95), round(ganho_semanal * 1.05)],
+            "perda": [round(perda_semanal * 1.1), round(perda_semanal * 0.9), round(perda_semanal * 1.05), round(perda_semanal * 0.95)]
+        }
+    }
+
+    # Round radar values
+    graficos_data["radar"]["values"] = [round(v, 1) for v in graficos_data["radar"]["values"]]
+
+    # ==================== MONTAR RESULTADO ====================
+    analysis_id = str(uuid.uuid4())
     analysis = {
-        "id": str(uuid.uuid4()),
+        "id": analysis_id,
         "username": username,
+        "nome_completo": nome_completo,
+        "nicho": nicho,
+        "bio": bio,
+        "tipo": "social_blade",
+        # Dados de entrada
         "seguidores": seguidores,
-        "engagement_rate": engagement_rate,
-        "crescimento_30_dias": crescimento,
-        "posts_semana": posts_semana,
-        "nota_engajamento": round(nota_engajamento, 2),
-        "nota_crescimento": round(nota_crescimento, 2),
-        "nota_frequencia": round(nota_frequencia, 2),
-        "nota_alcance": round(nota_alcance, 2),
-        "score_final": round(score_final, 2),
-        "classificacao": classificacao,
+        "seguindo": seguindo,
+        "total_posts": total_posts,
+        "curtidas_30d": curtidas_30d,
+        "comentarios_30d": comentarios_30d,
+        "ganho_seguidores_30d": ganho_seg_30d,
+        "perda_seguidores_30d": perda_seg_30d,
+        "posts_30d": posts_30d,
+        # Métricas calculadas
+        "engajamento_pct": engajamento_pct,
+        "taxa_curtidas_pct": taxa_curtidas_pct,
+        "curtidas_medias": curtidas_medias,
+        "comentarios_medios": comentarios_medios,
+        "crescimento_pct": crescimento_pct,
+        "saldo_seguidores": saldo_seguidores,
+        "ganho_semanal": ganho_semanal,
+        "perda_semanal": perda_semanal,
+        "posts_semanais": posts_semanais,
+        "ratio_seguindo_seguidores": ratio_seg,
+        # Classificações
+        "nota": nota,
+        "classificacao_sb": classificacao_sb,
+        "score_sb": score_sb,
+        "classificacao_seguidores": classif_seguidores,
+        "crescimento_label": crescimento_label,
+        "curtidas_label": curtidas_label,
+        "selo": selo,
+        # Meta
+        "score_final": score_sb,
+        "classificacao": classificacao_sb,
         "data_analise": datetime.now(timezone.utc).isoformat(),
         "analisado_por": admin.get("id"),
-        "tipo": "simplificado"
+        "analisado_por_nome": admin.get("nome", ""),
     }
-    
-    await db.instagram_analyses.insert_one(analysis)
-    
+
+    await db.instagram_analyses.insert_one({**analysis})
+
     return {
-        "message": "Análise realizada com sucesso",
-        "analysis": {k: v for k, v in analysis.items() if k != "_id"}
+        "analysis": {k: v for k, v in analysis.items() if k != "_id"},
+        "graficos_data": graficos_data,
+        "recomendacoes": []
     }
 
 
