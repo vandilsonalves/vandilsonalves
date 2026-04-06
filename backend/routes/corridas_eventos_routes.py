@@ -1,7 +1,7 @@
 # /app/backend/routes/corridas_eventos_routes.py
 # Módulo de Corridas e Eventos - Ranking de Corridas de Rua
 
-from fastapi import APIRouter, HTTPException, Depends, Form, Query
+from fastapi import APIRouter, HTTPException, Depends, Form, Query, Body
 from typing import List, Optional
 from datetime import datetime, timezone
 import uuid
@@ -26,10 +26,28 @@ async def criar_corrida_evento(
     status: str = Form("ativa"),
     current_user: dict = Depends(get_current_user)
 ):
-    """Cadastra uma nova corrida de rua (Admin ou Dono de Assessoria)"""
+    """Cadastra uma nova corrida de rua (qualquer usuário logado)"""
     
-    if current_user.get("role") not in ["admin", "super_admin", "dono_assessoria"]:
-        raise HTTPException(status_code=403, detail="Apenas Admin ou Dono de Assessoria podem cadastrar corridas")
+    # Validar data: corridas encerradas apenas do ano corrente, ativas até ano seguinte
+    try:
+        data_dt = datetime.strptime(data_corrida, "%Y-%m-%d")
+        ano_atual = datetime.now(timezone.utc).year
+        
+        if status == "encerrada" and data_dt.year != ano_atual:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Corridas encerradas devem ser do ano corrente ({ano_atual})."
+            )
+        
+        if status == "ativa" and data_dt.year > ano_atual + 1:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Corridas ativas podem ser de {ano_atual} ou {ano_atual + 1}."
+            )
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Formato de data inválido. Use YYYY-MM-DD.")
+    
+    is_admin = current_user.get("role") in ["admin", "super_admin"]
     
     corrida = {
         "id": str(uuid.uuid4()),
@@ -40,7 +58,10 @@ async def criar_corrida_evento(
         "data_corrida": data_corrida,
         "pagina_link": pagina_link or "",
         "status": status,
+        "aprovacao": "aprovada" if is_admin else "pendente",
         "criado_por": current_user.get("id"),
+        "criado_por_nome": current_user.get("nome", ""),
+        "criado_por_role": current_user.get("role", ""),
         "criado_em": datetime.now(timezone.utc).isoformat(),
         "total_avaliacoes": 0,
         "media_geral": 0,
@@ -55,7 +76,10 @@ async def criar_corrida_evento(
     await db.corridas_eventos.insert_one(corrida)
     await invalidate_on_corrida_change()
     
-    return {"message": "Corrida cadastrada com sucesso!", "id": corrida["id"]}
+    if is_admin:
+        return {"message": "Corrida cadastrada com sucesso!", "id": corrida["id"]}
+    else:
+        return {"message": "Corrida enviada para aprovação! Ela aparecerá no sistema após ser aprovada por um administrador.", "id": corrida["id"]}
 
 
 @router.get("/corridas-eventos")
@@ -63,9 +87,10 @@ async def criar_corrida_evento(
 async def listar_corridas_eventos(
     estado: str = None,
     cidade: str = None,
-    status: str = None
+    status: str = None,
+    incluir_pendentes: str = None
 ):
-    """Lista corridas de rua com filtros opcionais"""
+    """Lista corridas de rua com filtros opcionais (apenas aprovadas por padrão)"""
     
     filtro = {}
     if estado:
@@ -75,8 +100,102 @@ async def listar_corridas_eventos(
     if status:
         filtro["status"] = status
     
+    # Por padrão, exclui corridas pendentes de aprovação da listagem pública
+    if incluir_pendentes != "true":
+        filtro["$or"] = [
+            {"aprovacao": "aprovada"},
+            {"aprovacao": {"$exists": False}}
+        ]
+    
     corridas = await db.corridas_eventos.find(filtro, {"_id": 0}).sort("data_corrida", -1).to_list(None)
     return corridas
+
+
+# ==================== APROVAÇÃO DE CORRIDAS PENDENTES ====================
+
+@router.get("/corridas-eventos/pendentes")
+async def listar_corridas_pendentes(admin: dict = Depends(get_admin_user)):
+    """Lista corridas pendentes de aprovação"""
+    corridas = await db.corridas_eventos.find(
+        {"aprovacao": "pendente"},
+        {"_id": 0}
+    ).sort("criado_em", -1).to_list(None)
+    return {"corridas": corridas, "total": len(corridas)}
+
+
+@router.post("/corridas-eventos/{corrida_id}/aprovar")
+async def aprovar_corrida(corrida_id: str, admin: dict = Depends(get_admin_user)):
+    """Aprova uma corrida pendente"""
+    corrida = await db.corridas_eventos.find_one({"id": corrida_id})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida não encontrada")
+    
+    await db.corridas_eventos.update_one(
+        {"id": corrida_id},
+        {"$set": {
+            "aprovacao": "aprovada",
+            "aprovado_por": admin.get("id"),
+            "aprovado_por_nome": admin.get("nome", ""),
+            "data_aprovacao": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    await invalidate_on_corrida_change()
+    
+    # Notificar o criador
+    from routes.notificacoes_routes import criar_notificacao
+    if corrida.get("criado_por"):
+        await criar_notificacao(
+            corrida["criado_por"],
+            "corrida_aprovada",
+            "Corrida Aprovada",
+            f'Sua corrida "{corrida.get("nome_corrida", "")}" foi aprovada e já está visível no sistema!'
+        )
+    
+    return {"message": f"Corrida '{corrida.get('nome_corrida', '')}' aprovada com sucesso!"}
+
+
+@router.post("/corridas-eventos/{corrida_id}/rejeitar")
+async def rejeitar_corrida(
+    corrida_id: str,
+    dados: dict = Body(default={}),
+    admin: dict = Depends(get_admin_user)
+):
+    """Rejeita uma corrida pendente"""
+    corrida = await db.corridas_eventos.find_one({"id": corrida_id})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida não encontrada")
+    
+    motivo = ""
+    if dados:
+        motivo = dados.get("motivo", "")
+    
+    await db.corridas_eventos.update_one(
+        {"id": corrida_id},
+        {"$set": {
+            "aprovacao": "rejeitada",
+            "rejeitado_por": admin.get("id"),
+            "rejeitado_por_nome": admin.get("nome", ""),
+            "motivo_rejeicao": motivo,
+            "data_rejeicao": datetime.now(timezone.utc).isoformat()
+        }}
+    )
+    await invalidate_on_corrida_change()
+    
+    # Notificar o criador
+    from routes.notificacoes_routes import criar_notificacao
+    if corrida.get("criado_por"):
+        msg = f'Sua corrida "{corrida.get("nome_corrida", "")}" não foi aprovada.'
+        if motivo:
+            msg += f" Motivo: {motivo}"
+        await criar_notificacao(
+            corrida["criado_por"],
+            "corrida_rejeitada",
+            "Corrida Não Aprovada",
+            msg
+        )
+    
+    return {"message": f"Corrida '{corrida.get('nome_corrida', '')}' rejeitada."}
+
 
 
 @router.get("/corridas-eventos/template")

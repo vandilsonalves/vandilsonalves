@@ -208,7 +208,7 @@ const RankingCorridasPage = () => {
         }
       });
 
-      toast.success('Corrida cadastrada com sucesso!');
+      toast.success(response.data?.message || 'Corrida enviada com sucesso!');
       setShowCadastroModal(false);
       setFormData({
         nome_corrida: '',
@@ -399,7 +399,7 @@ const RankingCorridasPage = () => {
     return 'Péssima';
   };
 
-  const canCadastrar = user && (user.role === 'admin' || user.role === 'dono_assessoria');
+  const canCadastrar = !!user;
 
   const ESTADOS_BR = [
     "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO", "MA", 
@@ -445,7 +445,7 @@ const RankingCorridasPage = () => {
             {canCadastrar && (
               <Button onClick={() => setShowCadastroModal(true)} size="sm" className="bg-emerald-500 hover:bg-emerald-600">
                 <Plus className="w-4 h-4 mr-1" />
-                <span className="text-xs md:text-sm">Cadastrar</span>
+                <span className="text-xs md:text-sm">Adicionar Corrida</span>
               </Button>
             )}
           </div>
@@ -1000,8 +1000,13 @@ const RankingCorridasPage = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Plus className="w-5 h-5 text-emerald-500" />
-              Cadastrar Nova Corrida
+              Adicionar Nova Corrida
             </DialogTitle>
+            {user && user.role !== 'admin' && user.role !== 'super_admin' && (
+              <p className="text-sm text-amber-600 bg-amber-50 px-3 py-2 rounded-md mt-2">
+                Sua corrida será enviada para aprovação. Ela ficará visível no sistema após um administrador aprovar.
+              </p>
+            )}
           </DialogHeader>
           <div className="space-y-4">
             <div>
@@ -1073,7 +1078,9 @@ const RankingCorridasPage = () => {
                 <SelectContent>
                   <SelectItem value="ativa">Ativa</SelectItem>
                   <SelectItem value="encerrada">Encerrada</SelectItem>
-                  <SelectItem value="cancelada">Cancelada</SelectItem>
+                  {user && (user.role === 'admin' || user.role === 'super_admin') && (
+                    <SelectItem value="cancelada">Cancelada</SelectItem>
+                  )}
                 </SelectContent>
               </Select>
             </div>

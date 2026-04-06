@@ -13,7 +13,8 @@ import {
   Calendar, CalendarDays, ExternalLink, BarChart3, Award, TrendingUp,
   Search, Download, Upload, FileSpreadsheet, Globe, AlertCircle,
   ArrowUpAZ, ArrowDownAZ, Filter, X, CheckSquare, Square, FileText,
-  RefreshCw, Bookmark, Clock, Link2, ShieldCheck, AlertOctagon
+  RefreshCw, Bookmark, Clock, Link2, ShieldCheck, AlertOctagon,
+  Check, XCircle, User, ChevronDown
 } from 'lucide-react';
 import CidadeCombobox from '@/components/CidadeCombobox';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -88,6 +89,71 @@ const DashboardCorridas = ({
   // Estado para modal de relatório
   const [showReportModal, setShowReportModal] = useState(false);
   const [generatingPDF, setGeneratingPDF] = useState(false);
+
+  // ==================== APROVAÇÃO DE CORRIDAS PENDENTES ====================
+  const [corridasPendentes, setCorridasPendentes] = useState([]);
+  const [loadingPendentes, setLoadingPendentes] = useState(false);
+  const [loadingAprovacao, setLoadingAprovacao] = useState({});
+  const [motivoRejeicao, setMotivoRejeicao] = useState('');
+  const [showRejeicaoModal, setShowRejeicaoModal] = useState(false);
+  const [corridaRejeitar, setCorridaRejeitar] = useState(null);
+
+  const fetchCorridasPendentes = async () => {
+    setLoadingPendentes(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.get(`${API}/corridas-eventos/pendentes`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      setCorridasPendentes(response.data.corridas || []);
+    } catch (error) {
+      console.error('Erro ao buscar corridas pendentes:', error);
+    } finally {
+      setLoadingPendentes(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchCorridasPendentes();
+  }, []);
+
+  const handleAprovarCorrida = async (corridaId) => {
+    setLoadingAprovacao(prev => ({ ...prev, [corridaId]: 'aprovando' }));
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/corridas-eventos/${corridaId}/aprovar`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      toast.success('Corrida aprovada com sucesso!');
+      setCorridasPendentes(prev => prev.filter(c => c.id !== corridaId));
+      if (onRefresh) onRefresh();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao aprovar corrida');
+    } finally {
+      setLoadingAprovacao(prev => ({ ...prev, [corridaId]: null }));
+    }
+  };
+
+  const handleRejeitarCorrida = async () => {
+    if (!corridaRejeitar) return;
+    setLoadingAprovacao(prev => ({ ...prev, [corridaRejeitar.id]: 'rejeitando' }));
+    try {
+      const token = localStorage.getItem('token');
+      await axios.post(`${API}/corridas-eventos/${corridaRejeitar.id}/rejeitar`, 
+        { motivo: motivoRejeicao },
+        { headers: { 'Authorization': `Bearer ${token}` } }
+      );
+      toast.success('Corrida rejeitada.');
+      setCorridasPendentes(prev => prev.filter(c => c.id !== corridaRejeitar.id));
+      setShowRejeicaoModal(false);
+      setMotivoRejeicao('');
+      setCorridaRejeitar(null);
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao rejeitar corrida');
+    } finally {
+      setLoadingAprovacao(prev => ({ ...prev, [corridaRejeitar?.id]: null }));
+    }
+  };
 
   // Buscar cidades do IBGE para o filtro
   useEffect(() => {
@@ -687,6 +753,107 @@ const DashboardCorridas = ({
           </CardContent>
         </Card>
       </div>
+
+      {/* ==================== CORRIDAS PENDENTES DE APROVAÇÃO ==================== */}
+      {corridasPendentes.length > 0 && (
+        <Card className="border-amber-300 bg-amber-50/50 dark:bg-amber-900/10" data-testid="corridas-pendentes-section">
+          <CardHeader>
+            <CardTitle className="flex items-center justify-between">
+              <div className="flex items-center gap-2 text-amber-700">
+                <AlertCircle className="w-5 h-5" />
+                Corridas Pendentes de Aprovação
+                <Badge className="bg-amber-500 text-white ml-2">{corridasPendentes.length}</Badge>
+              </div>
+              <Button variant="ghost" size="sm" onClick={fetchCorridasPendentes} disabled={loadingPendentes}>
+                <RefreshCw className={`w-4 h-4 ${loadingPendentes ? 'animate-spin' : ''}`} />
+              </Button>
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {corridasPendentes.map(corrida => (
+                <div key={corrida.id} className="bg-white dark:bg-slate-800 rounded-lg p-4 border border-amber-200 flex flex-col md:flex-row md:items-center justify-between gap-3" data-testid={`corrida-pendente-${corrida.id}`}>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h4 className="font-semibold text-slate-800 dark:text-white">{corrida.nome_corrida}</h4>
+                      <Badge variant="outline" className={corrida.status === 'ativa' ? 'border-green-400 text-green-600' : 'border-slate-400 text-slate-600'}>
+                        {corrida.status === 'ativa' ? 'Ativa' : 'Encerrada'}
+                      </Badge>
+                    </div>
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-sm text-slate-500">
+                      <span className="flex items-center gap-1"><User className="w-3 h-3" />{corrida.criado_por_nome || 'Desconhecido'} ({corrida.criado_por_role === 'dono_assessoria' ? 'Assessoria' : 'Atleta'})</span>
+                      <span className="flex items-center gap-1"><MapPin className="w-3 h-3" />{corrida.cidade}/{corrida.estado}</span>
+                      <span className="flex items-center gap-1"><Calendar className="w-3 h-3" />{corrida.data_corrida}</span>
+                      {corrida.organizador && <span>Org: {corrida.organizador}</span>}
+                      {corrida.pagina_link && (
+                        <a href={corrida.pagina_link} target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" />Link
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2 shrink-0">
+                    <Button
+                      size="sm"
+                      className="bg-green-500 hover:bg-green-600 text-white"
+                      disabled={!!loadingAprovacao[corrida.id]}
+                      onClick={() => handleAprovarCorrida(corrida.id)}
+                      data-testid={`aprovar-corrida-${corrida.id}`}
+                    >
+                      {loadingAprovacao[corrida.id] === 'aprovando' ? <Loader2 className="w-4 h-4 animate-spin" /> : <Check className="w-4 h-4 mr-1" />}
+                      Aprovar
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="destructive"
+                      disabled={!!loadingAprovacao[corrida.id]}
+                      onClick={() => { setCorridaRejeitar(corrida); setShowRejeicaoModal(true); }}
+                      data-testid={`rejeitar-corrida-${corrida.id}`}
+                    >
+                      {loadingAprovacao[corrida.id] === 'rejeitando' ? <Loader2 className="w-4 h-4 animate-spin" /> : <XCircle className="w-4 h-4 mr-1" />}
+                      Rejeitar
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Modal de Rejeição */}
+      <Dialog open={showRejeicaoModal} onOpenChange={setShowRejeicaoModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-red-600">
+              <XCircle className="w-5 h-5" />
+              Rejeitar Corrida
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-slate-600">
+              Corrida: <strong>{corridaRejeitar?.nome_corrida}</strong>
+            </p>
+            <div>
+              <Label>Motivo da Rejeição (opcional)</Label>
+              <Input
+                value={motivoRejeicao}
+                onChange={(e) => setMotivoRejeicao(e.target.value)}
+                placeholder="Ex: Corrida duplicada, dados incorretos..."
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setShowRejeicaoModal(false); setMotivoRejeicao(''); setCorridaRejeitar(null); }}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={handleRejeitarCorrida} disabled={!!loadingAprovacao[corridaRejeitar?.id]}>
+              {loadingAprovacao[corridaRejeitar?.id] === 'rejeitando' ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <XCircle className="w-4 h-4 mr-2" />}
+              Confirmar Rejeição
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Sistema de Selos */}
       <Card className="bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-amber-200">
