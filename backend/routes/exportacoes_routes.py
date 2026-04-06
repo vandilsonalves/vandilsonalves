@@ -538,3 +538,65 @@ async def exportar_logs_admin(admin: dict = Depends(get_admin_user)):
     for i, w in enumerate([25, 15, 20, 60, 18, 25, 18, 15, 20]):
         ws.column_dimensions[chr(65 + i)].width = w
     return _make_response(wb, f"logs_administrativos_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+# 15. Exportar Dados Submetidos (Resultados Pendentes / Aprovados / Rejeitados)
+@router.get("/admin/exportar/dados-submetidos")
+async def exportar_dados_submetidos(admin: dict = Depends(get_admin_user)):
+    resultados = await db.resultados_pendentes.find({}, {"_id": 0}).sort("data_submissao", -1).to_list(None)
+
+    # Buscar nomes dos atletas
+    atleta_ids = list(set(r.get("usuario_id", "") for r in resultados))
+    atletas_map = {}
+    if atleta_ids:
+        atletas_docs = await db.usuarios.find(
+            {"id": {"$in": atleta_ids}},
+            {"_id": 0, "id": 1, "nome": 1, "email": 1, "equipe": 1, "cidade": 1, "estado": 1}
+        ).to_list(None)
+        atletas_map = {a["id"]: a for a in atletas_docs}
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Dados Submetidos"
+    headers = [
+        "Atleta", "Email", "Equipe", "Cidade Atleta", "Estado Atleta",
+        "Competicao", "Cidade Competicao", "Estado Competicao",
+        "Data Competicao", "Distancia", "Tempo", "Colocacao",
+        "Modalidade", "Link Resultado", "Foto Podio",
+        "Status", "Motivo Reprovacao",
+        "Data Submissao", "Hora Submissao"
+    ]
+    ws.append(headers)
+    _style_headers(ws, len(headers))
+
+    for r in resultados:
+        atleta = atletas_map.get(r.get("usuario_id", ""), {})
+        data_sub = str(r.get("data_submissao", ""))
+        data_parte = data_sub[:10] if len(data_sub) >= 10 else data_sub
+        hora_parte = data_sub[11:19] if len(data_sub) >= 19 else ""
+        ws.append([
+            atleta.get("nome", r.get("usuario_id", "")),
+            atleta.get("email", ""),
+            atleta.get("equipe", "") or "Individual",
+            atleta.get("cidade", ""),
+            atleta.get("estado", ""),
+            r.get("nome_competicao", ""),
+            r.get("cidade_competicao", ""),
+            r.get("estado_competicao", ""),
+            r.get("data_competicao", ""),
+            r.get("distancia", ""),
+            r.get("tempo", ""),
+            r.get("colocacao", 0),
+            "Galera" if r.get("modalidade") == "povao_pace_livre" else "Pro/Amador",
+            r.get("link_resultado", ""),
+            r.get("foto_podio_url", ""),
+            r.get("status", ""),
+            r.get("motivo_reprovacao", ""),
+            data_parte,
+            hora_parte
+        ])
+    _style_borders(ws, len(headers))
+    col_widths = [25, 30, 20, 18, 8, 30, 18, 8, 14, 10, 12, 12, 15, 45, 40, 12, 30, 14, 10]
+    for i, w in enumerate(col_widths):
+        ws.column_dimensions[chr(65 + i) if i < 26 else "A" + chr(65 + i - 26)].width = w
+    return _make_response(wb, f"dados_submetidos_{datetime.now().strftime('%Y%m%d')}.xlsx")

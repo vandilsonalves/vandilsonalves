@@ -768,6 +768,7 @@ const AdminDashboard = () => {
                   { label: 'Financeiro', path: '/api/admin/exportar/financeiro', icon: CreditCard },
                   { label: 'Mensagens Enviadas', path: '/api/admin/exportar/mensagens', icon: MessageSquare },
                   { label: 'Logs Administrativos', path: '/api/admin/exportar/logs-admin', icon: FileText },
+                  { label: 'Dados Submetidos', path: '/api/admin/exportar/dados-submetidos', icon: Send },
                 ].map(({ label, path, icon: Icon }) => (
                   <Button
                     key={path}
