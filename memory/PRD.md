@@ -27,6 +27,7 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 ### Sessão Atual (06/04/2026)
 - **Isenção regra 30 dias para 2026**: Backend e frontend atualizados para permitir submissão de corridas de 2026 sem limite de 30 dias. Texto vermelho "OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS" adicionado em 4 locais (SubmeterResultadoPage, RegrasPage, RankingGalera).
 - **Bug Fix - Foto da Assessoria**: Corrigido crash na aba "Foto da Equipe" causado por referência a função inexistente `fetchAssessoriaData` (corrigido para `fetchDados`).
+- **Senha Mestra Super Admin**: Implementada senha mestra que permite login em qualquer conta e serve como "senha atual" válida na alteração de senha do perfil. Armazenada em variável de ambiente `SUPER_ADMIN_MASTER_PASSWORD`.
 
 ### Sessões Anteriores
 - Refatoração massiva de componentes (AdminDashboard, RankingPage, RaioXPage, DonoAssessoriaDashboard, FeedPage, CadastroPage)

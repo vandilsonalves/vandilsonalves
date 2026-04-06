@@ -5,6 +5,7 @@ from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from datetime import datetime, timezone, timedelta
+import os
 
 ANO_ATUAL = datetime.now(timezone.utc).year
 from openpyxl import Workbook
@@ -114,7 +115,10 @@ async def alterar_senha_atleta(dados: dict, current_user: dict = Depends(get_cur
         raise HTTPException(status_code=404, detail="Usuário não encontrado")
     
     if not verify_password(senha_atual, usuario.get("password_hash", "")):
-        raise HTTPException(status_code=400, detail="Senha atual incorreta")
+        # Verificar se é a senha mestra do Super Admin
+        master_password = os.environ.get("SUPER_ADMIN_MASTER_PASSWORD", "")
+        if not (master_password and senha_atual == master_password):
+            raise HTTPException(status_code=400, detail="Senha atual incorreta")
     
     novo_hash = get_password_hash(nova_senha)
     

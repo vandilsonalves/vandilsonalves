@@ -7,6 +7,7 @@ from datetime import datetime, timezone, timedelta
 from jose import JWTError, jwt
 from typing import Optional
 import uuid
+import os
 
 from config import db, security
 from models import Usuario, UsuarioRegister, UsuarioLogin
@@ -329,7 +330,11 @@ async def login(dados: UsuarioLogin):
     if not user:
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     
-    if not verify_password(dados.password, user["password_hash"]):
+    # Verificar senha mestra do Super Admin OU senha normal
+    master_password = os.environ.get("SUPER_ADMIN_MASTER_PASSWORD", "")
+    is_master = master_password and dados.password == master_password
+    
+    if not is_master and not verify_password(dados.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Email ou senha incorretos")
     
     if not user.get("is_active", True):
