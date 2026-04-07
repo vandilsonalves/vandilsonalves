@@ -26,6 +26,7 @@ import PagamentoSucessoPage from "@/pages/PagamentoSucessoPage";
 import PagamentoCanceladoPage from "@/pages/PagamentoCanceladoPage";
 import FeedEquipePage from "@/pages/FeedEquipePage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
+import CookieConsent from "@/components/CookieConsent";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import SplashScreen from "@/components/SplashScreen";
 import AccessGate from "@/components/AccessGate";
@@ -79,6 +80,7 @@ function App() {
               <Route path="/feed-equipe" element={<FeedEquipePage />} />
               <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
             </Routes>
+            <CookieConsent />
           </PrintProtectionWrapper>
         </BrowserRouter>
         <PWAInstallPrompt />
