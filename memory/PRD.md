@@ -31,7 +31,7 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 
 ### Ranking Run Inside - Social Blade (07/04/2026)
 - **Formulário 100% manual** com 15+ campos organizados em 4 seções:
-  - Identificação (@Username, Nome, Data, Upload Foto de Perfil)
+  - Identificação (@Username, Nome, Data, Upload Foto de Perfil com crop/zoom/rotação)
   - Dados Gerais (Seguidores, Seguindo, Posts, Nota A++..F com 14 notas, Classificação SB, Classif. Seguidores)
   - Crescimento 30d (Ganho, Perda, Médias Semanais)
   - Interações 30d (Posts 30d, Média Semanal Posts, Views Reels 6 últimos, Curtidas/Comentários Médios)
@@ -39,18 +39,17 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - **Destaque da Nota no Header**: Exibição proeminente da Nota (letra grande colorida), Nível, Taxa de Curtidas e Score Médio
 - **Tabela de Referência NOTA**: 14 linhas coloridas com Nota, Taxa de Curtidas, Nível e Score numérico (4 a 10)
 - **Tabela de Referência CLASSIFICAÇÃO + SCORE**: Fundo escuro com bolinhas coloridas (Crescimento % → Classificação → Score)
-- **7 fórmulas de cálculo** no backend:
-  1. Nota (Taxa de Curtidas) → Gauge/Donut
-  2. Views de Reels → Barras Horizontais
-  3. Taxa de Engajamento → Pizza
-  4. Curtidas Médias → Colunas Verticais
-  5. Comentários Médios → Linhas
-  6. Crescimento Mensal → Radar (6 eixos)
-  7. Posts 30 dias → Histograma
-- **Score Médio** calculado automaticamente (média dos 6 scores numéricos)
-- **Upload de foto de perfil** com preview
-- **Exportação** XLSX e CSV
-- **Painel de Scores** consolidado com barras de progresso por métrica
+- **7 fórmulas de cálculo** no backend com 7 gráficos distintos (Donut, Barras, Pizza, Colunas, Linhas, Radar, Histograma)
+- **Upload de foto com crop**: Modal de recorte circular com zoom e rotação (ImageCropModal)
+- **Exportação** XLSX, CSV e PDF (reportlab)
+
+### Política de Privacidade (07/04/2026)
+- Página completa em `/politica-de-privacidade` com 19 seções expansíveis
+- Blindagem jurídica: LGPD, Marco Civil da Internet, CDC, CRFB, GDPR
+- Integração Strava: política de uso da API, privacidade, OAuth 2.0
+- Declaração de plataforma complementar (não compete com federações/confederações)
+- Links de referência: Strava API Terms, Strava Privacy, LGPD, Marco Civil
+- Link visível no footer da página principal
 
 ## Backlog
 - P3: Exportar Raio-X como PDF
