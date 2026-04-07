@@ -80,13 +80,23 @@ const SubmeterResultadoPage = () => {
         return;
       }
       
+      // Cache local das cidades por estado
+      const cacheKey = `ibge_cidades_${formData.estado_competicao}`;
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        setCidades(JSON.parse(cached));
+        return;
+      }
+
       setLoadingCidades(true);
       try {
         const response = await fetch(
           `https://servicodados.ibge.gov.br/api/v1/localidades/estados/${formData.estado_competicao}/municipios?orderBy=nome`
         );
         const data = await response.json();
-        setCidades(data.map(cidade => cidade.nome));
+        const nomes = data.map(cidade => cidade.nome);
+        setCidades(nomes);
+        localStorage.setItem(cacheKey, JSON.stringify(nomes));
       } catch (err) {
         console.error('Erro ao buscar cidades:', err);
         setCidades([]);

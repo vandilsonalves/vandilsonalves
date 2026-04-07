@@ -887,16 +887,17 @@ const RaioXPage = () => {
                 <p className="text-white/80 text-xs md:text-sm truncate">Analise de performance - {atleta?.nome}</p>
               </div>
             </div>
-            <div className="flex items-center gap-2 ml-9 md:ml-0">
-              <Button variant="outline" size="sm" onClick={handleOpenShare} className="border-white/30 text-white hover:bg-white/20 text-xs md:text-sm" data-testid="raio-x-share-btn">
+            <div className="flex items-center gap-2 ml-9 md:ml-0 flex-wrap">
+              <Button variant="outline" size="sm" onClick={handleOpenShare} className="border-white/30 text-white hover:bg-white/20 text-xs" data-testid="raio-x-share-btn">
                 <Share2 className="w-4 h-4 mr-1" />
-                Compartilhar
+                <span className="hidden sm:inline">Compartilhar</span>
+                <span className="sm:hidden">Share</span>
               </Button>
-              <Button variant="outline" size="sm" onClick={exportToPDF} className="border-white/30 text-white hover:bg-white/20 text-xs md:text-sm" data-testid="raio-x-pdf-btn">
+              <Button variant="outline" size="sm" onClick={exportToPDF} className="border-white/30 text-white hover:bg-white/20 text-xs" data-testid="raio-x-pdf-btn">
                 <Download className="w-4 h-4 mr-1" />
                 PDF
               </Button>
-              <Button variant="outline" size="sm" onClick={exportToExcel} className="border-white/30 text-white hover:bg-white/20 text-xs md:text-sm" data-testid="raio-x-excel-btn">
+              <Button variant="outline" size="sm" onClick={exportToExcel} className="border-white/30 text-white hover:bg-white/20 text-xs" data-testid="raio-x-excel-btn">
                 <Download className="w-4 h-4 mr-1" />
                 Excel
               </Button>

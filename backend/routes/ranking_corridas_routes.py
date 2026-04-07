@@ -149,23 +149,38 @@ async def get_ranking_corridas(
     m = 30  # mínimo de avaliações para peso completo
     min_avaliacoes_ranking = 10
     
+    # BATCH: Buscar TODAS as avaliações de uma vez (otimização N+1 → 1)
+    corrida_ids = [c["id"] for c in corridas]
+    filtro_batch = {"corrida_id": {"$in": corrida_ids}, **filtro_avaliacoes}
+    pipeline_batch = [
+        {"$match": filtro_batch},
+        {"$group": {
+            "_id": "$corrida_id",
+            "count": {"$sum": 1},
+            "soma_nota": {"$sum": "$nota_corrida"},
+            "media_org": {"$avg": "$organizacao"},
+            "media_perc": {"$avg": "$percurso"},
+            "media_kit": {"$avg": "$kit_atleta"},
+            "media_hidr": {"$avg": "$hidratacao"},
+            "media_pos": {"$avg": "$pos_prova"},
+        }}
+    ]
+    aval_stats = {}
+    async for doc in db.avaliacoes_corridas.aggregate(pipeline_batch):
+        aval_stats[doc["_id"]] = doc
+    
     ranking = []
     
     for corrida in corridas:
         corrida_id = corrida["id"]
-        
-        # Buscar avaliações desta corrida
-        filtro_aval = {"corrida_id": corrida_id, **filtro_avaliacoes}
-        avaliacoes = await db.avaliacoes_corridas.find(filtro_aval, {"_id": 0}).to_list(None)
-        
-        v = len(avaliacoes)
+        stats = aval_stats.get(corrida_id, {})
+        v = stats.get("count", 0)
         
         if v == 0:
             media_corrida = 0
             pontuacao_bayesiana = 0
         else:
-            soma_notas = sum(a.get("nota_corrida", 0) for a in avaliacoes)
-            media_corrida = soma_notas / v
+            media_corrida = stats["soma_nota"] / v
             pontuacao_bayesiana = (v / (v + m)) * media_corrida + (m / (v + m)) * media_geral_plataforma
         
         # Calcular médias por critério
