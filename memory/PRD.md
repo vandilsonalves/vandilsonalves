@@ -51,6 +51,12 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Links de referência: Strava API Terms, Strava Privacy, LGPD, Marco Civil
 - Link visível no footer da página principal
 
+### Parceiros e Patrocinadores (07/04/2026)
+- Aba "Parceiros" no painel admin (CRUD: Nome, Instagram, Site, Imagem com crop 1:1)
+- Exportação Excel dos parceiros
+- Página pública `/parceiros` com grid de imagens em fundo branco e links clicáveis (Instagram + Site)
+- Botão "Parceiros" na navegação principal
+
 ## Backlog
 - P3: Exportar Raio-X como PDF
 - P3: Investigar scraping Sympla bloqueado por Cloudflare
