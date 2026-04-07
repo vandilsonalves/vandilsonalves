@@ -1,0 +1,120 @@
+{
+  "summary": "Iteration 107: Testing ranking-corridas endpoints (pagination, cache), Strava auth FRONTEND_URL fix, avaliar-corrida auth, unique endpoints in ranking_corridas_routes.py, RaioXPage mobile share button, and SubmeterResultadoPage IBGE cache. All 12 backend tests passed (100%). All frontend features verified.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingPage",
+        "issues": ["Console warning: 'In HTML, <tr> cannot be a child of <span>' - hydration error in RankingTable component (non-blocking)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter107_ranking_strava.py",
+    "/app/test_reports/pytest/pytest_iter107_ranking_strava.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (corridas_eventos_routes.py): /api/ranking-corridas returns paginated data with total_corridas, page, limit, has_more, ranking[] fields",
+    "Backend: Pagination working correctly - limit=5 returns exactly 5 items, has_more=true when more exist",
+    "Backend: /api/ranking-corridas/stats returns total_corridas and total_avaliacoes",
+    "Backend: /api/ranking-corridas/estados returns list of estados",
+    "Backend: /api/ranking-corridas/cidades returns list of cidades with optional estado filter",
+    "Backend (strava_routes.py): FRONTEND_URL correctly set from .env, auth_url contains geo-filtered-admin.preview.emergentagent.com in redirect_uri",
+    "Backend (ranking_corridas_routes.py): Unique endpoints preserved - /api/avaliar-corrida, /api/minhas-avaliacoes-corridas, /api/reputacao-avaliador/{id}, /api/minha-reputacao all working",
+    "Backend: /api/avaliar-corrida correctly requires authentication (401 without token)",
+    "Frontend (RaioXPage.jsx): Share, PDF, Excel buttons all within mobile viewport (375px) - flex-wrap working correctly",
+    "Frontend (SubmeterResultadoPage.js): IBGE cache implemented in localStorage - 645 cities cached for SP state",
+    "Frontend: Estado select and Cidade combobox working correctly with IBGE API integration"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter107_ranking_strava.py"
+  ],
+  "success_rate": {
+    "backend": "100% (12/12 tests passed)",
+    "frontend": "100% (All features verified)"
+  },
+  "test_credentials": {
+    "atleta": "teste.dono@teste.com / 123456",
+    "admin": "admin@runpro.com / admin"
+  },
+  "seed_data_creation": "No new seed data created. Used existing test user.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 107 validated: (1) /api/ranking-corridas pagination with total_corridas, page, limit, has_more, ranking[] fields, (2) /api/ranking-corridas/stats returns total_corridas and total_avaliacoes, (3) /api/ranking-corridas/estados and /cidades endpoints working, (4) Strava OAuth /api/strava/authorize returns auth_url with correct FRONTEND_URL (geo-filtered-admin.preview.emergentagent.com) in redirect_uri, (5) /api/avaliar-corrida requires authentication (401 without token), (6) Unique endpoints in ranking_corridas_routes.py preserved: /api/minhas-avaliacoes-corridas, /api/reputacao-avaliador/{id}, /api/minha-reputacao, (7) RaioXPage mobile view - Share/PDF/Excel buttons within 375px viewport using flex-wrap, (8) SubmeterResultadoPage IBGE cache working - localStorage stores cities per state (645 cities for SP). Login endpoint is /api/auth/login with JSON body {email, password} returning {token, user}.",
+  "features_verified": {
+    "GET /api/ranking-corridas paginated data": {
+      "status": "VERIFIED",
+      "details": "Returns total_corridas, page, limit, has_more, ranking[] fields"
+    },
+    "GET /api/ranking-corridas?page=1&limit=5": {
+      "status": "VERIFIED",
+      "details": "Returns exactly 5 items (or less if fewer exist), has_more=true when more items available"
+    },
+    "GET /api/ranking-corridas/stats": {
+      "status": "VERIFIED",
+      "details": "Returns total_corridas and total_avaliacoes"
+    },
+    "GET /api/ranking-corridas/estados": {
+      "status": "VERIFIED",
+      "details": "Returns list of estados"
+    },
+    "GET /api/ranking-corridas/cidades": {
+      "status": "VERIFIED",
+      "details": "Returns list of cidades with optional estado filter"
+    },
+    "GET /api/strava/authorize FRONTEND_URL": {
+      "status": "VERIFIED",
+      "details": "auth_url contains geo-filtered-admin.preview.emergentagent.com in redirect_uri"
+    },
+    "POST /api/avaliar-corrida auth": {
+      "status": "VERIFIED",
+      "details": "Returns 401 without token (authentication required)"
+    },
+    "GET /api/minhas-avaliacoes-corridas": {
+      "status": "VERIFIED",
+      "details": "Endpoint exists and returns list of user's evaluations"
+    },
+    "GET /api/reputacao-avaliador/{id}": {
+      "status": "VERIFIED",
+      "details": "Endpoint exists and returns total_avaliacoes, nivel_atual"
+    },
+    "GET /api/minha-reputacao": {
+      "status": "VERIFIED",
+      "details": "Endpoint exists and returns user's reputation data"
+    },
+    "RaioXPage mobile Share button": {
+      "status": "VERIFIED",
+      "details": "Button at x=52, width=86, within 375px viewport"
+    },
+    "RaioXPage mobile PDF button": {
+      "status": "VERIFIED",
+      "details": "Button within 375px viewport"
+    },
+    "RaioXPage mobile Excel button": {
+      "status": "VERIFIED",
+      "details": "Button within 375px viewport"
+    },
+    "SubmeterResultadoPage IBGE cache": {
+      "status": "VERIFIED",
+      "details": "localStorage cache working - 645 cities cached for SP state"
+    },
+    "SubmeterResultadoPage Estado/Cidade selects": {
+      "status": "VERIFIED",
+      "details": "Estado select and Cidade combobox working correctly"
+    }
+  },
+  "screenshots": [
+    ".screenshots/mobile_raiox_page.png",
+    ".screenshots/mobile_raiox_header.png",
+    ".screenshots/submeter_resultado_logged_in.png",
+    ".screenshots/submeter_estado_dropdown.png",
+    ".screenshots/submeter_after_estado_select.png",
+    ".screenshots/submeter_cidade_loaded.png"
+  ]
+}
