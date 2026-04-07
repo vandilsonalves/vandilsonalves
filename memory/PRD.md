@@ -4,7 +4,7 @@
 Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, ranking por colocação (Profissional/Amador) e por distância (Galera/Povão), integração Strava, sistema de feed, mensagens admin com splash screen, e painel do dono de assessoria.
 
 ## Arquitetura
-- **Frontend**: React + Shadcn/UI + Tailwind CSS
+- **Frontend**: React + Shadcn/UI + Tailwind CSS + Recharts
 - **Backend**: FastAPI + MongoDB
 - **Integrações**: Strava, Resend (emails), Celery/Redis (mensagens agendadas)
 
@@ -23,31 +23,43 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Integração Strava com consentimento de dados
 - Badge de verificado para atletas Premium
 - Página "Como ser verificado"
+- Isenção regra 30 dias para 2026
+- Senha Mestra Super Admin
+- 15 botões de exportação Excel
+- Sistema de submissão de Novas Corridas por atletas (anti-duplicidade + aprovação)
+- 29 testes unitários cobrindo funcionalidades críticas
 
-### Sessão Atual (06/04/2026)
-- **Isenção regra 30 dias para 2026**: Backend e frontend atualizados para permitir submissão de corridas de 2026 sem limite de 30 dias. Texto vermelho "OBS: APENAS ESSE ANO PODERÁ LANCAR DADOS APÓS 30 DIAS" adicionado em 4 locais (SubmeterResultadoPage, RegrasPage, RankingGalera).
-- **Bug Fix - Foto da Assessoria**: Corrigido crash na aba "Foto da Equipe" causado por referência a função inexistente `fetchAssessoriaData` (corrigido para `fetchDados`).
-- **Senha Mestra Super Admin**: Implementada senha mestra que permite login em qualquer conta e serve como "senha atual" válida na alteração de senha do perfil. Armazenada em variável de ambiente `SUPER_ADMIN_MASTER_PASSWORD`.
-- **Ranking Run Inside reestruturado (Social Blade)**: Sistema completamente reescrito com inserção manual de dados. Formulário com 4 seções: Identificação, Dados Gerais, Interações (30d), Crescimento. Backend calcula automaticamente: engajamento, taxa de curtidas, curtidas/comentários médios, crescimento, médias semanais, nota (A++ a F), classificação SB, classificação de seguidores, selo. Dashboard com gauge circular, 12 cards de métricas, 4 gráficos (radar, barras, pizza, crescimento semanal).
-
-### Sessões Anteriores
-- Refatoração massiva de componentes (AdminDashboard, RankingPage, RaioXPage, DonoAssessoriaDashboard, FeedPage, CadastroPage)
-- Filtros "Por Estado" e "Por Cidade" no sistema de mensagens admin
-- Sistema de visualização de leitura de mensagens (lidas/não lidas) + reenvio como Splash Screen
-- Code Quality Review: remoção de hardcoded secrets, SSL verification, MD5→SHA-256, secrets module, React hooks dependencies
-- Health Check para deploy
+### Ranking Run Inside - Social Blade (07/04/2026)
+- **Formulário 100% manual** com 15+ campos organizados em 4 seções:
+  - Identificação (@Username, Nome, Data, Upload Foto de Perfil)
+  - Dados Gerais (Seguidores, Seguindo, Posts, Nota A++..F, Classificação SB, Classif. Seguidores)
+  - Crescimento 30d (Ganho, Perda, Médias Semanais)
+  - Interações 30d (Posts 30d, Média Semanal Posts, Views Reels 6 últimos, Curtidas/Comentários Médios)
+- **7 fórmulas de cálculo** no backend:
+  1. Nota (Taxa de Curtidas) → Gauge/Donut
+  2. Views de Reels → Barras Horizontais
+  3. Taxa de Engajamento → Pizza
+  4. Curtidas Médias → Colunas Verticais
+  5. Comentários Médios → Linhas
+  6. Crescimento Mensal → Radar (6 eixos)
+  7. Posts 30 dias → Histograma
+- **Score Médio** calculado automaticamente (média dos 6 scores numéricos)
+- **Upload de foto de perfil** com preview
+- **Exportação** XLSX e CSV
+- **Painel de Scores** consolidado com barras de progresso por métrica
 
 ## Backlog
 - P3: Exportar Raio-X como PDF
 - P3: Investigar scraping Sympla bloqueado por Cloudflare
 
 ## Testes Unitários
-- `/app/backend/tests/test_critical_features.py` — 29 testes cobrindo: Senha Mestra (4), Submissão/Aprovação de Corridas (7), Anti-Duplicidade (2), Exportações Excel (16)
+- `/app/backend/tests/test_critical_features.py` — 29 testes
+- `/app/backend/tests/test_iter104_instagram_social_blade.py` — 10 testes (Social Blade)
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
-- User secundário: cafvabrasil@gmail.com / 123456
+- Senha Mestra: d7ff103ad1250@#$
 
 ## Notas Técnicas
 - Redis pode crashar no ambiente de preview; reiniciar manualmente se Celery/uploads falharem
