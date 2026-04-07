@@ -42,6 +42,7 @@ import DashboardFinanceiro from './admin/DashboardFinanceiro';
 import DashboardRetencao from './admin/DashboardRetencao';
 import DashboardBackup from './admin/DashboardBackup';
 import DashboardCorridasParceiras from './admin/DashboardCorridasParceiras';
+import DashboardParceiros from './admin/DashboardParceiros';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 
@@ -64,6 +65,7 @@ const menuSections = [
       { id: 'assessorias', label: 'Assessorias', icon: Trophy, permissoes: ['visualizar_assessorias'] },
       { id: 'ranking-corridas', label: 'Corridas', icon: Star, permissoes: ['aprovar_corridas'] },
       { id: 'corridas-parceiras', label: 'Corridas Parceiras', icon: Handshake, permissoes: [] },
+      { id: 'parceiros', label: 'Parceiros', icon: Handshake, permissoes: [] },
       { id: 'pendentes', label: 'Aprovações', icon: AlertCircle, permissoes: ['aprovar_corridas', 'aprovar_resultados'] },
       { id: 'financeiro', label: 'Financeiro', icon: CreditCard, permissoes: [] },
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
@@ -799,6 +801,7 @@ const AdminDashboard = () => {
         {activeMenu === 'retencao' && <DashboardRetencao />}
         {activeMenu === 'backup' && <DashboardBackup />}
         {activeMenu === 'corridas-parceiras' && <DashboardCorridasParceiras token={token} />}
+        {activeMenu === 'parceiros' && <DashboardParceiros token={token} />}
 
         {/* Modais extraídos */}
         <AdminModals
