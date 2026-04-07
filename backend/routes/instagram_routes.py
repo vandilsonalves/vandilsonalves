@@ -474,41 +474,100 @@ async def obter_analise_instagram(analysis_id: str, admin: dict = Depends(get_ad
     if not analysis:
         raise HTTPException(status_code=404, detail="Análise não encontrada")
     
-    # Se for análise tipo Social Blade, gerar gráficos com os dados calculados
+    # Se for análise tipo Social Blade, regenerar graficos_data completo
     if analysis.get("tipo") == "social_blade":
         seguidores = max(analysis.get("seguidores", 1), 1)
+        views_score = analysis.get("views_score", 0)
+        eng_score = analysis.get("eng_score", 0)
+        curt_score = analysis.get("curt_score", 0)
+        coment_score = analysis.get("coment_score", 0)
+        cresc_score = analysis.get("cresc_score", 0)
+        posts_score = analysis.get("posts_score", 0)
+        score_medio = analysis.get("score_medio", 0)
+
+        nota_nivel_map = {
+            "A++": "Elite / Viral", "A+": "Excelente", "A": "Muito Forte",
+            "B+": "Forte", "B": "Boa", "C+": "Saudável", "C": "Fraca",
+            "D": "Muito fraca", "E": "Péssima", "F": "Péssima"
+        }
+
+        def score_to_metrica(s):
+            if s >= 10: return "Excelente"
+            if s >= 9: return "Ótimo"
+            if s >= 8: return "Bom"
+            if s >= 6: return "Regular"
+            return "Péssimo"
+
         graficos_data = {
-            "radar": {
-                "labels": ["Engajamento", "Curtidas", "Comentários", "Crescimento", "Frequência", "Consistência"],
-                "values": [
-                    min(10, analysis.get("engajamento_pct", 0) * 2),
-                    min(10, analysis.get("taxa_curtidas_pct", 0) * 2),
-                    min(10, (analysis.get("comentarios_medios", 0) / max(analysis.get("curtidas_medias", 1), 1)) * 50),
-                    min(10, analysis.get("crescimento_pct", 0)),
-                    min(10, analysis.get("posts_semanais", 0) * 1.5),
-                    min(10, min(analysis.get("posts_30d", 0), 30) / 3)
+            "nota_gauge": {
+                "nota": analysis.get("nota", "C"),
+                "nota_calc": analysis.get("nota_calc", ""),
+                "nivel": nota_nivel_map.get(analysis.get("nota", "C"), ""),
+                "taxa_curtidas_pct": analysis.get("taxa_curtidas_pct", 0)
+            },
+            "views_reels": {
+                "media_views": analysis.get("media_views_reels", 0),
+                "taxa_views_pct": analysis.get("taxa_views_pct", 0),
+                "metrica": score_to_metrica(views_score),
+                "score": views_score,
+                "escala": [
+                    {"label": "< 10%", "range": "Péssimo", "min": 0, "max": 10},
+                    {"label": "10-30%", "range": "Regular", "min": 10, "max": 30},
+                    {"label": "30-70%", "range": "Bom", "min": 30, "max": 70},
+                    {"label": "70-120%", "range": "Ótimo", "min": 70, "max": 120},
+                    {"label": "> 120%", "range": "Excelente", "min": 120, "max": 200}
                 ]
             },
-            "barras_metricas": {
-                "labels": ["Engajamento %", "Taxa Curtidas %", "Crescimento %", "Posts/Semana"],
-                "values": [
-                    analysis.get("engajamento_pct", 0),
-                    analysis.get("taxa_curtidas_pct", 0),
-                    analysis.get("crescimento_pct", 0),
-                    analysis.get("posts_semanais", 0)
+            "engajamento": {
+                "taxa": analysis.get("engajamento_pct", 0),
+                "metrica": score_to_metrica(eng_score),
+                "score": eng_score,
+                "labels": ["Curtidas Médias", "Comentários Médios"],
+                "values": [analysis.get("curtidas_medias", 0), analysis.get("comentarios_medios", 0)]
+            },
+            "curtidas": {
+                "valor": analysis.get("curtidas_medias", 0),
+                "taxa": analysis.get("taxa_curtidas_pct", 0),
+                "metrica": score_to_metrica(curt_score),
+                "score": curt_score
+            },
+            "comentarios": {
+                "valor": analysis.get("comentarios_medios", 0),
+                "taxa": analysis.get("taxa_comentarios_pct", 0),
+                "metrica": score_to_metrica(coment_score),
+                "score": coment_score
+            },
+            "crescimento": {
+                "taxa": analysis.get("crescimento_pct", 0),
+                "metrica": score_to_metrica(cresc_score),
+                "score": cresc_score,
+                "saldo": analysis.get("saldo_seguidores", 0),
+                "radar_labels": ["Crescimento %", "Ganho 30d", "Frequência Posts", "Engajamento", "Curtidas", "Comentários"],
+                "radar_values": [round(v, 1) for v in [
+                    cresc_score,
+                    min(10, analysis.get("ganho_seguidores_30d", 0) / max(seguidores * 0.01, 1)),
+                    posts_score, eng_score, curt_score, coment_score
+                ]]
+            },
+            "posts": {
+                "total": analysis.get("posts_30d", 0),
+                "metrica": score_to_metrica(posts_score),
+                "score": posts_score,
+                "semanal": analysis.get("media_semanal_posts", 0),
+                "escala": [
+                    {"label": "0-4", "range": "Péssimo", "score": "1-4"},
+                    {"label": "5-8", "range": "Regular", "score": "5-6"},
+                    {"label": "9-16", "range": "Bom", "score": "7-8"},
+                    {"label": "17-30", "range": "Ótimo", "score": "9"},
+                    {"label": "30+", "range": "Excelente", "score": "10"}
                 ]
             },
-            "pizza_distribuicao": {
-                "labels": ["Curtidas", "Comentários"],
-                "values": [analysis.get("curtidas_30d", 0), analysis.get("comentarios_30d", 0)]
-            },
-            "crescimento_semanal": {
-                "labels": ["Semana 1", "Semana 2", "Semana 3", "Semana 4"],
-                "ganho": [round(analysis.get("ganho_semanal", 0) * x) for x in [0.9, 1.1, 0.95, 1.05]],
-                "perda": [round(analysis.get("perda_semanal", 0) * x) for x in [1.1, 0.9, 1.05, 0.95]]
+            "scores": {
+                "views": views_score, "engajamento": eng_score, "curtidas": curt_score,
+                "comentarios": coment_score, "crescimento": cresc_score, "posts": posts_score,
+                "media": score_medio
             }
         }
-        graficos_data["radar"]["values"] = [round(v, 1) for v in graficos_data["radar"]["values"]]
         return {"analysis": analysis, "graficos_data": graficos_data}
     
     # Análise legada

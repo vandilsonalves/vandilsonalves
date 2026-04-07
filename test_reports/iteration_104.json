@@ -1,0 +1,105 @@
+{
+  "summary": "Iteration 104: Complete testing of Instagram Ranking Run Inside (Social Blade) feature. All backend APIs (10/10 tests) and frontend features verified successfully. The feature allows manual analysis of Instagram profiles with 15+ input fields, calculates 7 metrics with scores, and displays results using 7 different chart types.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Console",
+        "issues": ["Hydration warning: '<tr> cannot be child of <span>' - Known React hydration issue in RankingTable, doesn't affect functionality"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter104_instagram_social_blade.py",
+    "/app/test_reports/pytest/pytest_iter104_instagram_social_blade.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (instagram_routes.py): All 7 formula calculations implemented correctly - Taxa Curtidas, Views Reels, Engajamento, Curtidas, Comentários, Crescimento, Posts",
+    "Backend: graficos_data returns all 7 sections with proper data structure for charts",
+    "Frontend (DashboardInstagram.jsx): Form modal with 4 sections and 15+ fields working correctly",
+    "Frontend: All 7 chart types rendered using Recharts - Donut, Barras, Pizza, Colunas, Linhas, Radar, Histograma",
+    "Frontend: Scores por Métrica section displays individual scores and overall average",
+    "Frontend: Export XLSX and CSV buttons functional with token-based auth"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter104_instagram_social_blade.py"
+  ],
+  "success_rate": {
+    "backend": "100% (10/10 tests passed)",
+    "frontend": "100% (All features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin"
+  },
+  "seed_data_creation": "Created test analyses during testing: test_formulas_*, test_with_foto_*, test_export_*, test_csv_*, test_grades_*, test_playwright_ui",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 104 validated the complete Instagram Ranking Run Inside (Social Blade) feature. Backend endpoints tested: POST /api/admin/instagram/analisar-simplificado (create analysis with 15+ fields), POST /api/admin/instagram/upload-foto (photo upload), GET /api/admin/instagram/analises (list), GET /api/admin/instagram/analises/{id} (view with graficos_data), DELETE /api/admin/instagram/analises/{id}, GET /api/admin/instagram/export/{id} (XLSX), GET /api/admin/instagram/export-csv/{id} (CSV). Frontend verified: Form modal with 4 sections (Identificação, Dados Gerais, Crescimento 30d, Interações 30d), Result page with 7 charts (Donut, Barras, Pizza, Colunas, Linhas, Radar, Histograma), Scores por Métrica section, Export buttons.",
+  "features_verified": {
+    "Backend API - POST analisar-simplificado": {
+      "status": "VERIFIED",
+      "details": "Creates analysis with all 15+ manual fields, calculates 7 formulas, returns graficos_data with all 7 sections"
+    },
+    "Backend API - POST upload-foto": {
+      "status": "VERIFIED",
+      "details": "Uploads profile photo, returns foto_url path"
+    },
+    "Backend API - GET analises": {
+      "status": "VERIFIED",
+      "details": "Lists all analyses with proper data"
+    },
+    "Backend API - GET analises/{id}": {
+      "status": "VERIFIED",
+      "details": "Returns analysis with complete graficos_data including all 7 chart sections and scores"
+    },
+    "Backend API - DELETE analises/{id}": {
+      "status": "VERIFIED",
+      "details": "Deletes analysis, returns 404 on subsequent GET"
+    },
+    "Backend API - Export XLSX": {
+      "status": "VERIFIED",
+      "details": "Returns valid XLSX file with correct content-type"
+    },
+    "Backend API - Export CSV": {
+      "status": "VERIFIED",
+      "details": "Returns valid CSV file with correct content-type"
+    },
+    "Frontend - Form Modal": {
+      "status": "VERIFIED",
+      "details": "4 sections with 15+ fields: Identificação (username, nome, data, foto upload), Dados Gerais (seguidores, seguindo, posts, nota, classificações), Crescimento 30d (ganho, perda, médias semanais), Interações 30d (posts, views reels, curtidas, comentários)"
+    },
+    "Frontend - 7 Charts": {
+      "status": "VERIFIED",
+      "details": "All 7 chart types displayed: 1. Donut (Nota), 2. Barras (Views Reels), 3. Pizza (Engajamento), 4. Colunas (Curtidas), 5. Linhas (Comentários), 6. Radar (Crescimento), 7. Histograma (Posts)"
+    },
+    "Frontend - Scores Section": {
+      "status": "VERIFIED",
+      "details": "Displays individual scores for 6 metrics and overall Score Médio Geral"
+    },
+    "Frontend - Export Buttons": {
+      "status": "VERIFIED",
+      "details": "Exportar XLSX and Exportar CSV buttons present and functional"
+    },
+    "Frontend - List View": {
+      "status": "VERIFIED",
+      "details": "Shows analyses with badge, username, name, followers, engagement, score, date, view/delete buttons"
+    }
+  },
+  "screenshots": [
+    ".screenshots/admin_dashboard.png",
+    ".screenshots/instagram_dashboard.png",
+    ".screenshots/nova_analise_form.png",
+    ".screenshots/nova_analise_filled.png",
+    ".screenshots/analise_resultado.png",
+    ".screenshots/graphs_middle.png",
+    ".screenshots/graphs_bottom.png",
+    ".screenshots/export_buttons.png",
+    ".screenshots/final_list.png"
+  ]
+}
