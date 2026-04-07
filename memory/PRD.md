@@ -32,9 +32,13 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 ### Ranking Run Inside - Social Blade (07/04/2026)
 - **Formulário 100% manual** com 15+ campos organizados em 4 seções:
   - Identificação (@Username, Nome, Data, Upload Foto de Perfil)
-  - Dados Gerais (Seguidores, Seguindo, Posts, Nota A++..F, Classificação SB, Classif. Seguidores)
+  - Dados Gerais (Seguidores, Seguindo, Posts, Nota A++..F com 14 notas, Classificação SB, Classif. Seguidores)
   - Crescimento 30d (Ganho, Perda, Médias Semanais)
   - Interações 30d (Posts 30d, Média Semanal Posts, Views Reels 6 últimos, Curtidas/Comentários Médios)
+- **14 Notas** no sistema: A++, A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, F (cada uma com Taxa de Curtidas, Nível e Score numérico)
+- **Destaque da Nota no Header**: Exibição proeminente da Nota (letra grande colorida), Nível, Taxa de Curtidas e Score Médio
+- **Tabela de Referência NOTA**: 14 linhas coloridas com Nota, Taxa de Curtidas, Nível e Score numérico (4 a 10)
+- **Tabela de Referência CLASSIFICAÇÃO + SCORE**: Fundo escuro com bolinhas coloridas (Crescimento % → Classificação → Score)
 - **7 fórmulas de cálculo** no backend:
   1. Nota (Taxa de Curtidas) → Gauge/Donut
   2. Views de Reels → Barras Horizontais

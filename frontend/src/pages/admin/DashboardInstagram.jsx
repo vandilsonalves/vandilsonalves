@@ -24,17 +24,19 @@ import {
 const API = process.env.REACT_APP_BACKEND_URL + '/api';
 
 const NOTA_COLORS = {
-  'A++': '#059669', 'A+': '#10B981', 'A': '#22C55E',
-  'B+': '#3B82F6', 'B': '#60A5FA',
-  'C+': '#F59E0B', 'C': '#FBBF24',
-  'D': '#F97316', 'E': '#EF4444', 'F': '#DC2626'
+  'A++': '#059669', 'A+': '#10B981', 'A': '#22C55E', 'A-': '#4ADE80',
+  'B+': '#3B82F6', 'B': '#60A5FA', 'B-': '#93C5FD',
+  'C+': '#F59E0B', 'C': '#FBBF24', 'C-': '#FCD34D',
+  'D+': '#FB923C', 'D': '#F97316', 'D-': '#EA580C',
+  'F': '#DC2626'
 };
 
 const NOTA_BG = {
-  'A++': 'bg-emerald-600', 'A+': 'bg-emerald-500', 'A': 'bg-green-500',
-  'B+': 'bg-blue-500', 'B': 'bg-blue-400',
-  'C+': 'bg-yellow-500', 'C': 'bg-yellow-400',
-  'D': 'bg-orange-500', 'E': 'bg-red-500', 'F': 'bg-red-700'
+  'A++': 'bg-emerald-600', 'A+': 'bg-emerald-500', 'A': 'bg-green-500', 'A-': 'bg-green-400',
+  'B+': 'bg-blue-500', 'B': 'bg-blue-400', 'B-': 'bg-blue-300',
+  'C+': 'bg-yellow-500', 'C': 'bg-yellow-400', 'C-': 'bg-yellow-300',
+  'D+': 'bg-orange-400', 'D': 'bg-orange-500', 'D-': 'bg-orange-600',
+  'F': 'bg-red-700'
 };
 
 const METRICA_COLORS = {
@@ -258,7 +260,7 @@ const DashboardInstagram = ({ token }) => {
                 <div>
                   <Label>Nota (A++ a F)</Label>
                   <select className="w-full h-10 px-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-sm" value={formData.nota} onChange={e => F('nota', e.target.value)} data-testid="select-nota">
-                    {['A++','A+','A','B+','B','C+','C','D','E','F'].map(n => <option key={n} value={n}>{n}</option>)}
+                    {['A++','A+','A','A-','B+','B','B-','C+','C','C-','D+','D','D-','F'].map(n => <option key={n} value={n}>{n}</option>)}
                   </select>
                 </div>
                 <div><Label>Classificação SB</Label><Input placeholder="Ex: B+" value={formData.classificacao_sb} onChange={e => F('classificacao_sb', e.target.value)} data-testid="input-classif-sb" /></div>
@@ -321,12 +323,10 @@ const ResultadoAnalise = ({ a, gd, token, onClose }) => {
                 <div className="flex items-center gap-3 flex-wrap">
                   <h3 className="text-2xl font-bold" data-testid="username-result">@{a.username}</h3>
                   {a.nome_completo && <span className="text-slate-400">({a.nome_completo})</span>}
-                  <Badge className={`text-lg px-3 py-1 ${NOTA_BG[a.nota] || NOTA_BG[a.nota_calc] || 'bg-slate-500'} text-white`} data-testid="nota-badge">{a.nota || a.nota_calc}</Badge>
                 </div>
                 <div className="flex gap-4 mt-1 text-sm text-slate-400 flex-wrap">
                   {a.classificacao_sb && <span>SB: {a.classificacao_sb}</span>}
                   {a.classificacao_seguidores && <span>Seg: {a.classificacao_seguidores}</span>}
-                  {a.nota_nivel && <span>Nível: {a.nota_nivel}</span>}
                   <span>Data: {a.data_analise?.substring(0, 10)}</span>
                 </div>
               </div>
@@ -348,6 +348,9 @@ const ResultadoAnalise = ({ a, gd, token, onClose }) => {
               </div>
             </div>
           </div>
+
+          {/* ===== DESTAQUE NOTA + NÍVEL + TAXA DE CURTIDAS ===== */}
+          <NotaDestaque a={a} gd={gd} scores={scores} />
 
           {/* Grid de Métricas Rápidas */}
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
@@ -425,6 +428,10 @@ const ResultadoAnalise = ({ a, gd, token, onClose }) => {
         </Card>
       )}
 
+      {/* ===== TABELAS DE REFERÊNCIA ===== */}
+      <TabelaNotaReferencia />
+      <TabelaClassificacaoScore />
+
       {/* Ações */}
       <div className="flex gap-3 justify-center flex-wrap">
         <Button onClick={() => window.open(`${API}/admin/instagram/export/${a.id}?token=${token}`, '_blank')} className="bg-emerald-600 hover:bg-emerald-700" data-testid="btn-export-xlsx">
@@ -455,7 +462,7 @@ const GraficoNota = ({ gd, a }) => {
   const ng = gd.nota_gauge || {};
   const notaVal = ng.nota || a.nota || 'C';
   const cor = NOTA_COLORS[notaVal] || '#94A3B8';
-  const notaNum = { 'A++': 100, 'A+': 90, 'A': 80, 'B+': 70, 'B': 60, 'C+': 50, 'C': 40, 'D': 30, 'E': 20, 'F': 10 };
+  const notaNum = { 'A++': 100, 'A+': 93, 'A': 86, 'A-': 79, 'B+': 72, 'B': 65, 'B-': 58, 'C+': 51, 'C': 44, 'C-': 37, 'D+': 30, 'D': 23, 'D-': 16, 'F': 8 };
   const pct = notaNum[notaVal] || 40;
   const data = [{ name: 'score', value: pct, fill: cor }, { name: 'rest', value: 100 - pct, fill: '#1E293B' }];
 
@@ -696,5 +703,132 @@ const GraficoPosts = ({ gd }) => {
     </Card>
   );
 };
+
+// ==================== DESTAQUE DA NOTA NO HEADER ====================
+const NOTA_TABLE_DATA = [
+  { nota: 'A++', taxa: '7%+', nivel: 'Elite / Viral', score: '10', bg: '#4ADE80', text: '#000' },
+  { nota: 'A+', taxa: '6% – 6.99%', nivel: 'Excelente', score: '9.5', bg: '#22D3EE', text: '#000' },
+  { nota: 'A', taxa: '5% – 5.99%', nivel: 'Muito Forte', score: '9', bg: '#FACC15', text: '#000' },
+  { nota: 'A-', taxa: '4.5% – 4.99%', nivel: 'Forte+', score: '8.5', bg: '#A3E635', text: '#000' },
+  { nota: 'B+', taxa: '4% – 4.49%', nivel: 'Forte', score: '8', bg: '#A855F7', text: '#fff' },
+  { nota: 'B', taxa: '3.5% – 3.99%', nivel: 'Boa', score: '7.5', bg: '#EC4899', text: '#000' },
+  { nota: 'B-', taxa: '3% – 3.49%', nivel: 'Boa-', score: '7', bg: '#F472B6', text: '#000' },
+  { nota: 'C+', taxa: '2.5% – 2.99%', nivel: 'Saudável', score: '6.5', bg: '#9CA3AF', text: '#000' },
+  { nota: 'C', taxa: '2% – 2.49%', nivel: 'Regular', score: '6', bg: '#D97706', text: '#000' },
+  { nota: 'C-', taxa: '1.5% – 1.99%', nivel: 'Fraca', score: '5.5', bg: '#B45309', text: '#fff' },
+  { nota: 'D+', taxa: '1% – 1.49%', nivel: 'Muito Fraca', score: '5', bg: '#475569', text: '#fff' },
+  { nota: 'D', taxa: '0.5% – 0.99%', nivel: 'Péssima', score: '4.5', bg: '#1E293B', text: '#fff' },
+  { nota: 'D-', taxa: '0.25% – 0.49%', nivel: 'Crítica', score: '4', bg: '#7F1D1D', text: '#fff' },
+  { nota: 'F', taxa: '< 0.25%', nivel: 'Inativa', score: '0', bg: '#DC2626', text: '#fff' },
+];
+
+const CLASSIF_TABLE_DATA = [
+  { range: '< 1%', classif: 'Péssimo', score: '1–4', dotColor: '#F87171' },
+  { range: '1% – 3%', classif: 'Regular (Fraco)', score: '5–6', dotColor: '#FB923C' },
+  { range: '3% – 6%', classif: 'Bom', score: '7–8', dotColor: '#FACC15' },
+  { range: '6% – 10%', classif: 'Ótimo (Muito bom)', score: '9', dotColor: '#34D399' },
+  { range: '> 10%', classif: 'Excelente', score: '10', dotColor: '#60A5FA' },
+];
+
+const NotaDestaque = ({ a, gd, scores }) => {
+  const notaVal = a.nota || a.nota_calc || 'C';
+  const notaNivel = a.nota_nivel || gd.nota_gauge?.nivel || '';
+  const taxaCurtidas = a.taxa_curtidas_pct || gd.nota_gauge?.taxa_curtidas_pct || 0;
+  const cor = NOTA_COLORS[notaVal] || '#94A3B8';
+  const row = NOTA_TABLE_DATA.find(r => r.nota === notaVal);
+
+  return (
+    <div className="mt-5 p-4 rounded-2xl border border-slate-700 bg-slate-800/60" data-testid="nota-destaque">
+      <div className="flex flex-col sm:flex-row items-center gap-5">
+        {/* Nota Grande */}
+        <div className="flex flex-col items-center shrink-0">
+          <div className="w-24 h-24 rounded-2xl flex items-center justify-center text-5xl font-black shadow-lg" style={{ backgroundColor: row?.bg || cor, color: row?.text || '#fff' }} data-testid="nota-badge-grande">
+            {notaVal}
+          </div>
+          <span className="text-xs text-slate-500 mt-1">NOTA</span>
+        </div>
+        {/* Info */}
+        <div className="flex-1 grid grid-cols-1 sm:grid-cols-3 gap-4 text-center sm:text-left">
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider">Nível</div>
+            <div className="text-xl font-bold mt-1" style={{ color: cor }}>{notaNivel || row?.nivel || '-'}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider">Taxa de Curtidas</div>
+            <div className="text-xl font-bold mt-1 text-white">{taxaCurtidas}%</div>
+            <div className="text-xs text-slate-500">Faixa: {row?.taxa || '-'}</div>
+          </div>
+          <div>
+            <div className="text-xs text-slate-500 uppercase tracking-wider">Score Médio</div>
+            <div className="text-xl font-bold mt-1" style={{ color: scores.media >= 8 ? '#10B981' : scores.media >= 6 ? '#F59E0B' : '#EF4444' }}>{scores.media || 0}/10</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ==================== TABELA NOTA REFERÊNCIA (Imagem 1) ====================
+const TabelaNotaReferencia = () => (
+  <Card data-testid="tabela-nota-referencia">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2">
+        <Star className="w-5 h-5 text-amber-500" />NOTA – Score de Nota (A++ a F)
+      </CardTitle>
+    </CardHeader>
+    <CardContent className="p-0 overflow-hidden rounded-b-lg">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="bg-slate-100 dark:bg-slate-800">
+            <th className="px-4 py-2.5 text-left font-semibold text-slate-600 dark:text-slate-300">Nota</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-slate-600 dark:text-slate-300">Taxa de Curtidas</th>
+            <th className="px-4 py-2.5 text-left font-semibold text-slate-600 dark:text-slate-300">Nível</th>
+            <th className="px-4 py-2.5 text-right font-semibold text-slate-600 dark:text-slate-300">Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          {NOTA_TABLE_DATA.map(row => (
+            <tr key={row.nota} style={{ backgroundColor: row.bg, color: row.text }} className="border-t border-white/20">
+              <td className="px-4 py-3 font-bold text-lg">{row.nota}</td>
+              <td className="px-4 py-3 font-semibold">{row.taxa}</td>
+              <td className="px-4 py-3 font-semibold">{row.nivel}</td>
+              <td className="px-4 py-3 font-bold text-lg text-right">{row.score}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </CardContent>
+  </Card>
+);
+
+// ==================== TABELA CLASSIFICAÇÃO + SCORE (Imagem 2) ====================
+const TabelaClassificacaoScore = () => (
+  <Card className="bg-slate-950 border-slate-800" data-testid="tabela-classificacao-score">
+    <CardHeader>
+      <CardTitle className="flex items-center gap-2 text-white">
+        <Target className="w-5 h-5 text-red-500" />CLASSIFICAÇÃO + SCORE (PADRÃO DO SEU SISTEMA)
+      </CardTitle>
+    </CardHeader>
+    <CardContent>
+      {/* Header */}
+      <div className="grid grid-cols-3 pb-3 border-b border-slate-700 mb-2">
+        <span className="text-slate-400 text-sm font-semibold">Crescimento (%)</span>
+        <span className="text-slate-400 text-sm font-semibold">Classificação</span>
+        <span className="text-slate-400 text-sm font-semibold text-right">Score</span>
+      </div>
+      {/* Rows */}
+      {CLASSIF_TABLE_DATA.map((row, i) => (
+        <div key={i} className="grid grid-cols-3 items-center py-4 border-b border-slate-800/60 last:border-0">
+          <span className="text-white text-base font-medium">{row.range}</span>
+          <div className="flex items-center gap-2.5">
+            <div className="w-4 h-4 rounded-full shrink-0" style={{ backgroundColor: row.dotColor }} />
+            <span className="text-white font-semibold">{row.classif}</span>
+          </div>
+          <span className="text-white text-lg font-bold text-right">{row.score}</span>
+        </div>
+      ))}
+    </CardContent>
+  </Card>
+);
 
 export default DashboardInstagram;
