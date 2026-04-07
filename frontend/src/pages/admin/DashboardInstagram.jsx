@@ -10,10 +10,11 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import ImageCropModal from '@/components/ImageCropModal';
 import {
   Instagram, Loader2, Activity, TrendingUp, TrendingDown, Users,
   Heart, MessageCircle, BarChart3, Eye, Trash2, Download, Plus, Target,
-  ArrowUp, ArrowDown, Camera, Calendar, Star, Zap, Film
+  ArrowUp, ArrowDown, Camera, Calendar, Star, Zap, Film, FileText
 } from 'lucide-react';
 import {
   RadarChart, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Radar as RechartsRadar,
@@ -64,6 +65,8 @@ const DashboardInstagram = ({ token }) => {
   const [uploading, setUploading] = useState(false);
   const [result, setResult] = useState(null);
   const [formData, setFormData] = useState({ ...INITIAL_FORM });
+  const [cropModal, setCropModal] = useState(false);
+  const [cropSrc, setCropSrc] = useState(null);
 
   const fetchAnalises = useCallback(async () => {
     try {
@@ -76,19 +79,28 @@ const DashboardInstagram = ({ token }) => {
 
   const F = (k, v) => setFormData(p => ({ ...p, [k]: v }));
 
-  // Upload foto
-  const handleFotoUpload = async (e) => {
+  // Ao selecionar arquivo, abre modal de crop
+  const handleFotoSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => { setCropSrc(reader.result); setCropModal(true); };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+  };
+
+  // Após crop, faz upload
+  const handleCropComplete = async (croppedFile) => {
+    setCropModal(false);
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.append('foto', file);
+      fd.append('foto', croppedFile);
       const r = await axios.post(`${API}/admin/instagram/upload-foto`, fd, {
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' }
       });
       F('foto_url', r.data.foto_url);
-      toast.success('Foto enviada!');
+      toast.success('Foto enviada e ajustada!');
     } catch { toast.error('Erro no upload da foto'); }
     finally { setUploading(false); }
   };
@@ -238,7 +250,7 @@ const DashboardInstagram = ({ token }) => {
                     <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-pink-50 dark:bg-pink-900/30 border border-pink-200 dark:border-pink-800 rounded-lg text-pink-600 dark:text-pink-400 hover:bg-pink-100 transition text-sm font-medium" data-testid="btn-upload-foto">
                       {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Camera className="w-4 h-4" />}
                       {uploading ? 'Enviando...' : 'Escolher Foto'}
-                      <input type="file" accept="image/*" className="hidden" onChange={handleFotoUpload} disabled={uploading} />
+                      <input type="file" accept="image/*" className="hidden" onChange={handleFotoSelect} disabled={uploading} />
                     </label>
                     {formData.foto_url && (
                       <img src={`${process.env.REACT_APP_BACKEND_URL}${formData.foto_url}`} alt="Preview" className="w-12 h-12 rounded-full object-cover border-2 border-pink-400" />
@@ -302,6 +314,15 @@ const DashboardInstagram = ({ token }) => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Modal de Crop */}
+      <ImageCropModal
+        isOpen={cropModal}
+        onClose={() => setCropModal(false)}
+        imageSrc={cropSrc}
+        onCropComplete={handleCropComplete}
+        aspectRatio={1}
+      />
     </div>
   );
 };
@@ -436,6 +457,9 @@ const ResultadoAnalise = ({ a, gd, token, onClose }) => {
       <div className="flex gap-3 justify-center flex-wrap">
         <Button onClick={() => window.open(`${API}/admin/instagram/export/${a.id}?token=${token}`, '_blank')} className="bg-emerald-600 hover:bg-emerald-700" data-testid="btn-export-xlsx">
           <Download className="w-4 h-4 mr-2" />Exportar XLSX
+        </Button>
+        <Button onClick={() => window.open(`${API}/admin/instagram/export-pdf/${a.id}?token=${token}`, '_blank')} className="bg-red-600 hover:bg-red-700" data-testid="btn-export-pdf">
+          <FileText className="w-4 h-4 mr-2" />Exportar PDF
         </Button>
         <Button onClick={() => window.open(`${API}/admin/instagram/export-csv/${a.id}?token=${token}`, '_blank')} variant="outline" data-testid="btn-export-csv">
           <Download className="w-4 h-4 mr-2" />Exportar CSV

@@ -25,6 +25,7 @@ import PagamentoPage from "@/pages/PagamentoPage";
 import PagamentoSucessoPage from "@/pages/PagamentoSucessoPage";
 import PagamentoCanceladoPage from "@/pages/PagamentoCanceladoPage";
 import FeedEquipePage from "@/pages/FeedEquipePage";
+import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import SplashScreen from "@/components/SplashScreen";
 import AccessGate from "@/components/AccessGate";
@@ -76,6 +77,7 @@ function App() {
               <Route path="/pagamento/sucesso" element={<PagamentoSucessoPage />} />
               <Route path="/pagamento/cancelado" element={<PagamentoCanceladoPage />} />
               <Route path="/feed-equipe" element={<FeedEquipePage />} />
+              <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
             </Routes>
           </PrintProtectionWrapper>
         </BrowserRouter>

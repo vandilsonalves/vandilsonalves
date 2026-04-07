@@ -272,6 +272,20 @@ const RankingPage = () => {
         {/* RANKING DE EQUIPES - LIGA NACIONAL DE ASSESSORIAS */}
         {tipoRanking === 'equipes' && <RankingEquipes />}
 
+        {/* Footer */}
+        <div className="mt-8 py-4 border-t border-slate-200 dark:border-slate-800 text-center">
+          <button
+            onClick={() => navigate('/politica-de-privacidade')}
+            className="text-xs text-slate-400 hover:text-emerald-600 transition-colors inline-flex items-center gap-1"
+            data-testid="link-politica-privacidade"
+          >
+            <Shield className="w-3 h-3" />
+            Política de Privacidade
+          </button>
+          <span className="text-xs text-slate-300 dark:text-slate-600 mx-2">|</span>
+          <span className="text-xs text-slate-400">Ranking Run Pro 2026</span>
+        </div>
+
       </div>
     </div>
   );

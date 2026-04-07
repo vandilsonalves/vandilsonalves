@@ -1189,6 +1189,196 @@ async def exportar_analise_csv(analysis_id: str, admin: dict = Depends(get_admin
     )
 
 
+# ==================== EXPORTAÇÃO PDF ====================
+
+@router.get("/admin/instagram/export-pdf/{analysis_id}")
+async def exportar_analise_pdf(analysis_id: str, admin: dict = Depends(get_admin_user)):
+    """Exporta análise em formato PDF"""
+    from reportlab.lib.pagesizes import A4
+    from reportlab.lib import colors
+    from reportlab.lib.units import mm
+    from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, HRFlowable
+    from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+    from reportlab.lib.enums import TA_CENTER, TA_LEFT
+
+    analysis = await db.instagram_analyses.find_one(
+        {"id": analysis_id}, {"_id": 0}
+    )
+    if not analysis:
+        raise HTTPException(status_code=404, detail="Análise não encontrada")
+
+    output = io.BytesIO()
+    doc = SimpleDocTemplate(output, pagesize=A4, topMargin=20*mm, bottomMargin=20*mm, leftMargin=15*mm, rightMargin=15*mm)
+    styles = getSampleStyleSheet()
+
+    title_style = ParagraphStyle('CustomTitle', parent=styles['Title'], fontSize=20, textColor=colors.HexColor('#1E293B'), spaceAfter=5*mm)
+    subtitle_style = ParagraphStyle('Subtitle', parent=styles['Normal'], fontSize=11, textColor=colors.HexColor('#64748B'), spaceAfter=8*mm)
+    section_style = ParagraphStyle('Section', parent=styles['Heading2'], fontSize=14, textColor=colors.HexColor('#3B82F6'), spaceBefore=6*mm, spaceAfter=3*mm)
+    normal = ParagraphStyle('NormalCustom', parent=styles['Normal'], fontSize=10, textColor=colors.HexColor('#334155'))
+
+    elements = []
+
+    # Header
+    elements.append(Paragraph("RANKING RUN INSIDE", title_style))
+    elements.append(Paragraph(f"Análise de Perfil Instagram — @{analysis.get('username', '')}", subtitle_style))
+    elements.append(HRFlowable(width="100%", thickness=1, color=colors.HexColor('#CBD5E1')))
+    elements.append(Spacer(1, 5*mm))
+
+    # Info Geral
+    elements.append(Paragraph("Identificação", section_style))
+    info_data = [
+        ["Username", f"@{analysis.get('username', '')}"],
+        ["Nome Completo", analysis.get('nome_completo', '-')],
+        ["Data da Análise", analysis.get('data_analise', '-')],
+        ["Nota", analysis.get('nota', '-')],
+        ["Nota Calculada", analysis.get('nota_calc', '-')],
+        ["Nível", analysis.get('nota_nivel', '-')],
+        ["Classificação SB", analysis.get('classificacao_sb', '-')],
+        ["Classif. Seguidores", analysis.get('classificacao_seguidores', '-')],
+    ]
+    t = Table(info_data, colWidths=[55*mm, 120*mm])
+    t.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (0, -1), colors.HexColor('#F1F5F9')),
+        ('TEXTCOLOR', (0, 0), (0, -1), colors.HexColor('#475569')),
+        ('FONTNAME', (0, 0), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t)
+
+    # Métricas
+    elements.append(Paragraph("Métricas do Perfil", section_style))
+    metrics_data = [
+        ["Métrica", "Valor"],
+        ["Seguidores", f"{analysis.get('seguidores', 0):,}"],
+        ["Seguindo", f"{analysis.get('seguindo', 0):,}"],
+        ["Total de Posts", f"{analysis.get('total_posts', 0):,}"],
+        ["Engajamento", f"{analysis.get('engajamento_pct', 0)}%"],
+        ["Taxa de Curtidas", f"{analysis.get('taxa_curtidas_pct', 0)}%"],
+        ["Crescimento Mensal", f"{analysis.get('crescimento_pct', 0)}%"],
+        ["Saldo Seguidores", f"{analysis.get('saldo_seguidores', 0):,}"],
+    ]
+    t2 = Table(metrics_data, colWidths=[55*mm, 120*mm])
+    t2.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#3B82F6')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#F1F5F9')),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('TEXTCOLOR', (0, 1), (0, -1), colors.HexColor('#475569')),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t2)
+
+    # Crescimento 30d
+    elements.append(Paragraph("Crescimento (30 dias)", section_style))
+    growth_data = [
+        ["Métrica", "Valor"],
+        ["Ganho 30d", f"+{analysis.get('ganho_seguidores_30d', 0):,}"],
+        ["Perda 30d", f"-{analysis.get('perda_seguidores_30d', 0):,}"],
+        ["Méd. Semanal Ganho", str(analysis.get('media_semanal_ganho', 0))],
+        ["Méd. Semanal Perda", str(analysis.get('media_semanal_perda', 0))],
+    ]
+    t3 = Table(growth_data, colWidths=[55*mm, 120*mm])
+    t3.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#10B981')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#F1F5F9')),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t3)
+
+    # Interações
+    elements.append(Paragraph("Interações e Conteúdo (30 dias)", section_style))
+    interact_data = [
+        ["Métrica", "Valor"],
+        ["Posts 30d", str(analysis.get('posts_30d', 0))],
+        ["Méd. Semanal Posts", str(analysis.get('media_semanal_posts', 0))],
+        ["Views Reels (méd.)", f"{analysis.get('media_views_reels', 0):,}"],
+        ["Curtidas Médias", str(analysis.get('curtidas_medias', 0))],
+        ["Comentários Médios", str(analysis.get('comentarios_medios', 0))],
+    ]
+    t4 = Table(interact_data, colWidths=[55*mm, 120*mm])
+    t4.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#EC4899')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#F1F5F9')),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t4)
+
+    # Scores
+    elements.append(Paragraph("Scores por Métrica", section_style))
+    scores_data = [
+        ["Métrica", "Score (0-10)"],
+        ["Views Reels", str(analysis.get('views_score', 0))],
+        ["Engajamento", str(analysis.get('eng_score', 0))],
+        ["Curtidas", str(analysis.get('curt_score', 0))],
+        ["Comentários", str(analysis.get('coment_score', 0))],
+        ["Crescimento", str(analysis.get('cresc_score', 0))],
+        ["Posts", str(analysis.get('posts_score', 0))],
+        ["SCORE MÉDIO", str(analysis.get('score_medio', 0))],
+    ]
+    t5 = Table(scores_data, colWidths=[55*mm, 120*mm])
+    t5.setStyle(TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B5CF6')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, -1), (-1, -1), colors.HexColor('#EDE9FE')),
+        ('FONTNAME', (0, -1), (-1, -1), 'Helvetica-Bold'),
+        ('BACKGROUND', (0, 1), (0, -2), colors.HexColor('#F1F5F9')),
+        ('FONTNAME', (0, 1), (0, -2), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, -1), 10),
+        ('FONTSIZE', (0, -1), (-1, -1), 12),
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.HexColor('#E2E8F0')),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+        ('LEFTPADDING', (0, 0), (-1, -1), 6),
+    ]))
+    elements.append(t5)
+
+    # Footer
+    elements.append(Spacer(1, 10*mm))
+    elements.append(HRFlowable(width="100%", thickness=0.5, color=colors.HexColor('#CBD5E1')))
+    footer_style = ParagraphStyle('Footer', parent=styles['Normal'], fontSize=8, textColor=colors.HexColor('#94A3B8'), alignment=TA_CENTER)
+    elements.append(Paragraph(f"Ranking Run Inside — Relatório gerado automaticamente — {datetime.now(timezone.utc).strftime('%d/%m/%Y %H:%M UTC')}", footer_style))
+
+    doc.build(elements)
+    output.seek(0)
+
+    return StreamingResponse(
+        output,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename=analise_{analysis['username']}.pdf"
+        }
+    )
+
+
 
 # ==================== UPLOAD FOTO DE PERFIL INSIDE ====================
 
@@ -1202,7 +1392,7 @@ async def upload_foto_inside(foto: UploadFile = File(...), admin: dict = Depends
     content = await foto.read()
     with open(filepath, "wb") as f:
         f.write(content)
-    return {"foto_url": f"/uploads/inside/{filename}"}
+    return {"foto_url": f"/api/uploads/inside/{filename}"}
 
 
 # ==================== ANÁLISE COMPLETA MANUAL (SOCIAL BLADE) ====================
