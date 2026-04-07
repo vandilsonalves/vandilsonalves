@@ -30,40 +30,36 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - 29 testes unitários cobrindo funcionalidades críticas
 
 ### Ranking Run Inside - Social Blade (07/04/2026)
-- **Formulário 100% manual** com 15+ campos organizados em 4 seções:
-  - Identificação (@Username, Nome, Data, Upload Foto de Perfil com crop/zoom/rotação)
-  - Dados Gerais (Seguidores, Seguindo, Posts, Nota A++..F com 14 notas, Classificação SB, Classif. Seguidores)
-  - Crescimento 30d (Ganho, Perda, Médias Semanais)
-  - Interações 30d (Posts 30d, Média Semanal Posts, Views Reels 6 últimos, Curtidas/Comentários Médios)
-- **14 Notas** no sistema: A++, A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, F (cada uma com Taxa de Curtidas, Nível e Score numérico)
-- **Destaque da Nota no Header**: Exibição proeminente da Nota (letra grande colorida), Nível, Taxa de Curtidas e Score Médio
-- **Tabela de Referência NOTA**: 14 linhas coloridas com Nota, Taxa de Curtidas, Nível e Score numérico (4 a 10)
-- **Tabela de Referência CLASSIFICAÇÃO + SCORE**: Fundo escuro com bolinhas coloridas (Crescimento % → Classificação → Score)
-- **7 fórmulas de cálculo** no backend com 7 gráficos distintos (Donut, Barras, Pizza, Colunas, Linhas, Radar, Histograma)
-- **Upload de foto com crop**: Modal de recorte circular com zoom e rotação (ImageCropModal)
-- **Exportação** XLSX, CSV e PDF (reportlab)
+- Formulário 100% manual com 15+ campos organizados em 4 seções
+- 14 Notas no sistema: A++, A+, A, A-, B+, B, B-, C+, C, C-, D+, D, D-, F
+- 7 fórmulas de cálculo no backend com 7 gráficos distintos
+- Upload de foto com crop: Modal de recorte circular com zoom e rotação
+- Exportação XLSX, CSV e PDF (com gráficos via Matplotlib)
 
 ### Política de Privacidade (07/04/2026)
-- Página completa em `/politica-de-privacidade` com 19 seções expansíveis
+- Página completa em /politica-de-privacidade com 19 seções expansíveis
 - Blindagem jurídica: LGPD, Marco Civil da Internet, CDC, CRFB, GDPR
-- Integração Strava: política de uso da API, privacidade, OAuth 2.0
-- Declaração de plataforma complementar (não compete com federações/confederações)
-- Links de referência: Strava API Terms, Strava Privacy, LGPD, Marco Civil
-- Link visível no footer da página principal
 
 ### Parceiros e Patrocinadores (07/04/2026)
 - Aba "Parceiros" no painel admin (CRUD: Nome, Instagram, Site, Imagem com crop 1:1)
 - Exportação Excel dos parceiros
-- Página pública `/parceiros` com grid de imagens em fundo branco e links clicáveis (Instagram + Site)
-- Botão "Parceiros" na navegação principal
+- Página pública /parceiros com grid de imagens
+
+### Correções Mobile (08/04/2026)
+- Strava redirect corrigido com FRONTEND_URL no backend .env
+- Ranking de corridas com paginação e cache (endpoint em corridas_eventos_routes.py)
+- Cache localStorage para API IBGE no formulário de submissão de resultados
+- Botão Compartilhar do Raio-X ajustado com flex-wrap para mobile
+- Endpoints duplicados removidos de ranking_corridas_routes.py (limpeza de código)
 
 ## Backlog
 - P3: Exportar Raio-X como PDF
 - P3: Investigar scraping Sympla bloqueado por Cloudflare
 
 ## Testes Unitários
-- `/app/backend/tests/test_critical_features.py` — 29 testes
-- `/app/backend/tests/test_iter104_instagram_social_blade.py` — 10 testes (Social Blade)
+- /app/backend/tests/test_critical_features.py — 29 testes
+- /app/backend/tests/test_iter104_instagram_social_blade.py — 10 testes
+- /app/backend/tests/test_iter107_ranking_strava.py — 12 testes
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
@@ -74,3 +70,5 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Redis pode crashar no ambiente de preview; reiniciar manualmente se Celery/uploads falharem
 - Componentes extraídos: não adicionar código de volta nos arquivos principais
 - A regra de 30 dias voltará a valer normalmente a partir de 2027
+- Endpoint /ranking-corridas principal está em corridas_eventos_routes.py (com cache e paginação)
+- ranking_corridas_routes.py contém apenas endpoints de avaliação e reputação (sem duplicatas)
