@@ -66,7 +66,7 @@ MESES_PT = {
 
 # Sites que SEMPRE precisam de Playwright (SPA/JS-heavy)
 SITES_PLAYWRIGHT = [
-    'sympla.com.br', 'minhasinscricoes.com.br', 'races.com.br',
+    'minhasinscricoes.com.br', 'races.com.br',
     'incentivoesporte.com.br', 'pscronos.com.br', 'assessocor.online',
     'corre10.com.br', 'vidasport.com.br', 'corre77.com.br',
     'esportecorrida.com.br', 'blackrun.com.br', 'riorunningtour.com.br',
@@ -290,6 +290,170 @@ def scrape_central_inscricoes_html(url: str) -> List[Dict]:
     except Exception as e:
         logger.error(f"Central Inscrições error: {e}")
         return []
+
+
+# ============== SCRAPER SYMPLA (VIA SITEMAP - CONTORNO DO CLOUDFLARE) ==============
+
+SYMPLA_KEYWORDS_CORRIDA = [
+    'corrida', 'run', 'running', 'maratona', 'marathon', 'meia-maratona',
+    'trail', 'cross-country', '5k', '10k', '21k', '42k', '5km', '10km',
+    '21km', '42km', 'night-run', 'color-run', 'circuito', 'desafio',
+    'rustica', 'rústica', 'revezamento', 'ultra-maratona', 'ultramaratona',
+]
+
+SYMPLA_KEYWORDS_NEGATIVAS = [
+    'workshop', 'curso', 'palestra', 'treinamento', 'formacao',
+    'congresso', 'simposio', 'seminario', 'mentoria', 'webinar',
+    'networking', 'cafe-com', 'reuniao', 'encontro-de-usuario',
+    'imersao', 'capacitacao', 'oficina', 'forro', 'samba',
+    'show', 'espetaculo', 'teatro', 'cinema', 'exposicao',
+    'degustacao', 'gastronomia', 'culinaria', 'jantar',
+    'yoga', 'pilates', 'crossfit', 'funcional', 'musculacao',
+    'ciclismo', 'bike', 'pedal', 'mtb', 'natacao', 'swim',
+]
+
+
+def _sympla_url_eh_corrida(url_slug: str) -> bool:
+    """Verifica se a URL slug do Sympla é de uma corrida"""
+    slug = url_slug.lower()
+    # Check for negative keywords first
+    for neg in SYMPLA_KEYWORDS_NEGATIVAS:
+        if neg in slug:
+            return False
+    # Check for positive keywords
+    for pos in SYMPLA_KEYWORDS_CORRIDA:
+        if pos in slug:
+            return True
+    return False
+
+
+def _sympla_extrair_nome_da_url(url: str) -> str:
+    """Extrai nome legível do evento a partir da URL slug do Sympla"""
+    # URL: https://www.sympla.com.br/summer-run----sao-joaquim-da-barra--sp__3370633
+    path = urlparse(url).path.strip('/')
+    # Remove o ID no final (__NNNNNN)
+    slug = re.sub(r'__\d+$', '', path)
+    # Remove prefixo 'evento/'
+    slug = re.sub(r'^evento/', '', slug)
+    # Converte hífens/underscores em espaços e capitaliza
+    nome = slug.replace('-', ' ').replace('_', ' ')
+    nome = re.sub(r'\s+', ' ', nome).strip()
+    # Capitalizar cada palavra
+    nome = nome.title()
+    return nome
+
+
+def _sympla_extrair_local_da_url(url: str) -> tuple:
+    """Tenta extrair cidade/estado da URL slug do Sympla"""
+    path = urlparse(url).path.strip('/')
+    slug = re.sub(r'__\d+$', '', path).lower()
+
+    # Padrão: "evento-em-cidade-uf" ou "evento-cidade-uf"
+    for uf_code in ESTADOS_BR.keys():
+        pattern = rf'[-\s]{uf_code.lower()}(?:$|[-_\s])'
+        if re.search(pattern, slug):
+            # Tentar extrair a cidade antes do UF
+            parts = slug.split(f'-{uf_code.lower()}')
+            if parts:
+                candidate = parts[0].split('-')[-3:]
+                cidade = ' '.join(candidate).title()
+                return cidade, uf_code
+            return '', uf_code
+
+    # Tentar por cidades conhecidas
+    for cidade, uf in CIDADES_ESTADOS.items():
+        cidade_slug = cidade.lower().replace(' ', '-')
+        if cidade_slug in slug:
+            return cidade.title(), uf
+
+    return '', ''
+
+
+def scrape_sympla_sitemap(url: str) -> List[Dict]:
+    """
+    Scraper Sympla via Sitemap XML.
+    O Cloudflare do Sympla bloqueia requests diretos às páginas,
+    mas o sitemap XML é acessível sem proteção.
+    Estratégia:
+    1. Baixa o sitemap de eventos
+    2. Filtra URLs que contêm keywords de corrida
+    3. Extrai nome/local a partir do slug da URL
+    """
+    corridas = []
+    try:
+        logger.info("Sympla: Baixando sitemap de eventos...")
+        sitemap_url = 'https://www.sympla.com.br/sitemap-eventos.xml'
+        resp = requests.get(sitemap_url, headers=HEADERS, timeout=30)
+        resp.raise_for_status()
+
+        soup = BeautifulSoup(resp.content, 'xml')
+        urls = soup.find_all('loc')
+        logger.info(f"Sympla: {len(urls)} URLs encontradas no sitemap")
+
+        encontradas = 0
+        for loc in urls:
+            event_url = loc.text.strip()
+            if not event_url or 'sympla.com.br' not in event_url:
+                continue
+
+            # Filtrar apenas corridas
+            slug = urlparse(event_url).path.strip('/')
+            if not _sympla_url_eh_corrida(slug):
+                continue
+
+            nome = _sympla_extrair_nome_da_url(event_url)
+            if not nome or len(nome) < 5:
+                continue
+
+            cidade, estado = _sympla_extrair_local_da_url(event_url)
+
+            corridas.append(criar_corrida(
+                nome=nome,
+                organizador='Sympla',
+                cidade=cidade,
+                estado=estado,
+                link=event_url,
+                data_str='',
+                fonte='Sympla (sitemap)'
+            ))
+            encontradas += 1
+
+        logger.info(f"Sympla: {encontradas} corridas de rua filtradas do sitemap")
+
+    except Exception as e:
+        logger.error(f"Sympla sitemap error: {e}")
+
+    return corridas
+
+
+def scrape_sympla_evento_individual(url: str) -> List[Dict]:
+    """
+    Tenta extrair dados de um evento individual do Sympla.
+    Extrai informações a partir do slug da URL já que o Cloudflare
+    bloqueia acesso direto ao HTML renderizado.
+    """
+    corridas = []
+    try:
+        nome = _sympla_extrair_nome_da_url(url)
+        cidade, estado = _sympla_extrair_local_da_url(url)
+
+        if not nome or len(nome) < 3:
+            return []
+
+        corridas.append(criar_corrida(
+            nome=nome,
+            organizador='Sympla',
+            cidade=cidade,
+            estado=estado,
+            link=url,
+            data_str='',
+            fonte='Sympla (URL)'
+        ))
+
+    except Exception as e:
+        logger.error(f"Sympla individual event error: {e}")
+
+    return corridas
 
 
 def scrape_generico_html(url: str) -> List[Dict]:
