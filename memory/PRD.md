@@ -52,14 +52,37 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Botão Compartilhar do Raio-X ajustado com flex-wrap para mobile
 - Endpoints duplicados removidos de ranking_corridas_routes.py (limpeza de código)
 
+### Blindagem Jurídica do Regulamento (08/04/2026)
+- **Seção 1-A**: "Objetivo Central da Plataforma" — declaração explícita de que a plataforma nunca substituirá entidades oficiais
+- **Seção 1-B**: "Natureza Complementar da Plataforma" — 6 declarações (a-f) incluindo conformidade constitucional e Lei Pelé
+- **Fundamentação legal na Seção 1**: 8 leis referenciadas (LGPD, Marco Civil, CDC, CF/88, GDPR, Decreto 8.771, Lei de Direitos Autorais, Lei de Propriedade Industrial)
+- **Proteção de dados na avaliação** (Seção 5): Art. 7° LGPD, coleta de IP/user-agent, direitos do titular (Arts. 17-22)
+- **Conduta dos Usuários** (Seção 12): Marco Civil Arts. 21-22, CDC Art. 39, Código Civil Arts. 186/927, Código Penal Arts. 138-140
+- **Responsabilidade** (Seção 13): Marco Civil Arts. 18-19 (limitação de responsabilidade do provedor)
+- **Isenção** (Seção 14): CF Art. 5° IV/IX, CDC Art. 14 §3°
+- **Liberdade de Opinião** (Seção 19): CF Art. 5° IV/IX, Marco Civil Art. 3° e Arts. 19/21, direito de ampla defesa (Art. 5° LV)
+- **Foro** (Seção 22): 8 leis listadas + Lei de Mediação 13.140/2015 + Lei de Arbitragem 9.307/1996
+- **Participação Voluntária** (Seção 23): Direito constitucional de acesso à informação (Art. 5° XIV/XXXIII)
+- **Uso Comercial** (Seção 27): Proteção de propriedade intelectual (Leis 9.279/96 e 9.610/98)
+- **Carta de Princípios**: Livre iniciativa (Art. 170 CF), Lei Pelé (Lei 9.615/98)
+- **Política de Integridade**: LGPD e GDPR como objetivos formais
+- Regulamento atualizado de v1.3 para v1.5 (93.8KB → 106.4KB)
+
+## 9 Leis Referenciadas no Regulamento
+1. Constituição Federal de 1988 (múltiplos artigos)
+2. Lei n. 13.709/2018 (LGPD)
+3. Lei n. 12.965/2014 (Marco Civil da Internet)
+4. Lei n. 8.078/1990 (CDC)
+5. Lei n. 10.406/2002 (Código Civil)
+6. Lei n. 9.610/1998 (Direitos Autorais)
+7. Lei n. 9.279/1996 (Propriedade Industrial)
+8. Lei n. 9.615/1998 (Lei Pelé)
+9. Regulamento UE 2016/679 (GDPR)
++ Decreto 8.771/2016, Lei 13.140/2015 (Mediação), Lei 9.307/1996 (Arbitragem)
+
 ## Backlog
 - P3: Exportar Raio-X como PDF
 - P3: Investigar scraping Sympla bloqueado por Cloudflare
-
-## Testes Unitários
-- /app/backend/tests/test_critical_features.py — 29 testes
-- /app/backend/tests/test_iter104_instagram_social_blade.py — 10 testes
-- /app/backend/tests/test_iter107_ranking_strava.py — 12 testes
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
