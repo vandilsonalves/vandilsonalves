@@ -37,35 +37,56 @@ const RegulamentoModal = ({ open, onOpenChange }) => {
     return text.split('\n').map((line, index) => {
       // Headers
       if (line.startsWith('### ')) {
-        return <h3 key={index} className="text-lg font-semibold text-emerald-400 mt-4 mb-2">{line.replace('### ', '')}</h3>;
+        return <h3 key={index} className="text-base sm:text-lg font-semibold text-emerald-400 mt-4 mb-2 break-words">{line.replace('### ', '')}</h3>;
       }
       if (line.startsWith('## ')) {
-        return <h2 key={index} className="text-xl font-bold text-emerald-500 mt-6 mb-3">{line.replace('## ', '')}</h2>;
+        return <h2 key={index} className="text-lg sm:text-xl font-bold text-emerald-500 mt-6 mb-3 break-words">{line.replace('## ', '')}</h2>;
       }
       if (line.startsWith('# ')) {
-        return <h1 key={index} className="text-2xl font-bold text-emerald-600 mt-6 mb-4">{line.replace('# ', '')}</h1>;
+        return <h1 key={index} className="text-xl sm:text-2xl font-bold text-emerald-600 mt-6 mb-4 break-words">{line.replace('# ', '')}</h1>;
       }
-      // Horizontal rule
-      if (line.startsWith('---')) {
+      // Horizontal rule (handle both --- and ________)
+      if (line.startsWith('---') || line.startsWith('____')) {
         return <hr key={index} className="my-4 border-slate-600" />;
+      }
+      // Tab-indented bullet items from legacy content (•\t)
+      if (line.trimStart().startsWith('•')) {
+        const text = line.replace(/^[\s]*•[\s\t]*/, '');
+        if (text.includes('**')) {
+          const parts = text.split(/\*\*(.+?)\*\*/g);
+          return (
+            <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
+              <span className="text-emerald-500 shrink-0">•</span>
+              <span className="break-words min-w-0">{parts.map((part, i) => 
+                i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
+              )}</span>
+            </div>
+          );
+        }
+        return (
+          <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
+            <span className="text-emerald-500 shrink-0">•</span>
+            <span className="break-words min-w-0">{text}</span>
+          </div>
+        );
       }
       // List items
       if (line.startsWith('- **')) {
         const match = line.match(/- \*\*(.+?)\*\*:?\s*(.*)/);
         if (match) {
           return (
-            <div key={index} className="flex gap-2 ml-4 my-1">
-              <span className="text-emerald-500">•</span>
-              <span><strong className="text-white">{match[1]}</strong>{match[2] ? `: ${match[2]}` : ''}</span>
+            <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
+              <span className="text-emerald-500 shrink-0">•</span>
+              <span className="break-words min-w-0"><strong className="text-white">{match[1]}</strong>{match[2] ? `: ${match[2]}` : ''}</span>
             </div>
           );
         }
       }
       if (line.startsWith('- ')) {
         return (
-          <div key={index} className="flex gap-2 ml-4 my-1">
-            <span className="text-emerald-500">•</span>
-            <span>{line.replace('- ', '')}</span>
+          <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
+            <span className="text-emerald-500 shrink-0">•</span>
+            <span className="break-words min-w-0">{line.replace('- ', '')}</span>
           </div>
         );
       }
@@ -73,7 +94,7 @@ const RegulamentoModal = ({ open, onOpenChange }) => {
       if (line.includes('**')) {
         const parts = line.split(/\*\*(.+?)\*\*/g);
         return (
-          <p key={index} className="my-1">
+          <p key={index} className="my-1 break-words">
             {parts.map((part, i) => 
               i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
             )}
@@ -82,37 +103,41 @@ const RegulamentoModal = ({ open, onOpenChange }) => {
       }
       // Italic text (for notes)
       if (line.startsWith('*') && line.endsWith('*')) {
-        return <p key={index} className="my-2 text-slate-400 italic text-sm">{line.replace(/\*/g, '')}</p>;
+        return <p key={index} className="my-2 text-slate-400 italic text-sm break-words">{line.replace(/\*/g, '')}</p>;
       }
       // Empty lines
       if (line.trim() === '') {
         return <div key={index} className="h-2"></div>;
       }
       // Regular paragraph
-      return <p key={index} className="my-1">{line}</p>;
+      return <p key={index} className="my-1 break-words">{line}</p>;
     });
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-3xl max-h-[85vh] bg-slate-900 border-slate-700">
-        <DialogHeader className="border-b border-slate-700 pb-4">
-          <DialogTitle className="flex items-center gap-3 text-white">
-            <div className="w-10 h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center">
-              <FileText className="w-5 h-5 text-emerald-500" />
+      <DialogContent 
+        className="max-h-[92vh] sm:max-h-[85vh] bg-slate-900 border-slate-700 p-3 sm:p-6 rounded-lg" 
+        style={{ width: 'min(95vw, 48rem)', maxWidth: 'min(95vw, 48rem)' }}
+        data-testid="regulamento-modal"
+      >
+        <DialogHeader className="border-b border-slate-700 pb-3 sm:pb-4">
+          <DialogTitle className="flex items-center gap-2 sm:gap-3 text-white">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-emerald-500/20 flex items-center justify-center shrink-0">
+              <FileText className="w-4 h-4 sm:w-5 sm:h-5 text-emerald-500" />
             </div>
-            <div>
-              <span className="text-xl">{regulamento?.titulo || 'Regulamento'}</span>
+            <div className="min-w-0">
+              <span className="text-base sm:text-xl">{regulamento?.titulo || 'Regulamento'}</span>
               {regulamento?.ultima_atualizacao && (
-                <div className="flex items-center gap-4 text-xs text-slate-400 font-normal mt-1">
+                <div className="flex flex-wrap items-center gap-2 sm:gap-4 text-xs text-slate-400 font-normal mt-1">
                   <span className="flex items-center gap-1">
                     <Calendar className="w-3 h-3" />
-                    Atualizado em: {new Date(regulamento.ultima_atualizacao).toLocaleDateString('pt-BR')}
+                    {new Date(regulamento.ultima_atualizacao).toLocaleDateString('pt-BR')}
                   </span>
                   {regulamento.atualizado_por && (
                     <span className="flex items-center gap-1">
                       <User className="w-3 h-3" />
-                      Por: {regulamento.atualizado_por}
+                      {regulamento.atualizado_por}
                     </span>
                   )}
                 </div>
@@ -121,13 +146,13 @@ const RegulamentoModal = ({ open, onOpenChange }) => {
           </DialogTitle>
         </DialogHeader>
         
-        <ScrollArea className="h-[60vh] pr-4">
+        <ScrollArea className="h-[65vh] sm:h-[60vh] pr-4 sm:pr-4">
           {loading ? (
             <div className="flex items-center justify-center h-40">
               <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
             </div>
           ) : (
-            <div className="text-slate-300 leading-relaxed py-4">
+            <div className="text-slate-300 leading-relaxed py-2 sm:py-4 text-sm sm:text-base" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {renderMarkdown(regulamento?.conteudo)}
             </div>
           )}
