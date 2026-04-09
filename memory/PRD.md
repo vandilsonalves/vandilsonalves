@@ -31,8 +31,13 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Compressão JPEG/WebP com qualidade 80%, PNG com otimização
 - Conversão RGBA→RGB automática para JPEG
 - Economia média: ~90% em tamanho de arquivo
-- GIFs e SVGs não são comprimidos (preservados)
-- Integrada em todos os uploads (perfil, feed, stories, chat, parceiros, etc.)
+
+### Blindagem Jurídica Completa - 3 Pilares (09/04/2026)
+- **RANKING PROFISSIONAL/AMADOR**: Tabela de pontos (1º=10 a 10º=1), categorias PCD/Cadeirante, prazo 30 dias, Art. 186 CC, proteção LGPD
+- **RANKING DA GALERA (PACE LIVRE)**: Pontuação por distância (5-9km=5pts, 10-20km=7pts, 21km+=9pts), disclaimer saúde, sem colocação
+- **RANKING DAS ASSESSORIAS/EQUIPES (LIGA ROE-RR)**: Sistema ROE-RR (+0,5/atleta, +1,0/resultado, bônus pódio), regra transferência temporal, selos Ouro/Prata/Bronze, CREF/CONFEF disclaimer, licenciamento de marca
+- Suporte a tabelas Markdown adicionado ao RegulamentoModal.jsx
+- Regulamento atualizado de v1.6 para v1.7 (106K → 130K caracteres)
 
 ## Backlog
 - P3: Finalizar integração do scraper Sympla via sitemap nas rotas de scraping
@@ -47,3 +52,4 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Compressão automática acontece ANTES do upload para a nuvem
 - Pillow (PIL) é usado para redimensionamento e compressão
 - Chave EMERGENT_LLM_KEY necessária no .env para Object Storage
+- Regulamento é DB-driven (collection `configuracoes`, tipo `regulamento`), nunca hardcoded no frontend

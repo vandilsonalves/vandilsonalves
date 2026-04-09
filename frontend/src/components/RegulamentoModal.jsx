@@ -31,87 +31,134 @@ const RegulamentoModal = ({ open, onOpenChange }) => {
   };
 
   // Função para renderizar markdown básico
+  const renderInlineBold = (text) => {
+    if (!text.includes('**')) return text;
+    const parts = text.split(/\*\*(.+?)\*\*/g);
+    return parts.map((part, i) =>
+      i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
+    );
+  };
+
   const renderMarkdown = (text) => {
     if (!text) return null;
-    
-    return text.split('\n').map((line, index) => {
-      // Headers
-      if (line.startsWith('### ')) {
-        return <h3 key={index} className="text-base sm:text-lg font-semibold text-emerald-400 mt-4 mb-2 break-words">{line.replace('### ', '')}</h3>;
-      }
-      if (line.startsWith('## ')) {
-        return <h2 key={index} className="text-lg sm:text-xl font-bold text-emerald-500 mt-6 mb-3 break-words">{line.replace('## ', '')}</h2>;
-      }
-      if (line.startsWith('# ')) {
-        return <h1 key={index} className="text-xl sm:text-2xl font-bold text-emerald-600 mt-6 mb-4 break-words">{line.replace('# ', '')}</h1>;
-      }
-      // Horizontal rule (handle both --- and ________)
-      if (line.startsWith('---') || line.startsWith('____')) {
-        return <hr key={index} className="my-4 border-slate-600" />;
-      }
-      // Tab-indented bullet items from legacy content (•\t)
-      if (line.trimStart().startsWith('•')) {
-        const text = line.replace(/^[\s]*•[\s\t]*/, '');
-        if (text.includes('**')) {
-          const parts = text.split(/\*\*(.+?)\*\*/g);
-          return (
-            <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
-              <span className="text-emerald-500 shrink-0">•</span>
-              <span className="break-words min-w-0">{parts.map((part, i) => 
-                i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
-              )}</span>
-            </div>
-          );
+
+    const lines = text.split('\n');
+    const elements = [];
+    let i = 0;
+
+    while (i < lines.length) {
+      const line = lines[i];
+
+      // Table detection: line starts with | and has multiple |
+      if (line.trim().startsWith('|') && line.trim().endsWith('|') && line.split('|').length >= 3) {
+        const tableLines = [];
+        while (i < lines.length && lines[i].trim().startsWith('|') && lines[i].trim().endsWith('|')) {
+          tableLines.push(lines[i]);
+          i++;
         }
-        return (
-          <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
-            <span className="text-emerald-500 shrink-0">•</span>
-            <span className="break-words min-w-0">{text}</span>
+        // Parse table
+        const headerCells = tableLines[0].split('|').filter(c => c.trim() !== '').map(c => c.trim());
+        // Skip separator line (|---|---|)
+        const dataRows = tableLines.slice(2).map(row =>
+          row.split('|').filter(c => c.trim() !== '').map(c => c.trim())
+        );
+        elements.push(
+          <div key={`table-${i}`} className="overflow-x-auto my-3">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-slate-600">
+                  {headerCells.map((cell, ci) => (
+                    <th key={ci} className="px-3 py-2 text-left text-emerald-400 font-semibold">{renderInlineBold(cell)}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dataRows.map((row, ri) => (
+                  <tr key={ri} className="border-b border-slate-700/50">
+                    {row.map((cell, ci) => (
+                      <td key={ci} className="px-3 py-1.5 text-slate-300">{renderInlineBold(cell)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
         );
+        continue;
       }
-      // List items
+
+      // Headers
+      if (line.startsWith('### ')) {
+        elements.push(<h3 key={i} className="text-base sm:text-lg font-semibold text-emerald-400 mt-4 mb-2 break-words">{line.replace('### ', '')}</h3>);
+        i++; continue;
+      }
+      if (line.startsWith('## ')) {
+        elements.push(<h2 key={i} className="text-lg sm:text-xl font-bold text-emerald-500 mt-6 mb-3 break-words">{line.replace('## ', '')}</h2>);
+        i++; continue;
+      }
+      if (line.startsWith('# ')) {
+        elements.push(<h1 key={i} className="text-xl sm:text-2xl font-bold text-emerald-600 mt-6 mb-4 break-words">{line.replace('# ', '')}</h1>);
+        i++; continue;
+      }
+      // Horizontal rule
+      if (line.startsWith('---') || line.startsWith('____')) {
+        elements.push(<hr key={i} className="my-4 border-slate-600" />);
+        i++; continue;
+      }
+      // Tab-indented bullet items (•\t)
+      if (line.trimStart().startsWith('•')) {
+        const txt = line.replace(/^[\s]*•[\s\t]*/, '');
+        elements.push(
+          <div key={i} className="flex gap-2 ml-2 sm:ml-4 my-1">
+            <span className="text-emerald-500 shrink-0">•</span>
+            <span className="break-words min-w-0">{renderInlineBold(txt)}</span>
+          </div>
+        );
+        i++; continue;
+      }
+      // List items with bold
       if (line.startsWith('- **')) {
         const match = line.match(/- \*\*(.+?)\*\*:?\s*(.*)/);
         if (match) {
-          return (
-            <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
+          elements.push(
+            <div key={i} className="flex gap-2 ml-2 sm:ml-4 my-1">
               <span className="text-emerald-500 shrink-0">•</span>
               <span className="break-words min-w-0"><strong className="text-white">{match[1]}</strong>{match[2] ? `: ${match[2]}` : ''}</span>
             </div>
           );
+          i++; continue;
         }
       }
       if (line.startsWith('- ')) {
-        return (
-          <div key={index} className="flex gap-2 ml-2 sm:ml-4 my-1">
+        elements.push(
+          <div key={i} className="flex gap-2 ml-2 sm:ml-4 my-1">
             <span className="text-emerald-500 shrink-0">•</span>
-            <span className="break-words min-w-0">{line.replace('- ', '')}</span>
+            <span className="break-words min-w-0">{renderInlineBold(line.replace('- ', ''))}</span>
           </div>
         );
+        i++; continue;
       }
       // Bold text
       if (line.includes('**')) {
-        const parts = line.split(/\*\*(.+?)\*\*/g);
-        return (
-          <p key={index} className="my-1 break-words">
-            {parts.map((part, i) => 
-              i % 2 === 1 ? <strong key={i} className="text-white">{part}</strong> : part
-            )}
-          </p>
-        );
+        elements.push(<p key={i} className="my-1 break-words">{renderInlineBold(line)}</p>);
+        i++; continue;
       }
-      // Italic text (for notes)
+      // Italic text
       if (line.startsWith('*') && line.endsWith('*')) {
-        return <p key={index} className="my-2 text-slate-400 italic text-sm break-words">{line.replace(/\*/g, '')}</p>;
+        elements.push(<p key={i} className="my-2 text-slate-400 italic text-sm break-words">{line.replace(/\*/g, '')}</p>);
+        i++; continue;
       }
       // Empty lines
       if (line.trim() === '') {
-        return <div key={index} className="h-2"></div>;
+        elements.push(<div key={i} className="h-2"></div>);
+        i++; continue;
       }
       // Regular paragraph
-      return <p key={index} className="my-1 break-words">{line}</p>;
-    });
+      elements.push(<p key={i} className="my-1 break-words">{line}</p>);
+      i++;
+    }
+
+    return elements;
   };
 
   return (
