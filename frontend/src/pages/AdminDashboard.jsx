@@ -210,7 +210,7 @@ const AdminDashboard = () => {
   }, [isAdmin, token, loading, navigate]);
 
   useEffect(() => {
-    if (activeMenu === 'atletas') fetchAtletas();
+    if (activeMenu === 'atletas' || activeMenu === 'submeter') fetchAtletas();
     if (activeMenu === 'assessorias') { fetchLigaRanking(); fetchLigaStats(); fetchEstadosComAssessorias(); }
     if (activeMenu === 'ranking-corridas') { fetchRankingCorridasDashboard(); fetchCorridasEventos(); }
     if (activeMenu === 'geral' && !statsCategorias) { fetchExtraStats(); fetchEquipesStats(); }

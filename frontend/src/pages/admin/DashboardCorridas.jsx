@@ -952,32 +952,32 @@ const DashboardCorridas = ({
       {/* Tabela de Gerenciamento */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-blue-500" />
-              Gerenciar Corridas/Eventos
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <CardTitle className="flex flex-wrap items-center gap-2">
+              <Calendar className="w-5 h-5 text-blue-500 shrink-0" />
+              <span>Gerenciar Corridas/Eventos</span>
               <Badge variant="secondary">{corridasEventos?.length || 0} eventos</Badge>
             </CardTitle>
-            <div className="flex gap-2">
-              <Button onClick={() => setShowImportModal(true)} size="sm" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50">
-                <Upload className="w-4 h-4 mr-2" />
-                Importar
+            <div className="flex gap-2 shrink-0">
+              <Button onClick={() => setShowImportModal(true)} size="sm" variant="outline" className="border-green-500 text-green-600 hover:bg-green-50 text-xs sm:text-sm">
+                <Upload className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Importar</span>
               </Button>
-              <Button onClick={handleOpenAdd} size="sm" className="bg-blue-500 hover:bg-blue-600">
-                <Plus className="w-4 h-4 mr-2" />
-                Nova Corrida
+              <Button onClick={handleOpenAdd} size="sm" className="bg-blue-500 hover:bg-blue-600 text-xs sm:text-sm">
+                <Plus className="w-4 h-4 sm:mr-2" />
+                <span className="hidden sm:inline">Nova Corrida</span>
               </Button>
             </div>
           </div>
           
           {/* Barra de Scraping Avançado */}
-          <div className="mt-4 p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
-            <div className="flex items-center justify-between mb-3">
+          <div className="mt-4 p-3 sm:p-4 bg-gradient-to-r from-purple-50 to-blue-50 dark:from-purple-900/20 dark:to-blue-900/20 rounded-lg border border-purple-200 dark:border-purple-800">
+            <div className="flex flex-col gap-2 mb-3">
               <div className="flex items-center gap-2">
-                <Globe className="w-5 h-5 text-purple-600" />
-                <span className="font-semibold text-purple-700 dark:text-purple-300">Busca e Varredura Manual de Corridas</span>
+                <Globe className="w-5 h-5 text-purple-600 shrink-0" />
+                <span className="font-semibold text-purple-700 dark:text-purple-300 text-sm sm:text-base">Busca e Varredura Manual</span>
               </div>
-              <div className="flex gap-2">
+              <div className="flex flex-wrap gap-2">
                 <Button
                   variant="outline"
                   size="sm"
@@ -997,44 +997,46 @@ const DashboardCorridas = ({
                   data-testid="btn-atualizar-todas"
                 >
                   {loadingAtualizarTodas ? <Loader2 className="w-3 h-3 animate-spin mr-1" /> : <RefreshCw className="w-3 h-3 mr-1" />}
-                  Atualizar e Baixar Excel
+                  Atualizar Excel
                 </Button>
               </div>
             </div>
             
             {/* Search bar */}
-            <div className="flex gap-2">
+            <div className="flex flex-col sm:flex-row gap-2">
               <Input
-                placeholder="Cole a URL do site de corridas (Ticket Sports, Sympla, Central das Inscrições, etc.)"
+                placeholder="Cole a URL do site de corridas..."
                 value={scrapingUrl}
                 onChange={(e) => setScrapingUrl(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && handleScraping()}
                 className="flex-1"
                 data-testid="input-scraping-url"
               />
-              <Button 
-                onClick={handleScraping} 
-                disabled={loadingScraping || !scrapingUrl.trim()}
-                className="bg-purple-600 hover:bg-purple-700"
-                data-testid="btn-scraping"
-              >
-                {loadingScraping ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : (
-                  <Search className="w-4 h-4 mr-2" />
-                )}
-                {loadingScraping ? 'Buscando...' : 'Buscar Corridas'}
-              </Button>
-              <Button
-                variant="outline"
-                onClick={handleSalvarFonte}
-                disabled={!scrapingUrl.trim()}
-                className="border-orange-400 text-orange-600 hover:bg-orange-50"
-                title="Salvar URL para monitoramento automático (12h)"
-                data-testid="btn-salvar-fonte"
-              >
-                <Bookmark className="w-4 h-4" />
-              </Button>
+              <div className="flex gap-2 shrink-0">
+                <Button 
+                  onClick={handleScraping} 
+                  disabled={loadingScraping || !scrapingUrl.trim()}
+                  className="bg-purple-600 hover:bg-purple-700 flex-1 sm:flex-none"
+                  data-testid="btn-scraping"
+                >
+                  {loadingScraping ? (
+                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
+                  ) : (
+                    <Search className="w-4 h-4 mr-2" />
+                  )}
+                  {loadingScraping ? 'Buscando...' : 'Buscar'}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleSalvarFonte}
+                  disabled={!scrapingUrl.trim()}
+                  className="border-orange-400 text-orange-600 hover:bg-orange-50"
+                  title="Salvar URL para monitoramento automático (12h)"
+                  data-testid="btn-salvar-fonte"
+                >
+                  <Bookmark className="w-4 h-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Fontes Monitoradas (collapsible) */}
