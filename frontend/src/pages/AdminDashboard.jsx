@@ -8,7 +8,7 @@ import {
   Activity, Home, Settings, FileText,
   Download, Plus,
   Cake, Send, Loader2,
-  Crown, MessageSquare, CreditCard, TrendingDown
+  Crown, MessageSquare, CreditCard, TrendingDown, Menu
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -109,6 +109,7 @@ const AdminDashboard = () => {
   const navigate = useNavigate();
   const { user, token, loading, isAdmin, tipoAdmin, isSuperAdmin, adminPermissoes } = useAuth();
   const [activeMenu, setActiveMenu] = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   
   // Stats
   const [stats, setStats] = useState(null);
@@ -629,15 +630,26 @@ const AdminDashboard = () => {
         tipoAdmin={tipoAdmin}
         pendentes={pendentes}
         onNavigateHome={() => navigate('/')}
+        mobileOpen={sidebarOpen}
+        onMobileClose={() => setSidebarOpen(false)}
       />
 
       {/* Main Content */}
-      <div className="ml-64 flex-1 p-8">
-        <div className="mb-8">
-          <h2 className="text-2xl font-bold text-slate-800 dark:text-white">
-            {menuItems.find(m => m.id === activeMenu)?.label || 'Dashboard'}
-          </h2>
-          <p className="text-slate-500">Bem-vindo, {user?.nome}</p>
+      <div className="md:ml-64 flex-1 p-4 sm:p-6 md:p-8">
+        <div className="mb-6 sm:mb-8 flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-2 rounded-lg bg-slate-800 text-white md:hidden"
+            data-testid="sidebar-toggle-btn"
+          >
+            <Menu className="w-5 h-5" />
+          </button>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-bold text-slate-800 dark:text-white">
+              {menuItems.find(m => m.id === activeMenu)?.label || 'Dashboard'}
+            </h2>
+            <p className="text-slate-500 text-sm sm:text-base">Bem-vindo, {user?.nome}</p>
+          </div>
         </div>
 
         {activeMenu === 'dashboard' && (
