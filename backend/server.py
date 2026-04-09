@@ -118,7 +118,7 @@ from services.monitoring_service import metrics_collector
 from middleware import MetricsMiddleware
 app.add_middleware(MetricsMiddleware, metrics_collector=metrics_collector)
 
-# Servir arquivos de uploads
+# Servir arquivos de uploads (local - legado)
 uploads_path = Path("/app/uploads")
 uploads_path.mkdir(exist_ok=True)
 app.mount("/uploads", StaticFiles(directory=str(uploads_path)), name="uploads")
@@ -181,6 +181,7 @@ from routes.whatsapp_routes import router as whatsapp_router
 from routes.corridas_parceiras_routes import router as corridas_parceiras_router
 from routes.parceiros_routes import router as parceiros_router
 from routes.exportacoes_routes import router as exportacoes_router
+from routes.cloud_storage_routes import router as cloud_storage_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -223,6 +224,7 @@ api_router.include_router(whatsapp_router)
 api_router.include_router(corridas_parceiras_router)
 api_router.include_router(parceiros_router)
 api_router.include_router(exportacoes_router)
+api_router.include_router(cloud_storage_router)
 
 
 # Endpoint genérico para download de conteúdo CSV gerado no frontend
@@ -2176,6 +2178,14 @@ async def startup_event():
     
     scheduler.start()
     logger.info("✅ Scheduler iniciado! Métricas a cada 5min, alertas a cada 1min, limpeza dom 23:59, Strava 1h, Relatório dom 20h")
+
+    # Inicializar Object Storage em nuvem
+    try:
+        from services.object_storage import init_storage
+        init_storage()
+        logger.info("☁️ Object Storage em nuvem inicializado com sucesso")
+    except Exception as e:
+        logger.warning(f"⚠️ Object Storage não inicializado (uploads usarão disco local): {e}")
 
     # Criar índices MongoDB para performance
     try:

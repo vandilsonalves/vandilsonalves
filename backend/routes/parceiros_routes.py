@@ -52,12 +52,10 @@ async def criar_parceiro(
     imagem_url = ""
 
     if imagem and imagem.filename:
-        ext = imagem.filename.rsplit(".", 1)[-1].lower() if "." in imagem.filename else "png"
-        filename = f"parceiro_{parceiro_id}.{ext}"
-        filepath = UPLOADS_DIR / filename
-        with open(filepath, "wb") as f:
-            shutil.copyfileobj(imagem.file, f)
-        imagem_url = f"/api/uploads/parceiros/{filename}"
+        from services.object_storage import upload_file as cloud_upload
+        img_data = imagem.file.read()
+        result = cloud_upload(img_data, imagem.filename, pasta="parceiros")
+        imagem_url = result["url"]
 
     doc = {
         "id": parceiro_id,
@@ -95,12 +93,10 @@ async def editar_parceiro(
     }
 
     if imagem and imagem.filename:
-        ext = imagem.filename.rsplit(".", 1)[-1].lower() if "." in imagem.filename else "png"
-        filename = f"parceiro_{parceiro_id}.{ext}"
-        filepath = UPLOADS_DIR / filename
-        with open(filepath, "wb") as f:
-            shutil.copyfileobj(imagem.file, f)
-        update["imagem_url"] = f"/api/uploads/parceiros/{filename}"
+        from services.object_storage import upload_file as cloud_upload
+        img_data = imagem.file.read()
+        result = cloud_upload(img_data, imagem.filename, pasta="parceiros")
+        update["imagem_url"] = result["url"]
 
     await db.parceiros.update_one({"id": parceiro_id}, {"$set": update})
     return {"success": True}
@@ -121,12 +117,10 @@ async def upload_imagem_parceiro(
     imagem: UploadFile = File(...),
 ):
     """Upload avulso de imagem (retorna URL)."""
-    ext = imagem.filename.rsplit(".", 1)[-1].lower() if "." in imagem.filename else "png"
-    filename = f"parceiro_{uuid.uuid4().hex[:8]}.{ext}"
-    filepath = UPLOADS_DIR / filename
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(imagem.file, f)
-    return {"imagem_url": f"/api/uploads/parceiros/{filename}"}
+    from services.object_storage import upload_file as cloud_upload
+    img_data = imagem.file.read()
+    result = cloud_upload(img_data, imagem.filename or "parceiro.png", pasta="parceiros")
+    return {"imagem_url": result["url"]}
 
 
 # ==================== EXPORTAÇÃO EXCEL ====================

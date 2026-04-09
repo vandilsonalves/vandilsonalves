@@ -282,18 +282,16 @@ async def upload_arquivo_autorizacao(
     allowed = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.zip']
     if ext not in allowed:
         raise HTTPException(status_code=400, detail=f"Tipo de arquivo não permitido: {ext}")
-    file_id = str(uuid.uuid4())[:8]
-    filename = f"{file_id}_{arquivo.filename}"
-    filepath = os.path.join(UPLOAD_DIR_AUT, filename)
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(arquivo.file, f)
+    from services.object_storage import upload_file as cloud_upload
+    content = await arquivo.read()
+    result = cloud_upload(content, arquivo.filename, pasta="autorizacoes")
     is_image = ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']
     return {
-        "filename": filename,
+        "filename": arquivo.filename,
         "original_name": arquivo.filename,
-        "url": f"/api/admin/autorizacoes/mensagens/arquivo/{filename}",
+        "url": result["url"],
         "tipo": "imagem" if is_image else "arquivo",
-        "tamanho": os.path.getsize(filepath)
+        "tamanho": result["size"]
     }
 
 

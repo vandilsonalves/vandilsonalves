@@ -33,37 +33,35 @@ async def upload_arquivo(
     arquivo: UploadFile = File(...),
     admin: dict = Depends(get_admin_user)
 ):
-    """Upload de arquivo/imagem para mensagens"""
+    """Upload de arquivo/imagem para mensagens (nuvem)"""
     ext = os.path.splitext(arquivo.filename)[1].lower()
     allowed = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.csv', '.txt', '.zip']
     if ext not in allowed:
         raise HTTPException(status_code=400, detail=f"Tipo de arquivo não permitido: {ext}")
 
-    file_id = str(uuid.uuid4())[:8]
-    filename = f"{file_id}_{arquivo.filename}"
-    filepath = os.path.join(UPLOAD_DIR, filename)
-
-    with open(filepath, "wb") as f:
-        shutil.copyfileobj(arquivo.file, f)
+    from services.object_storage import upload_file as cloud_upload
+    content = await arquivo.read()
+    result = cloud_upload(content, arquivo.filename, pasta="mensagens_admin")
 
     is_image = ext in ['.png', '.jpg', '.jpeg', '.gif', '.webp']
 
     return {
-        "filename": filename,
+        "filename": arquivo.filename,
         "original_name": arquivo.filename,
-        "url": f"/api/admin/mensagens/arquivo/{filename}",
+        "url": result["url"],
         "tipo": "imagem" if is_image else "arquivo",
-        "tamanho": os.path.getsize(filepath)
+        "tamanho": result["size"]
     }
 
 
 @router.get("/admin/mensagens/arquivo/{filename}")
 async def servir_arquivo(filename: str):
-    """Serve arquivos enviados nas mensagens"""
+    """Serve arquivos (legado - disco local). Novos arquivos usam /api/cloud-files/"""
     from fastapi.responses import FileResponse
     filepath = os.path.join(UPLOAD_DIR, filename)
     if not os.path.exists(filepath):
         raise HTTPException(status_code=404, detail="Arquivo não encontrado")
+    return FileResponse(filepath)
     return FileResponse(filepath)
 
 

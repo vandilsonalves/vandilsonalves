@@ -408,14 +408,11 @@ async def criar_post_com_foto(
                 "educativo": feedback_educativo
             })
 
-    # 6. Comprimir e salvar arquivo
+    # 6. Comprimir e salvar na nuvem
     conteudo_final, ext_final = _comprimir_imagem(conteudo, ext)
-    nome_arquivo = f"{uuid.uuid4()}{ext_final}"
-    caminho_arquivo = UPLOAD_DIR / nome_arquivo
-    with open(caminho_arquivo, "wb") as f:
-        f.write(conteudo_final)
-
-    imagem_url = f"/uploads/feed/{nome_arquivo}"
+    from services.object_storage import upload_file as cloud_upload
+    result = cloud_upload(conteudo_final, f"feed{ext_final}", pasta="feed")
+    imagem_url = result["url"]
 
     # 7. Criar post
     post = {
@@ -1333,16 +1330,15 @@ async def criar_story(
         raise HTTPException(status_code=400, detail="Texto do story máximo 200 caracteres")
 
     conteudo_final, ext_final = _comprimir_imagem(conteudo, ext)
-    nome_arquivo = f"{uuid.uuid4()}{ext_final}"
-    with open(STORIES_DIR / nome_arquivo, "wb") as f:
-        f.write(conteudo_final)
+    from services.object_storage import upload_file as cloud_upload
+    result = cloud_upload(conteudo_final, f"story{ext_final}", pasta="stories")
 
     story = {
         "id": str(uuid.uuid4()),
         "autor_id": current_user["id"],
         "autor_nome": current_user.get("nome", ""),
         "autor_foto": current_user.get("foto_url", ""),
-        "imagem_url": f"/uploads/stories/{nome_arquivo}",
+        "imagem_url": result["url"],
         "texto": texto.strip(),
         "data_criacao": datetime.now(timezone.utc).isoformat(),
         "visualizacoes": [],

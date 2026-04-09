@@ -984,15 +984,11 @@ async def upload_foto_assessoria(
     
     # Gerar nome único para o arquivo
     ext = foto.filename.split('.')[-1] if '.' in foto.filename else 'jpg'
-    filename = f"{equipe.replace(' ', '_').lower()}_{datetime.now().strftime('%Y%m%d%H%M%S')}.{ext}"
-    filepath = UPLOAD_DIR / filename
     
-    # Salvar arquivo
-    with open(filepath, "wb") as f:
-        f.write(content)
-    
-    # URL pública do arquivo
-    foto_url = f"/api/uploads/assessorias/{filename}"
+    # Salvar na nuvem
+    from services.object_storage import upload_file as cloud_upload
+    result = cloud_upload(content, foto.filename or f"assessoria.{ext}", pasta="assessorias")
+    foto_url = result["url"]
     
     # Atualizar no banco de dados
     # Primeiro, verificar se existe na coleção assessorias

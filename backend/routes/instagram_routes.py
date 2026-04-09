@@ -1568,14 +1568,10 @@ async def exportar_analise_pdf(analysis_id: str, admin: dict = Depends(get_admin
 @router.post("/admin/instagram/upload-foto")
 async def upload_foto_inside(foto: UploadFile = File(...), admin: dict = Depends(get_admin_user)):
     """Upload de foto de perfil para análise Inside"""
-    import os
-    os.makedirs("/app/uploads/inside", exist_ok=True)
-    filename = f"inside_{uuid.uuid4().hex[:12]}{os.path.splitext(foto.filename)[1]}"
-    filepath = f"/app/uploads/inside/{filename}"
+    from services.object_storage import upload_file as cloud_upload
     content = await foto.read()
-    with open(filepath, "wb") as f:
-        f.write(content)
-    return {"foto_url": f"/api/uploads/inside/{filename}"}
+    result = cloud_upload(content, foto.filename or "inside.jpg", pasta="inside")
+    return {"foto_url": result["url"]}
 
 
 # ==================== ANÁLISE COMPLETA MANUAL (SOCIAL BLADE) ====================

@@ -136,17 +136,13 @@ async def submeter_resultado(
                     detail=f"Atletas Profissional/Amador só podem registrar colocações de 1º a 10º lugar. Colocação informada: {colocacao}º"
                 )
     
-    # Salvar foto (opcional)
+    # Salvar foto (opcional) na nuvem
     foto_url = ""
     if foto_podio and foto_podio.filename:
-        foto_filename = f"{uuid.uuid4()}_{foto_podio.filename}"
-        foto_path = Path("/app/uploads") / foto_filename
-        foto_path.parent.mkdir(exist_ok=True)
-        
-        with foto_path.open("wb") as f:
-            f.write(await foto_podio.read())
-        
-        foto_url = f"/api/uploads/{foto_filename}"
+        from services.object_storage import upload_file as cloud_upload
+        foto_data = await foto_podio.read()
+        result = cloud_upload(foto_data, foto_podio.filename, pasta="resultados")
+        foto_url = result["url"]
     
     resultado = ResultadoPendente(
         usuario_id=current_user["id"],

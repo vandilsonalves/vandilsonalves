@@ -101,13 +101,10 @@ async def criar_corrida(
     imagem_url = ""
 
     if imagem and imagem.filename:
-        ext = imagem.filename.split(".")[-1].lower()
-        nome_arquivo = f"{corrida_id}.{ext}"
-        caminho = UPLOADS_DIR / nome_arquivo
-        with open(caminho, "wb") as f:
-            content = await imagem.read()
-            f.write(content)
-        imagem_url = f"/api/uploads/corridas_parceiras/{nome_arquivo}"
+        from services.object_storage import upload_file as cloud_upload
+        content = await imagem.read()
+        result = cloud_upload(content, imagem.filename, pasta="corridas_parceiras")
+        imagem_url = result["url"]
 
     corrida = {
         "id": corrida_id,
@@ -172,13 +169,10 @@ async def editar_corrida(
         update_data["link_instagram"] = link_instagram
 
     if imagem and imagem.filename:
-        ext = imagem.filename.split(".")[-1].lower()
-        nome_arquivo = f"{corrida_id}.{ext}"
-        caminho = UPLOADS_DIR / nome_arquivo
-        with open(caminho, "wb") as f:
-            content = await imagem.read()
-            f.write(content)
-        update_data["imagem_url"] = f"/api/uploads/corridas_parceiras/{nome_arquivo}"
+        from services.object_storage import upload_file as cloud_upload
+        content = await imagem.read()
+        result = cloud_upload(content, imagem.filename, pasta="corridas_parceiras")
+        update_data["imagem_url"] = result["url"]
 
     if update_data:
         await db.corridas_parceiras.update_one(

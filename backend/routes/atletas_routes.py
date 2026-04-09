@@ -194,21 +194,17 @@ async def upload_foto_perfil(
     foto: UploadFile = File(...),
     current_user: dict = Depends(require_premium_access)
 ):
-    """Upload de foto de perfil"""
-    foto_filename = f"perfil_{current_user['id']}_{uuid.uuid4()}.jpg"
-    foto_path = Path("/app/uploads") / foto_filename
-    foto_path.parent.mkdir(exist_ok=True)
-    
-    with foto_path.open("wb") as f:
-        f.write(await foto.read())
-    
-    foto_url = f"/api/uploads/{foto_filename}"
-    
+    """Upload de foto de perfil para nuvem"""
+    from services.object_storage import upload_file
+    foto_data = await foto.read()
+    result = upload_file(foto_data, foto.filename or "perfil.jpg", pasta="perfil")
+    foto_url = result["url"]
+
     await db.usuarios.update_one(
         {"id": current_user["id"]},
         {"$set": {"foto_url": foto_url}}
     )
-    
+
     return {"message": "Foto atualizada!", "foto_url": foto_url}
 
 

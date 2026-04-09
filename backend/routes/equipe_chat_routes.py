@@ -64,15 +64,14 @@ async def enviar_mensagem_chat(
 
         file_id = str(uuid.uuid4())
         filename = f"{file_id}{ext}"
-        filepath = UPLOADS_DIR / filename
 
-        async with aiofiles.open(filepath, "wb") as f:
-            await f.write(content)
+        from services.object_storage import upload_file as cloud_upload
+        result = cloud_upload(content, arquivo.filename or filename, pasta="chat")
 
         tipo_arquivo = "imagem" if ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"} else "documento"
         arquivo_info = {
             "nome_original": arquivo.filename,
-            "caminho": f"/api/uploads/chat/{filename}",
+            "caminho": result["url"],
             "tipo": tipo_arquivo,
             "tamanho": len(content),
             "extensao": ext
@@ -233,15 +232,14 @@ async def enviar_feed(
 
         file_id = str(uuid.uuid4())
         filename = f"{file_id}{ext}"
-        filepath = UPLOADS_DIR / filename
 
-        async with aiofiles.open(filepath, "wb") as f:
-            await f.write(content)
+        from services.object_storage import upload_file as cloud_upload
+        result = cloud_upload(content, arquivo.filename or filename, pasta="chat")
 
         tipo_arquivo = "imagem" if ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"} else "documento"
         arquivo_info = {
             "nome_original": arquivo.filename,
-            "caminho": f"/api/uploads/chat/{filename}",
+            "caminho": result["url"],
             "tipo": tipo_arquivo,
             "tamanho": len(content),
             "extensao": ext
@@ -389,14 +387,12 @@ async def responder_post(
         content = await arquivo.read()
         if len(content) > MAX_FILE_SIZE:
             raise HTTPException(status_code=400, detail="Arquivo muito grande (máx 10MB)")
-        file_id = str(uuid.uuid4())
-        filename = f"{file_id}{ext}"
-        async with aiofiles.open(UPLOADS_DIR / filename, "wb") as f:
-            await f.write(content)
+        from services.object_storage import upload_file as cloud_upload
+        result = cloud_upload(content, arquivo.filename or f"reply{ext}", pasta="chat")
         tipo_arquivo = "imagem" if ext in {".png", ".jpg", ".jpeg", ".gif", ".webp"} else "documento"
         arquivo_info = {
             "nome_original": arquivo.filename,
-            "caminho": f"/api/uploads/chat/{filename}",
+            "caminho": result["url"],
             "tipo": tipo_arquivo,
             "tamanho": len(content),
             "extensao": ext
