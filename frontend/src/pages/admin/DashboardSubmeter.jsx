@@ -18,7 +18,7 @@ const ESTADOS_BR = [
   'RS', 'RO', 'RR', 'SC', 'SP', 'SE', 'TO'
 ];
 
-const DashboardSubmeter = ({ token, atletas, onStatsRefresh }) => {
+const DashboardSubmeter = ({ token, atletas }) => {
   const [atletaSelecionado, setAtletaSelecionado] = useState('');
   const [tipoOperacao, setTipoOperacao] = useState('adicionar');
   const [corridasAtleta, setCorridasAtleta] = useState([]);
@@ -77,7 +77,6 @@ const DashboardSubmeter = ({ token, atletas, onStatsRefresh }) => {
         cidade_competicao: '', estado_competicao: '',
         data_competicao: '', tempo: '', link_resultado: ''
       });
-      onStatsRefresh?.();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao adicionar corrida');
     } finally {
@@ -93,7 +92,6 @@ const DashboardSubmeter = ({ token, atletas, onStatsRefresh }) => {
       });
       toast.success('Corrida excluída com sucesso!');
       fetchCorridasAtleta(atletaSelecionado);
-      onStatsRefresh?.();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao excluir corrida');
     }
@@ -110,7 +108,6 @@ const DashboardSubmeter = ({ token, atletas, onStatsRefresh }) => {
       setShowEditCorridaModal(false);
       setCorridaSelecionada(null);
       fetchCorridasAtleta(atletaSelecionado);
-      onStatsRefresh?.();
     } catch (error) {
       toast.error(error.response?.data?.detail || 'Erro ao atualizar corrida');
     } finally {

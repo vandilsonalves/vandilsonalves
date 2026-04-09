@@ -60,7 +60,12 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Scroll suave automático para cada seção ao clicar
 - Painel fecha automaticamente após navegação
 
-### Correções Mobile Admin Panel (09/04/2026)
+### Limpeza AdminDashboard.jsx (09/04/2026)
+- Import duplicado de lucide-react consolidado
+- DashboardGeral tornado auto-suficiente (busca próprios dados)
+- 12 useState e 3 fetchers removidos do AdminDashboard
+- Prop onStatsRefresh removido do DashboardSubmeter
+- AdminDashboard: 849→761 linhas, 54→42 states, 11→8 fetchers
 - 13 bugs de responsividade mobile corrigidos no painel Admin
 - Sidebar responsiva: esconde em mobile, abre como overlay com hamburger
 - Grids, tabelas, modais e cards ajustados para viewport 390px

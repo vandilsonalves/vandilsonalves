@@ -8,13 +8,13 @@ import {
   Activity, Home, Settings, FileText,
   Download, Plus,
   Cake, Send, Loader2,
-  Crown, MessageSquare, CreditCard, TrendingDown, Menu
+  Crown, MessageSquare, CreditCard, TrendingDown, Menu,
+  Instagram, Star, HardDrive, Handshake
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 
 import { downloadFile } from '@/utils/downloadHelper';
-import { Instagram, Star, HardDrive, Handshake } from 'lucide-react';
 
 // Componentes extraídos
 import AdminSidebar from './admin/AdminSidebar';
@@ -111,20 +111,6 @@ const AdminDashboard = () => {
   const [activeMenu, setActiveMenu] = useState('dashboard');
   const [sidebarOpen, setSidebarOpen] = useState(false);
   
-  // Stats
-  const [stats, setStats] = useState(null);
-  const [statsEstados, setStatsEstados] = useState([]);
-  const [statsCategorias, setStatsCategorias] = useState(null);
-  const [statsFaixa, setStatsFaixa] = useState([]);
-  const [corridasPorMes, setCorridasPorMes] = useState([]);
-  const [loadingStats, setLoadingStats] = useState(true);
-  const [statsEquipes, setStatsEquipes] = useState([]);
-  const [statsPovao, setStatsPovao] = useState(null);
-  const [statsModalidade, setStatsModalidade] = useState({ profissional: 0, povao: 0 });
-  const [statsDonosPorEstado, setStatsDonosPorEstado] = useState([]);
-  const [statsAssessoriasVerificadas, setStatsAssessoriasVerificadas] = useState(null);
-  const [statsInsignias, setStatsInsignias] = useState([]);
-  
   // Pendentes
   const [pendentes, setPendentes] = useState([]);
   const [loadingPendentes, setLoadingPendentes] = useState(true);
@@ -205,7 +191,6 @@ const AdminDashboard = () => {
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
-    fetchStats();
     fetchPendentes();
   }, [isAdmin, token, loading, navigate]);
 
@@ -213,51 +198,9 @@ const AdminDashboard = () => {
     if (activeMenu === 'atletas' || activeMenu === 'submeter') fetchAtletas();
     if (activeMenu === 'assessorias') { fetchLigaRanking(); fetchLigaStats(); fetchEstadosComAssessorias(); }
     if (activeMenu === 'ranking-corridas') { fetchRankingCorridasDashboard(); fetchCorridasEventos(); }
-    if (activeMenu === 'geral' && !statsCategorias) { fetchExtraStats(); fetchEquipesStats(); }
   }, [activeMenu, filtroCategoria, filtroEquipe, ligaTipo, ligaEstado, ligaCidade]);
 
   // ==================== FETCHERS ====================
-
-  const fetchStats = async () => {
-    setLoadingStats(true);
-    try {
-      const results = await Promise.allSettled([
-        axios.get(`${API}/admin/stats`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/estados`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/ranking/povao/stats`)
-      ]);
-      const [statsRes, estadosRes, povaoRes] = results;
-      if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
-      if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
-      if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
-    } catch (err) {
-      console.error('Erro ao buscar stats:', err);
-    } finally {
-      setLoadingStats(false);
-    }
-  };
-
-  const fetchExtraStats = async () => {
-    try {
-      const results = await Promise.allSettled([
-        axios.get(`${API}/admin/stats/categorias`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/faixa-etaria`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/corridas-por-mes`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/donos-por-estado`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/assessorias-verificadas`, { headers: { Authorization: `Bearer ${token}` } }),
-        axios.get(`${API}/admin/stats/insignias`, { headers: { Authorization: `Bearer ${token}` } })
-      ]);
-      const [categoriasRes, faixaRes, corridasRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = results;
-      if (categoriasRes.status === 'fulfilled') setStatsCategorias(categoriasRes.value.data);
-      if (faixaRes.status === 'fulfilled') setStatsFaixa(faixaRes.value.data);
-      if (corridasRes.status === 'fulfilled') setCorridasPorMes(corridasRes.value.data);
-      if (donosEstadoRes.status === 'fulfilled') setStatsDonosPorEstado(donosEstadoRes.value.data);
-      if (assessoriasVerificadasRes.status === 'fulfilled') setStatsAssessoriasVerificadas(assessoriasVerificadasRes.value.data);
-      if (insigniasRes.status === 'fulfilled') setStatsInsignias(insigniasRes.value.data);
-    } catch (error) {
-      console.error('Erro ao buscar stats extras:', error);
-    }
-  };
 
   const fetchPendentes = async () => {
     setLoadingPendentes(true);
@@ -268,26 +211,6 @@ const AdminDashboard = () => {
       console.error('Erro ao buscar pendentes:', error);
     } finally {
       setLoadingPendentes(false);
-    }
-  };
-
-  const fetchEquipesStats = async () => {
-    try {
-      const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers: { Authorization: `Bearer ${token}` } });
-      const raw = atletasRes.data;
-      const atletasList = Array.isArray(raw) ? raw : Array.isArray(raw?.atletas) ? raw.atletas : [];
-      const equipesCount = {};
-      let profissionalCount = 0;
-      let povaoCount = 0;
-      atletasList.forEach(a => {
-        const equipe = a.equipe || 'Sem equipe';
-        equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
-        if (a.modalidade_usuario === 'povao_pace_livre') { povaoCount++; } else { profissionalCount++; }
-      });
-      setStatsEquipes(Object.entries(equipesCount).map(([equipe, total]) => ({ equipe, total })).sort((a, b) => b.total - a.total).slice(0, 10));
-      setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
-    } catch (err) {
-      console.error('Erro ao processar equipes:', err);
     }
   };
 
@@ -425,7 +348,6 @@ const AdminDashboard = () => {
       await axios.post(`${API}/admin/aprovar/${resultadoId}`, {}, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Ação Concluída', { description: 'Resultado aprovado com sucesso!' });
       fetchPendentes();
-      fetchStats();
     } catch (error) {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao aprovar' });
     } finally {
@@ -452,7 +374,6 @@ const AdminDashboard = () => {
       await axios.delete(`${API}/admin/atletas/${atletaId}`, { headers: { Authorization: `Bearer ${token}` } });
       toast.success('Ação Concluída', { description: 'Atleta excluído com sucesso!' });
       fetchAtletas();
-      fetchStats();
     } catch (error) {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao excluir' });
     }
@@ -524,7 +445,6 @@ const AdminDashboard = () => {
       });
       toast.success('Ação Concluída', { description: 'Atleta cadastrado com sucesso!' });
       fetchAtletas();
-      fetchStats();
     } catch (error) {
       toast.error('Erro', { description: error.response?.data?.detail || 'Erro ao cadastrar' });
     } finally {
@@ -566,7 +486,6 @@ const AdminDashboard = () => {
       setShowTransferModal(false);
       setAtletaTransferindo(null);
       fetchAtletas();
-      fetchStats();
     } catch (error) {
       toast.error('Erro na Transferência', { description: error.response?.data?.detail || 'Erro ao transferir atleta' });
     } finally {
@@ -653,13 +572,7 @@ const AdminDashboard = () => {
         </div>
 
         {activeMenu === 'dashboard' && (
-          <DashboardGeral
-            stats={stats} statsEstados={statsEstados} statsCategorias={statsCategorias}
-            statsFaixa={statsFaixa} corridasPorMes={corridasPorMes} statsModalidade={statsModalidade}
-            statsPovao={statsPovao} statsEquipes={statsEquipes} statsDonosPorEstado={statsDonosPorEstado}
-            statsAssessoriasVerificadas={statsAssessoriasVerificadas} statsInsignias={statsInsignias}
-            loadingStats={loadingStats} token={token}
-          />
+          <DashboardGeral token={token} />
         )}
 
         {activeMenu === 'estrategico' && (
@@ -737,7 +650,7 @@ const AdminDashboard = () => {
           />
         )}
 
-        {activeMenu === 'submeter' && <DashboardSubmeter token={token} atletas={atletas} onStatsRefresh={fetchStats} />}
+        {activeMenu === 'submeter' && <DashboardSubmeter token={token} atletas={atletas} />}
         {activeMenu === 'autorizacoes' && <DashboardAutorizacoes token={token} />}
         {activeMenu === 'administradores' && <DashboardRBAC />}
         {activeMenu === 'monitoramento' && <DashboardMonitoramento />}

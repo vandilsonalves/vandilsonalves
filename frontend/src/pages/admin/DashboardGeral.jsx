@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Users, Trophy, TrendingUp, MapPin, Activity, Target, Award, BarChart3, BadgeCheck, Crown, Medal } from 'lucide-react';
@@ -6,24 +7,78 @@ import {
   PieChart as RechartsPie, Pie, Cell, AreaChart, Area
 } from 'recharts';
 import InsigniasStatsCard from '@/components/admin/InsigniasStatsCard';
+import axios from 'axios';
 
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+const API = `${BACKEND_URL}/api`;
 const COLORS = ['#10B981', '#3B82F6', '#F59E0B', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4', '#84CC16'];
 
-const DashboardGeral = ({ 
-  stats, 
-  statsEstados, 
-  statsCategorias, 
-  statsFaixa, 
-  corridasPorMes,
-  statsModalidade,
-  statsPovao,
-  statsEquipes,
-  statsDonosPorEstado,
-  statsAssessoriasVerificadas,
-  statsInsignias,
-  loadingStats,
-  token
-}) => {
+const DashboardGeral = ({ token }) => {
+  const [stats, setStats] = useState(null);
+  const [statsEstados, setStatsEstados] = useState([]);
+  const [statsCategorias, setStatsCategorias] = useState(null);
+  const [statsFaixa, setStatsFaixa] = useState([]);
+  const [corridasPorMes, setCorridasPorMes] = useState([]);
+  const [loadingStats, setLoadingStats] = useState(true);
+  const [statsEquipes, setStatsEquipes] = useState([]);
+  const [statsPovao, setStatsPovao] = useState(null);
+  const [statsModalidade, setStatsModalidade] = useState({ profissional: 0, povao: 0 });
+  const [statsDonosPorEstado, setStatsDonosPorEstado] = useState([]);
+  const [statsAssessoriasVerificadas, setStatsAssessoriasVerificadas] = useState(null);
+  const [statsInsignias, setStatsInsignias] = useState([]);
+
+  useEffect(() => {
+    if (!token) return;
+    const headers = { Authorization: `Bearer ${token}` };
+
+    const fetchAll = async () => {
+      setLoadingStats(true);
+      try {
+        const [statsRes, estadosRes, povaoRes] = await Promise.allSettled([
+          axios.get(`${API}/admin/stats`, { headers }),
+          axios.get(`${API}/admin/stats/estados`, { headers }),
+          axios.get(`${API}/ranking/povao/stats`)
+        ]);
+        if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+        if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
+        if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
+
+        const [categoriasRes, faixaRes, corridasRes, donosEstadoRes, assessoriasVerificadasRes, insigniasRes] = await Promise.allSettled([
+          axios.get(`${API}/admin/stats/categorias`, { headers }),
+          axios.get(`${API}/admin/stats/faixa-etaria`, { headers }),
+          axios.get(`${API}/admin/stats/corridas-por-mes`, { headers }),
+          axios.get(`${API}/admin/stats/donos-por-estado`, { headers }),
+          axios.get(`${API}/admin/stats/assessorias-verificadas`, { headers }),
+          axios.get(`${API}/admin/stats/insignias`, { headers })
+        ]);
+        if (categoriasRes.status === 'fulfilled') setStatsCategorias(categoriasRes.value.data);
+        if (faixaRes.status === 'fulfilled') setStatsFaixa(faixaRes.value.data);
+        if (corridasRes.status === 'fulfilled') setCorridasPorMes(corridasRes.value.data);
+        if (donosEstadoRes.status === 'fulfilled') setStatsDonosPorEstado(donosEstadoRes.value.data);
+        if (assessoriasVerificadasRes.status === 'fulfilled') setStatsAssessoriasVerificadas(assessoriasVerificadasRes.value.data);
+        if (insigniasRes.status === 'fulfilled') setStatsInsignias(insigniasRes.value.data);
+
+        const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers });
+        const raw = atletasRes.data;
+        const atletasList = Array.isArray(raw) ? raw : Array.isArray(raw?.atletas) ? raw.atletas : [];
+        const equipesCount = {};
+        let profissionalCount = 0, povaoCount = 0;
+        atletasList.forEach(a => {
+          const equipe = a.equipe || 'Sem equipe';
+          equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
+          if (a.modalidade_usuario === 'povao_pace_livre') { povaoCount++; } else { profissionalCount++; }
+        });
+        setStatsEquipes(Object.entries(equipesCount).map(([equipe, total]) => ({ equipe, total })).sort((a, b) => b.total - a.total).slice(0, 10));
+        setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
+      } catch (err) {
+        console.error('Erro ao buscar stats:', err);
+      } finally {
+        setLoadingStats(false);
+      }
+    };
+
+    fetchAll();
+  }, [token]);
   if (loadingStats) {
     return (
       <div className="flex items-center justify-center h-64">
