@@ -53,3 +53,9 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Pillow (PIL) é usado para redimensionamento e compressão
 - Chave EMERGENT_LLM_KEY necessária no .env para Object Storage
 - Regulamento é DB-driven (collection `configuracoes`, tipo `regulamento`), nunca hardcoded no frontend
+
+### Sumário Navegável no Regulamento (09/04/2026)
+- Botão "Sumário" colapsável no header do modal do Regulamento
+- Painel de Navegação Rápida com grid 2 colunas, badges numerados
+- Scroll suave automático para cada seção ao clicar
+- Painel fecha automaticamente após navegação
