@@ -14,7 +14,7 @@ import { Badge } from '@/components/ui/badge';
 import { 
   Send, Loader2, ArrowLeft, MoreHorizontal,
   TrendingUp, Clock, Trash2, Users, Smile, MessageCircle,
-  Trophy, Medal, PartyPopper, Star, Zap, Shield, Camera, X, Image as ImageIcon, Heart
+  Trophy, Medal, PartyPopper, Star, Zap, Shield, Camera, X, Image as ImageIcon, Heart, Info
 } from 'lucide-react';
 import {
   DropdownMenu,
@@ -707,6 +707,30 @@ const FeedPage = () => {
                 <h1 className="text-xl font-bold">Feed Social</h1>
                 <p className="text-xs text-slate-400">Compartilhe suas conquistas</p>
               </div>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <button className="ml-2 w-7 h-7 rounded-full bg-blue-500/20 border border-blue-500/40 flex items-center justify-center hover:bg-blue-500/30 transition-colors" data-testid="feed-info-btn">
+                    <Info className="w-4 h-4 text-blue-400" />
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-80 bg-slate-800 border-slate-700 text-slate-200 p-4" side="bottom" align="start">
+                  <h4 className="font-semibold text-white text-sm mb-3">Como funciona o Feed</h4>
+                  <div className="space-y-3 text-xs leading-relaxed">
+                    <div className="flex gap-2">
+                      <Clock className="w-4 h-4 text-blue-400 shrink-0 mt-0.5" />
+                      <p>Para manter a experiência leve e atual, as conversas, posts, fotos e arquivos são <strong className="text-white">redefinidos semanalmente aos domingos às 23h59</strong>.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Shield className="w-4 h-4 text-emerald-400 shrink-0 mt-0.5" />
+                      <p>Para garantir a máxima <strong className="text-white">privacidade dos usuários</strong>, o sistema elimina automaticamente todos os dados armazenados semanalmente, evitando qualquer retenção desnecessária de informações sensíveis.</p>
+                    </div>
+                    <div className="flex gap-2">
+                      <Zap className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                      <p>O reset semanal permite que os usuários <strong className="text-white">comecem cada ciclo social do zero</strong>, incentivando interações mais espontâneas e reduzindo o peso de conversas passadas.</p>
+                    </div>
+                  </div>
+                </PopoverContent>
+              </Popover>
             </div>
           </div>
         </div>

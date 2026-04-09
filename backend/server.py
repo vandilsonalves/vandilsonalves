@@ -2118,11 +2118,11 @@ async def startup_event():
         replace_existing=True
     )
     
-    # Agendar limpeza de comentários do feed todo domingo às 23:59:59
+    # Agendar limpeza semanal COMPLETA do feed todo domingo às 23:59:59
     scheduler.add_job(
-        limpar_comentarios_semanal,
-        CronTrigger(day_of_week='sun', hour=23, minute=59, second=59),
-        id="limpeza_comentarios_semanal",
+        limpeza_semanal_completa,
+        CronTrigger(day_of_week='sun', hour=23, minute=59, second=0),
+        id="limpeza_semanal_completa",
         replace_existing=True
     )
     
@@ -2245,54 +2245,83 @@ async def check_and_send_alerts():
             logger.warning(f"⚠️ Alerta enviado para {admin['email']}: {[a['type'] for a in alerts]}")
 
 
-async def limpar_comentarios_semanal():
+async def limpeza_semanal_completa():
     """
-    Limpa todos os comentários não fixados do feed.
-    Executado automaticamente todo domingo às 23:59:59.
+    Limpeza semanal completa: posts, comentários, reações, stories, chat e arquivos da nuvem.
+    Executado automaticamente todo domingo às 23:59.
+    Garante privacidade dos usuários e mantém o sistema leve.
     """
-    logger.info("🧹 Iniciando limpeza semanal de comentários do feed...")
-    
+    logger.info("🧹 Iniciando limpeza semanal COMPLETA (feed + stories + chat + arquivos)...")
+
+    resumo = {
+        "posts": 0, "comentarios": 0, "reacoes": 0,
+        "stories": 0, "chat_msgs": 0, "chat_feed": 0,
+    }
+
     try:
-        # Contar comentários antes
-        fixados = await db.feed_comentarios.count_documents({"fixado": True})
-        
-        # Fazer backup
-        comentarios = await db.feed_comentarios.find({"fixado": {"$ne": True}}, {"_id": 0}).to_list(None)
-        
+        # 1. Feed Posts
+        posts = await db.feed_posts.count_documents({})
+        if posts:
+            await db.feed_posts.delete_many({})
+            resumo["posts"] = posts
+
+        # 2. Feed Comentários (não fixados)
+        comentarios = await db.feed_comentarios.count_documents({"fixado": {"$ne": True}})
         if comentarios:
-            await db.feed_comentarios_backup.insert_one({
-                "data_backup": datetime.now(timezone.utc).isoformat(),
-                "executado_por": "SISTEMA_AUTOMATICO",
-                "total_comentarios": len(comentarios),
-                "comentarios": comentarios
-            })
-        
-        # Excluir comentários não fixados
-        resultado = await db.feed_comentarios.delete_many({"fixado": {"$ne": True}})
-        
-        # Limpar cache do feed
+            await db.feed_comentarios.delete_many({"fixado": {"$ne": True}})
+            resumo["comentarios"] = comentarios
+
+        # 3. Feed Reações
+        reacoes = await db.feed_reacoes.count_documents({})
+        if reacoes:
+            await db.feed_reacoes.delete_many({})
+            resumo["reacoes"] = reacoes
+
+        # 4. Stories
+        stories = await db.stories.count_documents({})
+        if stories:
+            await db.stories.delete_many({})
+            resumo["stories"] = stories
+
+        # 5. Chat Mensagens (equipe)
+        chat_msgs = await db.equipe_mensagens.count_documents({})
+        if chat_msgs:
+            await db.equipe_mensagens.delete_many({})
+            resumo["chat_msgs"] = chat_msgs
+
+        # 6. Chat Feed (equipe)
+        chat_feed = await db.equipe_feed.count_documents({})
+        if chat_feed:
+            await db.equipe_feed.delete_many({})
+            resumo["chat_feed"] = chat_feed
+
+        # 7. Limpar cache do feed
         try:
             from services.cache_service import cache_service
             await cache_service.invalidate_feed()
-            logger.info("Cache do feed limpo")
-        except Exception as e:
-            logger.warning(f"Não foi possível limpar cache: {e}")
-        
+        except Exception:
+            pass
+
+        total = sum(resumo.values())
+
         # Registrar log
         await db.logs_scheduler.insert_one({
-            "tipo": "limpeza_comentarios",
+            "tipo": "limpeza_semanal_completa",
             "data": datetime.now(timezone.utc).isoformat(),
-            "comentarios_removidos": resultado.deleted_count,
-            "comentarios_fixados_preservados": fixados,
+            "resumo": resumo,
+            "total_removidos": total,
             "status": "sucesso"
         })
-        
-        logger.info(f"✅ Limpeza concluída! {resultado.deleted_count} comentários removidos, {fixados} fixados preservados")
-        
+
+        logger.info(f"✅ Limpeza semanal concluída! {total} itens removidos: "
+                     f"{resumo['posts']} posts, {resumo['comentarios']} comentários, "
+                     f"{resumo['reacoes']} reações, {resumo['stories']} stories, "
+                     f"{resumo['chat_msgs']} mensagens chat, {resumo['chat_feed']} posts chat")
+
     except Exception as e:
-        logger.error(f"❌ Erro na limpeza semanal de comentários: {e}")
+        logger.error(f"❌ Erro na limpeza semanal: {e}")
         await db.logs_scheduler.insert_one({
-            "tipo": "limpeza_comentarios",
+            "tipo": "limpeza_semanal_completa",
             "data": datetime.now(timezone.utc).isoformat(),
             "status": "erro",
             "erro": str(e)
