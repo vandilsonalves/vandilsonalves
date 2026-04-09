@@ -492,18 +492,20 @@ const GraficoNota = ({ gd, a }) => {
 
   return (
     <Card data-testid="grafico-nota">
-      <CardHeader><CardTitle className="flex items-center gap-2"><Target className="w-5 h-5 text-amber-500" />1. Nota - Taxa de Curtidas (Donut)</CardTitle></CardHeader>
+      <CardHeader><CardTitle className="flex items-center gap-2 text-sm sm:text-base"><Target className="w-5 h-5 text-amber-500" />1. Nota - Taxa de Curtidas (Donut)</CardTitle></CardHeader>
       <CardContent>
-        <div className="flex items-center gap-6">
-          <ResponsiveContainer width="60%" height={250}>
-            <PieChart>
-              <Pie data={data} cx="50%" cy="50%" innerRadius={65} outerRadius={95} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
-                {data.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
-              </Pie>
-              <text x="50%" y="45%" textAnchor="middle" className="fill-current text-3xl font-bold" fill={cor}>{notaVal}</text>
-              <text x="50%" y="60%" textAnchor="middle" className="fill-slate-400 text-xs" fill="#94A3B8">{ng.nivel || ''}</text>
-            </PieChart>
-          </ResponsiveContainer>
+        <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-6">
+          <div className="w-full sm:w-[60%]" style={{ height: 200 }}>
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie data={data} cx="50%" cy="50%" innerRadius={55} outerRadius={80} startAngle={90} endAngle={-270} dataKey="value" stroke="none">
+                  {data.map((entry, i) => <Cell key={i} fill={entry.fill} />)}
+                </Pie>
+                <text x="50%" y="45%" textAnchor="middle" className="fill-current text-3xl font-bold" fill={cor}>{notaVal}</text>
+                <text x="50%" y="60%" textAnchor="middle" className="fill-slate-400 text-xs" fill="#94A3B8">{ng.nivel || ''}</text>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
           <div className="space-y-2 text-sm">
             <div><span className="text-slate-500">Taxa Curtidas:</span> <span className="font-bold text-white">{ng.taxa_curtidas_pct || a.taxa_curtidas_pct || 0}%</span></div>
             <div><span className="text-slate-500">Nota Calc.:</span> <span className="font-bold" style={{ color: NOTA_COLORS[ng.nota_calc] || cor }}>{ng.nota_calc || '-'}</span></div>

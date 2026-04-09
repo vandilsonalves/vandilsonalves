@@ -678,7 +678,7 @@ const DashboardAssessorias = ({
             </div>
           ) : (
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[600px]">
                 <thead>
                   <tr className="border-b bg-amber-50 dark:bg-amber-900/20">
                     <th className="text-left py-3 px-4 font-semibold">Pos</th>
@@ -753,7 +753,7 @@ const DashboardAssessorias = ({
 
       {/* Modal de Detalhes da Assessoria */}
       <Dialog open={showDetalhesModal} onOpenChange={setShowDetalhesModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2 text-xl">
               <Trophy className="w-6 h-6 text-amber-500" />
@@ -879,7 +879,7 @@ const DashboardAssessorias = ({
                     <ShieldCheck className={`w-5 h-5 ${assessoriaDetalhes.verificada ? 'text-blue-500' : 'text-slate-400'}`} />
                     <span className="font-semibold">Critérios para Selo de Verificação</span>
                   </div>
-                  <div className="grid grid-cols-3 gap-4 text-sm">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-sm">
                     <div className={`flex items-center gap-2 ${assessoriaDetalhes.total_atletas >= 10 ? 'text-green-600' : 'text-slate-400'}`}>
                       {assessoriaDetalhes.total_atletas >= 10 ? <CheckCircle className="w-4 h-4" /> : <X className="w-4 h-4" />}
                       10+ atletas ({assessoriaDetalhes.total_atletas}/10)
@@ -947,7 +947,7 @@ const DashboardAssessorias = ({
 
       {/* Modal de Relatório Visual */}
       <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-amber-500" />
@@ -955,7 +955,7 @@ const DashboardAssessorias = ({
             </DialogTitle>
           </DialogHeader>
 
-          <div ref={reportRef} className="bg-white p-6 space-y-6">
+          <div ref={reportRef} className="bg-white p-3 sm:p-6 space-y-6">
             {/* Cabeçalho do Relatório */}
             <div className="text-center border-b pb-4">
               <h1 className="text-2xl font-bold text-slate-800">Ranking Run Pró</h1>
@@ -966,7 +966,7 @@ const DashboardAssessorias = ({
             </div>
 
             {/* Cards de Resumo */}
-            <div className="grid grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
               <div className="bg-amber-50 rounded-lg p-4 text-center">
                 <div className="text-3xl font-bold text-amber-600">{reportData.total}</div>
                 <div className="text-sm text-slate-600">Total de Assessorias</div>

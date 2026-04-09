@@ -25,6 +25,8 @@ const DashboardSubmeter = ({ token, atletas, onStatsRefresh }) => {
   const [corridaSelecionada, setCorridaSelecionada] = useState(null);
   const [showEditCorridaModal, setShowEditCorridaModal] = useState(false);
   const [actionLoading, setActionLoading] = useState(false);
+  const [buscaAtleta, setBuscaAtleta] = useState('');
+  const [showAtletaList, setShowAtletaList] = useState(false);
 
   const [novaCorridaAdmin, setNovaCorridaAdmin] = useState({
     nome_competicao: '', colocacao: '', distancia: '',
@@ -125,14 +127,44 @@ const DashboardSubmeter = ({ token, atletas, onStatsRefresh }) => {
         <CardContent className="space-y-6">
           <div className="space-y-2">
             <Label>Selecionar Atleta</Label>
-            <Select value={atletaSelecionado} onValueChange={(v) => { setAtletaSelecionado(v); setCorridasAtleta([]); }}>
-              <SelectTrigger><SelectValue placeholder="Buscar atleta..." /></SelectTrigger>
-              <SelectContent>
-                {[...atletas].sort((a, b) => a.nome.localeCompare(b.nome)).map((a) => (
-                  <SelectItem key={a.id} value={a.id}>{a.nome} - {a.equipe}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Input
+                placeholder="Buscar atleta pelo nome..."
+                value={buscaAtleta}
+                onChange={(e) => { setBuscaAtleta(e.target.value); setShowAtletaList(true); }}
+                onFocus={() => setShowAtletaList(true)}
+                data-testid="busca-atleta-input"
+              />
+              {atletaSelecionado && !buscaAtleta && (
+                <div className="mt-1 px-3 py-2 bg-emerald-50 dark:bg-emerald-900/30 rounded-md text-sm text-emerald-700 dark:text-emerald-300 flex items-center justify-between">
+                  <span>{atletas.find(a => a.id === atletaSelecionado)?.nome}</span>
+                  <button onClick={() => { setAtletaSelecionado(''); setCorridasAtleta([]); }} className="text-xs text-red-500 hover:underline">Limpar</button>
+                </div>
+              )}
+              {showAtletaList && buscaAtleta && (
+                <div className="absolute z-50 w-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-600 rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  {[...atletas]
+                    .filter(a => a.nome.toLowerCase().includes(buscaAtleta.toLowerCase()) || a.equipe?.toLowerCase().includes(buscaAtleta.toLowerCase()))
+                    .sort((a, b) => a.nome.localeCompare(b.nome))
+                    .slice(0, 20)
+                    .map((a) => (
+                      <button
+                        key={a.id}
+                        className="w-full text-left px-3 py-2 text-sm hover:bg-emerald-50 dark:hover:bg-slate-700 transition-colors border-b border-slate-100 dark:border-slate-700 last:border-0"
+                        onClick={() => { setAtletaSelecionado(a.id); setBuscaAtleta(''); setShowAtletaList(false); setCorridasAtleta([]); }}
+                        data-testid={`atleta-option-${a.id}`}
+                      >
+                        <span className="font-medium">{a.nome}</span>
+                        <span className="text-slate-500 ml-1">- {a.equipe}</span>
+                      </button>
+                    ))
+                  }
+                  {[...atletas].filter(a => a.nome.toLowerCase().includes(buscaAtleta.toLowerCase()) || a.equipe?.toLowerCase().includes(buscaAtleta.toLowerCase())).length === 0 && (
+                    <p className="px-3 py-2 text-sm text-slate-500">Nenhum atleta encontrado</p>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
 
           <div className="space-y-2">

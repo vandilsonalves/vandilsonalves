@@ -206,18 +206,18 @@ const DashboardRBAC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Gerenciamento de Administradores</h1>
-          <p className="text-gray-500">Sistema RBAC - Controle de Acesso Baseado em Papéis</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Gerenciamento de Administradores</h1>
+          <p className="text-gray-500 text-sm">Sistema RBAC - Controle de Acesso Baseado em Papéis</p>
         </div>
-        <Button onClick={() => setShowAddModal(true)} className="bg-emerald-600 hover:bg-emerald-700">
-          <Plus className="w-4 h-4 mr-2" /> Novo Administrador
+        <Button onClick={() => setShowAddModal(true)} className="bg-emerald-600 hover:bg-emerald-700 w-full sm:w-auto">
+          <Plus className="w-4 h-4 mr-2" /> Novo Admin
         </Button>
       </div>
       
       {/* Cards de Estatísticas */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Card className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
           <CardContent className="pt-4">
             <div className="flex items-center justify-between">
@@ -301,18 +301,18 @@ const DashboardRBAC = () => {
       
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="bg-gray-100">
-          <TabsTrigger value="admins" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
-            <Users className="w-4 h-4 mr-2" /> Administradores
+        <TabsList className="bg-gray-100 flex flex-wrap">
+          <TabsTrigger value="admins" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
+            <Users className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Administradores</span>
           </TabsTrigger>
-          <TabsTrigger value="roles" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
-            <Shield className="w-4 h-4 mr-2" /> Funções
+          <TabsTrigger value="roles" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
+            <Shield className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Funções</span>
           </TabsTrigger>
-          <TabsTrigger value="logs" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
-            <FileText className="w-4 h-4 mr-2" /> Logs de Auditoria
+          <TabsTrigger value="logs" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
+            <FileText className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Logs</span>
           </TabsTrigger>
-          <TabsTrigger value="alertas" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white">
-            <AlertTriangle className="w-4 h-4 mr-2" /> Alertas
+          <TabsTrigger value="alertas" className="data-[state=active]:bg-emerald-600 data-[state=active]:text-white text-xs sm:text-sm">
+            <AlertTriangle className="w-4 h-4 sm:mr-2" /> <span className="hidden sm:inline">Alertas</span>
             {alertas.length > 0 && (
               <Badge className="ml-2 bg-red-500">{alertas.length}</Badge>
             )}
@@ -335,24 +335,24 @@ const DashboardRBAC = () => {
                 {admins.map((admin) => (
                   <div 
                     key={admin.id} 
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 bg-gray-50 rounded-lg hover:bg-gray-100 transition-colors"
                   >
-                    <div className="flex items-center gap-4">
-                      <Avatar className="w-12 h-12">
+                    <div className="flex items-center gap-3 min-w-0">
+                      <Avatar className="w-10 h-10 sm:w-12 sm:h-12 shrink-0">
                         <AvatarImage src={admin.foto_url} />
                         <AvatarFallback className="bg-emerald-100 text-emerald-700">
                           {admin.nome?.charAt(0)}
                         </AvatarFallback>
                       </Avatar>
-                      <div>
+                      <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <p className="font-semibold text-gray-900">{admin.nome}</p>
+                          <p className="font-semibold text-gray-900 truncate">{admin.nome}</p>
                           {admin.is_super_admin && (
-                            <Crown className="w-4 h-4 text-yellow-500" title="Super Admin" />
+                            <Crown className="w-4 h-4 text-yellow-500 shrink-0" title="Super Admin" />
                           )}
                         </div>
-                        <p className="text-sm text-gray-500">{admin.email}</p>
-                        <div className="flex items-center gap-2 mt-1">
+                        <p className="text-sm text-gray-500 truncate">{admin.email}</p>
+                        <div className="flex flex-wrap items-center gap-1 mt-1">
                           <Badge className={
                             admin.role_nome === 'Super Admin' 
                               ? 'bg-purple-100 text-purple-700' 
@@ -378,10 +378,10 @@ const DashboardRBAC = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 shrink-0 ml-auto sm:ml-0">
                       {admin.ultimo_login && (
-                        <span className="text-xs text-gray-400 mr-4">
-                          Último login: {formatDate(admin.ultimo_login)}
+                        <span className="text-xs text-gray-400 mr-2 hidden sm:inline">
+                          Último: {formatDate(admin.ultimo_login)}
                         </span>
                       )}
                       <Button 

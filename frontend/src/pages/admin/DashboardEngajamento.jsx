@@ -78,58 +78,58 @@ const DashboardEngajamento = () => {
   return (
     <div className="space-y-6" data-testid="dashboard-engajamento">
       {/* KPIs */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card className="bg-white dark:bg-slate-800 border-0 shadow-lg">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium tracking-wide">Total de Mensagens</p>
-                <p className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{resumo.total_mensagens}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-medium tracking-wide">Total Mensagens</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white mt-1">{resumo.total_mensagens}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-blue-500/10 flex items-center justify-center">
-                <Send className="w-6 h-6 text-blue-500" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-blue-500/10 flex items-center justify-center shrink-0">
+                <Send className="w-5 h-5 sm:w-6 sm:h-6 text-blue-500" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white dark:bg-slate-800 border-0 shadow-lg">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium tracking-wide">Notificações Enviadas</p>
-                <p className="text-3xl font-bold text-slate-800 dark:text-white mt-1">{resumo.total_enviados}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-medium tracking-wide">Notif. Enviadas</p>
+                <p className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-white mt-1">{resumo.total_enviados}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Users className="w-6 h-6 text-emerald-500" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-emerald-500/10 flex items-center justify-center shrink-0">
+                <Users className="w-5 h-5 sm:w-6 sm:h-6 text-emerald-500" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white dark:bg-slate-800 border-0 shadow-lg">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium tracking-wide">Total Lidas</p>
-                <p className="text-3xl font-bold text-emerald-600 mt-1">{resumo.total_lidas}</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-medium tracking-wide">Total Lidas</p>
+                <p className="text-2xl sm:text-3xl font-bold text-emerald-600 mt-1">{resumo.total_lidas}</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-green-500/10 flex items-center justify-center">
-                <Eye className="w-6 h-6 text-green-500" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-green-500/10 flex items-center justify-center shrink-0">
+                <Eye className="w-5 h-5 sm:w-6 sm:h-6 text-green-500" />
               </div>
             </div>
           </CardContent>
         </Card>
 
         <Card className="bg-white dark:bg-slate-800 border-0 shadow-lg">
-          <CardContent className="p-5">
+          <CardContent className="p-3 sm:p-5">
             <div className="flex items-center justify-between">
-              <div>
-                <p className="text-xs text-slate-500 uppercase font-medium tracking-wide">Taxa Média de Leitura</p>
-                <p className="text-3xl font-bold text-amber-500 mt-1">{resumo.taxa_media_leitura}%</p>
+              <div className="min-w-0">
+                <p className="text-[10px] sm:text-xs text-slate-500 uppercase font-medium tracking-wide">Taxa Média</p>
+                <p className="text-2xl sm:text-3xl font-bold text-amber-500 mt-1">{resumo.taxa_media_leitura}%</p>
               </div>
-              <div className="w-12 h-12 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <TrendingUp className="w-6 h-6 text-amber-500" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0">
+                <TrendingUp className="w-5 h-5 sm:w-6 sm:h-6 text-amber-500" />
               </div>
             </div>
           </CardContent>
@@ -239,7 +239,7 @@ const DashboardEngajamento = () => {
         </CardHeader>
         <CardContent>
           <div className="overflow-x-auto">
-            <table className="w-full text-sm" data-testid="engajamento-table">
+            <table className="w-full text-sm min-w-[700px]" data-testid="engajamento-table">
               <thead>
                 <tr className="border-b border-slate-200 dark:border-slate-700">
                   <th className="text-left py-3 px-3 text-slate-500 font-medium">Mensagem</th>

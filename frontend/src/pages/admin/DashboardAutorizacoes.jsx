@@ -529,25 +529,23 @@ const DashboardAutorizacoes = () => {
         <TabsContent value="atletas">
           <Card className="bg-slate-800 border-slate-700">
             <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <CardTitle className="text-lg text-white">Atletas</CardTitle>
-                <div className="flex items-center gap-2">
-                  <div className="relative">
-                    <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
-                    <Input
-                      placeholder="Buscar por nome ou email..."
-                      value={busca}
-                      onChange={e => setBusca(e.target.value)}
-                      className="pl-8 bg-slate-700 border-slate-600 text-white w-64"
-                      data-testid="busca-atleta"
-                    />
-                  </div>
+                <div className="relative">
+                  <Search className="absolute left-2 top-2.5 h-4 w-4 text-slate-400" />
+                  <Input
+                    placeholder="Buscar por nome ou email..."
+                    value={busca}
+                    onChange={e => setBusca(e.target.value)}
+                    className="pl-8 bg-slate-700 border-slate-600 text-white w-full sm:w-64"
+                    data-testid="busca-atleta"
+                  />
                 </div>
               </div>
             </CardHeader>
             <CardContent>
-              <div className="overflow-auto max-h-[500px]">
-                <table className="w-full text-sm">
+              <div className="overflow-x-auto max-h-[500px]">
+                <table className="w-full text-sm min-w-[600px]">
                   <thead className="sticky top-0 bg-slate-800 border-b border-slate-700">
                     <tr className="text-slate-400 text-left">
                       <th className="py-2 px-3">Nome</th>

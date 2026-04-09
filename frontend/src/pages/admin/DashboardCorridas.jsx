@@ -1402,7 +1402,7 @@ const DashboardCorridas = ({
 
               {/* Tabela */}
               <div className="overflow-x-auto">
-                <table className="w-full">
+                <table className="w-full min-w-[700px]">
                   <thead>
                     <tr className="border-b bg-slate-50 dark:bg-slate-800">
                       <th className="py-3 px-2 w-10">
@@ -1638,7 +1638,7 @@ const DashboardCorridas = ({
 
       {/* Modal de Resultado do Scraping */}
       <Dialog open={showScrapingModal} onOpenChange={setShowScrapingModal}>
-        <DialogContent className="max-w-4xl max-h-[85vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[85vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-xl font-bold text-purple-600 flex items-center gap-2">
               <Globe className="w-6 h-6" />
@@ -1819,7 +1819,7 @@ const DashboardCorridas = ({
 
       {/* Modal de Relatório Visual */}
       <Dialog open={showReportModal} onOpenChange={setShowReportModal}>
-        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-4xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="w-5 h-5 text-emerald-500" />

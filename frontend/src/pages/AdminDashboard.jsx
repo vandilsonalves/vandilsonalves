@@ -635,7 +635,7 @@ const AdminDashboard = () => {
       />
 
       {/* Main Content */}
-      <div className="md:ml-64 flex-1 p-4 sm:p-6 md:p-8">
+      <div className="md:ml-64 flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden min-w-0">
         <div className="mb-6 sm:mb-8 flex items-center gap-3">
           <button
             onClick={() => setSidebarOpen(true)}

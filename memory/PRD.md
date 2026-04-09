@@ -59,3 +59,12 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Painel de Navegação Rápida com grid 2 colunas, badges numerados
 - Scroll suave automático para cada seção ao clicar
 - Painel fecha automaticamente após navegação
+
+### Correções Mobile Admin Panel (09/04/2026)
+- 13 bugs de responsividade mobile corrigidos no painel Admin
+- Sidebar responsiva: esconde em mobile, abre como overlay com hamburger
+- Grids, tabelas, modais e cards ajustados para viewport 390px
+- Cores dos títulos Retenção/Financeiro alteradas de branco para verde
+- Contraste melhorado no Corridas Parceiras
+- Busca de atletas no Submeter Resultados substituída por combobox funcional
+- Bug de salvamento nas Configurações corrigido (descricao_galera -> descricao_povao)

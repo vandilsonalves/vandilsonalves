@@ -308,12 +308,12 @@ export default function DashboardFinanceiro() {
   return (
     <div className="space-y-6" data-testid="dashboard-financeiro">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-white">Dashboard Financeiro</h2>
+          <h2 className="text-xl font-bold text-emerald-500">Dashboard Financeiro</h2>
           <p className="text-sm text-gray-400 mt-0.5">Transacoes PIX e Cartao de Credito</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Button
             onClick={fetchData}
             variant="outline"
@@ -366,7 +366,7 @@ export default function DashboardFinanceiro() {
               <DollarSign className="w-4 h-4 text-emerald-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-white">{formatCurrency(totais.receita_total)}</p>
+          <p className="text-lg sm:text-2xl font-bold text-white">{formatCurrency(totais.receita_total)}</p>
           <p className="text-xs text-gray-500 mt-1">{totais.transacoes_pagas} pagas de {totais.total_transacoes}</p>
         </Card>
 
@@ -377,7 +377,7 @@ export default function DashboardFinanceiro() {
               <QrCode className="w-4 h-4 text-emerald-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-emerald-400">{formatCurrency(totais.receita_pix)}</p>
+          <p className="text-lg sm:text-2xl font-bold text-emerald-400">{formatCurrency(totais.receita_pix)}</p>
           <p className="text-xs text-gray-500 mt-1">{distribuicao_gateway.pix.count} transacoes</p>
         </Card>
 
@@ -388,7 +388,7 @@ export default function DashboardFinanceiro() {
               <CreditCard className="w-4 h-4 text-indigo-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-indigo-400">{formatCurrency(totais.receita_cartao)}</p>
+          <p className="text-lg sm:text-2xl font-bold text-indigo-400">{formatCurrency(totais.receita_cartao)}</p>
           <p className="text-xs text-gray-500 mt-1">{distribuicao_gateway.cartao.count} transacoes</p>
         </Card>
 
@@ -399,7 +399,7 @@ export default function DashboardFinanceiro() {
               <TrendingUp className="w-4 h-4 text-amber-400" />
             </div>
           </div>
-          <p className="text-2xl font-bold text-white">{formatCurrency(totais.ticket_medio)}</p>
+          <p className="text-lg sm:text-2xl font-bold text-white">{formatCurrency(totais.ticket_medio)}</p>
           <p className="text-xs text-gray-500 mt-1">{totais.transacoes_pendentes} pendentes</p>
         </Card>
       </div>

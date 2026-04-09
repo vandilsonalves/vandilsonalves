@@ -106,7 +106,7 @@ const DashboardRegulamento = ({ token }) => {
                 <Textarea id="reg-conteudo" value={regulamento.conteudo} onChange={(e) => setRegulamento({ ...regulamento, conteudo: e.target.value })} placeholder="Digite o conteúdo do regulamento aqui..." className="bg-slate-50 dark:bg-slate-900 min-h-[400px] font-mono text-sm" />
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex flex-wrap justify-end gap-3">
                 <Button variant="outline" onClick={fetchRegulamento} disabled={loadingRegulamento}>
                   <RefreshCw className={`w-4 h-4 mr-2 ${loadingRegulamento ? 'animate-spin' : ''}`} /> Recarregar
                 </Button>
@@ -127,10 +127,10 @@ const DashboardRegulamento = ({ token }) => {
             <Eye className="w-4 h-4 text-slate-400" /> Pré-visualização
           </CardTitle>
         </CardHeader>
-        <CardContent className="p-6">
-          <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-6 max-h-[400px] overflow-y-auto">
-            <h2 className="text-xl font-bold text-emerald-600 mb-4">{regulamento.titulo || 'Título do Regulamento'}</h2>
-            <div className="text-slate-700 dark:text-slate-300 space-y-2 whitespace-pre-wrap">
+        <CardContent className="p-3 sm:p-6">
+          <div className="bg-slate-50 dark:bg-slate-900 rounded-lg p-3 sm:p-6 max-h-[400px] overflow-y-auto overflow-x-hidden">
+            <h2 className="text-xl font-bold text-emerald-600 mb-4 break-words">{regulamento.titulo || 'Título do Regulamento'}</h2>
+            <div className="text-slate-700 dark:text-slate-300 space-y-2 break-words" style={{ overflowWrap: 'break-word', wordBreak: 'break-word' }}>
               {regulamento.conteudo ? (
                 regulamento.conteudo.split('\n').map((line, i) => {
                   if (line.startsWith('### ')) return <h3 key={i} className="text-lg font-semibold text-emerald-500 mt-4 mb-2">{line.replace('### ', '')}</h3>;

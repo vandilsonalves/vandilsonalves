@@ -160,7 +160,7 @@ const DashboardCorridasParceiras = ({ token }) => {
   return (
     <div className="space-y-4" data-testid="dashboard-corridas-parceiras">
       {/* Abas */}
-      <div className="flex gap-2 border-b border-slate-700 pb-2">
+      <div className="flex gap-2 border-b border-slate-700 pb-2 overflow-x-auto">
         {[
           { id: 'corridas', label: 'Corridas', icon: MapPin },
           { id: 'config', label: 'Configuracoes', icon: Settings },
@@ -169,10 +169,10 @@ const DashboardCorridasParceiras = ({ token }) => {
           <button
             key={aba.id}
             onClick={() => setAbaAtiva(aba.id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition ${
+            className={`flex items-center gap-2 px-4 py-2 rounded-t-lg text-sm font-medium transition whitespace-nowrap ${
               abaAtiva === aba.id
                 ? 'bg-emerald-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-700'
+                : 'text-slate-300 hover:text-white hover:bg-slate-700'
             }`}
             data-testid={`tab-${aba.id}`}
           >
@@ -193,7 +193,7 @@ const DashboardCorridasParceiras = ({ token }) => {
           </div>
 
           {corridas.length === 0 ? (
-            <Card className="p-8 text-center text-slate-400 bg-slate-800/50">
+            <Card className="p-8 text-center text-slate-300 bg-slate-800/50">
               Nenhuma corrida cadastrada. Clique em "Nova Corrida" para adicionar.
             </Card>
           ) : (
@@ -212,14 +212,14 @@ const DashboardCorridasParceiras = ({ token }) => {
                   <div className="p-4 space-y-2">
                     <div className="flex items-start justify-between gap-2">
                       <div>
-                        <p className="text-xs text-slate-400">Data: {c.data_evento}</p>
+                        <p className="text-xs text-slate-300">Data: {c.data_evento}</p>
                         <h4 className="font-bold text-white text-sm">{c.nome_evento}</h4>
-                        <p className="text-xs text-slate-400">{c.cidade}/{c.estado}</p>
+                        <p className="text-xs text-slate-300">{c.cidade}/{c.estado}</p>
                       </div>
                       <span className="text-emerald-400 font-bold text-sm whitespace-nowrap">{c.valor_inscricao}</span>
                     </div>
 
-                    <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <div className="flex items-center gap-1 text-xs text-slate-300">
                       <MousePointer className="w-3 h-3" />
                       {totalClicksCorrida(c)} clicks totais
                     </div>

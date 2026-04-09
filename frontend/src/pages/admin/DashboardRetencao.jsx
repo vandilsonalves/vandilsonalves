@@ -129,16 +129,16 @@ const DashboardRetencao = () => {
   return (
     <div data-testid="dashboard-retencao" className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-white">Dashboard de Retenção</h2>
+          <h2 className="text-2xl font-bold text-emerald-500">Dashboard de Retenção</h2>
           <p className="text-gray-400 text-sm mt-1">
             Acompanhe atletas inativos e engaje as assessorias
           </p>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2 flex-shrink-0">
           <Select value={periodo} onValueChange={setPeriodo}>
-            <SelectTrigger data-testid="retencao-periodo-select" className="w-[160px] bg-gray-800 border-gray-700 text-white">
+            <SelectTrigger data-testid="retencao-periodo-select" className="w-36 sm:w-[160px] bg-gray-800 border-gray-700 text-white">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -208,9 +208,9 @@ const DashboardRetencao = () => {
           {(dados?.equipes_com_inativos || [])
             .slice(0, expandedEquipes ? 15 : 5)
             .map((eq, i) => (
-              <div key={eq.equipe} className="flex items-center justify-between p-3 bg-gray-700/40 rounded-lg hover:bg-gray-700/60 transition-colors">
-                <div className="flex items-center gap-3">
-                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold ${
+              <div key={eq.equipe} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 bg-gray-700/40 rounded-lg hover:bg-gray-700/60 transition-colors">
+                <div className="flex items-center gap-3 min-w-0">
+                  <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold shrink-0 ${
                     i === 0 ? 'bg-red-500 text-white' :
                     i === 1 ? 'bg-orange-500 text-white' :
                     i === 2 ? 'bg-yellow-500 text-black' :
@@ -218,9 +218,9 @@ const DashboardRetencao = () => {
                   }`}>
                     {i + 1}
                   </span>
-                  <span className="text-white text-sm font-medium">{eq.equipe}</span>
+                  <span className="text-white text-sm font-medium truncate">{eq.equipe}</span>
                 </div>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 shrink-0 ml-9 sm:ml-0">
                   <Badge variant="secondary" className="bg-red-500/20 text-red-300 text-xs">
                     {eq.inativos} inativos
                   </Badge>

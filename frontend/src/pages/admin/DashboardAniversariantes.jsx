@@ -209,27 +209,27 @@ const DashboardAniversariantes = ({ token }) => {
                     {aniversariantesMes.calendario[diaSelecionado].map((atleta) => (
                       <div key={atleta.id} className={`flex items-center gap-3 p-3 bg-white dark:bg-slate-800 rounded-lg cursor-pointer transition-all ${atletasSelecionar.includes(atleta.id) ? 'ring-2 ring-pink-500' : ''}`}
                         onClick={() => toggleAtletaSelecao(atleta.id)}>
-                        <input type="checkbox" checked={atletasSelecionar.includes(atleta.id)} onChange={() => {}} className="rounded border-pink-300" />
-                        <Avatar className="w-10 h-10">
+                        <input type="checkbox" checked={atletasSelecionar.includes(atleta.id)} onChange={() => {}} className="rounded border-pink-300 shrink-0" />
+                        <Avatar className="w-8 h-8 sm:w-10 sm:h-10 shrink-0">
                           <AvatarImage src={atleta.foto_url?.startsWith('http') ? atleta.foto_url : `${BACKEND_URL}${atleta.foto_url}`} />
                           <AvatarFallback className="bg-pink-500 text-white">{atleta.nome?.charAt(0)}</AvatarFallback>
                         </Avatar>
-                        <div className="flex-1">
-                          <p className="font-medium">{atleta.nome}</p>
-                          <p className="text-sm text-slate-500">{atleta.equipe} - {atleta.idade} anos</p>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-sm truncate">{atleta.nome}</p>
+                          <p className="text-xs text-slate-500 truncate">{atleta.equipe} - {atleta.idade} anos</p>
                         </div>
-                        <Badge className="bg-pink-100 text-pink-700 border-0">{atleta.apelido || 'Atleta'}</Badge>
+                        <Badge className="bg-pink-100 text-pink-700 border-0 shrink-0 text-xs hidden sm:inline-flex">{atleta.apelido || 'Atleta'}</Badge>
                       </div>
                     ))}
                   </div>
                   <div className="space-y-3">
                     <Label>Mensagem de Felicitação</Label>
                     <Textarea value={mensagemPadrao} onChange={(e) => setMensagemPadrao(e.target.value)} placeholder="Escreva sua mensagem de aniversário..." rows={3} className="bg-white dark:bg-slate-800" />
-                    <div className="flex gap-2">
-                      <Button onClick={handleEnviarMensagemAniversario} className="bg-pink-500 hover:bg-pink-600" disabled={atletasSelecionar.length === 0}>
-                        <Send className="w-4 h-4 mr-2" /> Enviar para {atletasSelecionar.length} atleta(s)
+                    <div className="flex flex-wrap gap-2">
+                      <Button onClick={handleEnviarMensagemAniversario} className="bg-pink-500 hover:bg-pink-600 text-sm" disabled={atletasSelecionar.length === 0}>
+                        <Send className="w-4 h-4 mr-2" /> Enviar ({atletasSelecionar.length})
                       </Button>
-                      <Button variant="outline" onClick={() => setAtletasSelecionar(aniversariantesMes.calendario[diaSelecionado].map(a => a.id))}>
+                      <Button variant="outline" onClick={() => setAtletasSelecionar(aniversariantesMes.calendario[diaSelecionado].map(a => a.id))} className="text-sm">
                         Selecionar Todos
                       </Button>
                     </div>
@@ -243,7 +243,7 @@ const DashboardAniversariantes = ({ token }) => {
 
       {/* Config Modal */}
       <Dialog open={showConfigModal} onOpenChange={setShowConfigModal}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg w-[95vw]">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2"><Settings className="w-5 h-5 text-pink-500" /> Configurações de Aniversário</DialogTitle>
           </DialogHeader>

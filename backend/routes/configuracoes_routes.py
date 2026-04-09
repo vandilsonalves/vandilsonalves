@@ -57,7 +57,7 @@ class RegrasTextos(BaseModel):
     titulo_profissional: str = "RANKING PROFISSIONAL/AMADOR"
     descricao_profissional: str = "Os atletas acumulam pontos ao participar de corridas oficiais. A pontuação varia de acordo com a colocação."
     titulo_povao: str = "RANKING DA GALERA"
-    descricao_galera: str = "O Ranking da Galera é uma modalidade especial que valoriza a participação acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!"
+    descricao_povao: str = "O Ranking da Galera é uma modalidade especial que valoriza a participação acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!"
     titulo_equipes: str = "RANKING DAS EQUIPES"
     descricao_equipes: str = "A Liga Nacional de Assessorias é o sistema oficial de classificação de equipes do Ranking Run. Ela avalia assessorias esportivas de corrida de rua em todo o Brasil com base em critérios técnicos e desempenho dos atletas vinculados."
 
@@ -99,7 +99,7 @@ CONFIGURACOES_PADRAO = {
         "titulo_profissional": "RANKING PROFISSIONAL/AMADOR",
         "descricao_profissional": "Os atletas acumulam pontos ao participar de corridas oficiais. A pontuação varia de acordo com a colocação.",
         "titulo_povao": "RANKING DA GALERA",
-        "descricao_galera": "O Ranking da Galera é uma modalidade especial que valoriza a participação acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!",
+        "descricao_povao": "O Ranking da Galera é uma modalidade especial que valoriza a participação acima da colocação. Aqui, todos ganham pontos por correr, independente de onde chegaram!",
         "titulo_equipes": "RANKING DAS EQUIPES",
         "descricao_equipes": "A Liga Nacional de Assessorias é o sistema oficial de classificação de equipes do Ranking Run. Ela avalia assessorias esportivas de corrida de rua em todo o Brasil com base em critérios técnicos e desempenho dos atletas vinculados."
     },
