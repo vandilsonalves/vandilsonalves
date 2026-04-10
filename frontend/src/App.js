@@ -27,6 +27,7 @@ import PagamentoCanceladoPage from "@/pages/PagamentoCanceladoPage";
 import FeedEquipePage from "@/pages/FeedEquipePage";
 import PoliticaPrivacidadePage from "@/pages/PoliticaPrivacidadePage";
 import ParceirosPage from "@/pages/ParceirosPage";
+import VotacaoPage from "@/pages/VotacaoPage";
 import CookieConsent from "@/components/CookieConsent";
 import BirthdayPopup from "@/components/BirthdayPopup";
 import SplashScreen from "@/components/SplashScreen";
@@ -81,6 +82,7 @@ function App() {
               <Route path="/feed-equipe" element={<FeedEquipePage />} />
               <Route path="/politica-de-privacidade" element={<PoliticaPrivacidadePage />} />
               <Route path="/parceiros" element={<ParceirosPage />} />
+              <Route path="/votacao" element={<VotacaoPage />} />
             </Routes>
             <CookieConsent />
           </PrintProtectionWrapper>

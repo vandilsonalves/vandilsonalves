@@ -9,7 +9,7 @@ import {
   Download, Plus,
   Cake, Send, Loader2,
   Crown, MessageSquare, CreditCard, TrendingDown, Menu,
-  Instagram, Star, HardDrive, Handshake
+  Instagram, Star, HardDrive, Handshake, Medal
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -43,6 +43,7 @@ import DashboardRetencao from './admin/DashboardRetencao';
 import DashboardBackup from './admin/DashboardBackup';
 import DashboardCorridasParceiras from './admin/DashboardCorridasParceiras';
 import DashboardParceiros from './admin/DashboardParceiros';
+import DashboardPremiacao from './admin/DashboardPremiacao';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 
@@ -71,6 +72,7 @@ const menuSections = [
       { id: 'mensagens', label: 'Mensagens', icon: MessageSquare, permissoes: [] },
       { id: 'engajamento', label: 'Engajamento', icon: BarChart3, permissoes: [] },
       { id: 'retencao', label: 'Retenção', icon: TrendingDown, permissoes: [] },
+      { id: 'premiacao', label: 'Premiação', icon: Medal, permissoes: [] },
     ]
   },
   {
@@ -727,6 +729,7 @@ const AdminDashboard = () => {
         {activeMenu === 'backup' && <DashboardBackup />}
         {activeMenu === 'corridas-parceiras' && <DashboardCorridasParceiras token={token} />}
         {activeMenu === 'parceiros' && <DashboardParceiros token={token} />}
+        {activeMenu === 'premiacao' && <DashboardPremiacao token={token} />}
 
         {/* Modais extraídos */}
         <AdminModals

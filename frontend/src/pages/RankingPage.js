@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NotificacoesBell from '@/components/NotificacoesBell';
 import MobileNav from '@/components/MobileNav';
-import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquare, HelpCircle, Award, Star, Activity, History, MapPin, RefreshCw, Zap, CreditCard, UsersRound, Handshake } from 'lucide-react';
+import { LogIn, Upload, Shield, LogOut, User, Trophy, Flame, Users, MessageSquare, HelpCircle, Award, Star, Activity, History, MapPin, RefreshCw, Zap, CreditCard, UsersRound, Handshake, Medal } from 'lucide-react';
 import { RegulamentoButton } from '@/components/RegulamentoModal';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
@@ -143,6 +143,10 @@ const RankingPage = () => {
               <Button onClick={() => navigate('/parceiros')} variant="ghost" size="sm" className="shrink-0 text-blue-500 hover:text-blue-600" data-testid="btn-parceiros">
                 <Handshake className="w-4 h-4 mr-1" />
                 Parceiros
+              </Button>
+              <Button onClick={() => navigate('/votacao')} variant="ghost" size="sm" className="shrink-0 text-amber-500 hover:text-amber-600" data-testid="btn-votacao">
+                <Medal className="w-4 h-4 mr-1" />
+                Votação
               </Button>
               <Button onClick={() => navigate('/raio-x')} variant="ghost" size="sm" className="shrink-0 text-purple-500 hover:text-purple-600" data-testid="btn-raio-x">
                 <Zap className="w-4 h-4 mr-1" />
