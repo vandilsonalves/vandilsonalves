@@ -3,7 +3,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Check, Loader2, ExternalLink, Lock, Medal } from 'lucide-react';
+import { Trophy, Check, Loader2, ExternalLink, Lock, Medal, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -22,6 +22,7 @@ const VotacaoPage = () => {
   const [loading, setLoading] = useState(true);
   const [voting, setVoting] = useState(null);
   const [resultados, setResultados] = useState(null);
+  const [countdown, setCountdown] = useState(null);
 
   const fetchData = useCallback(async () => {
     setLoading(true);
@@ -64,6 +65,32 @@ const VotacaoPage = () => {
   }, [token]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  // Countdown timer
+  useEffect(() => {
+    if (!status?.data_limite || !status?.votacao_aberta) {
+      setCountdown(null);
+      return;
+    }
+    const target = new Date(status.data_limite).getTime();
+    const tick = () => {
+      const diff = target - Date.now();
+      if (diff <= 0) {
+        setCountdown({ dias: 0, horas: 0, minutos: 0, segundos: 0, expirado: true });
+        return;
+      }
+      setCountdown({
+        dias: Math.floor(diff / 86400000),
+        horas: Math.floor((diff % 86400000) / 3600000),
+        minutos: Math.floor((diff % 3600000) / 60000),
+        segundos: Math.floor((diff % 60000) / 1000),
+        expirado: false
+      });
+    };
+    tick();
+    const interval = setInterval(tick, 1000);
+    return () => clearInterval(interval);
+  }, [status?.data_limite, status?.votacao_aberta]);
 
   const handleVote = async (catId) => {
     const data = formData[catId];
@@ -177,6 +204,31 @@ const VotacaoPage = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-amber-400">{status.titulo}</h1>
           <p className="text-slate-400 text-sm sm:text-base">{status.subtitulo} - {status.ano}</p>
           <Badge className="bg-emerald-500/20 text-emerald-400 mt-3">Votação Aberta</Badge>
+
+          {/* Countdown */}
+          {countdown && !countdown.expirado && (
+            <div className="mt-5 inline-flex items-center gap-2 bg-slate-800/80 border border-amber-500/30 rounded-xl px-5 py-3" data-testid="countdown-timer">
+              <Clock className="w-4 h-4 text-amber-400" />
+              <span className="text-xs text-slate-400 mr-1">Encerra em:</span>
+              {[
+                { val: countdown.dias, label: 'd' },
+                { val: countdown.horas, label: 'h' },
+                { val: countdown.minutos, label: 'm' },
+                { val: countdown.segundos, label: 's' }
+              ].map((u, i) => (
+                <span key={i} className="flex items-baseline gap-0.5">
+                  <span className="text-xl font-bold text-white tabular-nums">{String(u.val).padStart(2, '0')}</span>
+                  <span className="text-xs text-amber-400">{u.label}</span>
+                </span>
+              ))}
+            </div>
+          )}
+          {countdown?.expirado && (
+            <div className="mt-5 inline-flex items-center gap-2 bg-red-500/10 border border-red-500/30 rounded-xl px-5 py-3" data-testid="countdown-expirado">
+              <Clock className="w-4 h-4 text-red-400" />
+              <span className="text-sm text-red-400 font-medium">Prazo de votação encerrado</span>
+            </div>
+          )}
         </div>
 
         {/* Progress */}

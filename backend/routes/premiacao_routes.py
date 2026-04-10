@@ -58,7 +58,7 @@ async def get_premiacao_config(current_user: dict = Depends(get_admin_user)):
 @router.put("/admin/config")
 async def update_premiacao_config(dados: dict, current_user: dict = Depends(get_admin_user)):
     campos = {}
-    for key in ["titulo", "subtitulo", "ano"]:
+    for key in ["titulo", "subtitulo", "ano", "data_limite"]:
         if key in dados:
             campos[key] = dados[key]
     if campos:
@@ -231,7 +231,8 @@ async def get_status_votacao():
         "votacao_aberta": config.get("votacao_aberta", False),
         "titulo": config.get("titulo", "PRÊMIO NACIONAL RANKING RUN"),
         "subtitulo": config.get("subtitulo", "Troféu Destaque Internet"),
-        "ano": config.get("ano", datetime.now().year)
+        "ano": config.get("ano", datetime.now().year),
+        "data_limite": config.get("data_limite", None)
     }
 
 

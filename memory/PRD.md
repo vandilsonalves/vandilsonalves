@@ -52,6 +52,12 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Resultados públicos bloqueados enquanto votação aberta (403)
 - Testado: 16/16 testes backend + todos os fluxos frontend verificados
 
+### Contagem Regressiva na Votação (10/04/2026)
+- Admin define "Data Limite da Votação" no painel de Premiação (datetime-local input)
+- Campo `data_limite` salvo via PUT /api/premiacao/admin/config e retornado no GET /api/premiacao/status
+- Atleta vê countdown em tempo real (dias, horas, minutos, segundos) na página /votacao
+- Quando timer zera: exibe "Prazo de votação encerrado" (admin encerra manualmente)
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456

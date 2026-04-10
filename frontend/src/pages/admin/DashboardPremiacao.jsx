@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { 
   Trophy, Plus, Trash2, Edit2, Play, Square, BarChart3, 
-  Loader2, Users, Medal, Eye, Merge, ExternalLink, RefreshCw
+  Loader2, Users, Medal, Eye, Merge, ExternalLink, RefreshCw, Calendar, Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -33,6 +33,8 @@ const DashboardPremiacao = ({ token }) => {
   const [novaCat, setNovaCat] = useState({ nome: '', descricao: '' });
   const [consolidarNome, setConsolidarNome] = useState('');
   const [consolidarVariantes, setConsolidarVariantes] = useState('');
+  const [dataLimite, setDataLimite] = useState('');
+  const [savingConfig, setSavingConfig] = useState(false);
   const headers = { Authorization: `Bearer ${token}` };
 
   const fetchData = useCallback(async () => {
@@ -44,6 +46,9 @@ const DashboardPremiacao = ({ token }) => {
       ]);
       setConfig(configRes.data);
       setCategorias(catsRes.data);
+      if (configRes.data?.data_limite) {
+        setDataLimite(configRes.data.data_limite.slice(0, 16));
+      }
     } catch (err) {
       console.error(err);
     } finally {
@@ -52,6 +57,20 @@ const DashboardPremiacao = ({ token }) => {
   }, [token]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
+
+  const saveDataLimite = async () => {
+    if (!dataLimite) return toast.error('Selecione uma data limite');
+    setSavingConfig(true);
+    try {
+      await axios.put(`${API}/premiacao/admin/config`, { data_limite: new Date(dataLimite).toISOString() }, { headers });
+      toast.success('Data limite salva!');
+      fetchData();
+    } catch (err) {
+      toast.error('Erro ao salvar data');
+    } finally {
+      setSavingConfig(false);
+    }
+  };
 
   const toggleVotacao = async () => {
     try {
@@ -160,6 +179,40 @@ const DashboardPremiacao = ({ token }) => {
             <span className="text-xs text-slate-400">
               Encerrada em: {new Date(config.data_encerramento).toLocaleString('pt-BR')}
             </span>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Data Limite */}
+      <Card className="bg-slate-800 border-slate-700">
+        <CardContent className="p-4">
+          <div className="flex flex-col sm:flex-row sm:items-end gap-3">
+            <div className="flex-1">
+              <Label className="text-slate-300 flex items-center gap-2 mb-2">
+                <Calendar className="w-4 h-4 text-amber-500" /> Data Limite da Votação
+              </Label>
+              <Input
+                type="datetime-local"
+                value={dataLimite}
+                onChange={e => setDataLimite(e.target.value)}
+                className="bg-slate-700/50 border-slate-600 text-white max-w-xs"
+                data-testid="input-data-limite"
+              />
+            </div>
+            <Button
+              onClick={saveDataLimite}
+              disabled={savingConfig}
+              className="bg-amber-500 hover:bg-amber-600 shrink-0"
+              data-testid="btn-salvar-data-limite"
+            >
+              {savingConfig ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : <Save className="w-4 h-4 mr-2" />}
+              Salvar Data Limite
+            </Button>
+          </div>
+          {config?.data_limite && (
+            <p className="text-xs text-slate-400 mt-2">
+              Encerramento programado: {new Date(config.data_limite).toLocaleString('pt-BR')}
+            </p>
           )}
         </CardContent>
       </Card>
