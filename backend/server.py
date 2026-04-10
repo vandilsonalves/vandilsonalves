@@ -182,6 +182,7 @@ from routes.corridas_parceiras_routes import router as corridas_parceiras_router
 from routes.parceiros_routes import router as parceiros_router
 from routes.exportacoes_routes import router as exportacoes_router
 from routes.cloud_storage_routes import router as cloud_storage_router
+from routes.premiacao_routes import router as premiacao_router
 
 api_router.include_router(rbac_router)
 api_router.include_router(auth_routes_router)
@@ -225,6 +226,7 @@ api_router.include_router(corridas_parceiras_router)
 api_router.include_router(parceiros_router)
 api_router.include_router(exportacoes_router)
 api_router.include_router(cloud_storage_router)
+api_router.include_router(premiacao_router)
 
 
 # Endpoint genérico para download de conteúdo CSV gerado no frontend
