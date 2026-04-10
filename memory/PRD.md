@@ -42,6 +42,16 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 ## Backlog
 - P3: Finalizar integração do scraper Sympla via sitemap nas rotas de scraping
 
+### Sistema de Votação - Prêmio Nacional Ranking Run (10/04/2026)
+- Sistema completo de votação interna substituindo Google Forms
+- Backend: 10+ endpoints em `premiacao_routes.py` (config, categorias CRUD, votar, resultados, consolidar)
+- Frontend Atleta: `VotacaoPage.jsx` com formulário de texto livre (nome + link Instagram)
+- Frontend Admin: `DashboardPremiacao.jsx` com gestão de categorias, abrir/fechar votação, resultados e consolidação de nomes
+- Navegação integrada: rota `/votacao` no App.js, botão desktop e mobile nav
+- Controle antifraude manual pelo admin (visualização de IP, votantes, consolidação de variantes)
+- Resultados públicos bloqueados enquanto votação aberta (403)
+- Testado: 16/16 testes backend + todos os fluxos frontend verificados
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
