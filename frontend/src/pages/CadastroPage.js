@@ -11,6 +11,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
 import { UserPlus, Search, ScrollText, CheckCircle2, HelpCircle, Building2, Upload, FileImage, Users, Gift } from 'lucide-react';
 import CidadeCombobox from '@/components/CidadeCombobox';
+import CadastroTermoModal from '@/components/cadastro/CadastroTermoModal';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;

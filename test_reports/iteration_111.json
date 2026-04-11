@@ -1,0 +1,171 @@
+{
+  "summary": "Iteration 111: Multi-Premiação System Testing - All 20 backend tests passed (100%). All frontend features verified: /cadastro page loads without CadastroTermoModal error, /votacao shows list of premiacoes with active/closed sections, voting detail shows categories with countdown timer, admin Premiação tab shows CRUD operations with editable fields, voting banner on main page works correctly.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable",
+        "issues": ["Console warning: 'In HTML, <tr> cannot be a child of <span>' - hydration error warning (non-blocking)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter111_multi_premiacao.py",
+    "/app/test_reports/pytest/pytest_iter111_multi_premiacao.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (premiacao_routes.py): Multi-premiacao CRUD working correctly with admin endpoints",
+    "Backend: GET /api/premiacao/status returns premiacao_id for backward compatibility",
+    "Backend: GET /api/premiacao/ativas returns list of active premiacoes",
+    "Backend: GET /api/premiacao/todas returns all premiacoes",
+    "Backend: GET /api/premiacao/p/{id} returns single premiacao with all fields",
+    "Backend: GET /api/premiacao/p/{id}/categorias returns categories list",
+    "Backend: GET /api/premiacao/p/{id}/regulamento returns regulamento text",
+    "Backend: POST /api/premiacao/admin/premiacoes creates new premiacao",
+    "Backend: PUT /api/premiacao/admin/premiacoes/{id} updates titulo, subtitulo, modo_votacao, regulamento",
+    "Backend: DELETE /api/premiacao/admin/premiacoes/{id} deletes premiacao with all related data",
+    "Backend: POST /api/premiacao/admin/premiacoes/{id}/abrir opens voting",
+    "Backend: POST /api/premiacao/admin/premiacoes/{id}/fechar closes voting",
+    "Backend: POST /api/premiacao/admin/premiacoes/{id}/categorias creates category",
+    "Backend: GET /api/premiacao/admin/premiacoes/{id}/exportar-excel exports Excel file",
+    "Backend: GET /api/premiacao/p/{id}/meus-votos returns athlete votes",
+    "Backend: GET /api/premiacao/p/{id}/voto-finalizado returns finalization status",
+    "Backend: POST /api/premiacao/p/{id}/votar requires auth and validates closed premiacao",
+    "Backend: POST /api/premiacao/p/{id}/finalizar requires all categories voted",
+    "Frontend (CadastroPage.js): CadastroTermoModal import fixed - page loads without error",
+    "Frontend (VotacaoPage.jsx): Shows list of premiacoes with active/closed sections",
+    "Frontend (VotacaoPage.jsx): Voting detail shows categories, countdown timer, regulamento button",
+    "Frontend (VotacaoPage.jsx): 'Faça login para votar' message for non-logged users",
+    "Frontend (DashboardPremiacao.jsx): Admin CRUD with editable titulo, subtitulo, modo, regulamento",
+    "Frontend (DashboardPremiacao.jsx): Date inputs for abertura/encerramento programadas",
+    "Frontend (DashboardPremiacao.jsx): Excel export, Regulamento, Nova Categoria buttons",
+    "Frontend (RankingPage.js): Voting banner shows when votacao_aberta=true, navigates to /votacao"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter111_multi_premiacao.py"
+  ],
+  "success_rate": {
+    "backend": "100% (20/20 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "atleta": "teste.dono@teste.com / 123456"
+  },
+  "seed_data_creation": "None - used existing migrated data (premiacao '310d78e2' with 2 categories, 3 votes) and test premiacao '38191d93' (Votação Cor da Camisa 2026, closed)",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 111 validated the complete multi-premiacao system: (1) Backend CRUD for premiacoes working, (2) Backend voting endpoints working with auth and validation, (3) Backend backward compatibility with /api/premiacao/status returning premiacao_id, (4) Frontend /cadastro loads without CadastroTermoModal error, (5) Frontend /votacao shows list of premiacoes with active/closed sections, (6) Frontend voting detail shows categories with countdown timer and regulamento button, (7) Frontend admin Premiação tab shows CRUD with editable fields, (8) Frontend main page voting banner works and navigates to /votacao. Two premiacoes exist: 'PRÊMIO NACIONAL RANKING RUN' (id: 310d78e2, open, 2 categories, 3 votes) and 'Votação Cor da Camisa 2026' (id: 38191d93, closed, 0 categories).",
+  "features_verified": {
+    "GET /api/premiacao/status backward compat": {
+      "status": "VERIFIED",
+      "details": "Returns premiacao_id field for multi-premiacao support"
+    },
+    "GET /api/premiacao/ativas": {
+      "status": "VERIFIED",
+      "details": "Returns list of active premiacoes"
+    },
+    "GET /api/premiacao/todas": {
+      "status": "VERIFIED",
+      "details": "Returns all premiacoes"
+    },
+    "GET /api/premiacao/p/{id}": {
+      "status": "VERIFIED",
+      "details": "Returns single premiacao with all fields"
+    },
+    "GET /api/premiacao/p/{id}/categorias": {
+      "status": "VERIFIED",
+      "details": "Returns categories list"
+    },
+    "GET /api/premiacao/p/{id}/regulamento": {
+      "status": "VERIFIED",
+      "details": "Returns regulamento text"
+    },
+    "GET /api/premiacao/admin/premiacoes": {
+      "status": "VERIFIED",
+      "details": "Returns list with total_categorias and total_votos counts"
+    },
+    "POST /api/premiacao/admin/premiacoes": {
+      "status": "VERIFIED",
+      "details": "Creates new premiacao with titulo, subtitulo, modo_votacao, regulamento"
+    },
+    "PUT /api/premiacao/admin/premiacoes/{id}": {
+      "status": "VERIFIED",
+      "details": "Updates premiacao fields"
+    },
+    "DELETE /api/premiacao/admin/premiacoes/{id}": {
+      "status": "VERIFIED",
+      "details": "Deletes premiacao with all related data"
+    },
+    "POST /api/premiacao/admin/premiacoes/{id}/abrir": {
+      "status": "VERIFIED",
+      "details": "Opens voting"
+    },
+    "POST /api/premiacao/admin/premiacoes/{id}/fechar": {
+      "status": "VERIFIED",
+      "details": "Closes voting"
+    },
+    "POST /api/premiacao/admin/premiacoes/{id}/categorias": {
+      "status": "VERIFIED",
+      "details": "Creates category"
+    },
+    "GET /api/premiacao/admin/premiacoes/{id}/categorias": {
+      "status": "VERIFIED",
+      "details": "Lists categories with total_votos"
+    },
+    "GET /api/premiacao/admin/premiacoes/{id}/exportar-excel": {
+      "status": "VERIFIED",
+      "details": "Exports Excel file"
+    },
+    "GET /api/premiacao/p/{id}/meus-votos": {
+      "status": "VERIFIED",
+      "details": "Returns athlete votes"
+    },
+    "GET /api/premiacao/p/{id}/voto-finalizado": {
+      "status": "VERIFIED",
+      "details": "Returns finalization status"
+    },
+    "POST /api/premiacao/p/{id}/votar requires auth": {
+      "status": "VERIFIED",
+      "details": "Returns 401/403 without auth"
+    },
+    "POST /api/premiacao/p/{id}/votar closed premiacao": {
+      "status": "VERIFIED",
+      "details": "Returns 400 for closed premiacao"
+    },
+    "POST /api/premiacao/p/{id}/finalizar requires all votes": {
+      "status": "VERIFIED",
+      "details": "Returns 400 if not all categories voted"
+    },
+    "Frontend /cadastro page": {
+      "status": "VERIFIED",
+      "details": "Loads without CadastroTermoModal error"
+    },
+    "Frontend /votacao list": {
+      "status": "VERIFIED",
+      "details": "Shows active and closed premiacoes sections"
+    },
+    "Frontend /votacao detail": {
+      "status": "VERIFIED",
+      "details": "Shows categories, countdown timer, regulamento button"
+    },
+    "Frontend admin Premiação tab": {
+      "status": "VERIFIED",
+      "details": "Shows list with Nova Premiação button"
+    },
+    "Frontend admin Premiação detail": {
+      "status": "VERIFIED",
+      "details": "Editable titulo, subtitulo, modo, dates, regulamento"
+    },
+    "Frontend voting banner": {
+      "status": "VERIFIED",
+      "details": "Shows on main page when voting open, navigates to /votacao"
+    }
+  }
+}
