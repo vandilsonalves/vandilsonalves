@@ -68,6 +68,18 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Backend: Validação rejeita voto com link vazio (HTTP 400)
 - Testado: 13/13 backend + todas as features frontend verificadas (iteration_110)
 
+### Sistema Multi-Premiação + Bug Fix Cadastro (11/04/2026)
+- **Multi-Premiação**: Admin pode criar/editar/excluir múltiplas premiações independentes
+- Cada premiação tem título/subtítulo editáveis, foto, modo de votação (indicar/votar), regulamento
+- Categorias com upload de foto/ícone por categoria
+- Migração automática de dados antigos (single → multi)
+- Atleta: Splash de advertência antes do primeiro voto
+- Atleta: Votação única — após finalizar, não pode mais editar
+- Atleta: Splash animado de parabéns + notificação in-app + email com resumo
+- Atleta: Botão de regulamento por premiação
+- **Bug Fix**: Import CadastroTermoModal faltando na página de Cadastro
+- Testado: 20/20 backend + todos os fluxos frontend verificados (iteration_111)
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
