@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import NotificacoesBell from '@/components/NotificacoesBell';
@@ -11,6 +11,7 @@ import { useFeedNaoLidos } from '@/hooks/useFeedNaoLidos';
 import RankingProfissional from '@/components/ranking/RankingProfissional';
 import RankingGalera from '@/components/ranking/RankingGalera';
 import RankingEquipes from '@/components/ranking/RankingEquipes';
+import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 
@@ -20,6 +21,13 @@ const RankingPage = () => {
   const [tipoRanking, setTipoRanking] = useState('profissional');
   const hasEquipe = user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe);
   const { naoLidos } = useFeedNaoLidos(token, user?.equipe);
+  const [votacaoAberta, setVotacaoAberta] = useState(false);
+
+  useEffect(() => {
+    axios.get(`${BACKEND_URL}/api/premiacao/status`)
+      .then(res => setVotacaoAberta(res.data?.votacao_aberta || false))
+      .catch(() => {});
+  }, []);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
@@ -188,6 +196,32 @@ const RankingPage = () => {
               Entrar
             </Button>
           </div>
+        )}
+
+        {/* Banner Votação Aberta */}
+        {votacaoAberta && (
+          <button
+            onClick={() => navigate('/votacao')}
+            className="w-full mb-4 relative overflow-hidden rounded-xl bg-gradient-to-r from-amber-500 via-amber-400 to-yellow-500 p-[2px] group cursor-pointer"
+            data-testid="banner-votacao"
+          >
+            <div className="flex items-center justify-between gap-3 rounded-[10px] bg-gradient-to-r from-amber-600 via-amber-500 to-yellow-500 px-4 py-3 sm:px-6 sm:py-4">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center shrink-0 animate-pulse">
+                  <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-white font-bold text-sm sm:text-base truncate">PRÊMIO NACIONAL RANKING RUN</p>
+                  <p className="text-amber-100 text-xs sm:text-sm truncate">Votação aberta! Clique para votar no seu destaque</p>
+                </div>
+              </div>
+              <div className="shrink-0 bg-white/20 group-hover:bg-white/30 transition-colors rounded-lg px-3 py-1.5 sm:px-4 sm:py-2">
+                <span className="text-white font-semibold text-xs sm:text-sm whitespace-nowrap">Votar Agora</span>
+              </div>
+            </div>
+            {/* Animated shimmer */}
+            <div className="absolute inset-0 -translate-x-full group-hover:translate-x-full transition-transform duration-1000 bg-gradient-to-r from-transparent via-white/20 to-transparent pointer-events-none" />
+          </button>
         )}
 
         {/* Seletor de Tipo de Ranking - Fixo no topo ao rolar */}

@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
-import { Trophy, Check, Loader2, ExternalLink, Lock, Medal, Clock } from 'lucide-react';
+import { Trophy, Check, Loader2, ExternalLink, Lock, Medal, Clock, ArrowLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
 import { useAuth } from '@/context/AuthContext';
@@ -14,6 +15,7 @@ const API = `${BACKEND_URL}/api`;
 const MEDAL_COLORS = ['from-amber-400 to-yellow-500', 'from-slate-300 to-slate-400', 'from-orange-600 to-orange-700'];
 
 const VotacaoPage = () => {
+  const navigate = useNavigate();
   const { token, user } = useAuth();
   const [status, setStatus] = useState(null);
   const [categorias, setCategorias] = useState([]);
@@ -48,7 +50,6 @@ const VotacaoPage = () => {
         setFormData(formMap);
       }
 
-      // Try to get results if voting is closed
       if (!statusRes.data.votacao_aberta) {
         try {
           const resRes = await axios.get(`${API}/premiacao/resultados-publicos`);
@@ -95,13 +96,14 @@ const VotacaoPage = () => {
   const handleVote = async (catId) => {
     const data = formData[catId];
     if (!data?.nome?.trim()) return toast.error('Preencha o nome do indicado');
+    if (!data?.link?.trim()) return toast.error('Preencha o Link do Site Oficial ou Instagram');
 
     setVoting(catId);
     try {
       const res = await axios.post(`${API}/premiacao/votar`, {
         categoria_id: catId,
         nome_indicado: data.nome.trim(),
-        link_indicado: data.link?.trim() || ''
+        link_indicado: data.link.trim()
       }, { headers: { Authorization: `Bearer ${token}` } });
       
       toast.success(res.data.message);
@@ -131,12 +133,30 @@ const VotacaoPage = () => {
     );
   }
 
+  // Back button component
+  const BackButton = () => (
+    <div className="max-w-3xl mx-auto mb-4">
+      <Button 
+        onClick={() => navigate('/')} 
+        variant="ghost" 
+        className="text-slate-400 hover:text-white"
+        data-testid="btn-voltar"
+      >
+        <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+      </Button>
+    </div>
+  );
+
   // Results view (voting closed)
   if (resultados && !status?.votacao_aberta) {
     return (
       <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-8" data-testid="resultados-premiacao">
+        <BackButton />
         <div className="max-w-3xl mx-auto">
           <div className="text-center mb-8">
+            {status?.foto_url && (
+              <img src={status.foto_url} alt="Premiação" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-4 border-2 border-amber-500/50" />
+            )}
             <Trophy className="w-16 h-16 text-amber-500 mx-auto mb-3" />
             <h1 className="text-2xl sm:text-3xl font-bold text-amber-400">{resultados.titulo}</h1>
             <p className="text-slate-400">{resultados.subtitulo} - {resultados.ano}</p>
@@ -184,12 +204,15 @@ const VotacaoPage = () => {
   // Voting closed, no results yet
   if (!status?.votacao_aberta) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 flex items-center justify-center p-4" data-testid="votacao-fechada">
-        <Card className="bg-slate-800/80 border-slate-700 max-w-md w-full text-center p-8">
-          <Lock className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-          <h2 className="text-xl font-bold text-white mb-2">Votação Não Disponível</h2>
-          <p className="text-slate-400 text-sm">A votação do Prêmio Nacional Ranking Run ainda não foi aberta ou já foi encerrada. Aguarde a próxima edição!</p>
-        </Card>
+      <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-800 p-4" data-testid="votacao-fechada">
+        <BackButton />
+        <div className="flex items-center justify-center" style={{ minHeight: 'calc(100vh - 120px)' }}>
+          <Card className="bg-slate-800/80 border-slate-700 max-w-md w-full text-center p-8">
+            <Lock className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+            <h2 className="text-xl font-bold text-white mb-2">Votação Não Disponível</h2>
+            <p className="text-slate-400 text-sm">A votação do Prêmio Nacional Ranking Run ainda não foi aberta ou já foi encerrada. Aguarde a próxima edição!</p>
+          </Card>
+        </div>
       </div>
     );
   }
@@ -198,8 +221,23 @@ const VotacaoPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 p-4 sm:p-8" data-testid="votacao-aberta">
       <div className="max-w-2xl mx-auto">
+        {/* Back Button */}
+        <div className="mb-4">
+          <Button 
+            onClick={() => navigate('/')} 
+            variant="ghost" 
+            className="text-slate-400 hover:text-white"
+            data-testid="btn-voltar"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" /> Voltar
+          </Button>
+        </div>
+
         {/* Header */}
         <div className="text-center mb-8">
+          {status?.foto_url && (
+            <img src={status.foto_url} alt="Premiação" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-4 border-2 border-amber-500/50" data-testid="foto-premiacao-publica" />
+          )}
           <Trophy className="w-14 h-14 text-amber-500 mx-auto mb-3" />
           <h1 className="text-2xl sm:text-3xl font-bold text-amber-400">{status.titulo}</h1>
           <p className="text-slate-400 text-sm sm:text-base">{status.subtitulo} - {status.ano}</p>
@@ -272,22 +310,24 @@ const VotacaoPage = () => {
                   ) : (
                     <div className="space-y-2">
                       <Input
-                        placeholder="Nome do indicado"
+                        placeholder="Nome do indicado *"
                         value={form.nome}
                         onChange={e => updateForm(cat.id, 'nome', e.target.value)}
                         className="bg-slate-700/50 border-slate-600 text-white text-sm"
                         data-testid={`input-nome-${cat.id}`}
+                        required
                       />
                       <Input
-                        placeholder="Instagram ou site (opcional)"
+                        placeholder="Link do Site Oficial ou Instagram *"
                         value={form.link}
                         onChange={e => updateForm(cat.id, 'link', e.target.value)}
                         className="bg-slate-700/50 border-slate-600 text-white text-sm"
                         data-testid={`input-link-${cat.id}`}
+                        required
                       />
                       <Button 
                         onClick={() => handleVote(cat.id)} 
-                        disabled={voting === cat.id || !form.nome?.trim()}
+                        disabled={voting === cat.id || !form.nome?.trim() || !form.link?.trim()}
                         className={`w-full text-sm ${jaVotou ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
                         data-testid={`btn-votar-${cat.id}`}
                       >

@@ -2,13 +2,15 @@
 Rotas de Premiação / Votação - PRÊMIO NACIONAL RANKING RUN
 Troféu Destaque Internet - Sistema de indicação aberta
 """
-from fastapi import APIRouter, HTTPException, Depends, Request
+from fastapi import APIRouter, HTTPException, Depends, Request, UploadFile, File
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 from typing import Optional, List
 from datetime import datetime, timezone
 from motor.motor_asyncio import AsyncIOMotorClient
 from bson import ObjectId
 import os
+import io
 
 router = APIRouter(prefix="/premiacao", tags=["Premiação"])
 
@@ -58,7 +60,7 @@ async def get_premiacao_config(current_user: dict = Depends(get_admin_user)):
 @router.put("/admin/config")
 async def update_premiacao_config(dados: dict, current_user: dict = Depends(get_admin_user)):
     campos = {}
-    for key in ["titulo", "subtitulo", "ano", "data_limite"]:
+    for key in ["titulo", "subtitulo", "ano", "data_limite", "data_abertura_programada", "data_encerramento_programada"]:
         if key in dados:
             campos[key] = dados[key]
     if campos:
@@ -68,6 +70,76 @@ async def update_premiacao_config(dados: dict, current_user: dict = Depends(get_
             upsert=True
         )
     return {"message": "Configuração atualizada"}
+
+
+@router.post("/admin/foto")
+async def upload_foto_premiacao(foto: UploadFile = File(...), current_user: dict = Depends(get_admin_user)):
+    """Upload de foto/logo da premiação"""
+    data = await foto.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (max 5MB)")
+    try:
+        from services.object_storage import upload_file
+        result = upload_file(data, foto.filename, pasta="premiacao")
+        url = result.get("url", "")
+        await db.premiacao_config.update_one(
+            {"id": "config_atual"},
+            {"$set": {"foto_url": url}},
+            upsert=True
+        )
+        return {"message": "Foto enviada!", "url": url}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
+
+
+@router.get("/admin/exportar-excel")
+async def exportar_votos_excel(current_user: dict = Depends(get_admin_user)):
+    """Exporta todos os votos em Excel com dados completos"""
+    from openpyxl import Workbook
+    from openpyxl.styles import Font, PatternFill, Alignment
+
+    categorias = await db.premiacao_categorias.find({}, {"_id": 0}).sort("ordem", 1).to_list(100)
+    cat_map = {c["id"]: c["nome"] for c in categorias}
+
+    votos = await db.premiacao_votos.find({}, {"_id": 0}).sort("data_voto", -1).to_list(10000)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Votos Premiação"
+
+    headers = ["Categoria", "Nome Indicado", "Link", "Atleta Nome", "Atleta Email", "Atleta ID", "Data/Hora", "IP", "ID Voto"]
+    header_fill = PatternFill(start_color="F59E0B", end_color="F59E0B", fill_type="solid")
+    header_font = Font(bold=True, color="FFFFFF")
+
+    for col, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col, value=h)
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = Alignment(horizontal="center")
+
+    for i, v in enumerate(votos, 2):
+        ws.cell(row=i, column=1, value=cat_map.get(v.get("categoria_id", ""), "Desconhecida"))
+        ws.cell(row=i, column=2, value=v.get("nome_indicado", ""))
+        ws.cell(row=i, column=3, value=v.get("link_indicado", ""))
+        ws.cell(row=i, column=4, value=v.get("atleta_nome", ""))
+        ws.cell(row=i, column=5, value=v.get("atleta_email", ""))
+        ws.cell(row=i, column=6, value=v.get("atleta_id", ""))
+        ws.cell(row=i, column=7, value=v.get("data_voto", ""))
+        ws.cell(row=i, column=8, value=v.get("ip", ""))
+        ws.cell(row=i, column=9, value=v.get("id", ""))
+
+    for col in range(1, len(headers) + 1):
+        ws.column_dimensions[chr(64 + col)].width = 22
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f"attachment; filename=votos_premiacao_{datetime.now().strftime('%Y%m%d')}.xlsx"}
+    )
 
 
 @router.post("/admin/abrir")
@@ -232,7 +304,10 @@ async def get_status_votacao():
         "titulo": config.get("titulo", "PRÊMIO NACIONAL RANKING RUN"),
         "subtitulo": config.get("subtitulo", "Troféu Destaque Internet"),
         "ano": config.get("ano", datetime.now().year),
-        "data_limite": config.get("data_limite", None)
+        "data_limite": config.get("data_limite", None),
+        "foto_url": config.get("foto_url", None),
+        "data_abertura_programada": config.get("data_abertura_programada", None),
+        "data_encerramento_programada": config.get("data_encerramento_programada", None)
     }
 
 
@@ -268,6 +343,9 @@ async def votar(voto: VotoCreate, request: Request, current_user: dict = Depends
 
     if not voto.nome_indicado.strip():
         raise HTTPException(status_code=400, detail="Nome do indicado é obrigatório")
+
+    if not (voto.link_indicado or "").strip():
+        raise HTTPException(status_code=400, detail="Link do Site Oficial ou Instagram é obrigatório")
 
     import uuid
     # Verificar se já votou nesta categoria
