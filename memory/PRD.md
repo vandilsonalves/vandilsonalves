@@ -58,6 +58,16 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Atleta vê countdown em tempo real (dias, horas, minutos, segundos) na página /votacao
 - Quando timer zera: exibe "Prazo de votação encerrado" (admin encerra manualmente)
 
+### Melhorias Premiação v2 (11/04/2026)
+- Admin: Campos de Data de Abertura e Encerramento da votação (datetime-local)
+- Admin: Upload de foto/logo da premiação (via Object Storage, max 5MB)
+- Admin: Botão "Exportar Excel" exporta todos os votos com nome, email, data, IP, ID, categoria
+- Atleta: Campos "Nome do indicado" e "Link do Site Oficial ou Instagram" ambos obrigatórios
+- Atleta: Botão "Voltar" na página de votação
+- Página principal: Banner animado dourado quando votação aberta, com link direto para /votacao
+- Backend: Validação rejeita voto com link vazio (HTTP 400)
+- Testado: 13/13 backend + todas as features frontend verificadas (iteration_110)
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
