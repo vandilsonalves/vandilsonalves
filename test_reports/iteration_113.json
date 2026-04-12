@@ -1,0 +1,88 @@
+{
+  "summary": "Iteration 113: Histórico de Votações and Banner Visibility Testing - All 9 backend tests passed (100%). All frontend features verified: /votacao page shows 'Votação Aberta' and 'Encerradas' sections separately, clicking closed premiacao shows results with 'Resultados Finais' badge, banner on main page visible when atleta hasn't finalized, banner uses dynamic premiacao title.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable",
+        "issues": ["Console warning: 'In HTML, <tr> cannot be a child of <span>' - hydration error warning (non-blocking, pre-existing)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter113_historico_banner.py",
+    "/app/test_reports/pytest/pytest_iter113_historico_banner.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (premiacao_routes.py line ~592): GET /api/premiacao/status correctly checks auth header and adds 'todas_finalizadas' field only when authenticated",
+    "Backend: GET /api/premiacao/status without auth does NOT include 'todas_finalizadas' field - VERIFIED",
+    "Backend: GET /api/premiacao/p/{id}/resultados-publicos returns 403 for OPEN premiacao - VERIFIED",
+    "Backend: GET /api/premiacao/p/{id}/resultados-publicos returns results for CLOSED premiacao with data_encerramento - VERIFIED",
+    "Backend: GET /api/premiacao/todas returns all premiacoes (open + closed) for history - VERIFIED",
+    "Frontend (VotacaoPage.jsx): Correctly separates premiacoes into 'ativas' (votacao_aberta=true) and 'encerradas' (votacao_aberta=false && data_encerramento)",
+    "Frontend (VotacaoPage.jsx): Shows 'Votação Aberta' section with green badge for open premiacoes",
+    "Frontend (VotacaoPage.jsx): Shows 'Encerradas' section with lock icon for closed premiacoes",
+    "Frontend (VotacaoPage.jsx): Clicking closed premiacao fetches resultados-publicos and displays podium with medals (1°, 2°, 3°) or 'Nenhum voto registrado' if no votes",
+    "Frontend (RankingPage.js line ~29-36): Banner logic correctly uses 'votacaoAberta && !jaFinalizou' to show/hide banner",
+    "Frontend (RankingPage.js): Banner displays dynamic premiacao title from API response"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter113_historico_banner.py"
+  ],
+  "success_rate": {
+    "backend": "100% (9/9 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "atleta": "teste.dono@teste.com / 123456"
+  },
+  "seed_data_creation": "None - used existing data",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 113 validated the complete 'Histórico de Votações' and 'Banner Visibility' features: (1) Backend GET /api/premiacao/status with auth returns todas_finalizadas=false for atleta who hasn't finalized, (2) Backend GET /api/premiacao/status without auth does NOT include todas_finalizadas, (3) Backend GET /api/premiacao/p/{id}/resultados-publicos returns 403 for OPEN premiacao and 200 with results for CLOSED premiacao, (4) Backend GET /api/premiacao/todas returns all premiacoes (open + closed), (5) Frontend /votacao page shows 'Votação Aberta' and 'Encerradas' sections separately, (6) Frontend clicking closed premiacao shows results with 'Resultados Finais' badge and 'Votação Encerrada' badge, (7) Frontend shows 'Nenhum voto registrado' for premiacoes with 0 votes, (8) Frontend banner on main page visible when atleta hasn't finalized all premiacoes, (9) Frontend banner uses dynamic premiacao title. Four premiacoes exist: 310d78e2 (PRÊMIO NACIONAL, open), 38191d93 (Cor da Camisa, open), c1b1149c (easdfasda, open), b347cb7a (Trofreu Brasil, CLOSED with data_encerramento, 0 votes).",
+  "features_verified": {
+    "Backend: GET /api/premiacao/status with auth returns todas_finalizadas": {
+      "status": "VERIFIED",
+      "details": "Returns todas_finalizadas=false for atleta who hasn't finalized any premiacao"
+    },
+    "Backend: GET /api/premiacao/status without auth does NOT include todas_finalizadas": {
+      "status": "VERIFIED",
+      "details": "Field is not present in response when no Authorization header"
+    },
+    "Backend: GET /api/premiacao/p/{id}/resultados-publicos returns 403 for OPEN premiacao": {
+      "status": "VERIFIED",
+      "details": "Returns 403 with message 'Resultados disponíveis apenas após encerramento'"
+    },
+    "Backend: GET /api/premiacao/p/{id}/resultados-publicos returns results for CLOSED premiacao": {
+      "status": "VERIFIED",
+      "details": "Returns 200 with titulo, subtitulo, and resultados array"
+    },
+    "Backend: GET /api/premiacao/todas returns all premiacoes": {
+      "status": "VERIFIED",
+      "details": "Returns 4 premiacoes (3 open + 1 closed)"
+    },
+    "Frontend: /votacao page shows 'Votação Aberta' and 'Encerradas' sections": {
+      "status": "VERIFIED",
+      "details": "Both sections visible with correct premiacoes in each"
+    },
+    "Frontend: Clicking closed premiacao shows results/podium": {
+      "status": "VERIFIED",
+      "details": "Shows 'Resultados Finais' badge, 'Votação Encerrada' badge, and 'Nenhum voto registrado' for 0-vote premiacao"
+    },
+    "Frontend: Banner visible when atleta hasn't finalized": {
+      "status": "VERIFIED",
+      "details": "Banner visible for logged-in atleta who hasn't finalized any premiacao"
+    },
+    "Frontend: Banner uses dynamic premiacao title": {
+      "status": "VERIFIED",
+      "details": "Banner shows 'PRÊMIO NACIONAL RANKING RUN' from API response"
+    }
+  }
+}

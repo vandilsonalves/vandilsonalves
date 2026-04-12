@@ -590,15 +590,16 @@ async def get_resultados_publicos(prem_id: str):
 # ==================== BACKWARD COMPAT: Manter rotas antigas funcionando ====================
 
 @router.get("/status")
-async def get_status_votacao():
-    """Retorna status da primeira premiação ativa (backward compat + banner)"""
+async def get_status_votacao(request: Request):
+    """Retorna status da primeira premiação ativa + flag se atleta já finalizou todas"""
     await migrate_old_data()
     prem = await db.premiacoes.find_one({"votacao_aberta": True}, {"_id": 0})
     if not prem:
         prem = await db.premiacoes.find_one({}, {"_id": 0})
     if not prem:
         return {"votacao_aberta": False}
-    return {
+
+    result = {
         "votacao_aberta": prem.get("votacao_aberta", False),
         "titulo": prem.get("titulo", ""),
         "subtitulo": prem.get("subtitulo", ""),
@@ -606,3 +607,27 @@ async def get_status_votacao():
         "foto_url": prem.get("foto_url"),
         "premiacao_id": prem.get("id")
     }
+
+    # Check if authenticated user has finalized all active premiacoes
+    auth_header = request.headers.get("authorization", "")
+    if auth_header.startswith("Bearer "):
+        try:
+            token_str = auth_header.split(" ")[1]
+            import jwt
+            from services import SECRET_KEY, ALGORITHM
+            payload = jwt.decode(token_str, SECRET_KEY, algorithms=[ALGORITHM])
+            user_id = payload.get("sub") or payload.get("id")
+            if user_id:
+                ativas = await db.premiacoes.find({"votacao_aberta": True}, {"id": 1, "_id": 0}).to_list(100)
+                todas_finalizadas = True
+                for p in ativas:
+                    fin = await db.premiacao_votos_finalizados.find_one({"atleta_id": user_id, "premiacao_id": p["id"]})
+                    if not fin:
+                        todas_finalizadas = False
+                        break
+                result["todas_finalizadas"] = todas_finalizadas
+        except Exception as e:
+            print(f"[PREMIACAO STATUS] Auth check error: {e}")
+            pass
+
+    return result

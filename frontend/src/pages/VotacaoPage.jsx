@@ -32,6 +32,7 @@ const VotacaoPage = () => {
   const [showRegulamento, setShowRegulamento] = useState(false);
   const [regulamento, setRegulamento] = useState('');
   const [warningAccepted, setWarningAccepted] = useState(false);
+  const [resultadosPublicos, setResultadosPublicos] = useState(null);
 
   const fetchPremiacoes = useCallback(async () => {
     setLoading(true);
@@ -54,6 +55,15 @@ const VotacaoPage = () => {
       ]);
       setSelectedPrem(premRes.data);
       setCategorias(catsRes.data);
+      setResultadosPublicos(null);
+
+      // Se encerrada, buscar resultados públicos
+      if (!premRes.data.votacao_aberta && premRes.data.data_encerramento) {
+        try {
+          const resPublicos = await axios.get(`${API}/premiacao/p/${premId}/resultados-publicos`);
+          setResultadosPublicos(resPublicos.data);
+        } catch { /* resultados não disponíveis */ }
+      }
 
       if (token) {
         const [votosRes, finRes] = await Promise.all([
@@ -300,12 +310,62 @@ const VotacaoPage = () => {
           )}
         </div>
 
-        {/* Not open */}
+        {/* Not open - show results if available */}
         {!selectedPrem?.votacao_aberta && (
-          <Card className="bg-slate-800/80 border-slate-700 text-center p-8">
-            <Lock className="w-16 h-16 text-slate-500 mx-auto mb-4" />
-            <p className="text-slate-400">Esta votação foi encerrada ou ainda não foi aberta.</p>
-          </Card>
+          resultadosPublicos ? (
+            <div className="space-y-6" data-testid="resultados-historico">
+              <div className="text-center mb-4">
+                <Badge className="bg-slate-600/50 text-slate-300">Resultados Finais</Badge>
+              </div>
+              {resultadosPublicos.resultados?.map((res) => (
+                <Card key={res.categoria.id} className="bg-slate-800/80 border-slate-700 overflow-hidden">
+                  <div className="bg-amber-500/10 px-4 py-3 border-b border-slate-700">
+                    <div className="flex items-center gap-3">
+                      {res.categoria.foto_url && <img src={res.categoria.foto_url} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+                      <div>
+                        <h3 className="font-bold text-amber-400 text-sm sm:text-base">{res.categoria.nome}</h3>
+                        <p className="text-xs text-slate-500">{res.total_votos} votos</p>
+                      </div>
+                    </div>
+                  </div>
+                  <CardContent className="p-4">
+                    {res.top3?.length > 0 ? (
+                      <div className="space-y-3">
+                        {res.top3.map((ind) => {
+                          const medalColors = ['from-amber-400 to-yellow-500', 'from-slate-300 to-slate-400', 'from-orange-600 to-orange-700'];
+                          return (
+                            <div key={ind.posicao} className="flex items-center gap-3">
+                              <div className={`w-10 h-10 rounded-full bg-gradient-to-br ${medalColors[ind.posicao - 1] || 'from-slate-500 to-slate-600'} flex items-center justify-center shrink-0 ${ind.posicao === 1 ? 'ring-2 ring-amber-400/50 ring-offset-2 ring-offset-slate-800' : ''}`}>
+                                <span className="text-white font-bold text-sm">{ind.posicao}°</span>
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <p className={`font-semibold truncate ${ind.posicao === 1 ? 'text-amber-400 text-base' : 'text-white text-sm'}`}>{ind.nome}</p>
+                                {ind.link && (
+                                  <a href={ind.link.startsWith('http') ? ind.link : `https://instagram.com/${ind.link.replace('@','')}`}
+                                     target="_blank" rel="noopener noreferrer"
+                                     className="text-xs text-blue-400 hover:underline flex items-center gap-1">
+                                    <ExternalLink className="w-3 h-3" />{ind.link}
+                                  </a>
+                                )}
+                              </div>
+                              <Badge className={`shrink-0 ${ind.posicao === 1 ? 'bg-amber-500 text-white' : 'bg-amber-500/20 text-amber-400'}`}>{ind.votos} votos</Badge>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <p className="text-slate-500 text-sm text-center">Nenhum voto registrado</p>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <Card className="bg-slate-800/80 border-slate-700 text-center p-8">
+              <Lock className="w-16 h-16 text-slate-500 mx-auto mb-4" />
+              <p className="text-slate-400">Esta votação foi encerrada ou ainda não foi aberta.</p>
+            </Card>
+          )
         )}
 
         {/* Voting open */}

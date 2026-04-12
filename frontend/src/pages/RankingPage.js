@@ -22,12 +22,19 @@ const RankingPage = () => {
   const hasEquipe = user?.equipe && !['Individual', 'individual', 'SEM EQUIPE', ''].includes(user.equipe);
   const { naoLidos } = useFeedNaoLidos(token, user?.equipe);
   const [votacaoAberta, setVotacaoAberta] = useState(false);
+  const [votacaoTitulo, setVotacaoTitulo] = useState('');
 
   useEffect(() => {
-    axios.get(`${BACKEND_URL}/api/premiacao/status`)
-      .then(res => setVotacaoAberta(res.data?.votacao_aberta || false))
+    const headers = token ? { Authorization: `Bearer ${token}` } : {};
+    axios.get(`${BACKEND_URL}/api/premiacao/status`, { headers })
+      .then(res => {
+        const aberta = res.data?.votacao_aberta || false;
+        const jaFinalizou = res.data?.todas_finalizadas || false;
+        setVotacaoAberta(aberta && !jaFinalizou);
+        setVotacaoTitulo(res.data?.titulo || '');
+      })
       .catch(() => {});
-  }, []);
+  }, [token]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900 overflow-x-hidden">
@@ -211,7 +218,7 @@ const RankingPage = () => {
                   <Trophy className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-white font-bold text-sm sm:text-base truncate">PRÊMIO NACIONAL RANKING RUN</p>
+                  <p className="text-white font-bold text-sm sm:text-base truncate">{votacaoTitulo || 'PREMIAÇÃO'}</p>
                   <p className="text-amber-100 text-xs sm:text-sm truncate">Votação aberta! Clique para votar no seu destaque</p>
                 </div>
               </div>
