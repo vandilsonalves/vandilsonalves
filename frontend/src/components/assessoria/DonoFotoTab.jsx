@@ -28,14 +28,17 @@ const DonoFotoTab = ({ assessoria, token, onFotoUpdated, getSeloColor, getSeloIc
       const formData = new FormData();
       formData.append('foto', file);
 
-      const response = await fetch(`${API}/assessoria/foto`, {
+      const response = await fetch(`${API}/assessorias/upload-foto`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` },
         body: formData
       });
 
-      if (response.ok && onFotoUpdated) {
-        onFotoUpdated();
+      if (response.ok) {
+        if (onFotoUpdated) onFotoUpdated();
+      } else {
+        const err = await response.json().catch(() => ({}));
+        console.error('Erro no upload:', err.detail || response.statusText);
       }
     } catch (error) {
       console.error('Erro ao enviar foto:', error);
@@ -47,7 +50,7 @@ const DonoFotoTab = ({ assessoria, token, onFotoUpdated, getSeloColor, getSeloIc
 
   const handleRemoverFoto = async () => {
     try {
-      await fetch(`${API}/assessoria/foto`, {
+      await fetch(`${API}/assessorias/remover-foto`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${token}` }
       });

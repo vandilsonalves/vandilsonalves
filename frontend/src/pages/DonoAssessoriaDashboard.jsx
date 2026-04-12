@@ -413,7 +413,15 @@ const DonoAssessoriaDashboard = () => {
     const headers = ['Nome', 'Categoria', 'Gênero', 'Pontos'];
     const rows = atletas.map(a => [a.nome, a.categoria || '', a.genero || '', a.pontos || 0]);
     const csvContent = '\ufeff' + [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
-    downloadCSVContent(csvContent, `atletas_${user.equipe.replace(/\s+/g, '_')}.csv`);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `atletas_${user.equipe.replace(/\s+/g, '_')}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
     toast.success('Lista de atletas exportada!');
   };
 

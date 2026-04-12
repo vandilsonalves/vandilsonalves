@@ -765,17 +765,24 @@ async def exportar_graficos_assessoria(
     current_user: dict = Depends(get_current_user)
 ):
     """
-    Exporta dados dos gráficos avançados em formato JSON para processamento
-    Pode ser usado para gerar PDF no frontend ou integrar com outras ferramentas
+    Exporta dados dos gráficos avançados em formato JSON para download
     """
-    # Reutilizar a função de gráficos avançados
+    from fastapi.responses import Response
+    import json as json_module
+
     graficos = await get_graficos_avancados(nome_equipe, current_user)
-    
-    # Adicionar metadados para exportação
+
     graficos["metadados"] = {
         "data_exportacao": datetime.now().isoformat(),
         "exportado_por": current_user.get("nome", ""),
         "formato": "json_graficos"
     }
-    
-    return graficos
+
+    json_bytes = json_module.dumps(graficos, ensure_ascii=False, indent=2).encode("utf-8")
+    safe_name = nome_equipe.replace(" ", "_")
+
+    return Response(
+        content=json_bytes,
+        media_type="application/json",
+        headers={"Content-Disposition": f'attachment; filename="graficos_{safe_name}.json"'},
+    )

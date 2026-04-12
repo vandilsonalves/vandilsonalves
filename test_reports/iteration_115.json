@@ -1,0 +1,80 @@
+{
+  "summary": "Iteration 115: All 3 bug fixes for Dono Assessoria Dashboard verified. Backend: 18/18 tests passed (100%). Frontend: All tabs accessible, export buttons visible, photo upload UI working.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable",
+        "issues": ["Console warning: 'In HTML, <tr> cannot be a child of <span>' - hydration error warning (pre-existing from previous iterations, non-blocking)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter115_dono_assessoria_bugs.py",
+    "/app/test_reports/pytest/pytest_iter115_dono_bugs.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Bug 1 FIX VERIFIED: GET /api/liga-assessorias/exportar-graficos/{equipe} now returns Response with Content-Disposition: attachment header (line 784-788 in liga_assessorias_routes.py)",
+    "Bug 2 FIX VERIFIED: exportarAtletas in DonoAssessoriaDashboard.jsx (line 412-426) now generates CSV client-side using Blob instead of calling /api/admin/download-csv",
+    "Bug 3 FIX VERIFIED: DonoFotoTab.jsx uses correct endpoints - POST /api/assessorias/upload-foto (line 31) and DELETE /api/assessorias/remover-foto (line 53)",
+    "POST /api/assessorias/upload-foto endpoint works for dono_assessoria role - VERIFIED",
+    "DELETE /api/assessorias/remover-foto endpoint works for dono_assessoria role - VERIFIED",
+    "All 9 tabs in Minha Assessoria Dashboard are accessible: Dashboard, Solicitacoes, Meus Atletas, Chat, Feed da Equipe, Foto da Equipe, Relatorios, Rankings, Selo Oficial",
+    "Export formats (CSV, JSON, XLSX, PDF) all work correctly with Content-Disposition: attachment headers"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter115_dono_assessoria_bugs.py"
+  ],
+  "success_rate": {
+    "backend": "100% (18/18 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "dono_assessoria": "teste.dono@teste.com / 123456 (equipe='Individual')"
+  },
+  "seed_data_creation": "None - used existing test user teste.dono@teste.com with equipe='Individual'",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 115 validated all 3 bug fixes for Dono Assessoria Dashboard: (1) exportar-graficos endpoint now returns Content-Disposition:attachment header forcing download instead of displaying JSON, (2) Exportar Lista button in Meus Atletas tab now generates CSV client-side using Blob instead of calling admin-only endpoint, (3) DonoFotoTab uses correct URLs /api/assessorias/upload-foto and /api/assessorias/remover-foto. Test user teste.dono@teste.com has role dono_assessoria and equipe='Individual'. All 9 sidebar tabs are accessible and functional.",
+  "features_verified": {
+    "Bug 1: GET /api/liga-assessorias/exportar-graficos/{equipe} returns Content-Disposition: attachment header": {
+      "status": "VERIFIED",
+      "details": "Response includes 'Content-Disposition: attachment; filename=\"graficos_Individual.json\"' header, forcing browser to download instead of display"
+    },
+    "Bug 2: Exportar Lista in Meus Atletas tab works for dono_assessoria": {
+      "status": "VERIFIED",
+      "details": "exportarAtletas function generates CSV client-side using Blob, no longer calls /api/admin/download-csv which requires admin role"
+    },
+    "Bug 3: Upload foto uses correct endpoint /api/assessorias/upload-foto": {
+      "status": "VERIFIED",
+      "details": "DonoFotoTab.jsx line 31 uses correct URL, endpoint returns 200 OK for dono_assessoria role"
+    },
+    "Bug 3: Delete foto uses correct endpoint /api/assessorias/remover-foto": {
+      "status": "VERIFIED",
+      "details": "DonoFotoTab.jsx line 53 uses correct URL, endpoint returns 200 OK for dono_assessoria role"
+    },
+    "POST /api/assessorias/upload-foto works for dono_assessoria": {
+      "status": "VERIFIED",
+      "details": "Endpoint accepts multipart form data with 'foto' field, requires auth, returns foto_url on success"
+    },
+    "DELETE /api/assessorias/remover-foto works for dono_assessoria": {
+      "status": "VERIFIED",
+      "details": "Endpoint requires auth, returns 200 OK even if no photo to remove"
+    },
+    "Minha Assessoria Dashboard loads correctly": {
+      "status": "VERIFIED",
+      "details": "Dashboard shows rankings (Nacional: 10º, Estadual: 3º), metrics (18 Atletas, 46 Resultados, 68.5 Pontos), verification status"
+    },
+    "All tabs accessible (Dashboard, Solicitacoes, Meus Atletas, Chat, Feed, Foto, Relatorios, Rankings, Selo)": {
+      "status": "VERIFIED",
+      "details": "All 9 sidebar menu items have data-testid attributes and are clickable"
+    }
+  }
+}
