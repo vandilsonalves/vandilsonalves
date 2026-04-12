@@ -123,11 +123,13 @@ function ConfirmacaoPagamento({ navigate }) {
 }
 
 
-function PixCheckout({ token, planoInfo, onPaid }) {
+function PixCheckout({ token, planoInfo, onPaid, precos }) {
   const [gerando, setGerando] = useState(false);
   const [pixData, setPixData] = useState(null);
   const [polling, setPolling] = useState(false);
   const pollingRef = useRef(null);
+
+  const precoLabel = precos ? `R$ ${precos.preco_desconto?.toFixed(2).replace('.', ',')}` : 'R$ 97,00';
 
   const gerarPix = async () => {
     setGerando(true);
@@ -252,7 +254,7 @@ function PixCheckout({ token, planoInfo, onPaid }) {
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <QrCode className="w-4 h-4" /> Gerar QR Code PIX - R$ 97,00
+            <QrCode className="w-4 h-4" /> Gerar QR Code PIX - {precoLabel}
           </span>
         )}
       </Button>
@@ -260,7 +262,7 @@ function PixCheckout({ token, planoInfo, onPaid }) {
   );
 }
 
-function CartaoCheckout({ token, onPaid }) {
+function CartaoCheckout({ token, onPaid, precos }) {
   const [efiConfig, setEfiConfig] = useState(null);
   const [loading, setLoading] = useState(false);
   const [detectingBrand, setDetectingBrand] = useState(false);
@@ -278,9 +280,10 @@ function CartaoCheckout({ token, onPaid }) {
   });
   const [erro, setErro] = useState('');
 
-  const VALOR_TOTAL = 9700; // centavos
+  const VALOR_TOTAL = precos ? Math.round(precos.preco_desconto * 100) : 9700;
+  const MAX_PARCELAS = precos?.max_parcelas_cartao || 12;
 
-  const opcoesParcelamento = Array.from({ length: 12 }, (_, i) => {
+  const opcoesParcelamento = Array.from({ length: MAX_PARCELAS }, (_, i) => {
     const n = i + 1;
     const valorParcela = Math.ceil(VALOR_TOTAL / n);
     return {
@@ -603,7 +606,7 @@ function CartaoCheckout({ token, onPaid }) {
           </span>
         ) : (
           <span className="flex items-center gap-2">
-            <CreditCard className="w-4 h-4" /> Pagar com Cartao - {selectedParcela?.label || `R$ 97,00`}
+            <CreditCard className="w-4 h-4" /> Pagar com Cartao - {selectedParcela?.label || `R$ ${(VALOR_TOTAL/100).toFixed(2).replace('.', ',')}`}
           </span>
         )}
       </Button>
@@ -631,6 +634,7 @@ export default function PagamentoPage() {
   const [pagamentoConfirmado, setPagamentoConfirmado] = useState(false);
   const [vendasFechadas, setVendasFechadas] = useState(false);
   const [msgVendas, setMsgVendas] = useState('');
+  const [precos, setPrecos] = useState(null);
 
   useEffect(() => {
     if (!token) {
@@ -639,7 +643,20 @@ export default function PagamentoPage() {
     }
     fetchPlano();
     checkVendas();
+    fetchPrecos();
   }, [token]);
+
+  const fetchPrecos = async () => {
+    try {
+      const res = await fetch(`${API}/api/financeiro/config-precos-publico`);
+      if (res.ok) {
+        const data = await res.json();
+        setPrecos(data);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar precos:', err);
+    }
+  };
 
   const checkVendas = async () => {
     try {
@@ -719,11 +736,28 @@ export default function PagamentoPage() {
     );
   }
 
-  const dataLimite = new Date('2026-12-14T23:59:59Z');
+  // Dynamic values from API
+  const precoOriginal = precos?.preco_original ?? 197;
+  const precoDesconto = precos?.preco_desconto ?? 97;
+  const parcelasDisplay = precos?.parcelas ?? 5;
+  const valorParcela = precos?.valor_parcela ?? 19.40;
+  const dataFimOfertaStr = precos?.data_fim_oferta ?? '2026-12-14';
+  const validadeAcessoStr = precos?.validade_acesso ?? '2026-12-31';
+  const nomePlano = precos?.nome_plano ?? 'Atleta Premium';
+  const precoPosOferta = precos?.preco_pos_oferta ?? 119;
+  const parcelasPosOferta = precos?.parcelas_pos_oferta ?? 12;
+
+  const dataLimite = new Date(`${dataFimOfertaStr}T23:59:59Z`);
   const agora = new Date();
   const diffMs = dataLimite - agora;
   const diasRestantesOferta = Math.max(0, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
   const mostrarContagem = diasRestantesOferta <= 30 && diasRestantesOferta > 0;
+
+  // Format price parts for display
+  const parcelaInteira = Math.floor(valorParcela);
+  const parcelaDecimal = Math.round((valorParcela - parcelaInteira) * 100).toString().padStart(2, '0');
+  const dataFimFormatada = dataFimOfertaStr.split('-').reverse().join('/');
+  const validadeFormatada = validadeAcessoStr.split('-').reverse().join('/');
 
   return (
     <div className="min-h-screen bg-gray-950 text-white" data-testid="pagamento-page">
@@ -732,7 +766,7 @@ export default function PagamentoPage() {
         <div className="text-center mb-10">
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/20 rounded-full px-4 py-1.5 mb-6">
             <Star className="w-4 h-4 text-emerald-400" />
-            <span className="text-sm text-emerald-400 font-medium">Atleta Premium</span>
+            <span className="text-sm text-emerald-400 font-medium">{nomePlano}</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-bold mb-3">
             Desbloqueie todo o potencial
@@ -755,7 +789,7 @@ export default function PagamentoPage() {
             </div>
             <div className="bg-gray-900 border border-t-0 border-orange-500/30 px-4 py-2.5 text-center">
               <p className="text-xs text-gray-400">
-                Apos 14/12/2026, o valor sera de <span className="text-white font-semibold">12x R$ 119,00</span>
+                Apos {dataFimFormatada}, o valor sera de <span className="text-white font-semibold">{parcelasPosOferta}x R$ {precoPosOferta.toFixed(2).replace('.', ',')}</span>
               </p>
             </div>
           </div>
@@ -800,17 +834,17 @@ export default function PagamentoPage() {
 
           <div className="p-8 text-center border-b border-gray-800">
             <p className="text-gray-500 line-through text-lg mb-1" data-testid="preco-original">
-              De R$ 197,00
+              De R$ {precoOriginal.toFixed(2).replace('.', ',')}
             </p>
             <div className="flex items-baseline justify-center gap-1" data-testid="preco-atual">
-              <span className="text-lg text-gray-400">5x de</span>
-              <span className="text-5xl font-bold">R$ 19</span>
-              <span className="text-lg text-gray-400 font-normal">,40</span>
+              <span className="text-lg text-gray-400">{parcelasDisplay}x de</span>
+              <span className="text-5xl font-bold">R$ {parcelaInteira}</span>
+              <span className="text-lg text-gray-400 font-normal">,{parcelaDecimal}</span>
             </div>
-            <p className="text-gray-400 text-sm mt-2">ou R$ 97,00 a vista - Valido ate 31/12/2026</p>
+            <p className="text-gray-400 text-sm mt-2">ou R$ {precoDesconto.toFixed(2).replace('.', ',')} a vista - Valido ate {validadeFormatada}</p>
             <div className="inline-flex items-center gap-1.5 mt-3 bg-amber-500/10 border border-amber-500/20 rounded-full px-3 py-1">
               <Clock className="w-3.5 h-3.5 text-amber-400" />
-              <span className="text-xs text-amber-400 font-medium">Oferta valida ate 14/12/2026</span>
+              <span className="text-xs text-amber-400 font-medium">Oferta valida ate {dataFimFormatada}</span>
             </div>
           </div>
 
@@ -829,7 +863,7 @@ export default function PagamentoPage() {
                 <div className="w-8 h-8 rounded-lg bg-emerald-500/10 flex items-center justify-center flex-shrink-0">
                   <CreditCard className="w-4 h-4 text-emerald-400" />
                 </div>
-                <span className="text-sm text-gray-200">Acesso ate 31/12/2026</span>
+                <span className="text-sm text-gray-200">Acesso ate {validadeFormatada}</span>
               </li>
             </ul>
           </div>
@@ -874,9 +908,9 @@ export default function PagamentoPage() {
 
                 {/* Conteudo do metodo selecionado */}
                 {metodo === 'pix' ? (
-                  <PixCheckout token={token} planoInfo={planoInfo} onPaid={handlePaid} />
+                  <PixCheckout token={token} planoInfo={planoInfo} onPaid={handlePaid} precos={precos} />
                 ) : (
-                  <CartaoCheckout token={token} onPaid={handlePaid} />
+                  <CartaoCheckout token={token} onPaid={handlePaid} precos={precos} />
                 )}
               </div>
             )}

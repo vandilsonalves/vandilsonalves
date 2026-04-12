@@ -20,6 +20,7 @@ export default function AccessGate({ children, recurso = "este recurso" }) {
   const navigate = useNavigate();
   const [status, setStatus] = useState(null); // null = loading, object = data
   const [loading, setLoading] = useState(true);
+  const [precos, setPrecos] = useState(null);
 
   useEffect(() => {
     if (!token || !user) {
@@ -33,7 +34,15 @@ export default function AccessGate({ children, recurso = "este recurso" }) {
       return;
     }
     checkAccess();
+    fetchPrecos();
   }, [token, user]);
+
+  const fetchPrecos = async () => {
+    try {
+      const res = await fetch(`${API}/api/financeiro/config-precos-publico`);
+      if (res.ok) setPrecos(await res.json());
+    } catch {}
+  };
 
   const checkAccess = async () => {
     try {
@@ -80,7 +89,7 @@ export default function AccessGate({ children, recurso = "este recurso" }) {
           Seu periodo de teste expirou. Para acessar <strong className="text-white">{recurso}</strong>, assine o plano Atleta Premium.
         </p>
         <p className="text-gray-500 text-sm mb-8">
-          Plano unico de R$ 97,00 com validade ate 31/12/2026.
+          Plano unico de R$ {precos ? precos.preco_desconto?.toFixed(2).replace('.', ',') : '97,00'} com validade ate {precos?.validade_acesso ? precos.validade_acesso.split('-').reverse().join('/') : '31/12/2026'}.
         </p>
         <div className="flex flex-col gap-3">
           <Button

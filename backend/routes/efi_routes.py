@@ -114,14 +114,19 @@ async def criar_cobranca_pix(dados: PixCheckoutRequest, current_user: dict = Dep
     if not pix_key:
         raise HTTPException(status_code=500, detail="Chave PIX nao configurada")
 
-    # Valor total: 5x R$19,40 = R$97,00
-    valor_total = "97.00"
+    # Buscar preco do banco de dados
+    from routes.financeiro_routes import get_precos_premium
+    config_precos = await get_precos_premium()
+    valor_total = f"{config_precos.get('preco_desconto', 97.00):.2f}"
+    parcelas_display = config_precos.get("parcelas", 5)
+    valor_parcela_display = config_precos.get("valor_parcela", 19.40)
+    nome_plano = config_precos.get("nome_plano", "Atleta Premium")
 
     body = {
         "calendario": {"expiracao": 3600},
         "valor": {"original": valor_total},
         "chave": pix_key,
-        "solicitacaoPagador": "Ranking Run Pro - Plano Atleta Premium (5x R$19,40)",
+        "solicitacaoPagador": f"Ranking Run Pro - {nome_plano} ({parcelas_display}x R${valor_parcela_display:.2f})",
     }
 
     # Adicionar devedor se CPF fornecido
@@ -164,6 +169,7 @@ async def criar_cobranca_pix(dados: PixCheckoutRequest, current_user: dict = Dep
         logger.warning(f"Erro ao gerar QR Code: {e}")
 
     # Registrar transacao no MongoDB
+    preco_float = float(valor_total)
     transaction = {
         "id": str(uuid.uuid4()),
         "txid": txid,
@@ -174,10 +180,10 @@ async def criar_cobranca_pix(dados: PixCheckoutRequest, current_user: dict = Dep
         "gateway": "efi_bank",
         "tipo": "pix",
         "plano": "atleta_premium_lancamento",
-        "plano_nome": "Atleta Premium",
-        "amount": 97.00,
-        "parcelas": 5,
-        "valor_parcela": 19.40,
+        "plano_nome": nome_plano,
+        "amount": preco_float,
+        "parcelas": parcelas_display,
+        "valor_parcela": valor_parcela_display,
         "currency": "brl",
         "payment_status": "pending",
         "status": response.get("status", "ATIVA"),
@@ -195,8 +201,8 @@ async def criar_cobranca_pix(dados: PixCheckoutRequest, current_user: dict = Dep
         "valor": valor_total,
         "qrcode": qrcode_data,
         "expiracao": 3600,
-        "plano": "Atleta Premium",
-        "descricao": "5x R$ 19,40",
+        "plano": nome_plano,
+        "descricao": f"{parcelas_display}x R$ {valor_parcela_display:.2f}",
     }
 
 
@@ -513,8 +519,12 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         except Exception:
             pass
 
-    # Valor total em centavos: R$ 97,00 = 9700
-    valor_centavos = 9700
+    # Buscar preco do banco de dados (nunca confiar no frontend)
+    from routes.financeiro_routes import get_precos_premium
+    config_precos = await get_precos_premium()
+    preco_desconto = config_precos.get("preco_desconto", 97.00)
+    nome_plano = config_precos.get("nome_plano", "Atleta Premium")
+    valor_centavos = int(round(preco_desconto * 100))
 
     # Limpar CPF
     cpf_limpo = dados.cpf.replace(".", "").replace("-", "").strip()
@@ -537,7 +547,7 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
     # Montar body para one-step charge
     body = {
         "items": [{
-            "name": "Atleta Premium - Ranking Run Pro",
+            "name": f"{nome_plano} - Ranking Run Pro",
             "value": valor_centavos,
             "amount": 1,
         }],
@@ -620,10 +630,10 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         "gateway": "efi_bank",
         "tipo": "cartao",
         "plano": "atleta_premium_lancamento",
-        "plano_nome": "Atleta Premium",
-        "amount": 97.00,
+        "plano_nome": nome_plano,
+        "amount": preco_desconto,
         "parcelas": dados.parcelas,
-        "valor_parcela": round(97.00 / dados.parcelas, 2),
+        "valor_parcela": round(preco_desconto / dados.parcelas, 2),
         "currency": "brl",
         "payment_status": "paid",
         "status": status_efi,
@@ -642,8 +652,8 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
         "transaction_id": tx_id,
         "parcelas": dados.parcelas,
         "valor_parcela": round(valor_centavos / dados.parcelas / 100, 2),
-        "total": 97.00,
-        "plano": "Atleta Premium",
+        "total": preco_desconto,
+        "plano": nome_plano,
         "payment_status": "paid",
     }
     if is_sandbox:
@@ -655,7 +665,19 @@ async def criar_cobranca_cartao(dados: CartaoCheckoutRequest, current_user: dict
 async def _ativar_acesso_efi(user_id: str, txid: str, tipo: str = "pix"):
     """Ativa acesso premium apos pagamento confirmado (PIX ou Cartao)"""
     agora = datetime.now(timezone.utc)
-    data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+
+    # Buscar config de precos para pegar validade dinamica
+    from routes.financeiro_routes import get_precos_premium
+    config_precos = await get_precos_premium()
+    validade_str = config_precos.get("validade_acesso", "2026-12-31")
+    nome_plano = config_precos.get("nome_plano", "Atleta Premium")
+    preco = config_precos.get("preco_desconto", 97.00)
+
+    try:
+        parts = validade_str.split("-")
+        data_expiracao = datetime(int(parts[0]), int(parts[1]), int(parts[2]), 23, 59, 59, tzinfo=timezone.utc)
+    except Exception:
+        data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
     # Verificar se ja tem autorizacao ativa deste pagamento
     existing = await db.autorizacoes.find_one({
@@ -679,13 +701,13 @@ async def _ativar_acesso_efi(user_id: str, txid: str, tipo: str = "pix"):
         "atleta_id": user_id,
         "tipo": "premium",
         "plano_id": "atleta_premium_lancamento",
-        "plano_nome": "Atleta Premium",
+        "plano_nome": nome_plano,
         "duracao_dias": (data_expiracao - agora).days,
         "data_criacao": agora.isoformat(),
         "data_expiracao": data_expiracao.isoformat(),
         "criado_por": "efi_bank",
         "criado_por_nome": f"Pagamento {tipo_label} (Efi Bank)",
-        "observacao": f"Atleta Premium - {tipo_label} txid {txid}",
+        "observacao": f"{nome_plano} - {tipo_label} txid {txid}",
         "status": "ativa",
         "origem_pagamento": f"efi_{txid}",
     }
@@ -717,16 +739,16 @@ async def _ativar_acesso_efi(user_id: str, txid: str, tipo: str = "pix"):
     # Notificacao push para TODOS OS ADMINS
     await notify_admin_alert(
         alert_type=f"novo_pagamento_{gateway_label}",
-        message=f"Novo pagamento {tipo_label} confirmado! {nome} ({email}) - R$ 97,00",
+        message=f"Novo pagamento {tipo_label} confirmado! {nome} ({email}) - R$ {preco:.2f}",
         details={
             "user_id": user_id,
             "user_nome": nome,
             "user_email": email,
             "txid": txid,
-            "valor": 97.00,
+            "valor": preco,
             "gateway": "efi_bank",
             "tipo": tipo,
-            "plano": "Atleta Premium",
+            "plano": nome_plano,
         }
     )
 

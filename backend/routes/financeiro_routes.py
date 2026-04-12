@@ -1,7 +1,9 @@
 # /app/backend/routes/financeiro_routes.py
-# Rotas de dashboard financeiro (Admin)
+# Rotas de dashboard financeiro (Admin) + Configuracao de Precos Premium
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
+from pydantic import BaseModel
+from typing import Optional
 from datetime import datetime, timezone, timedelta
 import logging
 
@@ -10,10 +12,121 @@ from routes.auth_routes import get_admin_user
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/admin/financeiro", tags=["financeiro"])
+router = APIRouter(tags=["financeiro"])
+
+# ==================== PRECOS PREMIUM CONFIG ====================
+
+PRECOS_PREMIUM_PADRAO = {
+    "id": "precos_premium",
+    "preco_original": 197.00,
+    "preco_desconto": 97.00,
+    "parcelas": 5,
+    "valor_parcela": 19.40,
+    "max_parcelas_cartao": 12,
+    "data_fim_oferta": "2026-12-14",
+    "validade_acesso": "2026-12-31",
+    "nome_plano": "Atleta Premium",
+    "descricao_oferta": "Acesso completo a todas as funcionalidades do Ranking Run Pro",
+    "preco_pos_oferta": 119.00,
+    "parcelas_pos_oferta": 12,
+    "ativo": True,
+}
 
 
-@router.get("/resumo")
+async def get_precos_premium():
+    """Retorna config de precos do banco ou padrao"""
+    config = await db.configuracoes.find_one({"id": "precos_premium"}, {"_id": 0})
+    if not config:
+        doc = PRECOS_PREMIUM_PADRAO.copy()
+        doc["ultima_atualizacao"] = datetime.now(timezone.utc).isoformat()
+        await db.configuracoes.insert_one(doc)
+        return doc
+    return config
+
+
+@router.get("/financeiro/config-precos-publico")
+async def config_precos_publico():
+    """Endpoint publico para PagamentoPage consumir os precos dinamicos"""
+    config = await get_precos_premium()
+    return {
+        "preco_original": config.get("preco_original", 197.00),
+        "preco_desconto": config.get("preco_desconto", 97.00),
+        "parcelas": config.get("parcelas", 5),
+        "valor_parcela": config.get("valor_parcela", 19.40),
+        "max_parcelas_cartao": config.get("max_parcelas_cartao", 12),
+        "data_fim_oferta": config.get("data_fim_oferta", "2026-12-14"),
+        "validade_acesso": config.get("validade_acesso", "2026-12-31"),
+        "nome_plano": config.get("nome_plano", "Atleta Premium"),
+        "descricao_oferta": config.get("descricao_oferta", ""),
+        "preco_pos_oferta": config.get("preco_pos_oferta", 119.00),
+        "parcelas_pos_oferta": config.get("parcelas_pos_oferta", 12),
+        "ativo": config.get("ativo", True),
+    }
+
+
+class PrecosPremiumUpdate(BaseModel):
+    preco_original: float
+    preco_desconto: float
+    parcelas: int
+    valor_parcela: float
+    max_parcelas_cartao: int = 12
+    data_fim_oferta: str
+    validade_acesso: str
+    nome_plano: str = "Atleta Premium"
+    descricao_oferta: str = ""
+    preco_pos_oferta: float = 119.00
+    parcelas_pos_oferta: int = 12
+    ativo: bool = True
+
+
+@router.get("/admin/financeiro/config-precos")
+async def get_config_precos(admin_user: dict = Depends(get_admin_user)):
+    """Retorna configuracao de precos para o Admin"""
+    config = await get_precos_premium()
+    return config
+
+
+@router.post("/admin/financeiro/config-precos")
+async def salvar_config_precos(dados: PrecosPremiumUpdate, admin_user: dict = Depends(get_admin_user)):
+    """Salva configuracao de precos do Atleta Premium"""
+    if dados.preco_desconto <= 0:
+        raise HTTPException(status_code=400, detail="Preco com desconto deve ser maior que zero")
+    if dados.parcelas < 1:
+        raise HTTPException(status_code=400, detail="Numero de parcelas deve ser pelo menos 1")
+
+    # Recalcular valor_parcela para garantir consistencia
+    valor_parcela_calc = round(dados.preco_desconto / dados.parcelas, 2)
+
+    doc = {
+        "id": "precos_premium",
+        "preco_original": round(dados.preco_original, 2),
+        "preco_desconto": round(dados.preco_desconto, 2),
+        "parcelas": dados.parcelas,
+        "valor_parcela": valor_parcela_calc,
+        "max_parcelas_cartao": dados.max_parcelas_cartao,
+        "data_fim_oferta": dados.data_fim_oferta,
+        "validade_acesso": dados.validade_acesso,
+        "nome_plano": dados.nome_plano,
+        "descricao_oferta": dados.descricao_oferta,
+        "preco_pos_oferta": round(dados.preco_pos_oferta, 2),
+        "parcelas_pos_oferta": dados.parcelas_pos_oferta,
+        "ativo": dados.ativo,
+        "ultima_atualizacao": datetime.now(timezone.utc).isoformat(),
+        "atualizado_por": admin_user.get("nome", "Admin"),
+    }
+
+    await db.configuracoes.update_one(
+        {"id": "precos_premium"},
+        {"$set": doc},
+        upsert=True,
+    )
+
+    logger.info(f"Precos Premium atualizados por {admin_user.get('nome')}: desconto={dados.preco_desconto}, parcelas={dados.parcelas}")
+
+    return {"message": "Precos atualizados com sucesso!", "config": doc}
+
+
+@router.get("/admin/financeiro/resumo")
 async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
     """Retorna resumo financeiro completo: totais, por gateway, por periodo"""
 
@@ -117,7 +230,7 @@ async def resumo_financeiro(admin_user: dict = Depends(get_admin_user)):
     }
 
 
-@router.post("/relatorio-semanal/enviar")
+@router.post("/admin/financeiro/relatorio-semanal/enviar")
 async def enviar_relatorio_manual(admin_user: dict = Depends(get_admin_user)):
     """Dispara manualmente o relatorio semanal por e-mail"""
     from services.relatorio_semanal import enviar_relatorio_semanal
@@ -129,7 +242,7 @@ async def enviar_relatorio_manual(admin_user: dict = Depends(get_admin_user)):
         return {"status": "error", "message": str(e)}
 
 
-@router.get("/conversao")
+@router.get("/admin/financeiro/conversao")
 async def metricas_conversao(admin_user: dict = Depends(get_admin_user)):
     """Retorna metricas de funil de conversao: Visitantes -> Cadastro -> Pagamento"""
 
@@ -242,7 +355,7 @@ async def metricas_conversao(admin_user: dict = Depends(get_admin_user)):
     return resultado
 
 
-@router.get("/exportar/{formato}")
+@router.get("/admin/financeiro/exportar/{formato}")
 async def exportar_financeiro(formato: str, admin_user: dict = Depends(get_admin_user)):
     """Exporta dados financeiros em PDF ou Excel"""
     from fastapi.responses import StreamingResponse

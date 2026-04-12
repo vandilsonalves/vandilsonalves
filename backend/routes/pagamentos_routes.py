@@ -16,40 +16,46 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/pagamentos", tags=["pagamentos"])
 
-# Planos disponíveis
-PLANO_LANCAMENTO = {
-    "id": "atleta_premium_lancamento",
-    "nome": "Atleta Premium",
-    "valor": 97.00,
-    "valor_original": 197.00,
-    "moeda": "brl",
-    "tipo": "pagamento_unico",
-    "validade": "2026-12-31",
-    "disponivel_ate": "2026-12-14",
-    "descricao": "De R$ 197,00 por R$ 97,00 - Acesso completo ate 31/12/2026"
-}
+# Planos disponíveis (fallback - o Admin pode editar via /api/admin/financeiro/config-precos)
+# Valores reais sao carregados do banco de dados
 
-PLANO_ANUAL = {
-    "id": "atleta_premium_anual",
-    "nome": "Atleta Premium Anual",
-    "valor": 119.00,
-    "moeda": "brl",
-    "tipo": "mensal",
-    "parcelas": 12,
-    "valor_total": 1428.00,
-    "validade": "2027-12-31",
-    "disponivel_a_partir": "2026-12-15",
-    "descricao": "12x de R$ 119,00 - Acesso completo por 12 meses"
-}
+async def get_plano_vigente():
+    """Retorna o plano vigente com base nos precos configurados no banco"""
+    from routes.financeiro_routes import get_precos_premium
+    config = await get_precos_premium()
 
-
-def get_plano_vigente():
-    """Retorna o plano vigente com base na data atual"""
     agora = datetime.now(timezone.utc)
-    limite_lancamento = datetime(2026, 12, 14, 23, 59, 59, tzinfo=timezone.utc)
-    if agora <= limite_lancamento:
-        return PLANO_LANCAMENTO
-    return PLANO_ANUAL
+    data_fim_str = config.get("data_fim_oferta", "2026-12-14")
+    try:
+        parts = data_fim_str.split("-")
+        limite = datetime(int(parts[0]), int(parts[1]), int(parts[2]), 23, 59, 59, tzinfo=timezone.utc)
+    except Exception:
+        limite = datetime(2026, 12, 14, 23, 59, 59, tzinfo=timezone.utc)
+
+    if agora <= limite:
+        return {
+            "id": "atleta_premium_lancamento",
+            "nome": config.get("nome_plano", "Atleta Premium"),
+            "valor": config.get("preco_desconto", 97.00),
+            "valor_original": config.get("preco_original", 197.00),
+            "moeda": "brl",
+            "tipo": "pagamento_unico",
+            "validade": config.get("validade_acesso", "2026-12-31"),
+            "disponivel_ate": data_fim_str,
+            "descricao": f"De R$ {config.get('preco_original', 197.00):.2f} por R$ {config.get('preco_desconto', 97.00):.2f} - Acesso completo ate {config.get('validade_acesso', '2026-12-31')}",
+        }
+    return {
+        "id": "atleta_premium_anual",
+        "nome": f"{config.get('nome_plano', 'Atleta Premium')} Anual",
+        "valor": config.get("preco_pos_oferta", 119.00),
+        "moeda": "brl",
+        "tipo": "mensal",
+        "parcelas": config.get("parcelas_pos_oferta", 12),
+        "valor_total": round(config.get("preco_pos_oferta", 119.00) * config.get("parcelas_pos_oferta", 12), 2),
+        "validade": "2027-12-31",
+        "disponivel_a_partir": data_fim_str,
+        "descricao": f"{config.get('parcelas_pos_oferta', 12)}x de R$ {config.get('preco_pos_oferta', 119.00):.2f} - Acesso completo por 12 meses",
+    }
 
 
 class CheckoutRequest(BaseModel):
@@ -63,16 +69,26 @@ class CheckoutStatusRequest(BaseModel):
 @router.get("/planos")
 async def listar_planos():
     """Retorna os planos disponiveis baseado na data atual"""
-    plano_atual = get_plano_vigente()
+    plano_atual = await get_plano_vigente()
     agora = datetime.now(timezone.utc)
-    limite_lancamento = datetime(2026, 12, 14, 23, 59, 59, tzinfo=timezone.utc)
+
+    from routes.financeiro_routes import get_precos_premium
+    config = await get_precos_premium()
+    data_fim_str = config.get("data_fim_oferta", "2026-12-14")
+    try:
+        parts = data_fim_str.split("-")
+        limite = datetime(int(parts[0]), int(parts[1]), int(parts[2]), 23, 59, 59, tzinfo=timezone.utc)
+    except Exception:
+        limite = datetime(2026, 12, 14, 23, 59, 59, tzinfo=timezone.utc)
+
+    eh_lancamento = agora <= limite
 
     return {
         "plano_vigente": plano_atual,
-        "plano_lancamento": PLANO_LANCAMENTO if agora <= limite_lancamento else None,
-        "plano_anual": PLANO_ANUAL if agora > limite_lancamento else None,
-        "data_transicao": "2026-12-15",
-        "eh_periodo_lancamento": agora <= limite_lancamento
+        "plano_lancamento": plano_atual if eh_lancamento else None,
+        "plano_anual": plano_atual if not eh_lancamento else None,
+        "data_transicao": data_fim_str,
+        "eh_periodo_lancamento": eh_lancamento,
     }
 
 
@@ -107,7 +123,7 @@ async def criar_checkout(dados: CheckoutRequest, request: Request, current_user:
         except Exception:
             pass
 
-    plano = get_plano_vigente()
+    plano = await get_plano_vigente()
 
     origin = dados.origin_url.rstrip("/")
     success_url = f"{origin}/pagamento/sucesso?session_id={{CHECKOUT_SESSION_ID}}"
@@ -184,7 +200,7 @@ async def verificar_status_pagamento(session_id: str, request: Request, current_
 
     # Se ja foi processada com sucesso, retornar direto
     if transaction.get("payment_status") == "paid":
-        plano = get_plano_vigente()
+        plano = await get_plano_vigente()
         return {
             "status": "complete",
             "payment_status": "paid",
@@ -217,20 +233,21 @@ async def verificar_status_pagamento(session_id: str, request: Request, current_
     if checkout_status.payment_status == "paid" and transaction.get("payment_status") != "paid":
         await _ativar_acesso_premium(current_user["id"], session_id)
 
+    plano_ref = await get_plano_vigente()
     return {
         "status": checkout_status.status,
         "payment_status": checkout_status.payment_status,
         "amount_total": checkout_status.amount_total,
         "currency": checkout_status.currency,
-        "plano": transaction.get("plano_nome", get_plano_vigente()["nome"]),
-        "validade": transaction.get("metadata", {}).get("validade", get_plano_vigente()["validade"])
+        "plano": transaction.get("plano_nome", plano_ref["nome"]),
+        "validade": transaction.get("metadata", {}).get("validade", plano_ref["validade"])
     }
 
 
 @router.get("/meu-plano")
 async def meu_plano(current_user: dict = Depends(get_current_user)):
     """Retorna informacoes do plano do usuario"""
-    plano = get_plano_vigente()
+    plano = await get_plano_vigente()
 
     # Admin sempre Premium
     if current_user.get("role") in ["admin", "super_admin"]:
@@ -313,13 +330,20 @@ async def meu_plano(current_user: dict = Depends(get_current_user)):
 async def _ativar_acesso_premium(user_id: str, session_id: str):
     """Ativa o acesso premium para o usuario apos pagamento confirmado"""
     agora = datetime.now(timezone.utc)
-    plano = get_plano_vigente()
+    plano = await get_plano_vigente()
 
-    # Definir data de expiracao baseado no plano
-    if plano["id"] == "atleta_premium_lancamento":
-        data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
-    else:
-        data_expiracao = datetime(2027, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+    # Definir data de expiracao baseado na config
+    from routes.financeiro_routes import get_precos_premium
+    config_precos = await get_precos_premium()
+    validade_str = config_precos.get("validade_acesso", "2026-12-31")
+    try:
+        parts = validade_str.split("-")
+        data_expiracao = datetime(int(parts[0]), int(parts[1]), int(parts[2]), 23, 59, 59, tzinfo=timezone.utc)
+    except Exception:
+        if plano["id"] == "atleta_premium_lancamento":
+            data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
+        else:
+            data_expiracao = datetime(2027, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
 
     # Desativar autorizacoes anteriores
     await db.autorizacoes.update_many(

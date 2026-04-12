@@ -7,7 +7,7 @@ import {
   DollarSign, TrendingUp, CreditCard, QrCode,
   ArrowUpRight, ArrowDownRight, RefreshCw, Loader2,
   CheckCircle, Clock, XCircle, BarChart3, Users, Eye, ShoppingCart, ArrowDown,
-  Download, FileSpreadsheet, FileText, HelpCircle, UserCheck
+  Download, FileSpreadsheet, FileText, HelpCircle, UserCheck, Settings, Save
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { downloadFile, downloadCSVContent } from '@/utils/downloadHelper';
@@ -202,6 +202,272 @@ function FunnelVisual({ data }) {
   );
 }
 
+function PrecosEditor({ token }) {
+  const [precos, setPrecos] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [editando, setEditando] = useState(false);
+
+  useEffect(() => { fetchPrecos(); }, []);
+
+  const fetchPrecos = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/admin/financeiro/config-precos`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        setPrecos(await res.json());
+      }
+    } catch (err) {
+      console.error('Erro ao buscar precos:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      const res = await fetch(`${API}/admin/financeiro/config-precos`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(precos),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPrecos(data.config);
+        toast.success('Precos atualizados com sucesso!');
+        setEditando(false);
+      } else {
+        const err = await res.json();
+        toast.error(err.detail || 'Erro ao salvar');
+      }
+    } catch (err) {
+      toast.error('Erro de conexao');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleChange = (field, value) => {
+    setPrecos(prev => {
+      const updated = { ...prev, [field]: value };
+      if (field === 'preco_desconto' || field === 'parcelas') {
+        const desc = field === 'preco_desconto' ? Number(value) : Number(prev.preco_desconto);
+        const parc = field === 'parcelas' ? Number(value) : Number(prev.parcelas);
+        if (desc > 0 && parc > 0) {
+          updated.valor_parcela = Math.round((desc / parc) * 100) / 100;
+        }
+      }
+      return updated;
+    });
+  };
+
+  if (loading || !precos) {
+    return (
+      <Card className="bg-gray-900 border-gray-800 p-5" data-testid="precos-editor-loading">
+        <div className="flex items-center gap-2 text-gray-400">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          <span className="text-sm">Carregando configuracao de precos...</span>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="bg-gray-900 border-gray-800 p-5" data-testid="precos-editor">
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2">
+          <Settings className="w-5 h-5 text-emerald-400" />
+          <h3 className="text-base font-semibold text-white">Precos do Atleta Premium</h3>
+        </div>
+        <div className="flex items-center gap-2">
+          {editando ? (
+            <>
+              <Button
+                onClick={() => { setEditando(false); fetchPrecos(); }}
+                variant="outline"
+                size="sm"
+                className="border-gray-700 text-gray-300 hover:bg-gray-800"
+                data-testid="btn-cancelar-precos"
+              >
+                Cancelar
+              </Button>
+              <Button
+                onClick={handleSave}
+                disabled={saving}
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white"
+                data-testid="btn-salvar-precos"
+              >
+                {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin mr-1" /> : <Save className="w-3.5 h-3.5 mr-1" />}
+                Salvar
+              </Button>
+            </>
+          ) : (
+            <Button
+              onClick={() => setEditando(true)}
+              variant="outline"
+              size="sm"
+              className="border-emerald-700 text-emerald-400 hover:bg-emerald-900/30"
+              data-testid="btn-editar-precos"
+            >
+              <Settings className="w-3.5 h-3.5 mr-1" /> Editar
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {editando ? (
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4" data-testid="precos-form">
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Preco Original (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={precos.preco_original}
+              onChange={e => handleChange('preco_original', Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-preco-original"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Preco com Desconto (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={precos.preco_desconto}
+              onChange={e => handleChange('preco_desconto', Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-preco-desconto"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Parcelas (display)</label>
+            <input
+              type="number"
+              min="1"
+              max="12"
+              value={precos.parcelas}
+              onChange={e => handleChange('parcelas', Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-parcelas"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Valor Parcela (auto)</label>
+            <input
+              type="text"
+              value={`R$ ${precos.valor_parcela?.toFixed(2).replace('.', ',')}`}
+              disabled
+              className="w-full bg-gray-800/50 border border-gray-700/50 rounded-lg px-3 py-2 text-gray-400 text-sm cursor-not-allowed"
+              data-testid="input-valor-parcela"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Max Parcelas Cartao</label>
+            <input
+              type="number"
+              min="1"
+              max="12"
+              value={precos.max_parcelas_cartao}
+              onChange={e => handleChange('max_parcelas_cartao', Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-max-parcelas"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Data Fim Oferta</label>
+            <input
+              type="date"
+              value={precos.data_fim_oferta}
+              onChange={e => handleChange('data_fim_oferta', e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-data-fim-oferta"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Validade Acesso</label>
+            <input
+              type="date"
+              value={precos.validade_acesso}
+              onChange={e => handleChange('validade_acesso', e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-validade-acesso"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Nome do Plano</label>
+            <input
+              type="text"
+              value={precos.nome_plano}
+              onChange={e => handleChange('nome_plano', e.target.value)}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-nome-plano"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Preco Pos-Oferta (R$)</label>
+            <input
+              type="number"
+              step="0.01"
+              value={precos.preco_pos_oferta}
+              onChange={e => handleChange('preco_pos_oferta', Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-preco-pos-oferta"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-400 mb-1 block">Parcelas Pos-Oferta</label>
+            <input
+              type="number"
+              min="1"
+              max="24"
+              value={precos.parcelas_pos_oferta}
+              onChange={e => handleChange('parcelas_pos_oferta', Number(e.target.value))}
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-parcelas-pos-oferta"
+            />
+          </div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="precos-view">
+          <div className="bg-gray-800/50 rounded-lg p-3">
+            <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Preco Original</p>
+            <p className="text-base font-bold text-gray-400 line-through">{formatCurrency(precos.preco_original)}</p>
+          </div>
+          <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-lg p-3">
+            <p className="text-[11px] text-emerald-400 uppercase tracking-wider mb-1">Preco com Desconto</p>
+            <p className="text-base font-bold text-emerald-400">{formatCurrency(precos.preco_desconto)}</p>
+            <p className="text-[10px] text-gray-500">{precos.parcelas}x de {formatCurrency(precos.valor_parcela)}</p>
+          </div>
+          <div className="bg-gray-800/50 rounded-lg p-3">
+            <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Valido ate</p>
+            <p className="text-sm font-medium text-white">{precos.data_fim_oferta?.split('-').reverse().join('/')}</p>
+            <p className="text-[10px] text-gray-500">Acesso ate {precos.validade_acesso?.split('-').reverse().join('/')}</p>
+          </div>
+          <div className="bg-gray-800/50 rounded-lg p-3">
+            <p className="text-[11px] text-gray-500 uppercase tracking-wider mb-1">Pos-Oferta</p>
+            <p className="text-sm font-medium text-amber-400">{precos.parcelas_pos_oferta}x de {formatCurrency(precos.preco_pos_oferta)}</p>
+          </div>
+          {precos.ultima_atualizacao && (
+            <div className="col-span-2 md:col-span-4">
+              <p className="text-[10px] text-gray-600">
+                Atualizado em {new Date(precos.ultima_atualizacao).toLocaleString('pt-BR')}
+                {precos.atualizado_por && ` por ${precos.atualizado_por}`}
+              </p>
+            </div>
+          )}
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export default function DashboardFinanceiro() {
   const { token } = useAuth();
   const [data, setData] = useState(null);
@@ -307,6 +573,9 @@ export default function DashboardFinanceiro() {
 
   return (
     <div className="space-y-6" data-testid="dashboard-financeiro">
+      {/* Precos Premium Editor */}
+      <PrecosEditor token={token} />
+
       {/* Header */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div>

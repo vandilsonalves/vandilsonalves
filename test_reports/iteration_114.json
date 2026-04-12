@@ -1,0 +1,90 @@
+{
+  "summary": "Iteration 114: Dynamic Pricing Feature Testing - All 16 backend tests passed (100%). All frontend features verified: PrecosEditor component in DashboardFinanceiro shows view/edit modes, PagamentoPage displays dynamic prices from API, public pricing endpoint accessible without auth, admin pricing endpoint requires auth.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable",
+        "issues": ["Console warning: 'In HTML, <tr> cannot be a child of <span>' - hydration error warning (non-blocking, pre-existing from previous iterations)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter114_precos_dinamicos.py",
+    "/app/test_reports/pytest/pytest_iter114_precos_dinamicos.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (financeiro_routes.py): GET /api/financeiro/config-precos-publico returns all required fields (preco_original, preco_desconto, parcelas, valor_parcela, etc.) - VERIFIED",
+    "Backend (financeiro_routes.py): GET /api/admin/financeiro/config-precos requires admin auth - VERIFIED",
+    "Backend (financeiro_routes.py): POST /api/admin/financeiro/config-precos saves prices and recalculates valor_parcela automatically - VERIFIED",
+    "Backend (financeiro_routes.py): POST validates preco_desconto > 0 and parcelas >= 1 - VERIFIED",
+    "Backend (financeiro_routes.py): GET /api/admin/financeiro/resumo returns financial dashboard data - VERIFIED",
+    "Backend (pagamentos_routes.py): GET /api/pagamentos/planos returns dynamic plan data from DB config - VERIFIED",
+    "Backend (efi_routes.py): PIX and Cartao payment creation uses get_precos_premium() for dynamic pricing - CODE REVIEW VERIFIED",
+    "Frontend (PagamentoPage.jsx): Fetches prices from /api/financeiro/config-precos-publico and displays dynamically - VERIFIED",
+    "Frontend (PagamentoPage.jsx): Shows preco_original (R$ 197,00), preco_desconto (R$ 97,00), parcelas (5x R$ 19,40), data_fim_oferta, validade_acesso - VERIFIED",
+    "Frontend (DashboardFinanceiro.jsx): PrecosEditor component shows view mode with all price fields - VERIFIED",
+    "Frontend (DashboardFinanceiro.jsx): PrecosEditor edit mode shows all input fields (preco_original, preco_desconto, parcelas, valor_parcela auto-calculated, data_fim_oferta, validade_acesso, nome_plano, preco_pos_oferta, parcelas_pos_oferta) - VERIFIED",
+    "Frontend (DashboardFinanceiro.jsx): Editar, Salvar, Cancelar buttons work correctly - VERIFIED",
+    "Frontend (AccessGate.jsx): Fetches dynamic price from /api/financeiro/config-precos-publico for display in blocked state - CODE REVIEW VERIFIED"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter114_precos_dinamicos.py"
+  ],
+  "success_rate": {
+    "backend": "100% (16/16 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "atleta": "teste.dono@teste.com / 123456"
+  },
+  "seed_data_creation": "None - used existing data. Default prices already in DB: preco_original=197, preco_desconto=97, parcelas=5, valor_parcela=19.40, data_fim_oferta=2026-12-14, validade_acesso=2026-12-31",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 114 validated the complete 'Dynamic Pricing' feature: (1) Backend GET /api/financeiro/config-precos-publico returns all price fields without auth, (2) Backend GET /api/admin/financeiro/config-precos requires admin auth and returns full config, (3) Backend POST /api/admin/financeiro/config-precos saves prices and auto-recalculates valor_parcela, (4) Backend validates preco_desconto > 0 and parcelas >= 1, (5) Backend GET /api/admin/financeiro/resumo returns financial dashboard data, (6) Backend GET /api/pagamentos/planos returns dynamic plan data from DB, (7) Frontend PagamentoPage fetches and displays dynamic prices (R$ 197,00 original, R$ 97,00 desconto, 5x R$ 19,40), (8) Frontend DashboardFinanceiro has PrecosEditor component with view/edit modes, (9) Frontend AccessGate fetches dynamic price for blocked state display. Current prices in DB: preco_original=197, preco_desconto=97, parcelas=5, valor_parcela=19.40, data_fim_oferta=2026-12-14, validade_acesso=2026-12-31, nome_plano='Atleta Premium'.",
+  "features_verified": {
+    "GET /api/financeiro/config-precos-publico returns dynamic price data": {
+      "status": "VERIFIED",
+      "details": "Returns all required fields: preco_original=197, preco_desconto=97, parcelas=5, valor_parcela=19.40, data_fim_oferta=2026-12-14, validade_acesso=2026-12-31, nome_plano='Atleta Premium'"
+    },
+    "GET /api/admin/financeiro/config-precos returns admin config (auth required)": {
+      "status": "VERIFIED",
+      "details": "Returns 401/403 without auth, 200 with admin auth, includes all config fields plus id='precos_premium'"
+    },
+    "POST /api/admin/financeiro/config-precos saves updated prices and recalculates valor_parcela": {
+      "status": "VERIFIED",
+      "details": "Tested with preco_desconto=100, parcelas=4, correctly calculated valor_parcela=25.00"
+    },
+    "GET /api/admin/financeiro/resumo still works correctly": {
+      "status": "VERIFIED",
+      "details": "Returns totais, distribuicao_gateway, receita_diaria, receita_mensal, transacoes_recentes"
+    },
+    "GET /api/pagamentos/planos returns dynamic plan data from DB": {
+      "status": "VERIFIED",
+      "details": "Returns plano_vigente with valor=97, valor_original=197 matching DB config"
+    },
+    "PagamentoPage.jsx displays dynamic prices fetched from API": {
+      "status": "VERIFIED",
+      "details": "Shows 'De R$ 197,00', '5x de R$ 19,40', 'ou R$ 97,00 a vista', 'Oferta valida ate 14/12/2026', 'Acesso ate 31/12/2026'"
+    },
+    "DashboardFinanceiro.jsx shows PrecosEditor component with view and edit modes": {
+      "status": "VERIFIED",
+      "details": "View mode shows all price cards, Edit mode shows all input fields with correct values"
+    },
+    "Admin can click Editar, change values, and Save price configuration": {
+      "status": "VERIFIED",
+      "details": "Editar button opens form, all inputs editable, Salvar and Cancelar buttons present and functional"
+    },
+    "AccessGate.jsx shows dynamic price in restricted access message": {
+      "status": "CODE REVIEW VERIFIED",
+      "details": "Component fetches from /api/financeiro/config-precos-publico and displays preco_desconto and validade_acesso in blocked state message"
+    }
+  }
+}
