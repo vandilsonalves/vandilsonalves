@@ -86,6 +86,16 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - **Bug Fix**: Import CadastroTermoModal faltando na página de Cadastro
 - Testado: 20/20 backend + todos os fluxos frontend verificados (iteration_111)
 
+### Modo "Votar" com Opções por Categoria (12/04/2026)
+- Admin cria categorias com opções (A, B, C...) no modo "Votar"
+- Atleta vê botões clicáveis para selecionar opção
+- Testado: 11/11 backend + frontend (iteration_112)
+
+### Histórico de Votações + Banner Inteligente (12/04/2026)
+- Atleta vê premiações separadas em "Votação Aberta" e "Encerradas" com pódio (1°, 2°, 3°)
+- Banner laranja desaparece após atleta finalizar todas as votações ativas
+- Testado: 9/9 backend + frontend (iteration_113)
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
