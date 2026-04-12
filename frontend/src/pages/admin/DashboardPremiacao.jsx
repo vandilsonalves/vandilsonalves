@@ -30,7 +30,7 @@ const DashboardPremiacao = ({ token }) => {
   const [showConsolidar, setShowConsolidar] = useState(null);
   const [showRegulamento, setShowRegulamento] = useState(false);
   const [novaPrem, setNovaPrem] = useState({ titulo: '', subtitulo: '', modo_votacao: 'indicar', regulamento: '' });
-  const [novaCat, setNovaCat] = useState({ nome: '', descricao: '' });
+  const [novaCat, setNovaCat] = useState({ nome: '', descricao: '', opcoes: [''] });
   const [consolidarNome, setConsolidarNome] = useState('');
   const [consolidarVariantes, setConsolidarVariantes] = useState('');
   const [editTitulo, setEditTitulo] = useState('');
@@ -163,11 +163,17 @@ const DashboardPremiacao = ({ token }) => {
 
   const addCategoria = async () => {
     if (!novaCat.nome.trim()) return toast.error('Nome obrigatório');
+    const payload = { nome: novaCat.nome, descricao: novaCat.descricao };
+    if (editModo === 'votar') {
+      const opcoesFiltradas = (novaCat.opcoes || []).map(o => o.trim()).filter(Boolean);
+      if (opcoesFiltradas.length < 2) return toast.error('Adicione pelo menos 2 opções para o modo "Votar"');
+      payload.opcoes = opcoesFiltradas;
+    }
     try {
-      await axios.post(`${API}/premiacao/admin/premiacoes/${selected.id}/categorias`, novaCat, { headers });
+      await axios.post(`${API}/premiacao/admin/premiacoes/${selected.id}/categorias`, payload, { headers });
       toast.success('Categoria criada!');
       setShowAddCat(false);
-      setNovaCat({ nome: '', descricao: '' });
+      setNovaCat({ nome: '', descricao: '', opcoes: [''] });
       fetchPremiacao(selected.id);
     } catch (err) {
       toast.error(err.response?.data?.detail || 'Erro');
@@ -485,6 +491,11 @@ const DashboardPremiacao = ({ token }) => {
               <div className="flex-1 min-w-0">
                 <p className="text-white font-medium text-sm truncate">{cat.nome}</p>
                 {cat.descricao && <p className="text-slate-400 text-xs truncate">{cat.descricao}</p>}
+                {cat.opcoes?.length > 0 && (
+                  <p className="text-amber-400/70 text-xs mt-0.5 truncate">
+                    Opções: {cat.opcoes.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join(' · ')}
+                  </p>
+                )}
               </div>
               <Badge variant="secondary" className="text-xs shrink-0">{cat.total_votos || 0}</Badge>
               <Button onClick={() => deleteCategoria(cat.id)} size="icon" variant="ghost" className="text-red-400 hover:text-red-300 h-8 w-8 shrink-0">
@@ -497,17 +508,65 @@ const DashboardPremiacao = ({ token }) => {
 
       {/* Modal Nova Categoria */}
       <Dialog open={showAddCat} onOpenChange={setShowAddCat}>
-        <DialogContent className="max-w-md w-[95vw]">
+        <DialogContent className="max-w-md w-[95vw] max-h-[85vh] overflow-y-auto">
           <DialogHeader><DialogTitle>Nova Categoria</DialogTitle></DialogHeader>
           <div className="space-y-4">
             <div>
               <Label>Nome da Categoria *</Label>
-              <Input value={novaCat.nome} onChange={e => setNovaCat({...novaCat, nome: e.target.value})} placeholder="Ex: Treinador do Ano" data-testid="input-cat-nome" />
+              <Input value={novaCat.nome} onChange={e => setNovaCat({...novaCat, nome: e.target.value})} placeholder="Ex: Cor da Camisa" data-testid="input-cat-nome" />
             </div>
             <div>
               <Label>Descrição (opcional)</Label>
-              <Input value={novaCat.descricao} onChange={e => setNovaCat({...novaCat, descricao: e.target.value})} placeholder="Breve descrição da categoria" />
+              <Input value={novaCat.descricao} onChange={e => setNovaCat({...novaCat, descricao: e.target.value})} placeholder="Ex: Escolha a cor da próxima corrida" />
             </div>
+
+            {/* Opções para modo "Votar" */}
+            {editModo === 'votar' && (
+              <div>
+                <Label className="mb-2 block">Opções de Votação</Label>
+                <div className="space-y-2">
+                  {(novaCat.opcoes || ['']).map((opcao, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="w-7 h-7 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-xs font-bold shrink-0">
+                        {String.fromCharCode(65 + idx)}
+                      </span>
+                      <Input
+                        value={opcao}
+                        onChange={e => {
+                          const novas = [...(novaCat.opcoes || [''])];
+                          novas[idx] = e.target.value;
+                          setNovaCat({...novaCat, opcoes: novas});
+                        }}
+                        placeholder={`Opção ${String.fromCharCode(65 + idx)}`}
+                        className="flex-1 bg-slate-50 dark:bg-slate-800 text-sm"
+                        data-testid={`input-opcao-${idx}`}
+                      />
+                      {(novaCat.opcoes || []).length > 1 && (
+                        <Button
+                          type="button" size="icon" variant="ghost"
+                          className="text-red-400 hover:text-red-300 h-7 w-7 shrink-0"
+                          onClick={() => {
+                            const novas = (novaCat.opcoes || []).filter((_, i) => i !== idx);
+                            setNovaCat({...novaCat, opcoes: novas});
+                          }}
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <Button
+                  type="button" variant="outline" size="sm"
+                  className="mt-2 w-full border-dashed border-slate-600 text-slate-400"
+                  onClick={() => setNovaCat({...novaCat, opcoes: [...(novaCat.opcoes || []), '']})}
+                  data-testid="btn-add-opcao"
+                >
+                  <Plus className="w-3 h-3 mr-1" /> Adicionar Opção
+                </Button>
+              </div>
+            )}
+
             <p className="text-xs text-slate-500">Após criar, passe o mouse sobre o ícone da categoria para carregar uma foto.</p>
             <Button onClick={addCategoria} className="w-full bg-amber-500 hover:bg-amber-600" data-testid="btn-salvar-categoria">Criar Categoria</Button>
           </div>

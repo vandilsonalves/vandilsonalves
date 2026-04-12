@@ -1,0 +1,94 @@
+{
+  "summary": "Iteration 112: Modo 'Votar' Feature Testing - All 11 backend tests passed (100%). All frontend features verified: Admin 'Nova Categoria' modal shows 'Opções de Votação' section when modo=votar, Admin category list shows opcoes inline (A, B, C...), Athlete sees clickable option buttons for categories with opcoes, Option selection highlights correctly, 'Confirmar Voto' button visible, Modo 'indicar' still works with text inputs.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "RankingTable",
+        "issues": ["Console warning: 'In HTML, <tr> cannot be a child of <span>' - hydration error warning (non-blocking, pre-existing)"]
+      }
+    ]
+  },
+  "test_report_links": [
+    "/app/backend/tests/test_iter112_modo_votar.py",
+    "/app/test_reports/pytest/pytest_iter112_modo_votar.xml"
+  ],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "Backend (premiacao_routes.py): CategoriaCreate model correctly includes 'opcoes: Optional[List[str]] = []' field",
+    "Backend: POST /api/premiacao/admin/premiacoes/{id}/categorias correctly stores opcoes array",
+    "Backend: GET /api/premiacao/p/{id}/categorias correctly returns opcoes array for each category",
+    "Backend: POST /api/premiacao/p/{id}/votar accepts vote where nome_indicado is one of the opcoes",
+    "Backend: Modo 'indicar' correctly requires link_indicado (returns 400 if empty)",
+    "Frontend (DashboardPremiacao.jsx): Nova Categoria modal shows 'Opções de Votação' section when editModo === 'votar'",
+    "Frontend (DashboardPremiacao.jsx): Category list shows opcoes inline with format 'A) Option · B) Option · ...'",
+    "Frontend (DashboardPremiacao.jsx): 'Adicionar Opção' button allows adding more options",
+    "Frontend (VotacaoPage.jsx): Conditional rendering: opcoes buttons vs text input based on isIndicar and cat.opcoes",
+    "Frontend (VotacaoPage.jsx): Option buttons have data-testid='opcao-{cat_id}-{idx}' for testing",
+    "Frontend (VotacaoPage.jsx): Selected option highlights with amber border and checkmark",
+    "Frontend (VotacaoPage.jsx): 'Confirmar Voto' button appears below options for modo votar",
+    "Frontend (VotacaoPage.jsx): Categories without opcoes show text input fields (fallback)"
+  ],
+  "updated_files": [
+    "/app/backend/tests/test_iter112_modo_votar.py"
+  ],
+  "success_rate": {
+    "backend": "100% (11/11 tests passed)",
+    "frontend": "100% (all UI features verified)"
+  },
+  "test_credentials": {
+    "admin": "admin@runpro.com / admin",
+    "atleta": "teste.dono@teste.com / 123456"
+  },
+  "seed_data_creation": "None - used existing data. Premiacao '38191d93' (Votação Cor da Camisa 2026, modo=votar) has 3 categories, one with opcoes: ['Vermelho','Azul','Branco','Preto','Verde']",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "Iteration 112 validated the complete 'Modo Votar' feature: (1) Backend correctly stores and returns opcoes array for categories, (2) Backend voting endpoint accepts votes with nome_indicado from opcoes, (3) Backend modo indicar still requires link_indicado, (4) Frontend admin shows 'Opções de Votação' section in Nova Categoria modal when modo=votar, (5) Frontend admin category list shows opcoes inline (A, B, C format), (6) Frontend athlete sees clickable option buttons with highlight on selection, (7) Frontend 'Confirmar Voto' button visible for modo votar, (8) Frontend categories without opcoes fallback to text inputs. Three premiacoes exist: 'Votação Cor da Camisa 2026' (id: 38191d93, modo=votar, OPEN, 3 categories), 'PRÊMIO NACIONAL RANKING RUN' (id: 310d78e2, modo=indicar, OPEN), 'Trofreu Brasil' (closed).",
+  "features_verified": {
+    "Backend: POST /api/premiacao/admin/premiacoes/{id}/categorias accepts opcoes array": {
+      "status": "VERIFIED",
+      "details": "Creates category with opcoes field stored correctly"
+    },
+    "Backend: GET /api/premiacao/p/{id}/categorias returns opcoes array": {
+      "status": "VERIFIED",
+      "details": "Returns opcoes array for each category"
+    },
+    "Backend: POST /api/premiacao/p/{id}/votar accepts vote from opcoes": {
+      "status": "VERIFIED",
+      "details": "Accepts nome_indicado that is one of the opcoes"
+    },
+    "Backend: Modo indicar requires link_indicado": {
+      "status": "VERIFIED",
+      "details": "Returns 400 if link_indicado is empty for modo indicar"
+    },
+    "Frontend: Admin Nova Categoria modal shows Opções de Votação section": {
+      "status": "VERIFIED",
+      "details": "Section visible when premiacao modo=votar, includes option inputs and 'Adicionar Opção' button"
+    },
+    "Frontend: Admin category list shows opcoes inline": {
+      "status": "VERIFIED",
+      "details": "Shows 'Opções: A) Vermelho · B) Azul · C) Branco · D) Preto · E) Verde'"
+    },
+    "Frontend: Athlete sees clickable option buttons": {
+      "status": "VERIFIED",
+      "details": "5 option buttons (A-E) visible for 'Cor da Camisa' category with opcoes"
+    },
+    "Frontend: Option selection highlights correctly": {
+      "status": "VERIFIED",
+      "details": "Selected option shows amber border and checkmark"
+    },
+    "Frontend: Confirmar Voto button visible": {
+      "status": "VERIFIED",
+      "details": "Button appears below options for modo votar"
+    },
+    "Frontend: Modo indicar still works with text inputs": {
+      "status": "VERIFIED",
+      "details": "Categories without opcoes show 'Nome do indicado' text input"
+    }
+  }
+}

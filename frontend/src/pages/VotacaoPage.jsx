@@ -358,31 +358,94 @@ const VotacaoPage = () => {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <Input
-                            placeholder="Nome do indicado *"
-                            value={form.nome}
-                            onChange={e => updateForm(cat.id, 'nome', e.target.value)}
-                            className="bg-slate-700/50 border-slate-600 text-white text-sm"
-                            data-testid={`input-nome-${cat.id}`}
-                          />
+                          {/* Modo INDICAR: campos de texto */}
                           {isIndicar && (
-                            <Input
-                              placeholder="Link do Site Oficial ou Instagram *"
-                              value={form.link}
-                              onChange={e => updateForm(cat.id, 'link', e.target.value)}
-                              className="bg-slate-700/50 border-slate-600 text-white text-sm"
-                              data-testid={`input-link-${cat.id}`}
-                            />
+                            <>
+                              <Input
+                                placeholder="Nome do indicado *"
+                                value={form.nome}
+                                onChange={e => updateForm(cat.id, 'nome', e.target.value)}
+                                className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                                data-testid={`input-nome-${cat.id}`}
+                              />
+                              <Input
+                                placeholder="Link do Site Oficial ou Instagram *"
+                                value={form.link}
+                                onChange={e => updateForm(cat.id, 'link', e.target.value)}
+                                className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                                data-testid={`input-link-${cat.id}`}
+                              />
+                              <Button
+                                onClick={() => handleVote(cat.id)}
+                                disabled={voting === cat.id || !form.nome?.trim() || !form.link?.trim()}
+                                className={`w-full text-sm ${jaVotou ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
+                                data-testid={`btn-votar-${cat.id}`}
+                              >
+                                {voting === cat.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : jaVotou ? <Check className="w-4 h-4 mr-2" /> : <Medal className="w-4 h-4 mr-2" />}
+                                {jaVotou ? 'Alterar Indicação' : 'Indicar e Votar'}
+                              </Button>
+                            </>
                           )}
-                          <Button
-                            onClick={() => handleVote(cat.id)}
-                            disabled={voting === cat.id || !form.nome?.trim() || (isIndicar && !form.link?.trim())}
-                            className={`w-full text-sm ${jaVotou ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
-                            data-testid={`btn-votar-${cat.id}`}
-                          >
-                            {voting === cat.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : jaVotou ? <Check className="w-4 h-4 mr-2" /> : <Medal className="w-4 h-4 mr-2" />}
-                            {jaVotou ? 'Alterar Voto' : 'Votar'}
-                          </Button>
+
+                          {/* Modo VOTAR: opções para clicar */}
+                          {!isIndicar && cat.opcoes?.length > 0 && (
+                            <div className="space-y-2">
+                              {cat.opcoes.map((opcao, idx) => {
+                                const selecionada = form.nome === opcao;
+                                return (
+                                  <button
+                                    key={idx}
+                                    onClick={() => updateForm(cat.id, 'nome', opcao)}
+                                    className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
+                                      selecionada
+                                        ? 'border-amber-500 bg-amber-500/10 text-white'
+                                        : 'border-slate-600 bg-slate-700/30 text-slate-300 hover:border-slate-500 hover:bg-slate-700/50'
+                                    }`}
+                                    data-testid={`opcao-${cat.id}-${idx}`}
+                                  >
+                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                                      selecionada ? 'bg-amber-500 text-white' : 'bg-slate-600 text-slate-300'
+                                    }`}>
+                                      {String.fromCharCode(65 + idx)}
+                                    </span>
+                                    <span className="text-sm font-medium">{opcao}</span>
+                                    {selecionada && <Check className="w-4 h-4 text-amber-400 ml-auto shrink-0" />}
+                                  </button>
+                                );
+                              })}
+                              <Button
+                                onClick={() => handleVote(cat.id)}
+                                disabled={voting === cat.id || !form.nome?.trim()}
+                                className={`w-full text-sm mt-1 ${jaVotou ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
+                                data-testid={`btn-votar-${cat.id}`}
+                              >
+                                {voting === cat.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : jaVotou ? <Check className="w-4 h-4 mr-2" /> : <Medal className="w-4 h-4 mr-2" />}
+                                {jaVotou ? 'Alterar Voto' : 'Confirmar Voto'}
+                              </Button>
+                            </div>
+                          )}
+
+                          {/* Modo VOTAR sem opções */}
+                          {!isIndicar && (!cat.opcoes || cat.opcoes.length === 0) && (
+                            <>
+                              <Input
+                                placeholder="Nome do indicado *"
+                                value={form.nome}
+                                onChange={e => updateForm(cat.id, 'nome', e.target.value)}
+                                className="bg-slate-700/50 border-slate-600 text-white text-sm"
+                                data-testid={`input-nome-${cat.id}`}
+                              />
+                              <Button
+                                onClick={() => handleVote(cat.id)}
+                                disabled={voting === cat.id || !form.nome?.trim()}
+                                className={`w-full text-sm ${jaVotou ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-amber-500 hover:bg-amber-600'}`}
+                                data-testid={`btn-votar-${cat.id}`}
+                              >
+                                {voting === cat.id ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : jaVotou ? <Check className="w-4 h-4 mr-2" /> : <Medal className="w-4 h-4 mr-2" />}
+                                {jaVotou ? 'Alterar Voto' : 'Votar'}
+                              </Button>
+                            </>
+                          )}
                         </div>
                       )}
                     </CardContent>

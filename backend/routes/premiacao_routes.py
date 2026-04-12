@@ -33,6 +33,7 @@ class PremiacaoCreate(BaseModel):
 class CategoriaCreate(BaseModel):
     nome: str
     descricao: Optional[str] = ""
+    opcoes: Optional[List[str]] = []  # Para modo "votar": lista de opções (ex: ["Vermelho", "Azul"])
 
 class VotoCreate(BaseModel):
     premiacao_id: str
@@ -202,6 +203,7 @@ async def criar_categoria(prem_id: str, cat: CategoriaCreate, current_user: dict
         "premiacao_id": prem_id,
         "nome": cat.nome,
         "descricao": cat.descricao,
+        "opcoes": cat.opcoes or [],
         "foto_url": None,
         "ordem": count + 1,
         "criado_em": datetime.now(timezone.utc).isoformat()
