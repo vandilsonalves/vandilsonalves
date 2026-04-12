@@ -40,6 +40,8 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Regulamento atualizado de v1.6 para v1.7 (106K → 130K caracteres)
 
 ## Backlog
+- P1: Validar e concluir integracao Pix EFI end-to-end (credenciais já configuradas, testar geração de QR Code real)
+- P2: Ranking de participação nas votações (barra de progresso no admin)
 - P3: Finalizar integração do scraper Sympla via sitemap nas rotas de scraping
 
 ### Sistema de Votação - Prêmio Nacional Ranking Run (10/04/2026)
@@ -95,6 +97,15 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Atleta vê premiações separadas em "Votação Aberta" e "Encerradas" com pódio (1°, 2°, 3°)
 - Banner laranja desaparece após atleta finalizar todas as votações ativas
 - Testado: 9/9 backend + frontend (iteration_113)
+
+### Precos Editaveis do Atleta Premium + Integracao EFI/Stripe (12/04/2026)
+- Admin edita precos do plano Premium via DashboardFinanceiro (Preco Original, Desconto, Parcelas, Data Fim Oferta, Validade, Pos-Oferta)
+- Novos endpoints: GET /api/financeiro/config-precos-publico (publico), GET/POST /api/admin/financeiro/config-precos (admin)
+- PagamentoPage.jsx e AccessGate.jsx consomem precos dinamicos via API (eliminados todos os valores hardcoded)
+- Backend (efi_routes.py, pagamentos_routes.py) busca precos do MongoDB ao criar cobranças PIX e Cartao
+- Certificado EFI produção (.p12) configurado, chaves Stripe de teste configuradas no .env
+- Valor da parcela recalculado automaticamente ao salvar (preco_desconto / parcelas)
+- Testado: 16/16 backend + todos os fluxos frontend verificados (iteration_114)
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
