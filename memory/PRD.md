@@ -107,6 +107,12 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Valor da parcela recalculado automaticamente ao salvar (preco_desconto / parcelas)
 - Testado: 16/16 backend + todos os fluxos frontend verificados (iteration_114)
 
+### Bug Fixes Painel Dono de Assessoria (12/04/2026)
+- Bug 1: Exportar "Graficos" agora retorna Content-Disposition:attachment (força download ao invés de exibir JSON)
+- Bug 2: "Exportar Lista" de atletas agora gera CSV client-side via Blob (não chama mais endpoint admin-only)
+- Bug 3: Upload de foto agora usa URL correta `/api/assessorias/upload-foto` (antes usava rota inexistente `/api/assessoria/foto`)
+- Testado: 18/18 backend + todos os fluxos frontend verificados (iteration_115)
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
