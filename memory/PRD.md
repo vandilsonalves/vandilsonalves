@@ -52,7 +52,13 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Resultados públicos bloqueados enquanto votação aberta (403)
 - Testado: 16/16 testes backend + todos os fluxos frontend verificados
 
-### Contagem Regressiva na Votação (10/04/2026)
+### Modo "Votar" com Opções por Categoria (12/04/2026)
+- Admin cria categorias com opções (A, B, C, D, E...) no modo "Votar"
+- Modal "Nova Categoria" mostra campo dinâmico de opções com botão "+ Adicionar Opção"
+- Listagem de categorias mostra opções inline (A) Opção · B) Opção...)
+- Atleta vê botões clicáveis para selecionar opção (destaque amber + checkmark)
+- Fallback: categorias sem opções usam campo de texto livre
+- Testado: 11/11 backend + todas as features frontend verificadas (iteration_112)
 - Admin define "Data Limite da Votação" no painel de Premiação (datetime-local input)
 - Campo `data_limite` salvo via PUT /api/premiacao/admin/config e retornado no GET /api/premiacao/status
 - Atleta vê countdown em tempo real (dias, horas, minutos, segundos) na página /votacao
