@@ -146,10 +146,15 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 8. **Restaurar Backup**: Upload de .zip no DashboardBackup via `/api/admin/backup/restaurar-upload`
 - Testado: 19/19 backend + todos os fluxos frontend verificados (iteration_118)
 
-## Credenciais de Teste
-- Admin: admin@runpro.com / admin
-- Atleta/Dono: teste.dono@teste.com / 123456
-- Senha Mestra: d7ff103ad1250@#$
+## Status: PRONTA PARA PRODUCAO (13/04/2026)
+- 11.566 docs de teste removidos, banco limpo
+- Usuario preservado: vandy1250@gmail.com (super_admin)
+- Catalogo de 1.315 corridas mantido, Temporada 2026 ativa
+
+## Credenciais de Producao
+- Super Admin: vandy1250@gmail.com (senha do cadastro)
+- Super Admin: suporte@rankingrun.com.br (promovido ao cadastrar)
+- Senha Master: d7ff103ad1250@#$
 
 ## Notas Técnicas
 - Object Storage inicializa automaticamente no startup (pode ter 503 temporário)

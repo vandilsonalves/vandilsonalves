@@ -1,26 +1,21 @@
-# Test Credentials
+# Credenciais de Produção
 
-## Admin
-- Email: admin@runpro.com
-- Password: admin
+## Super Admin
+- Email: vandy1250@gmail.com (senha definida pelo usuário no cadastro)
+- Email: suporte@rankingrun.com.br (será promovido automaticamente ao cadastrar)
 
-## Atleta/Dono
-- Email: teste.dono@teste.com
-- Password: 123456
-
-## Super Admin Master Password
+## Senha Master (Encerrar Temporada)
 - d7ff103ad1250@#$
 
 ## Stripe (Test Mode)
 - PK: pk_test_51TLNYq2N9ODJlvIL52c5ESjIiuQfDrIyGsE64ch3hWyGNaHyeE0wwexkx9ObHaPZxHZzlvhBrbIJyQWuD89VHNdd00ZuhEJjdP
 - SK: sk_test_51TLNYq2N9ODJlvILkY4ZaWes7QglrX40slbYWZIOBNHhbBgZZpAXzaACJNUF34Ps54NiacTgz7NasKJcPn6VIHG100pWU8RyNm
 
-## EFI (Producao)
+## EFI (Produção)
 - Client_Id: 6f4da985da29782bcff60cdd042f0f09744b1502
 - Client_Secret: d9de18b3af12168888e86cc6fde95e29db7891f6
 - Certificate: /app/backend/certs/producao-novo.pem
-- PIX Key: e5667962-e957-4ad8-8a49-49b7298d96bd
 
-## EFI (Homologacao)
-- Client_Id: bf3335e3270858eae1802dd4a9ef6fb91aa3db0e
-- Client_Secret: 5d364574998b2668042bd8091bcd6aa04994a0fc
+## Nota
+- admin@runpro.com e teste.dono@teste.com foram REMOVIDOS na limpeza de produção
+- Apenas vandy1250@gmail.com existe no banco
