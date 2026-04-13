@@ -66,7 +66,7 @@ async def get_current_user_rbac(credentials: HTTPAuthorizationCredentials = Depe
 
 async def get_admin_user_rbac(current_user: dict = Depends(get_current_user_rbac)):
     """Verifica se usuário é admin"""
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in ["admin", "super_admin"]:
         raise HTTPException(status_code=403, detail="Acesso restrito a administradores")
     return current_user
 
@@ -83,8 +83,12 @@ def get_client_ip(request: Request) -> str:
 
 async def get_super_admin(current_user: dict = Depends(get_current_user_rbac)):
     """Verifica se é Super Admin"""
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in ["admin", "super_admin"]:
         raise HTTPException(status_code=403, detail="Acesso restrito")
+    
+    # Se role já é super_admin, acesso garantido
+    if current_user.get("role") == "super_admin":
+        return current_user
     
     # Verificar se é super_admin na coleção de administradores
     admin = await db.administradores.find_one({"email": current_user.get("email")}, {"_id": 0})
@@ -725,8 +729,8 @@ async def login_admin(
     admin = await db.administradores.find_one({"email": email}, {"_id": 0})
     
     if not admin:
-        # Tentar na coleção usuarios (admin legado)
-        usuario = await db.usuarios.find_one({"email": email, "role": "admin"}, {"_id": 0})
+        # Tentar na coleção usuarios (admin legado ou super_admin)
+        usuario = await db.usuarios.find_one({"email": email, "role": {"$in": ["admin", "super_admin"]}}, {"_id": 0})
         if not usuario:
             await registrar_tentativa_login(request, email, False, "Email não encontrado")
             raise HTTPException(status_code=401, detail="Credenciais inválidas")
@@ -739,14 +743,16 @@ async def login_admin(
         token = create_access_token({"sub": usuario["id"]})
         await registrar_tentativa_login(request, email, True, admin_id=usuario["id"], admin_nome=usuario.get("nome"))
         
+        is_super = usuario.get("role") == "super_admin"
         return {
             "token": token,
             "user": {
                 "id": usuario["id"],
                 "nome": usuario.get("nome"),
                 "email": usuario["email"],
-                "role": "admin",
-                "tipo_admin": "legado",
+                "role": usuario.get("role", "admin"),
+                "tipo_admin": "Super Admin" if is_super else "legado",
+                "is_super_admin": is_super,
                 "permissoes": list(PERMISSOES_SISTEMA.keys())  # Todas as permissões
             },
             "requer_2fa": False
@@ -940,8 +946,12 @@ async def verificar_permissao_admin(
     current_user: dict = Depends(get_current_user_rbac)
 ):
     """Verifica se o usuário atual tem uma permissão específica"""
-    if current_user.get("role") != "admin":
+    if current_user.get("role") not in ["admin", "super_admin"]:
         return {"tem_permissao": False, "motivo": "Não é administrador"}
+    
+    # super_admin tem todas as permissões
+    if current_user.get("role") == "super_admin":
+        return {"tem_permissao": True, "motivo": "Super Admin"}
     
     # Buscar dados do admin
     admin = await db.administradores.find_one({"email": current_user.get("email")}, {"_id": 0})
