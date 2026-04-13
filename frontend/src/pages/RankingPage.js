@@ -11,6 +11,7 @@ import { useFeedNaoLidos } from '@/hooks/useFeedNaoLidos';
 import RankingProfissional from '@/components/ranking/RankingProfissional';
 import RankingGalera from '@/components/ranking/RankingGalera';
 import RankingEquipes from '@/components/ranking/RankingEquipes';
+import HallDaFama from '@/components/ranking/HallDaFama';
 import axios from 'axios';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
@@ -320,6 +321,9 @@ const RankingPage = () => {
 
         {/* RANKING DE EQUIPES - LIGA NACIONAL DE ASSESSORIAS */}
         {tipoRanking === 'equipes' && <RankingEquipes />}
+
+        {/* Hall da Fama - Temporadas Encerradas */}
+        <HallDaFama />
 
         {/* Footer */}
         <div className="mt-8 py-4 border-t border-slate-200 dark:border-slate-800 text-center">
