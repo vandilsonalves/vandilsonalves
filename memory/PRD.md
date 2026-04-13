@@ -128,6 +128,14 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Frontend Público: /historico-temporadas com lista de temporadas encerradas e ranking final expandível
 - Testado: 15/15 backend + todos os fluxos frontend verificados (iteration_116)
 
+### Hall da Fama na Pagina Principal (13/04/2026)
+- Componente `HallDaFama.jsx` adicionado na RankingPage (homepage /)
+- Exibe campeões de cada temporada encerrada: Profissional M/F top 5, PCD M/F top 5, Cadeirante M/F top 5, Galera M/F top 5, Assessorias top 10, Corridas Avaliadas top 10
+- Auto-expande a temporada mais recente encerrada com visual de medalhas (ouro/prata/bronze)
+- Condicional: só aparece se houver temporadas finalizadas no banco
+- Seed data: Temporada 2025 criada como exemplo com snapshot de rankings
+- Testado: 18/18 backend + todos os fluxos frontend verificados (iteration_117)
+
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
 - Atleta/Dono: teste.dono@teste.com / 123456
