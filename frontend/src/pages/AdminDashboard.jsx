@@ -9,7 +9,7 @@ import {
   Download, Plus,
   Cake, Send, Loader2,
   Crown, MessageSquare, CreditCard, TrendingDown, Menu,
-  Instagram, Star, HardDrive, Handshake, Medal
+  Instagram, Star, HardDrive, Handshake, Medal, Calendar
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -44,6 +44,7 @@ import DashboardBackup from './admin/DashboardBackup';
 import DashboardCorridasParceiras from './admin/DashboardCorridasParceiras';
 import DashboardParceiros from './admin/DashboardParceiros';
 import DashboardPremiacao from './admin/DashboardPremiacao';
+import DashboardTemporadas from './admin/DashboardTemporadas';
 import ConfiguracoesSistemaTab from '@/components/admin/ConfiguracoesSistemaTab';
 import useCidadesIBGE from '@/hooks/useCidadesIBGE';
 
@@ -84,6 +85,7 @@ const menuSections = [
       { id: 'administradores', label: 'Administradores', icon: Crown, permissoes: ['criar_admins'], superAdminOnly: true },
       { id: 'regulamento', label: 'Regulamento', icon: FileText, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
       { id: 'backup', label: 'Backup', icon: HardDrive, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
+      { id: 'temporadas', label: 'Temporadas', icon: Calendar, permissoes: ['configuracoes_sistema'], superAdminOnly: true },
     ]
   },
   {
@@ -677,7 +679,32 @@ const AdminDashboard = () => {
             </Card>
 
             <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 p-6">
-              <h3 className="text-lg font-semibold mb-4">Exportar Dados do Sistema</h3>
+              <h3 className="text-lg font-semibold mb-4">Exportar Rankings por Modalidade</h3>
+              <p className="text-slate-500 mb-4">
+                Exporte o ranking completo de cada modalidade da plataforma em Excel.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  { label: 'Ranking Profissional/Amador', path: '/api/admin/exportar/ranking-profissional', icon: Trophy },
+                  { label: 'Ranking da Galera - Pace Livre', path: '/api/admin/exportar/ranking-galera', icon: Users },
+                  { label: 'Ranking das Assessorias', path: '/api/admin/exportar/ranking-assessorias', icon: Shield },
+                  { label: 'Ranking Avaliacoes de Corridas', path: '/api/admin/exportar/ranking-corridas-avaliadas', icon: Star },
+                ].map(({ label, path, icon: Icon }) => (
+                  <Button
+                    key={path}
+                    variant="outline"
+                    className="justify-start h-auto py-3 px-4 text-left border-amber-500/30 hover:bg-amber-500/10"
+                    onClick={() => { downloadFile(path); toast.success(`Exportando ${label}...`); }}
+                    data-testid={`export-btn-${path.split('/').pop()}`}
+                  >
+                    <Icon className="w-4 h-4 mr-2 shrink-0 text-amber-500" />
+                    <span className="text-sm">{label}</span>
+                  </Button>
+                ))}
+              </div>
+            </Card>
+
+            <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 p-6">
               <p className="text-slate-500 mb-6">
                 Exporte dados detalhados de cada módulo do sistema em formato Excel.
               </p>
@@ -727,6 +754,7 @@ const AdminDashboard = () => {
         {activeMenu === 'resumo-semanal' && <DashboardResumoSemanal token={token} />}
         {activeMenu === 'retencao' && <DashboardRetencao />}
         {activeMenu === 'backup' && <DashboardBackup />}
+        {activeMenu === 'temporadas' && <DashboardTemporadas />}
         {activeMenu === 'corridas-parceiras' && <DashboardCorridasParceiras token={token} />}
         {activeMenu === 'parceiros' && <DashboardParceiros token={token} />}
         {activeMenu === 'premiacao' && <DashboardPremiacao token={token} />}

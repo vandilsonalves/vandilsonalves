@@ -600,3 +600,178 @@ async def exportar_dados_submetidos(admin: dict = Depends(get_admin_user)):
     for i, w in enumerate(col_widths):
         ws.column_dimensions[chr(65 + i) if i < 26 else "A" + chr(65 + i - 26)].width = w
     return _make_response(wb, f"dados_submetidos_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+
+# ==================== EXPORTAÇÕES DE RANKINGS POR MODALIDADE ====================
+
+# 16. Exportar Ranking Profissional/Amador
+@router.get("/admin/exportar/ranking-profissional")
+async def exportar_ranking_profissional(admin: dict = Depends(get_admin_user)):
+    """Exporta ranking Profissional/Amador com todas as categorias"""
+    atletas = await db.usuarios.find(
+        {"role": {"$in": ["atleta", "dono_assessoria"]}, "modalidade_usuario": {"$ne": "povao_pace_livre"}},
+        {"_id": 0, "password_hash": 0}
+    ).sort("pontos_total", -1).to_list(None)
+
+    wb = Workbook()
+
+    categorias = {
+        "MASCULINO": lambda a: a.get("genero") == "M" and a.get("categoria", "").upper() in ["NORMAL", ""],
+        "FEMININO": lambda a: a.get("genero") == "F" and a.get("categoria", "").upper() in ["NORMAL", ""],
+        "PCD_M": lambda a: a.get("genero") == "M" and a.get("categoria", "").upper() == "PCD",
+        "PCD_F": lambda a: a.get("genero") == "F" and a.get("categoria", "").upper() == "PCD",
+        "CADEIRANTE_M": lambda a: a.get("genero") == "M" and a.get("categoria", "").upper() == "CADEIRANTE",
+        "CADEIRANTE_F": lambda a: a.get("genero") == "F" and a.get("categoria", "").upper() == "CADEIRANTE",
+    }
+
+    headers = ["Pos", "Nome", "Equipe", "Cidade", "Estado", "Faixa Etaria", "Pontos", "Corridas", "Podios", "Vitorias"]
+    first = True
+    for cat_nome, filtro_fn in categorias.items():
+        if first:
+            ws = wb.active
+            ws.title = cat_nome
+            first = False
+        else:
+            ws = wb.create_sheet(cat_nome)
+
+        ws.append(headers)
+        _style_headers(ws, len(headers))
+
+        filtered = sorted([a for a in atletas if filtro_fn(a)], key=lambda x: -(x.get("pontos_total", 0)))
+        for i, a in enumerate(filtered, 1):
+            ws.append([
+                i, a.get("nome", ""), a.get("equipe", "") or "Individual",
+                a.get("cidade", ""), a.get("estado", ""), a.get("faixa_etaria", ""),
+                a.get("pontos_total", 0), a.get("total_corridas", 0),
+                a.get("total_podios", 0), a.get("total_vitorias", 0),
+            ])
+        _style_borders(ws, len(headers))
+        for j, w in enumerate([6, 30, 25, 20, 8, 12, 10, 10, 10, 10]):
+            ws.column_dimensions[chr(65 + j)].width = w
+
+    return _make_response(wb, f"ranking_profissional_amador_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+# 17. Exportar Ranking da Galera (Pace Livre)
+@router.get("/admin/exportar/ranking-galera")
+async def exportar_ranking_galera(admin: dict = Depends(get_admin_user)):
+    """Exporta ranking da Galera (Pace Livre) por genero"""
+    atletas = await db.usuarios.find(
+        {"role": {"$in": ["atleta", "dono_assessoria"]}, "modalidade_usuario": "povao_pace_livre"},
+        {"_id": 0, "password_hash": 0}
+    ).sort("pontos_povao", -1).to_list(None)
+
+    wb = Workbook()
+    headers = ["Pos", "Nome", "Equipe", "Cidade", "Estado", "Faixa Etaria", "Pontos", "Corridas", "Distancia Total (km)"]
+
+    for idx, (gen_label, gen_code) in enumerate([("MASCULINO", "M"), ("FEMININO", "F")]):
+        if idx == 0:
+            ws = wb.active
+            ws.title = gen_label
+        else:
+            ws = wb.create_sheet(gen_label)
+
+        ws.append(headers)
+        _style_headers(ws, len(headers))
+
+        filtered = sorted(
+            [a for a in atletas if a.get("genero") == gen_code],
+            key=lambda x: -(x.get("pontos_povao", 0))
+        )
+        for i, a in enumerate(filtered, 1):
+            ws.append([
+                i, a.get("nome", ""), a.get("equipe", "") or "Individual",
+                a.get("cidade", ""), a.get("estado", ""), a.get("faixa_etaria", ""),
+                a.get("pontos_povao", 0), a.get("total_corridas_povao", a.get("total_corridas", 0)),
+                a.get("distancia_total_km", 0),
+            ])
+        _style_borders(ws, len(headers))
+        for j, w in enumerate([6, 30, 25, 20, 8, 12, 10, 10, 18]):
+            ws.column_dimensions[chr(65 + j)].width = w
+
+    return _make_response(wb, f"ranking_galera_pace_livre_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+# 18. Exportar Ranking das Assessorias
+@router.get("/admin/exportar/ranking-assessorias")
+async def exportar_ranking_assessorias(admin: dict = Depends(get_admin_user)):
+    """Exporta ranking completo das assessorias (Liga ROE-RR)"""
+    from routes.liga_assessorias_routes import get_ranking_assessorias
+
+    try:
+        data = await get_ranking_assessorias(tipo="nacional")
+        ranking = data.get("ranking", [])
+    except Exception:
+        ranking = []
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ranking Assessorias"
+    headers = ["Pos", "Assessoria", "Cidade", "Estado", "Selo", "Pontos ROE-RR", "Total Atletas", "Total Resultados", "Podios", "Vitorias"]
+    ws.append(headers)
+    _style_headers(ws, len(headers))
+
+    for a in ranking:
+        ws.append([
+            a.get("posicao", 0), a.get("nome", ""),
+            a.get("cidade", ""), a.get("estado", ""),
+            (a.get("selo", "") or "").upper(),
+            a.get("pontos", 0), a.get("total_atletas", 0),
+            a.get("total_resultados", 0),
+            a.get("total_podios", 0), a.get("total_vitorias", 0),
+        ])
+    _style_borders(ws, len(headers))
+    for j, w in enumerate([6, 30, 20, 8, 10, 15, 15, 18, 10, 10]):
+        ws.column_dimensions[chr(65 + j)].width = w
+
+    return _make_response(wb, f"ranking_assessorias_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+# 19. Exportar Ranking das Avaliacoes de Corridas
+@router.get("/admin/exportar/ranking-corridas-avaliadas")
+async def exportar_ranking_corridas_avaliadas(admin: dict = Depends(get_admin_user)):
+    """Exporta ranking das corridas melhor avaliadas"""
+    corridas = await db.corridas_eventos.find(
+        {"total_avaliacoes": {"$gte": 1}},
+        {"_id": 0}
+    ).to_list(None)
+
+    # Sort by bayesian rating
+    total_avaliacoes_global = sum(c.get("total_avaliacoes", 0) for c in corridas)
+    num_avaliadas = sum(1 for c in corridas if c.get("total_avaliacoes", 0) > 0)
+    if num_avaliadas > 0:
+        media_global = sum(c.get("media_geral", 0) * c.get("total_avaliacoes", 0) for c in corridas) / max(total_avaliacoes_global, 1)
+        m = max(3, total_avaliacoes_global // max(num_avaliadas, 1))
+    else:
+        media_global = 0
+        m = 3
+
+    for c in corridas:
+        v = c.get("total_avaliacoes", 0)
+        R = c.get("media_geral", 0)
+        c["pontuacao_ranking"] = round((v / (v + m)) * R + (m / (v + m)) * media_global, 2) if v > 0 else 0
+
+    corridas.sort(key=lambda x: (-x.get("pontuacao_ranking", 0), -x.get("total_avaliacoes", 0)))
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Ranking Corridas"
+    headers = ["Pos", "Corrida", "Organizador", "Cidade", "Estado", "Data", "Avaliacoes", "Nota Media", "Pontuacao Ranking", "Organizacao", "Percurso", "Kit", "Hidratacao"]
+    ws.append(headers)
+    _style_headers(ws, len(headers))
+
+    for i, c in enumerate(corridas, 1):
+        ws.append([
+            i, c.get("nome_corrida", ""), c.get("organizador", ""),
+            c.get("cidade", ""), c.get("estado", ""), c.get("data_corrida", ""),
+            c.get("total_avaliacoes", 0), c.get("media_geral", 0),
+            c.get("pontuacao_ranking", 0),
+            round(c.get("media_organizacao", 0), 2), round(c.get("media_percurso", 0), 2),
+            round(c.get("media_kit", 0) or 0, 2), round(c.get("media_hidratacao", 0) or 0, 2),
+        ])
+    _style_borders(ws, len(headers))
+    for j, w in enumerate([6, 35, 25, 20, 8, 12, 12, 12, 18, 14, 12, 8, 14]):
+        ws.column_dimensions[chr(65 + j)].width = w
+
+    return _make_response(wb, f"ranking_corridas_avaliadas_{datetime.now().strftime('%Y%m%d')}.xlsx")
