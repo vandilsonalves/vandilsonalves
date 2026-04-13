@@ -1193,7 +1193,7 @@ async def setup_assessoria_dono(
             "estado": atleta.get("estado", ""),
             "dono_id": atleta["id"],
             "dono_nome": atleta["nome"],
-            "mensagem_bio": f"Ajudamos milhares de Atletas pelo Brasil, faça parte do nosso Time!",
+            "mensagem_bio": "Ajudamos milhares de Atletas pelo Brasil, faça parte do nosso Time!",
             "foto_url": "",
             "status": "ativa"
         }},
@@ -1886,8 +1886,9 @@ async def revogar_autorizacao(autorizacao_id: str, admin: dict = Depends(get_adm
 # Rotas de autorizar/revogar por atleta_id (usadas pelo DashboardAutorizacoes)
 class AutorizarAtletaRequest(BaseModel):
     atleta_id: str
-    tipo_plano: str = "ate_fim_ano"  # ate_fim_ano, plano_anual
+    tipo_plano: str = "ate_fim_ano"  # ate_fim_ano, plano_anual, data_customizada
     dias: int = 365
+    data_expiracao_custom: Optional[str] = None  # formato YYYY-MM-DD
 
 
 class RevogarAtletaRequest(BaseModel):
@@ -1913,7 +1914,15 @@ async def autorizar_atleta(dados: AutorizarAtletaRequest, admin: dict = Depends(
     )
 
     # Calcular data de expiracao baseado no tipo
-    if dados.tipo_plano == "ate_fim_ano":
+    if dados.tipo_plano == "data_customizada" and dados.data_expiracao_custom:
+        try:
+            parts = dados.data_expiracao_custom.split("-")
+            data_expiracao = datetime(int(parts[0]), int(parts[1]), int(parts[2]), 23, 59, 59, tzinfo=timezone.utc)
+        except Exception:
+            raise HTTPException(status_code=400, detail="Data invalida. Use formato AAAA-MM-DD")
+        descricao = f"Plano Premium ate {dados.data_expiracao_custom}"
+        plano_nome = f"Ate {parts[2]}/{parts[1]}/{parts[0]}"
+    elif dados.tipo_plano == "ate_fim_ano":
         data_expiracao = datetime(2026, 12, 31, 23, 59, 59, tzinfo=timezone.utc)
         descricao = "Plano Premium ate 31/12/2026"
         plano_nome = "Ate 31/12/2026"
@@ -2193,6 +2202,17 @@ async def startup_event():
 
     # Criar índices MongoDB para performance
     try:
+        # Garantir super_admin para emails autorizados
+        super_admin_emails_str = os.environ.get("SUPER_ADMIN_EMAILS", "")
+        if super_admin_emails_str:
+            for email in super_admin_emails_str.split(","):
+                email = email.strip()
+                if email:
+                    await db.usuarios.update_one(
+                        {"email": email},
+                        {"$set": {"role": "super_admin"}},
+                    )
+
         await db.usuarios.create_index("id", unique=True)
         await db.usuarios.create_index("email")
         await db.usuarios.create_index([("estado", 1), ("cidade", 1)])

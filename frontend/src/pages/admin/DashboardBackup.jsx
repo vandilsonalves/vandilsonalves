@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   HardDrive, Download, Trash2, RefreshCw, Loader2,
-  Shield, Clock, Database, FolderArchive, Calendar, AlertCircle, CheckCircle2
+  Shield, Clock, Database, FolderArchive, Calendar, AlertCircle, CheckCircle2, Upload, AlertTriangle
 } from 'lucide-react';
 import { toast } from 'sonner';
 import axios from 'axios';
@@ -20,6 +20,8 @@ const DashboardBackup = () => {
   const [loading, setLoading] = useState(true);
   const [criandoBackup, setCriandoBackup] = useState(false);
   const [excluindoId, setExcluindoId] = useState(null);
+  const [restaurando, setRestaurando] = useState(false);
+  const [arquivoRestore, setArquivoRestore] = useState(null);
 
   useEffect(() => {
     fetchData();
@@ -79,6 +81,27 @@ const DashboardBackup = () => {
       toast.error('Erro ao excluir backup');
     } finally {
       setExcluindoId(null);
+    }
+  };
+
+  const handleRestaurar = async () => {
+    if (!arquivoRestore) return;
+    if (!window.confirm('ATENCAO: Isso ira SUBSTITUIR todos os dados atuais pelos dados do backup. Deseja continuar?')) return;
+    setRestaurando(true);
+    try {
+      const formData = new FormData();
+      formData.append('arquivo', arquivoRestore);
+      const res = await axios.post(`${API}/admin/backup/restaurar-upload`, formData, {
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' },
+        timeout: 600000,
+      });
+      toast.success(res.data.mensagem || 'Backup restaurado com sucesso!');
+      setArquivoRestore(null);
+      fetchData();
+    } catch (error) {
+      toast.error(error.response?.data?.detail || 'Erro ao restaurar backup');
+    } finally {
+      setRestaurando(false);
     }
   };
 
@@ -194,6 +217,69 @@ const DashboardBackup = () => {
               <RefreshCw className="w-4 h-4" />
             </Button>
           </div>
+        </div>
+      </Card>
+
+      {/* Restaurar Backup */}
+      <Card className="bg-white dark:bg-slate-800 shadow-lg border-0 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
+            <Upload className="w-5 h-5 text-amber-500" />
+          </div>
+          <div>
+            <h3 className="text-base font-bold text-slate-800 dark:text-white">Restaurar Backup</h3>
+            <p className="text-xs text-slate-500">Envie o arquivo .zip do ultimo backup para restaurar o sistema</p>
+          </div>
+        </div>
+
+        <div className="bg-amber-500/5 border border-amber-500/20 rounded-lg p-3 mb-4">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+            <p className="text-xs text-amber-300">
+              Esta operacao ira <strong>substituir</strong> todos os dados atuais pelos dados do backup enviado. Certifique-se de que o arquivo foi gerado pelo sistema de backup da plataforma.
+            </p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 flex-wrap">
+          <input
+            type="file"
+            id="restore-file"
+            accept=".zip"
+            className="hidden"
+            onChange={(e) => setArquivoRestore(e.target.files?.[0] || null)}
+            data-testid="restore-file-input"
+          />
+          <Button
+            variant="outline"
+            onClick={() => document.getElementById('restore-file').click()}
+            className="border-amber-500/50 text-amber-400 hover:bg-amber-500/10"
+            disabled={restaurando}
+            data-testid="btn-selecionar-backup"
+          >
+            <FolderArchive className="w-4 h-4 mr-2" />
+            {arquivoRestore ? arquivoRestore.name : 'Selecionar arquivo .zip'}
+          </Button>
+
+          {arquivoRestore && (
+            <>
+              <span className="text-xs text-slate-400">
+                {(arquivoRestore.size / 1024 / 1024).toFixed(1)} MB
+              </span>
+              <Button
+                onClick={handleRestaurar}
+                disabled={restaurando}
+                className="bg-amber-600 hover:bg-amber-500 text-white"
+                data-testid="btn-restaurar-backup"
+              >
+                {restaurando ? (
+                  <><Loader2 className="w-4 h-4 animate-spin mr-2" />Restaurando...</>
+                ) : (
+                  <><Upload className="w-4 h-4 mr-2" />Restaurar Sistema</>
+                )}
+              </Button>
+            </>
+          )}
         </div>
       </Card>
 

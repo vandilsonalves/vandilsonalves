@@ -649,7 +649,7 @@ const RankingCidadePage = () => {
                 {ranking.map((atleta, index) => (
                   <div 
                     key={atleta.id}
-                    className={`flex items-center gap-4 p-4 rounded-lg transition-colors ${
+                    className={`flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-lg transition-colors ${
                       index < 3 
                         ? 'bg-gradient-to-r from-amber-900/30 to-transparent border border-amber-500/30' 
                         : 'bg-slate-700/50 hover:bg-slate-700'
@@ -657,40 +657,40 @@ const RankingCidadePage = () => {
                     data-testid={`ranking-item-${atleta.id}`}
                   >
                     {/* Posição */}
-                    <div className="w-12 flex justify-center">
+                    <div className="w-8 sm:w-12 flex-shrink-0 flex justify-center">
                       {getMedalha(atleta.colocacao)}
                     </div>
                     
                     {/* Avatar */}
-                    <Avatar className="h-12 w-12">
+                    <Avatar className="h-9 w-9 sm:h-12 sm:w-12 flex-shrink-0">
                       {atleta.foto_url ? (
                         <AvatarImage src={`${BACKEND_URL}${atleta.foto_url}`} />
                       ) : null}
-                      <AvatarFallback className="bg-emerald-600 text-white">
+                      <AvatarFallback className="bg-emerald-600 text-white text-xs sm:text-sm">
                         {atleta.nome?.charAt(0) || '?'}
                       </AvatarFallback>
                     </Avatar>
                     
                     {/* Info */}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-white truncate">{atleta.nome}</p>
-                      <div className="flex items-center gap-2 text-sm text-slate-400">
+                      <p className="font-semibold text-white text-sm sm:text-base truncate">{atleta.nome}</p>
+                      <div className="flex items-center gap-1 sm:gap-2 text-xs sm:text-sm text-slate-400">
                         {atleta.equipe && (
-                          <span className="text-emerald-400">{atleta.equipe}</span>
+                          <span className="text-emerald-400 truncate max-w-[80px] sm:max-w-none">{atleta.equipe}</span>
                         )}
                         {atleta.faixa_etaria && (
                           <>
                             <span>•</span>
-                            <span>{atleta.faixa_etaria}</span>
+                            <span className="flex-shrink-0">{atleta.faixa_etaria}</span>
                           </>
                         )}
                       </div>
                     </div>
                     
                     {/* Estatísticas */}
-                    <div className="text-right">
-                      <p className="text-lg font-bold text-amber-400">{atleta.pontos} pts</p>
-                      <p className="text-xs text-slate-400">{atleta.total_corridas} corridas</p>
+                    <div className="text-right flex-shrink-0">
+                      <p className="text-sm sm:text-lg font-bold text-amber-400">{atleta.pontos} pts</p>
+                      <p className="text-[10px] sm:text-xs text-slate-400">{atleta.total_corridas} corridas</p>
                     </div>
                     
                     {/* Badge Elite */}

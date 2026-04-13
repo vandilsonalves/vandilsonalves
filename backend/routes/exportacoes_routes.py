@@ -775,3 +775,49 @@ async def exportar_ranking_corridas_avaliadas(admin: dict = Depends(get_admin_us
         ws.column_dimensions[chr(65 + j)].width = w
 
     return _make_response(wb, f"ranking_corridas_avaliadas_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+
+# 20. Exportar Todas as Corridas com Links de Acesso
+@router.get("/admin/exportar/corridas-completas")
+async def exportar_corridas_completas(admin: dict = Depends(get_admin_user)):
+    """Exporta todas as corridas inseridas na plataforma com links de acesso"""
+    import os
+
+    corridas = await db.corridas_eventos.find({}, {"_id": 0}).sort("data_corrida", -1).to_list(None)
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Todas as Corridas"
+    headers = [
+        "N", "Nome da Corrida", "Organizador", "Cidade", "Estado", "Data",
+        "Distancias", "Tipo", "Status", "Link Inscricao", "Link Resultados",
+        "Total Avaliacoes", "Nota Media", "ID"
+    ]
+    ws.append(headers)
+    _style_headers(ws, len(headers))
+
+    for i, c in enumerate(corridas, 1):
+        ws.append([
+            i,
+            c.get("nome_corrida", ""),
+            c.get("organizador", ""),
+            c.get("cidade", ""),
+            c.get("estado", ""),
+            c.get("data_corrida", ""),
+            c.get("distancias", c.get("distancia", "")),
+            c.get("tipo", ""),
+            c.get("status", "ativa"),
+            c.get("link_inscricao", ""),
+            c.get("link_resultados", ""),
+            c.get("total_avaliacoes", 0),
+            round(c.get("media_geral", 0), 2),
+            c.get("id", ""),
+        ])
+
+    _style_borders(ws, len(headers))
+    for j, w in enumerate([5, 35, 25, 20, 8, 12, 15, 12, 10, 35, 35, 15, 12, 36]):
+        col_letter = chr(65 + j) if j < 26 else chr(64 + j // 26) + chr(65 + j % 26)
+        ws.column_dimensions[col_letter].width = w
+
+    return _make_response(wb, f"corridas_completas_{datetime.now().strftime('%Y%m%d')}.xlsx")

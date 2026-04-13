@@ -360,10 +360,10 @@ const SubmeterResultadoPage = () => {
                   </Select>
                   {isPovao && formData.distancia && formData.distancia !== 'OUTRA' && (
                     <p className="text-xs text-purple-600 mt-1">
-                      {formData.distancia === '5KM' && '5 pontos'}
-                      {formData.distancia === '10KM' && '10 pontos'}
-                      {formData.distancia === '21KM' && '21 pontos'}
-                      {formData.distancia === '42KM' && '42 pontos'}
+                      {formData.distancia === '5KM' && '5 Pontos (5-9km)'}
+                      {formData.distancia === '10KM' && '7 Pontos (10-20km)'}
+                      {formData.distancia === '21KM' && '9 Pontos (21km+)'}
+                      {formData.distancia === '42KM' && '9 Pontos (21km+)'}
                     </p>
                   )}
                 </div>
@@ -391,10 +391,10 @@ const SubmeterResultadoPage = () => {
                         {(() => {
                           const dist = parseFloat(formData.distancia_customizada);
                           if (isNaN(dist)) return '';
-                          if (dist < 5) return `${Math.floor(dist)} pontos (distância menor que 5km)`;
-                          if (dist < 10) return '5 pontos (5-9km)';
-                          if (dist < 21) return '10 pontos (10-20km)';
-                          return `${Math.floor(dist)} pontos`;
+                          if (dist < 5) return 'Distancia minima: 5km';
+                          if (dist < 10) return '5 Pontos (5-9km)';
+                          if (dist < 21) return '7 Pontos (10-20km)';
+                          return '9 Pontos (21km+)';
                         })()}
                       </p>
                     )}

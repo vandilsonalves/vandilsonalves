@@ -43,6 +43,7 @@ const RankingPage = () => {
       <div className="md:hidden bg-emerald-600 px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         {user && <MobileNav />}
         <h1 className="text-lg font-bold text-white tracking-tight">Ranking Run Pro</h1>
+        <p className="text-[9px] italic text-white/50 absolute left-1/2 -translate-x-1/2 top-[34px] whitespace-nowrap">1 Co 9:24</p>
         <div className="flex items-center gap-1">
           {user ? (
             <>
@@ -73,6 +74,9 @@ const RankingPage = () => {
             <h1 className="text-4xl font-bold text-emerald-600 dark:text-emerald-400 tracking-tight">
               Ranking Run Pro
             </h1>
+            <p className="text-xs italic text-slate-400 dark:text-slate-500 mt-0.5">
+              All honor and glory be given to the Lord Jesus Christ. 1 Co 9:24
+            </p>
             <div className="flex items-center gap-2">
               {user ? (
                 <>

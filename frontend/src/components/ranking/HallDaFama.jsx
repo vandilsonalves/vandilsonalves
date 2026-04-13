@@ -11,19 +11,19 @@ const MEDAL_BG = ['bg-amber-400/10', 'bg-gray-300/10', 'bg-orange-500/10', 'bg-g
 function PodiumRow({ item, index, nameField, pointsField, subField, suffix = ' pts' }) {
   const isTop3 = index < 3;
   return (
-    <div className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${MEDAL_BG[index] || 'bg-transparent'} ${isTop3 ? 'hover:brightness-110' : ''}`}>
-      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isTop3 ? MEDAL_COLORS[index] : 'text-gray-600'} ${isTop3 ? 'bg-gray-800' : ''}`}>
+    <div className={`flex items-center gap-3 px-3 py-2.5 rounded-lg transition-colors ${isTop3 ? 'bg-gray-800/80' : 'bg-gray-800/40'}`}>
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${isTop3 ? MEDAL_COLORS[index] : 'text-gray-500'} bg-gray-900`}>
         {index + 1}
       </div>
       <div className="flex-1 min-w-0">
-        <p className={`text-sm truncate ${isTop3 ? 'text-white font-semibold' : 'text-gray-300'}`}>
+        <p className={`text-sm truncate ${isTop3 ? 'text-white font-bold' : 'text-gray-200 font-medium'}`}>
           {item[nameField] || 'N/A'}
         </p>
         {subField && item[subField] && item[subField] !== 'Individual' && (
-          <p className="text-[10px] text-gray-500 truncate">{item[subField]}</p>
+          <p className="text-[10px] text-gray-400 truncate">{item[subField]}</p>
         )}
       </div>
-      <span className={`text-xs font-medium tabular-nums ${isTop3 ? 'text-emerald-400' : 'text-gray-500'}`}>
+      <span className={`text-xs font-bold tabular-nums ${isTop3 ? 'text-emerald-300' : 'text-emerald-400/70'}`}>
         {typeof item[pointsField] === 'number'
           ? (pointsField === 'media_geral' ? item[pointsField].toFixed(2) : item[pointsField].toLocaleString('pt-BR'))
           : item[pointsField]}{suffix}
@@ -47,12 +47,12 @@ function RankingCard({ icon: Icon, title, items, nameField, pointsField, subFiel
   const c = colorMap[color] || colorMap.emerald;
 
   return (
-    <div className={`bg-gray-900/60 backdrop-blur border ${c.border} rounded-xl p-4`}>
+    <div className={`bg-gray-900 border ${c.border} rounded-xl p-4`}>
       <div className="flex items-center gap-2 mb-3">
         <div className={`w-7 h-7 rounded-lg ${c.iconBg} flex items-center justify-center`}>
           <Icon className={`w-3.5 h-3.5 ${c.iconColor}`} />
         </div>
-        <h4 className={`text-xs font-semibold uppercase tracking-wider ${c.titleColor}`}>{title}</h4>
+        <h4 className={`text-xs font-bold uppercase tracking-wider ${c.titleColor}`}>{title}</h4>
       </div>
       <div className="space-y-0.5">
         {items.map((item, i) => (

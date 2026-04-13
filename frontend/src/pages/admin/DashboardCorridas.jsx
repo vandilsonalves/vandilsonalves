@@ -1362,6 +1362,26 @@ const DashboardCorridas = ({
                       </SelectContent>
                     </Select>
 
+                    {/* Botão de Exportar Excel */}
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => {
+                        const url = `${API}/admin/exportar/corridas-completas`;
+                        const a = document.createElement('a');
+                        a.href = url + `?token=${token}`;
+                        a.download = '';
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        toast.success('Exportando Excel com todas as corridas...');
+                      }}
+                      data-testid="btn-exportar-excel-corridas"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Exportar Excel
+                    </Button>
+
                     {/* Botão de Relatório PDF */}
                     <Button 
                       variant="outline" 

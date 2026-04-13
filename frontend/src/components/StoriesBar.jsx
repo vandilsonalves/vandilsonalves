@@ -150,7 +150,7 @@ const StoryViewer = ({ autores, startIndex, token, userId, onClose }) => {
         {/* Imagem */}
         <div className="flex-1 relative overflow-hidden rounded-xl mx-2">
           <img
-            src={`${API.replace('/api', '')}/api${story.imagem_url}`}
+            src={story.imagem_url?.startsWith('http') ? story.imagem_url : `${BACKEND_URL}${story.imagem_url}`}
             alt="Story"
             className="w-full h-full object-contain"
             data-testid="story-image"

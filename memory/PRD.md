@@ -40,8 +40,6 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Regulamento atualizado de v1.6 para v1.7 (106K → 130K caracteres)
 
 ## Backlog
-- P1: Validar integração Pix EFI end-to-end no frontend (QR Code real gerado e validado via API direta)
-- P2: Ranking de participação nas votações (barra de progresso no admin)
 - P3: Finalizar integração do scraper Sympla via sitemap nas rotas de scraping
 
 ### Sistema de Votação - Prêmio Nacional Ranking Run (10/04/2026)
@@ -135,6 +133,18 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Condicional: só aparece se houver temporadas finalizadas no banco
 - Seed data: Temporada 2025 criada como exemplo com snapshot de rankings
 - Testado: 18/18 backend + todos os fluxos frontend verificados (iteration_117)
+
+### 8 Tarefas Implementadas em Paralelo (13/04/2026)
+1. **Bug Fix Feed/Stories**: Corrigido URL duplo `/api/api/` nas imagens de posts e stories (FeedPostCard.jsx, StoriesBar.jsx)
+2. **Hall da Fama Contraste**: Melhorado contraste com bg-gray-900, texto branco bold, pontos emerald-300
+3. **Ranking por Cidade Mobile**: Layout responsivo com gap-2/gap-4, text-sm/text-base, flex-shrink-0
+4. **Pontuação Galera**: Corrigido preview: 5KM=5pts, 10KM=7pts, 21KM=9pts, 42KM=9pts + custom
+5. **Frase Bíblica**: "All honor and glory be given to the Lord Jesus Christ. 1 Co 9:24" em itálico
+6. **Exportar Excel Corridas**: Novo endpoint `/api/admin/exportar/corridas-completas` + botão no Admin
+7. **Autorizações Data Customizada**: Admin pode definir data específica de expiração (tipo_plano=data_customizada)
+7b. **Super Admin Restrito**: Apenas vandy1250@gmail.com e suporte@rankingrun.com.br via SUPER_ADMIN_EMAILS
+8. **Restaurar Backup**: Upload de .zip no DashboardBackup via `/api/admin/backup/restaurar-upload`
+- Testado: 19/19 backend + todos os fluxos frontend verificados (iteration_118)
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin

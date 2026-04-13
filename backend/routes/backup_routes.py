@@ -266,3 +266,116 @@ async def info_backup(admin: dict = Depends(get_super_admin)):
         "total_documentos": total_docs,
         "agendamento": "Toda quarta-feira às 02:30h"
     }
+
+
+# Endpoint de restauração via upload de arquivo
+from fastapi import File, UploadFile
+@router.post("/admin/backup/restaurar-upload")
+async def restaurar_backup_upload(
+    arquivo: UploadFile = File(...),
+    admin: dict = Depends(get_super_admin),
+):
+    """Restaura o sistema a partir de um arquivo de backup .zip"""
+    import tempfile
+
+    if not arquivo.filename.endswith('.zip'):
+        raise HTTPException(status_code=400, detail="O arquivo deve ser um .zip gerado pelo sistema de backup")
+
+    # Salvar arquivo temporariamente
+    conteudo = await arquivo.read()
+    tamanho_mb = len(conteudo) / (1024 * 1024)
+
+    if tamanho_mb > 500:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande. Maximo: 500MB")
+
+    tmp_dir = tempfile.mkdtemp()
+    zip_path = os.path.join(tmp_dir, arquivo.filename)
+
+    try:
+        with open(zip_path, "wb") as f:
+            f.write(conteudo)
+
+        # Extrair o zip
+        extract_dir = os.path.join(tmp_dir, "extracted")
+        with zipfile.ZipFile(zip_path, 'r') as zipf:
+            zipf.extractall(extract_dir)
+
+        # Verificar metadata.json
+        metadata_path = os.path.join(extract_dir, "metadata.json")
+        if not os.path.exists(metadata_path):
+            raise HTTPException(status_code=400, detail="Arquivo de backup invalido. metadata.json nao encontrado.")
+
+        with open(metadata_path, "r", encoding="utf-8") as f:
+            metadata = json.load(f)
+
+        # Restaurar collections do banco
+        db_dir = os.path.join(extract_dir, "database")
+        if not os.path.exists(db_dir):
+            raise HTTPException(status_code=400, detail="Pasta 'database' nao encontrada no backup")
+
+        collections_restauradas = 0
+        docs_restaurados = 0
+
+        for json_file in os.listdir(db_dir):
+            if not json_file.endswith(".json"):
+                continue
+
+            col_name = json_file.replace(".json", "")
+            json_path = os.path.join(db_dir, json_file)
+
+            with open(json_path, "r", encoding="utf-8") as f:
+                docs = json.load(f)
+
+            if not isinstance(docs, list) or len(docs) == 0:
+                continue
+
+            # Limpar collection e reinserir dados
+            await db[col_name].delete_many({})
+            if docs:
+                await db[col_name].insert_many(docs)
+                docs_restaurados += len(docs)
+                collections_restauradas += 1
+
+        # Restaurar uploads
+        uploads_dir = os.path.join(extract_dir, "uploads")
+        if os.path.exists(uploads_dir):
+            if os.path.exists(UPLOADS_DIR):
+                shutil.rmtree(UPLOADS_DIR, ignore_errors=True)
+            shutil.copytree(uploads_dir, UPLOADS_DIR, dirs_exist_ok=True)
+
+        # Registrar restauracao
+        registro = {
+            "id": str(uuid4())[:8],
+            "tipo": "restauracao",
+            "data_criacao": datetime.now(timezone.utc).isoformat(),
+            "admin_id": admin.get("id"),
+            "admin_nome": admin.get("nome", "Admin"),
+            "arquivo_original": arquivo.filename,
+            "backup_original_id": metadata.get("backup_id", "desconhecido"),
+            "backup_original_data": metadata.get("data_criacao", "desconhecido"),
+            "collections_restauradas": collections_restauradas,
+            "docs_restaurados": docs_restaurados,
+            "tamanho_mb": round(tamanho_mb, 2),
+            "status": "concluido",
+        }
+        await db.backups.insert_one(registro)
+
+        logger.info(f"[RESTORE] Backup restaurado por {admin.get('nome')}: {collections_restauradas} collections, {docs_restaurados} docs")
+
+        return {
+            "sucesso": True,
+            "mensagem": f"Backup restaurado com sucesso! {collections_restauradas} collections, {docs_restaurados} documentos.",
+            "detalhes": {
+                "collections_restauradas": collections_restauradas,
+                "docs_restaurados": docs_restaurados,
+                "backup_original": metadata.get("data_criacao"),
+            }
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Erro ao restaurar backup: {e}")
+        raise HTTPException(status_code=500, detail=f"Erro ao restaurar backup: {str(e)}")
+    finally:
+        shutil.rmtree(tmp_dir, ignore_errors=True)

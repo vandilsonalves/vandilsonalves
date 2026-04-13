@@ -209,12 +209,14 @@ const DashboardAutorizacoes = () => {
   };
 
   // ---- Autorizar atleta ----
-  const handleAutorizar = async (atletaId, tipoPlano = 'ate_fim_ano') => {
+  const handleAutorizar = async (atletaId, tipoPlano = 'ate_fim_ano', dataCustom = null) => {
     try {
-      const res = await axios.post(`${API}/admin/autorizacoes/autorizar`, {
+      const body = {
         atleta_id: atletaId,
         tipo_plano: tipoPlano,
-      }, { headers });
+      };
+      if (dataCustom) body.data_expiracao_custom = dataCustom;
+      const res = await axios.post(`${API}/admin/autorizacoes/autorizar`, body, { headers });
       toast.success(res.data.message || 'Atleta autorizado!');
       fetchAtletas();
     } catch (err) {
@@ -570,7 +572,7 @@ const DashboardAutorizacoes = () => {
                         <td className="py-2 px-3 text-slate-300 text-xs">{a.dias_restantes}d</td>
                         <td className="py-2 px-3">
                           {a.status_periodo !== 'autorizado' ? (
-                            <div className="flex items-center gap-1">
+                            <div className="flex items-center gap-1 flex-wrap">
                               <Button size="sm" variant="outline" className="text-xs border-green-600 text-green-400 hover:bg-green-600/20 h-7"
                                 onClick={() => handleAutorizar(a.id, 'ate_fim_ano')} data-testid={`autorizar-${a.id}`}>
                                 <CheckCircle2 className="w-3 h-3 mr-1" /> Ate 31/12/2026
@@ -579,6 +581,24 @@ const DashboardAutorizacoes = () => {
                                 onClick={() => handleAutorizar(a.id, 'plano_anual')} data-testid={`autorizar-anual-${a.id}`}>
                                 <CheckCircle2 className="w-3 h-3 mr-1" /> Anual
                               </Button>
+                              <div className="flex items-center gap-1">
+                                <input
+                                  type="date"
+                                  className="bg-slate-800 border border-amber-600/50 rounded px-2 py-1 text-xs text-white h-7 w-[130px]"
+                                  data-testid={`data-custom-${a.id}`}
+                                  id={`data-custom-${a.id}`}
+                                  min={new Date().toISOString().split('T')[0]}
+                                />
+                                <Button size="sm" variant="outline" className="text-xs border-amber-600 text-amber-400 hover:bg-amber-600/20 h-7"
+                                  onClick={() => {
+                                    const input = document.getElementById(`data-custom-${a.id}`);
+                                    if (!input?.value) { toast.error('Selecione uma data'); return; }
+                                    handleAutorizar(a.id, 'data_customizada', input.value);
+                                  }}
+                                  data-testid={`autorizar-custom-${a.id}`}>
+                                  <Calendar className="w-3 h-3 mr-1" /> Definir
+                                </Button>
+                              </div>
                             </div>
                           ) : (
                             <Button size="sm" variant="outline" className="text-xs border-red-600 text-red-400 hover:bg-red-600/20 h-7"

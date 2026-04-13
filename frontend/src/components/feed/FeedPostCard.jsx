@@ -117,7 +117,7 @@ const FeedPostCard = ({
             data-testid={`post-image-wrapper-${post.id}`}
           >
             <img 
-              src={`${BACKEND_URL}/api${post.imagem_url}`} 
+              src={post.imagem_url?.startsWith('http') ? post.imagem_url : `${BACKEND_URL}${post.imagem_url}`} 
               alt="Post" 
               className="rounded-xl max-h-[350px] w-full object-contain bg-slate-900/50 border border-slate-700"
               data-testid={`post-image-${post.id}`}
