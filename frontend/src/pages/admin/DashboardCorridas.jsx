@@ -1367,9 +1367,10 @@ const DashboardCorridas = ({
                       variant="outline" 
                       size="sm" 
                       onClick={() => {
-                        const url = `${API}/admin/exportar/corridas-completas`;
+                        const tk = localStorage.getItem('token');
+                        const url = `${API}/admin/exportar/corridas-completas?token=${tk}`;
                         const a = document.createElement('a');
-                        a.href = url + `?token=${token}`;
+                        a.href = url;
                         a.download = '';
                         document.body.appendChild(a);
                         a.click();
