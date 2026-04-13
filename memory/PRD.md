@@ -40,7 +40,7 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Regulamento atualizado de v1.6 para v1.7 (106K → 130K caracteres)
 
 ## Backlog
-- P1: Validar e concluir integracao Pix EFI end-to-end (credenciais já configuradas, testar geração de QR Code real)
+- P1: Validar integração Pix EFI end-to-end no frontend (QR Code real gerado e validado via API direta)
 - P2: Ranking de participação nas votações (barra de progresso no admin)
 - P3: Finalizar integração do scraper Sympla via sitemap nas rotas de scraping
 
@@ -112,6 +112,21 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Bug 2: "Exportar Lista" de atletas agora gera CSV client-side via Blob (não chama mais endpoint admin-only)
 - Bug 3: Upload de foto agora usa URL correta `/api/assessorias/upload-foto` (antes usava rota inexistente `/api/assessoria/foto`)
 - Testado: 18/18 backend + todos os fluxos frontend verificados (iteration_115)
+
+### Exportação de Rankings por Modalidade (13/04/2026)
+- 4 novos endpoints Excel: ranking-profissional (6 abas por categoria/genero), ranking-galera (M/F), ranking-assessorias, ranking-corridas-avaliadas
+- Botões adicionados na aba "Exportar Ranking" do Admin com destaque amber
+- Testado: iteration_116
+
+### Sistema de Gestão de Temporadas (13/04/2026)
+- Backend: `temporadas_routes.py` com GET /api/temporadas/ativa, /historico, /{id}/ranking-final, /admin/temporadas, POST /admin/temporadas/encerrar
+- Temporada 2026 criada automaticamente como "ativa"
+- Encerramento protegido: janela 01-02 janeiro, super_admin only, senha master, confirmação textual "ENCERRAR {ano}"
+- Snapshot automático dos rankings finais (profissional, galera, assessorias, corridas avaliadas)
+- Reset lógico: pontuações zeradas para nova temporada, histórico preservado em campo `historico_pontos.{ano}`
+- Frontend Admin: DashboardTemporadas na sidebar SISTEMA com card da temporada ativa, botão encerrar (desabilitado fora da janela), histórico expansível
+- Frontend Público: /historico-temporadas com lista de temporadas encerradas e ranking final expandível
+- Testado: 15/15 backend + todos os fluxos frontend verificados (iteration_116)
 
 ## Credenciais de Teste
 - Admin: admin@runpro.com / admin
