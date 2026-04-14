@@ -25,18 +25,24 @@ router = APIRouter(tags=["Ranking"])
 @router.get("/ranking/povao")
 @cached(prefix='ranking', ttl_key='ranking_povao')
 async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20):
-    """Retorna o ranking da Galera (paginado)"""
+    """Retorna o ranking da Galera (paginado) - inclui atletas com 0 pontos"""
+    # Buscar ranking existente
     ranking_list = await db.ranking_povao.find(
         {"ano": ANO_ATUAL, "genero": genero},
         {"_id": 0}
     ).sort([("pontos_total", -1), ("total_corridas", -1), ("distancia_acumulada", -1)]).to_list(None)
-    
-    # Batch fetch usuarios (evita N+1 queries)
-    user_ids = [r["usuario_id"] for r in ranking_list]
-    usuarios_list = await db.usuarios.find({"id": {"$in": user_ids}}, {"_id": 0}).to_list(None)
-    user_map = {u["id"]: u for u in usuarios_list}
-    
+
+    ranked_user_ids = set(r["usuario_id"] for r in ranking_list)
+
+    # Buscar TODOS os atletas da galera desse genero (incluindo sem resultado)
+    all_galera = await db.usuarios.find(
+        {"role": {"$in": ["atleta", "dono_assessoria"]}, "modalidade_usuario": "povao_pace_livre", "genero": genero},
+        {"_id": 0, "id": 1, "nome": 1, "estado": 1, "cidade": 1, "faixa_etaria": 1, "foto_url": 1, "equipe": 1}
+    ).to_list(None)
+    user_map = {u["id"]: u for u in all_galera}
+
     result = []
+    # Primeiro: atletas com pontos (ranking_povao)
     for rank in ranking_list:
         usuario = user_map.get(rank["usuario_id"])
         if usuario:
@@ -54,12 +60,32 @@ async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20):
                 "distancia_acumulada": rank.get("distancia_acumulada", 0),
                 "pontos": rank.get("pontos_total", 0)
             })
-    
+
+    # Depois: atletas sem resultado ainda (0 pontos)
+    pos_base = len(result)
+    for u in all_galera:
+        if u["id"] not in ranked_user_ids:
+            pos_base += 1
+            result.append({
+                "colocacao": pos_base,
+                "posicao": pos_base,
+                "atleta_id": u["id"],
+                "nome": u.get("nome", ""),
+                "uf": u.get("estado", ""),
+                "cidade": u.get("cidade", ""),
+                "faixa_etaria": u.get("faixa_etaria", "Não informado"),
+                "foto_url": u.get("foto_url", ""),
+                "equipe": u.get("equipe", ""),
+                "total_corridas": 0,
+                "distancia_acumulada": 0,
+                "pontos": 0
+            })
+
     total = len(result)
     start = (page - 1) * limit
     end = start + limit
     paginated = result[start:end]
-    
+
     return {
         "genero": "Masculino" if genero == "M" else "Feminino",
         "total_atletas": total,
@@ -74,8 +100,17 @@ async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20):
 @cached(prefix='ranking', ttl_key='stats')
 async def get_povao_stats():
     """Retorna estatísticas do ranking da Galera"""
-    total_atletas_m = await db.ranking_povao.count_documents({"ano": ANO_ATUAL, "genero": "M"})
-    total_atletas_f = await db.ranking_povao.count_documents({"ano": ANO_ATUAL, "genero": "F"})
+    # Contar TODOS os atletas cadastrados na modalidade galera (não apenas os com resultado)
+    total_atletas_m = await db.usuarios.count_documents({
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "modalidade_usuario": "povao_pace_livre",
+        "genero": "M"
+    })
+    total_atletas_f = await db.usuarios.count_documents({
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "modalidade_usuario": "povao_pace_livre",
+        "genero": "F"
+    })
     
     pipeline = [
         {"$match": {"modalidade": "povao_pace_livre", "ano": ANO_ATUAL}},
@@ -694,8 +729,10 @@ async def get_ranking_por_categoria(
     ranking_list = await db.ranking_anual.find(
         query,
         {"_id": 0}
-    ).sort([("pontos_total", -1), ("total_corridas", -1)]).limit(limit).to_list(None)
-    
+    ).sort([("pontos_total", -1), ("total_corridas", -1)]).to_list(None)
+
+    ranked_user_ids = set(r["usuario_id"] for r in ranking_list)
+
     # Buscar IDs de atletas com autorização ativa
     autorizacoes_ativas = set()
     auth_cursor = db.autorizacoes.find({"status": "ativa"}, {"_id": 0, "atleta_id": 1})
@@ -727,6 +764,39 @@ async def get_ranking_por_categoria(
                 is_elite=rank.get("pontos_total", 0) >= 100,
                 is_pendente=rank.get("total_corridas", 0) < 3,
                 is_premium=(rank["usuario_id"] in autorizacoes_ativas)
+            ))
+
+    # Incluir atletas cadastrados SEM resultado (0 pontos) no final
+    user_query = {
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "modalidade_usuario": {"$ne": "povao_pace_livre"},
+        "genero": gen_db,
+        "categoria": cat_db,
+    }
+    if faixa:
+        user_query["faixa_etaria"] = faixa
+
+    all_users = await db.usuarios.find(user_query, {"_id": 0, "id": 1, "nome": 1, "estado": 1, "cidade": 1, "equipe": 1, "faixa_etaria": 1, "foto_url": 1}).to_list(None)
+    for u in all_users:
+        if u["id"] not in ranked_user_ids:
+            if equipe and equipe.lower() not in u.get("equipe", "").lower():
+                continue
+            if cidade and cidade.lower() not in u.get("cidade", "").lower():
+                continue
+            result.append(RankingResponse(
+                id=u["id"],
+                colocacao=len(result) + 1,
+                uf=u.get("estado", ""),
+                foto_url=u.get("foto_url", ""),
+                nome=u.get("nome", ""),
+                cidade=u.get("cidade", ""),
+                equipe=u.get("equipe", ""),
+                faixa_etaria=u.get("faixa_etaria", "Não informado"),
+                total_corridas=0,
+                pontos=0,
+                is_elite=False,
+                is_pendente=True,
+                is_premium=(u["id"] in autorizacoes_ativas)
             ))
     
     total = len(result)
