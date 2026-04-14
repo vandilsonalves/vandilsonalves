@@ -689,6 +689,7 @@ const AdminDashboard = () => {
                   { label: 'Ranking da Galera - Pace Livre', path: '/api/admin/exportar/ranking-galera', icon: Users },
                   { label: 'Ranking das Assessorias', path: '/api/admin/exportar/ranking-assessorias', icon: Shield },
                   { label: 'Ranking Avaliacoes de Corridas', path: '/api/admin/exportar/ranking-corridas-avaliadas', icon: Star },
+                  { label: 'Avaliadores de Corrida', path: '/api/admin/exportar/avaliacoes-corridas', icon: FileText },
                 ].map(({ label, path, icon: Icon }) => (
                   <Button
                     key={path}

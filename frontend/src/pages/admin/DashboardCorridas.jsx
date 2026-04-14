@@ -1490,6 +1490,26 @@ const DashboardCorridas = ({
                             <Button variant="ghost" size="sm" onClick={() => handleOpenEdit(corrida)}>
                               <Edit className="w-4 h-4" />
                             </Button>
+                            {(corrida.total_avaliacoes || 0) > 0 && (
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="text-purple-500 hover:text-purple-700"
+                                title="Exportar avaliacoes desta corrida"
+                                onClick={() => {
+                                  const tk = localStorage.getItem('token');
+                                  const a = document.createElement('a');
+                                  a.href = `${API}/admin/exportar/avaliacoes-corrida/${corrida.id}?token=${tk}`;
+                                  a.download = '';
+                                  document.body.appendChild(a);
+                                  a.click();
+                                  document.body.removeChild(a);
+                                }}
+                                data-testid={`export-avaliacoes-${corrida.id}`}
+                              >
+                                <FileText className="w-4 h-4" />
+                              </Button>
+                            )}
                             <Button 
                               variant="ghost" 
                               size="sm" 

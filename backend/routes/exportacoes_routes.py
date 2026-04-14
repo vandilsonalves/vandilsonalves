@@ -1,7 +1,7 @@
 # /app/backend/routes/exportacoes_routes.py
 # Módulo de Exportações em Excel para o Admin
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 from datetime import datetime, timezone
 from openpyxl import Workbook
@@ -822,3 +822,172 @@ async def exportar_corridas_completas(admin: dict = Depends(get_admin_user)):
         ws.column_dimensions[col_letter].width = w
 
     return _make_response(wb, f"corridas_completas_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+
+# 21. Exportar TODAS as Avaliacoes de Corrida (planilha completa)
+@router.get("/admin/exportar/avaliacoes-corridas")
+async def exportar_avaliacoes_corridas(admin: dict = Depends(get_admin_user)):
+    """Exporta todas as avaliacoes de todas as corridas com dados completos dos avaliadores"""
+    avaliacoes = await db.avaliacoes_corridas.find({}, {"_id": 0}).sort("data_avaliacao", -1).to_list(None)
+
+    # Buscar nomes das corridas
+    corrida_ids = list(set(a.get("corrida_id", "") for a in avaliacoes))
+    corridas_map = {}
+    if corrida_ids:
+        corridas = await db.corridas_eventos.find(
+            {"id": {"$in": corrida_ids}},
+            {"_id": 0, "id": 1, "nome_corrida": 1, "organizador": 1, "cidade": 1, "estado": 1, "data_corrida": 1}
+        ).to_list(None)
+        corridas_map = {c["id"]: c for c in corridas}
+
+    # Buscar emails dos avaliadores
+    user_ids = list(set(a.get("usuario_id", "") for a in avaliacoes))
+    users_map = {}
+    if user_ids:
+        users = await db.usuarios.find(
+            {"id": {"$in": user_ids}},
+            {"_id": 0, "id": 1, "email": 1, "nome": 1}
+        ).to_list(None)
+        users_map = {u["id"]: u for u in users}
+
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Todas as Avaliacoes"
+    headers = [
+        "N", "ID Avaliador", "Nome Avaliador", "Email Avaliador",
+        "Corrida Avaliada", "Organizador", "Cidade", "Estado", "Data Corrida",
+        "Data/Hora Avaliacao",
+        "Organizacao", "Percurso", "Kit", "Hidratacao", "Pos-Prova", "Media Geral",
+        "Comentario"
+    ]
+    ws.append(headers)
+    _style_headers(ws, len(headers))
+
+    for i, a in enumerate(avaliacoes, 1):
+        corrida = corridas_map.get(a.get("corrida_id", ""), {})
+        user = users_map.get(a.get("usuario_id", ""), {})
+        data_av = a.get("data_avaliacao", "")
+        if data_av:
+            try:
+                dt = datetime.fromisoformat(data_av.replace("Z", "+00:00"))
+                data_formatada = dt.strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                data_formatada = data_av
+        else:
+            data_formatada = ""
+
+        ws.append([
+            i,
+            a.get("usuario_id", ""),
+            a.get("usuario_nome", user.get("nome", "")),
+            user.get("email", ""),
+            corrida.get("nome_corrida", a.get("corrida_id", "")),
+            corrida.get("organizador", ""),
+            corrida.get("cidade", ""),
+            corrida.get("estado", ""),
+            corrida.get("data_corrida", ""),
+            data_formatada,
+            a.get("organizacao", 0),
+            a.get("percurso", 0),
+            a.get("kit", 0),
+            a.get("hidratacao", 0),
+            a.get("pos_prova", 0),
+            round(a.get("media", 0), 2),
+            a.get("comentario", ""),
+        ])
+
+    _style_borders(ws, len(headers))
+    for j, w in enumerate([5, 36, 25, 30, 35, 20, 15, 8, 12, 18, 12, 12, 8, 12, 12, 12, 40]):
+        col_letter = chr(65 + j) if j < 26 else chr(64 + j // 26) + chr(65 + j % 26)
+        ws.column_dimensions[col_letter].width = w
+
+    return _make_response(wb, f"avaliacoes_corridas_completo_{datetime.now().strftime('%Y%m%d')}.xlsx")
+
+
+# 22. Exportar Avaliacoes de UMA corrida especifica
+@router.get("/admin/exportar/avaliacoes-corrida/{corrida_id}")
+async def exportar_avaliacoes_corrida_especifica(corrida_id: str, admin: dict = Depends(get_admin_user)):
+    """Exporta avaliacoes de uma corrida especifica - ideal para auditoria/revisao"""
+    corrida = await db.corridas_eventos.find_one({"id": corrida_id}, {"_id": 0})
+    if not corrida:
+        raise HTTPException(status_code=404, detail="Corrida nao encontrada")
+
+    avaliacoes = await db.avaliacoes_corridas.find(
+        {"corrida_id": corrida_id}, {"_id": 0}
+    ).sort("data_avaliacao", -1).to_list(None)
+
+    # Buscar emails dos avaliadores
+    user_ids = list(set(a.get("usuario_id", "") for a in avaliacoes))
+    users_map = {}
+    if user_ids:
+        users = await db.usuarios.find(
+            {"id": {"$in": user_ids}},
+            {"_id": 0, "id": 1, "email": 1, "nome": 1}
+        ).to_list(None)
+        users_map = {u["id"]: u for u in users}
+
+    nome_corrida = corrida.get("nome_corrida", "Corrida")
+    safe_name = nome_corrida.replace(" ", "_")[:30]
+
+    wb = Workbook()
+
+    # Aba 1: Resumo da corrida
+    ws_resumo = wb.active
+    ws_resumo.title = "Resumo"
+    ws_resumo.append(["Corrida", nome_corrida])
+    ws_resumo.append(["Organizador", corrida.get("organizador", "")])
+    ws_resumo.append(["Cidade/Estado", f"{corrida.get('cidade', '')} - {corrida.get('estado', '')}"])
+    ws_resumo.append(["Data da Corrida", corrida.get("data_corrida", "")])
+    ws_resumo.append(["Total de Avaliacoes", len(avaliacoes)])
+    ws_resumo.append(["Media Geral", round(corrida.get("media_geral", 0), 2)])
+    ws_resumo.append(["Media Organizacao", round(corrida.get("media_organizacao", 0), 2)])
+    ws_resumo.append(["Media Percurso", round(corrida.get("media_percurso", 0), 2)])
+    ws_resumo.append(["Media Kit", round(corrida.get("media_kit", 0) or 0, 2)])
+    ws_resumo.append(["Media Hidratacao", round(corrida.get("media_hidratacao", 0) or 0, 2)])
+    ws_resumo.column_dimensions["A"].width = 20
+    ws_resumo.column_dimensions["B"].width = 40
+
+    # Aba 2: Avaliacoes detalhadas
+    ws_av = wb.create_sheet("Avaliacoes Detalhadas")
+    headers = [
+        "N", "ID Avaliador", "Nome Avaliador", "Email Avaliador",
+        "Data/Hora Avaliacao",
+        "Organizacao", "Percurso", "Kit", "Hidratacao", "Pos-Prova", "Media",
+        "Comentario"
+    ]
+    ws_av.append(headers)
+    _style_headers(ws_av, len(headers))
+
+    for i, a in enumerate(avaliacoes, 1):
+        user = users_map.get(a.get("usuario_id", ""), {})
+        data_av = a.get("data_avaliacao", "")
+        if data_av:
+            try:
+                dt = datetime.fromisoformat(data_av.replace("Z", "+00:00"))
+                data_formatada = dt.strftime("%d/%m/%Y %H:%M")
+            except Exception:
+                data_formatada = data_av
+        else:
+            data_formatada = ""
+
+        ws_av.append([
+            i,
+            a.get("usuario_id", ""),
+            a.get("usuario_nome", user.get("nome", "")),
+            user.get("email", ""),
+            data_formatada,
+            a.get("organizacao", 0),
+            a.get("percurso", 0),
+            a.get("kit", 0),
+            a.get("hidratacao", 0),
+            a.get("pos_prova", 0),
+            round(a.get("media", 0), 2),
+            a.get("comentario", ""),
+        ])
+
+    _style_borders(ws_av, len(headers))
+    for j, w in enumerate([5, 36, 25, 30, 18, 12, 12, 8, 12, 12, 10, 40]):
+        ws_av.column_dimensions[chr(65 + j)].width = w
+
+    return _make_response(wb, f"avaliacoes_{safe_name}_{datetime.now().strftime('%Y%m%d')}.xlsx")

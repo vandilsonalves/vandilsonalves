@@ -3,6 +3,10 @@ from passlib.context import CryptContext
 from jose import JWTError, jwt
 from datetime import datetime, timedelta
 import os
+from dotenv import load_dotenv
+
+# Garantir que .env é carregado ANTES de usar variáveis
+load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 
 # Security
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
