@@ -318,9 +318,15 @@ const NotificacoesBell = () => {
                 <div className="space-y-1">
                   {Object.entries(selectedNotificacao.dados_extras)
                     .filter(([key]) => !['icone', 'imagem_url', 'foto_url'].includes(key))
-                    .map(([key, value]) => (
+                    .map(([key, value]) => {
+                      // Traduzir valores internos para exibição
+                      const labelMap = { modalidade: 'Modalidade', competicao: 'Corrida', pontos: 'Pontos', colocacao: 'Colocação' };
+                      const valueMap = { povao: 'Ranking da Galera - Pace Livre', povao_pace_livre: 'Ranking da Galera - Pace Livre', profissional_amador: 'Profissional/Amador' };
+                      const displayKey = labelMap[key] || key.replace(/_/g, ' ');
+                      const displayValue = valueMap[String(value)] || String(value);
+                      return (
                       <div key={key} className="text-xs text-slate-300">
-                        <span className="text-slate-500">{key.replace(/_/g, ' ')}:</span>{' '}
+                        <span className="text-slate-500">{displayKey}:</span>{' '}
                         {typeof value === 'string' && value.match(/^https?:\/\//) ? (
                           <a 
                             href={value} 
@@ -331,10 +337,10 @@ const NotificacoesBell = () => {
                             {value.length > 30 ? value.substring(0, 30) + '...' : value}
                           </a>
                         ) : (
-                          String(value)
+                          displayValue
                         )}
                       </div>
-                    ))
+                    );})
                   }
                 </div>
               </div>

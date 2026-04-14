@@ -177,7 +177,7 @@ async def aprovar_resultado(resultado_id: str, admin: dict = Depends(get_admin_u
             tipo="aprovacao",
             titulo="Resultado aprovado!",
             mensagem=f"Seu resultado na {nome_competicao} foi aprovado! Você ganhou {pontos_povao} pontos no Ranking da Galera.",
-            dados_extras={"pontos": pontos_povao, "competicao": nome_competicao, "modalidade": "povao"}
+            dados_extras={"pontos": pontos_povao, "competicao": nome_competicao, "modalidade": "Ranking da Galera - Pace Livre"}
         )
         
         # Post automático DESABILITADO - atletas devem compartilhar manualmente
