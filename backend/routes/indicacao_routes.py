@@ -125,7 +125,7 @@ async def get_meu_codigo(current_user: dict = Depends(get_current_user)):
     }) is not None
     
     # Gerar link
-    base_url = "https://geo-filtered-admin.preview.emergentagent.com"
+    base_url = os.environ.get("FRONTEND_URL", "https://app.rankingrun.com.br")
     link = f"{base_url}/cadastro?ref={codigo}"
     
     return {

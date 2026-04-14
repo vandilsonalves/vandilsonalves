@@ -1083,7 +1083,7 @@ async def get_compartilhar_atleta(atleta_id: str):
         "pontos": ranking["pontos_total"] if ranking else 0,
         "corridas": ranking["total_corridas"] if ranking else 0,
         "texto_whatsapp": texto_compartilhar,
-        "url_compartilhar": f"https://geo-filtered-admin.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_compartilhar": f"{os.environ.get('FRONTEND_URL', 'https://app.rankingrun.com.br')}/atleta/{atleta_id}"
     }
 
 

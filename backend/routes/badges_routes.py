@@ -507,7 +507,7 @@ async def gerar_card_compartilhamento(atleta_id: str):
         },
         "badges": badges_conquistados[:6],  # Máximo 6 badges no card
         "texto_compartilhamento": texto,
-        "url_perfil": f"https://geo-filtered-admin.preview.emergentagent.com/atleta/{atleta_id}"
+        "url_perfil": f"{os.environ.get('FRONTEND_URL', 'https://app.rankingrun.com.br')}/atleta/{atleta_id}"
     }
 
 
