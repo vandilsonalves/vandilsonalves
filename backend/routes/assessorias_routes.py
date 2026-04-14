@@ -157,7 +157,7 @@ async def get_ranking_assessorias(
         # Incluir atletas E donos de assessoria no cálculo (excluir admins)
         {"$match": {
             "role": {"$in": ["atleta", "dono_assessoria"]}, 
-            "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"], "$exists": True}
+            "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe", "Individual", "individual", "SEM EQUIPE"], "$exists": True}
         }},
         {"$group": {
             "_id": "$equipe",
@@ -174,7 +174,7 @@ async def get_ranking_assessorias(
             "total_atletas": {"$sum": 1},
             "data_mais_antiga": {"$min": "$id"}
         }},
-        {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "", None]}}}
+        {"$match": {"_id": {"$nin": ["Sem equipe", "sem equipe", "Individual", "individual", "SEM EQUIPE", "", None]}}}
     ]
     
     # Filtrar por estado/cidade APÓS o agrupamento para pegar assessorias desse local
@@ -337,7 +337,7 @@ async def get_stats_liga_assessorias():
     """Estatísticas gerais da liga de assessorias"""
     
     pipeline_total = [
-        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"]}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe", "Individual", "individual", "SEM EQUIPE"]}}},
         {"$group": {"_id": "$equipe"}},
         {"$count": "total"}
     ]
@@ -347,13 +347,13 @@ async def get_stats_liga_assessorias():
     
     total_atletas_vinculados = await db.usuarios.count_documents({
         "role": {"$in": ["atleta", "dono_assessoria"]},
-        "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe"]}
+        "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe", "Individual", "individual", "SEM EQUIPE"]}
     })
     
     total_resultados_aprovados = await db.corridas.count_documents({})
     
     pipeline_top = [
-        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe"]}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe", "Individual", "individual"]}}},
         {"$group": {"_id": "$equipe", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 1}
