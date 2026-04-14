@@ -121,8 +121,8 @@ const DashboardGeral = ({ token }) => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-green-100 text-sm">Total de Atletas</p>
-                <p className="text-3xl font-bold">{stats?.total_atletas || 0}</p>
+                <p className="text-green-100 text-sm">Total de Atletas Profissional/Amador</p>
+                <p className="text-3xl font-bold">{statsModalidade?.profissional || 0}</p>
               </div>
               <Users className="w-10 h-10 opacity-80" />
             </div>
@@ -133,8 +133,8 @@ const DashboardGeral = ({ token }) => {
           <CardContent className="pt-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-blue-100 text-sm">Total de Corridas</p>
-                <p className="text-3xl font-bold">{stats?.total_corridas || 0}</p>
+                <p className="text-blue-100 text-sm">Total de Atletas da Galera</p>
+                <p className="text-3xl font-bold">{statsModalidade?.povao || 0}</p>
               </div>
               <Trophy className="w-10 h-10 opacity-80" />
             </div>

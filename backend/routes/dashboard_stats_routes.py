@@ -24,47 +24,65 @@ async def get_visao_geral(admin: dict = Depends(get_admin_user)):
     """
     hoje = datetime.now(timezone.utc)
     inicio_mes = hoje.replace(day=1, hour=0, minute=0, second=0, microsecond=0)
+    inicio_mes_str = inicio_mes.isoformat()
     
-    # Total de atletas
-    total_atletas = await db.usuarios.count_documents({"role": "atleta"})
+    # Total de atletas por modalidade
+    total_prof_amador = await db.usuarios.count_documents({
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "modalidade_usuario": {"$nin": ["povao_pace_livre", None]},
+    })
+    total_galera = await db.usuarios.count_documents({
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "modalidade_usuario": "povao_pace_livre",
+    })
+    total_atletas = total_prof_amador + total_galera
     
-    # Total de corridas
+    # Total de corridas (resultados aprovados)
     total_corridas = await db.corridas.count_documents({})
     
     # Total de resultados
-    total_resultados = await db.resultados_pendentes.count_documents({})
-    total_resultados += total_corridas  # Resultados aprovados = corridas
+    total_resultados = await db.resultados_pendentes.count_documents({"status": "aprovado"})
+    total_resultados += total_corridas
     
-    # Total de assessorias (equipes únicas)
-    pipeline_assessorias = [
-        {"$match": {"role": "atleta", "equipe": {"$nin": ["", None, "Sem equipe"]}}},
-        {"$group": {"_id": "$equipe"}},
-        {"$count": "total"}
-    ]
-    result = await db.usuarios.aggregate(pipeline_assessorias).to_list(1)
-    total_assessorias = result[0]["total"] if result else 0
+    # Total de assessorias (da collection assessorias, nao por equipe)
+    total_assessorias = await db.assessorias.count_documents({"status": {"$in": ["ativa", "pendente", None]}})
+    if total_assessorias == 0:
+        # Fallback: contar equipes unicas excluindo Individual
+        pipeline_assessorias = [
+            {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None, "Sem equipe", "sem equipe", "Individual", "individual"]}}},
+            {"$group": {"_id": "$equipe"}},
+            {"$count": "total"}
+        ]
+        result = await db.usuarios.aggregate(pipeline_assessorias).to_list(1)
+        total_assessorias = result[0]["total"] if result else 0
     
     # Regiões com mais corredores (top 5 estados)
     pipeline_regioes = [
-        {"$match": {"role": "atleta", "estado": {"$nin": ["", None]}}},
+        {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "estado": {"$nin": ["", None]}}},
         {"$group": {"_id": "$estado", "count": {"$sum": 1}}},
         {"$sort": {"count": -1}},
         {"$limit": 5}
     ]
     regioes = await db.usuarios.aggregate(pipeline_regioes).to_list(5)
     
-    # Novos atletas Profissional/Amador (este mês)
+    # Novos atletas Profissional/Amador (este mês) - usar data_criacao
     novos_prof_amador = await db.usuarios.count_documents({
-        "role": "atleta",
-        "modalidade_usuario": {"$ne": "povao_pace_livre"},
-        "created_at": {"$gte": inicio_mes.isoformat()}
+        "role": {"$in": ["atleta", "dono_assessoria"]},
+        "modalidade_usuario": {"$nin": ["povao_pace_livre", None]},
+        "$or": [
+            {"data_criacao": {"$gte": inicio_mes_str}},
+            {"created_at": {"$gte": inicio_mes_str}},
+        ]
     })
     
-    # Novos atletas Povão (este mês)
+    # Novos atletas Galera (este mês)
     novos_povao = await db.usuarios.count_documents({
-        "role": "atleta",
+        "role": {"$in": ["atleta", "dono_assessoria"]},
         "modalidade_usuario": "povao_pace_livre",
-        "created_at": {"$gte": inicio_mes.isoformat()}
+        "$or": [
+            {"data_criacao": {"$gte": inicio_mes_str}},
+            {"created_at": {"$gte": inicio_mes_str}},
+        ]
     })
     
     # Novas corridas (este mês)
@@ -75,7 +93,10 @@ async def get_visao_geral(admin: dict = Depends(get_admin_user)):
     # Novos donos de assessoria (este mês)
     novos_donos = await db.usuarios.count_documents({
         "role": "dono_assessoria",
-        "created_at": {"$gte": inicio_mes.isoformat()}
+        "$or": [
+            {"data_criacao": {"$gte": inicio_mes_str}},
+            {"created_at": {"$gte": inicio_mes_str}},
+        ]
     })
     
     # Distâncias mais corridas
@@ -146,6 +167,8 @@ async def get_visao_geral(admin: dict = Depends(get_admin_user)):
     
     return {
         "total_atletas": total_atletas,
+        "total_prof_amador": total_prof_amador,
+        "total_galera": total_galera,
         "total_corridas": total_corridas,
         "total_resultados": total_resultados,
         "total_assessorias": total_assessorias,

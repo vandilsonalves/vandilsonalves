@@ -306,14 +306,14 @@ const DashboardEstrategico = () => {
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
             <StatCard
-              title="Total de Atletas"
-              value={visaoGeral?.total_atletas || 0}
+              title="Total de Atletas Profissional/Amador"
+              value={visaoGeral?.total_prof_amador || 0}
               icon={Users}
               color="primary"
             />
             <StatCard
-              title="Total de Corridas"
-              value={visaoGeral?.total_corridas || 0}
+              title="Total de Atletas da Galera"
+              value={visaoGeral?.total_galera || 0}
               icon={Activity}
               color="secondary"
             />
