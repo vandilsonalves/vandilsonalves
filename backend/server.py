@@ -6,6 +6,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
+from security_middleware import RateLimitMiddleware, SecurityHeadersMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -1426,10 +1427,17 @@ async def popular_ranking_dados_teste():
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
-    allow_origins=os.environ.get('CORS_ORIGINS', '*').split(','),
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=os.environ.get('CORS_ORIGINS', 'https://app.rankingrun.com.br').split(','),
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"],
+    allow_headers=["Authorization", "Content-Type", "Accept", "Origin", "X-Requested-With"],
+    expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "Content-Disposition"],
 )
+
+# Security headers
+app.add_middleware(SecurityHeadersMiddleware)
+
+# Rate limiting
+app.add_middleware(RateLimitMiddleware)
 
 # GZip compression - comprime respostas > 500 bytes (reduz ~70% do trafego)
 app.add_middleware(GZipMiddleware, minimum_size=500)

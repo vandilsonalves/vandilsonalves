@@ -151,6 +151,15 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Usuario preservado: vandy1250@gmail.com (super_admin)
 - Catalogo de 1.315 corridas mantido, Temporada 2026 ativa
 
+### Segurança para Produção (14/04/2026)
+- CORS restrito: apenas app.rankingrun.com.br, rankingrun.com.br, www.rankingrun.com.br, geo-filtered-admin.emergent.host
+- Endpoints protegidos com auth: ranking/povao, semanal, mensal, destaque-mes, equipes, faixas-etarias, ranking-por-cidade, ranking-nacional
+- Endpoints públicos mantidos: stats agregados, configurações básicas
+- Rate Limiting: 60 req/min geral, 10 req/min login, 5 req/min export, 30 req/min rankings
+- Security Headers: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy, Cache-Control
+- Parameter Validation: limit max 20, page validado, ano validado
+- URLs hardcoded de preview removidas (usam FRONTEND_URL env var)
+
 ## Credenciais de Producao
 - Super Admin: vandy1250@gmail.com (senha do cadastro)
 - Super Admin: suporte@rankingrun.com.br (promovido ao cadastrar)

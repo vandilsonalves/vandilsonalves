@@ -14,7 +14,7 @@ router = APIRouter()
 
 
 @router.get("/ranking-nacional")
-async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
+async def get_ranking_nacional(ano: int = Query(ANO_ATUAL), current_user: dict = Depends(get_current_user)):
     """Retorna o ranking nacional de atletas"""
     
     pipeline = [
@@ -45,7 +45,7 @@ async def get_ranking_nacional(ano: int = Query(ANO_ATUAL)):
 
 
 @router.get("/estados-disponiveis")
-async def get_estados_disponiveis(ano: int = Query(ANO_ATUAL)):
+async def get_estados_disponiveis(ano: int = Query(ANO_ATUAL), current_user: dict = Depends(get_current_user)):
     """Retorna lista de estados com atletas cadastrados"""
     
     estados = await db.usuarios.distinct("estado", {"role": "atleta", "estado": {"$ne": None}})
@@ -56,7 +56,7 @@ async def get_estados_disponiveis(ano: int = Query(ANO_ATUAL)):
 
 
 @router.get("/faixas-disponiveis")
-async def get_faixas_disponiveis():
+async def get_faixas_disponiveis(current_user: dict = Depends(get_current_user)):
     """Retorna lista de faixas etárias disponíveis"""
     return {
         "faixas": [
@@ -67,7 +67,7 @@ async def get_faixas_disponiveis():
 
 
 @router.get("/equipes-disponiveis")
-async def get_equipes_disponiveis():
+async def get_equipes_disponiveis(current_user: dict = Depends(get_current_user)):
     """Retorna lista de equipes/assessorias cadastradas"""
     
     equipes = await db.usuarios.distinct("equipe", {"equipe": {"$nin": [None, "", "Individual"]}})
@@ -78,7 +78,7 @@ async def get_equipes_disponiveis():
 
 
 @router.get("/destaque-mes")
-async def get_destaque_mes(mes: int = None, ano: int = None):
+async def get_destaque_mes(mes: int = None, ano: int = None, current_user: dict = Depends(get_current_user)):
     """Retorna atletas destaque do mês"""
     
     if not mes:

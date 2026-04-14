@@ -20,12 +20,27 @@ from services.cache_service import cached, cache_service, invalidate_on_ranking_
 router = APIRouter(tags=["Ranking"])
 
 
+# Helper para validar e limitar parâmetros
+def validate_limit(limit: int, max_limit: int = 20) -> int:
+    return min(max(1, limit), max_limit)
+
+def validate_page(page: int) -> int:
+    return max(1, page)
+
+def validate_ano(ano: int) -> int:
+    if ano < 2020 or ano > ANO_ATUAL + 1:
+        raise HTTPException(status_code=400, detail="Ano invalido")
+    return ano
+
+
 # ==================== RANKING POVÃO ====================
 
 @router.get("/ranking/povao")
 @cached(prefix='ranking', ttl_key='ranking_povao')
-async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20):
-    """Retorna o ranking da Galera (paginado) - inclui atletas com 0 pontos"""
+async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20, current_user: dict = Depends(get_current_user)):
+    """Retorna o ranking da Galera (paginado) - requer autenticacao"""
+    limit = validate_limit(limit)
+    page = validate_page(page)
     # Buscar ranking existente
     ranking_list = await db.ranking_povao.find(
         {"ano": ANO_ATUAL, "genero": genero},
@@ -134,8 +149,9 @@ async def get_povao_stats():
 
 
 @router.get("/ranking/povao/semanal")
-async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10):
+async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10, current_user: dict = Depends(get_current_user)):
     """Retorna o Top 10 da Galera da última semana"""
+    limit = validate_limit(limit)
     from datetime import datetime, timedelta
     
     hoje = datetime.now()
@@ -194,8 +210,9 @@ async def get_povao_ranking_semanal(genero: str = "M", limit: int = 10):
 
 
 @router.get("/ranking/povao/mensal")
-async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10):
+async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10, current_user: dict = Depends(get_current_user)):
     """Retorna o Top 10 da Galera do mês atual"""
+    limit = validate_limit(limit)
     from datetime import datetime
     
     hoje = datetime.now()
@@ -256,7 +273,7 @@ async def get_povao_ranking_mensal(genero: str = "M", limit: int = 10):
 
 
 @router.get("/ranking/povao/destaque-mes")
-async def get_povao_destaque_mes():
+async def get_povao_destaque_mes(current_user: dict = Depends(get_current_user)):
     """Retorna os destaques do mês da Galera"""
     from datetime import datetime
     
@@ -352,7 +369,8 @@ async def get_povao_destaque_mes():
 async def get_ranking_semanal(
     genero: str = "M",
     categoria: str = "normal",
-    semana_offset: int = 0
+    semana_offset: int = 0,
+    current_user: dict = Depends(get_current_user)
 ):
     """Ranking da semana atual ou anterior"""
     hoje = datetime.now()
@@ -439,7 +457,8 @@ async def get_ranking_semanal(
 async def get_ranking_mensal(
     genero: str = "M",
     categoria: str = "normal",
-    mes_offset: int = 0
+    mes_offset: int = 0,
+    current_user: dict = Depends(get_current_user)
 ):
     """Ranking do mês atual ou anterior"""
     hoje = datetime.now()
@@ -537,7 +556,7 @@ async def get_ranking_mensal(
 
 @router.get("/ranking/destaque-mes")
 @cached(prefix='ranking', ttl_key='ranking_destaque')
-async def get_destaque_mes(mes: int = None, ano: int = None, genero: str = None, categoria: str = None):
+async def get_destaque_mes(mes: int = None, ano: int = None, genero: str = None, categoria: str = None, current_user: dict = Depends(get_current_user)):
     """Retorna os destaques do mês (top 3 + estatísticas), filtrado por modalidade se informado"""
     
     hoje = datetime.now()
@@ -693,9 +712,10 @@ async def get_ranking_por_categoria(
     page: int = 1,
     faixa: str = None,
     equipe: str = None,
-    cidade: str = None
+    cidade: str = None,
+    current_user: dict = Depends(get_current_user)
 ):
-    """Retorna ranking por categoria e gênero
+    """Retorna ranking por categoria e gênero - requer autenticacao
     
     Categoria pode ser:
     - masculino, feminino -> normal M/F
@@ -703,6 +723,8 @@ async def get_ranking_por_categoria(
     - cadeirante-m, cadeirante-f -> cadeirante M/F
     - normal, pcd, cadeirante -> usa gênero passado
     """
+    limit = validate_limit(limit)
+    page = validate_page(page)
     # Mapear categoria do frontend para valores do banco
     cat_map = {
         "masculino": ("normal", "M"),
@@ -841,8 +863,10 @@ async def get_faixas_etarias():
 
 @router.get("/ranking/equipes")
 @cached(prefix='ranking', ttl_key='equipes')
-async def get_equipes(page: int = 1, limit: int = 20):
-    """Lista equipes/assessorias ativas (paginado)"""
+async def get_equipes(page: int = 1, limit: int = 20, current_user: dict = Depends(get_current_user)):
+    """Lista equipes/assessorias ativas (paginado) - requer autenticacao"""
+    limit = validate_limit(limit)
+    page = validate_page(page)
     pipeline = [
         {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$ne": "", "$exists": True}}},
         {"$group": {"_id": "$equipe", "count": {"$sum": 1}}},
@@ -899,16 +923,15 @@ async def get_cidades(estado: str = None):
 async def get_ranking_por_cidade(
     estado: str,
     cidade: str,
-    modalidade: str = "profissional",  # profissional ou povao
+    modalidade: str = "profissional",
     genero: str = "M",
     categoria: str = "normal",
     ano: int = ANO_ATUAL,
-    limit: int = 100
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
 ):
-    """
-    Retorna ranking filtrado por cidade.
-    Modalidades: profissional (por colocação) ou povao (por distância)
-    """
+    """Ranking filtrado por cidade - requer autenticacao"""
+    limit = validate_limit(limit)
     # Buscar usuários da cidade
     usuarios_query = {
         "role": {"$in": ["atleta", "dono_assessoria"]},
