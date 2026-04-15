@@ -2,6 +2,7 @@ import "@/App.css";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/context/AuthContext";
 import { Toaster } from "@/components/ui/sonner";
+import axios from "axios";
 import RankingPage from "@/pages/RankingPage";
 import AtletaDetalhes from "@/pages/AtletaDetalhes";
 import LoginPage from "@/pages/LoginPage";
@@ -36,6 +37,15 @@ import AccessGate from "@/components/AccessGate";
 import { useAuth } from "@/context/AuthContext";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import PrintProtection from "@/components/PrintProtection";
+
+// Axios interceptor global - envia token em TODAS as requisições
+axios.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token && !config.headers.Authorization) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
 
 function SplashScreenWrapper() {
   const { token, user } = useAuth();

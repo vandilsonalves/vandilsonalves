@@ -433,6 +433,17 @@ function PrecosEditor({ token }) {
               data-testid="input-parcelas-pos-oferta"
             />
           </div>
+          <div className="col-span-2">
+            <label className="text-xs text-gray-400 mb-1 block">Link Pagamento Cartao (externo)</label>
+            <input
+              type="url"
+              value={precos.link_pagamento_cartao || ''}
+              onChange={e => handleChange('link_pagamento_cartao', e.target.value)}
+              placeholder="https://payfast.greenn.com.br/..."
+              className="w-full bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-white text-sm focus:ring-2 focus:ring-emerald-500 outline-none"
+              data-testid="input-link-cartao"
+            />
+          </div>
         </div>
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4" data-testid="precos-view">

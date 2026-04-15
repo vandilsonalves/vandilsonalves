@@ -910,7 +910,26 @@ export default function PagamentoPage() {
                 {metodo === 'pix' ? (
                   <PixCheckout token={token} planoInfo={planoInfo} onPaid={handlePaid} precos={precos} />
                 ) : (
-                  <CartaoCheckout token={token} onPaid={handlePaid} precos={precos} />
+                  <div className="space-y-4" data-testid="cartao-externo">
+                    <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-4 text-center">
+                      <CreditCard className="w-8 h-8 text-emerald-400 mx-auto mb-3" />
+                      <p className="text-sm text-gray-300 mb-1">
+                        Pagamento via cartao de credito
+                      </p>
+                      <p className="text-xs text-gray-500 mb-4">
+                        Apos o pagamento, solicite o desbloqueio pelo WhatsApp <span className="text-emerald-400 font-medium">(77) 99138-3038</span>
+                      </p>
+                      <a
+                        href={precos?.link_pagamento_cartao || 'https://payfast.greenn.com.br/hpkjhbt'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center gap-2 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-3 px-4 rounded-lg transition-colors"
+                        data-testid="btn-pagar-cartao-externo"
+                      >
+                        <CreditCard className="w-4 h-4" /> Pagar Com Cartao
+                      </a>
+                    </div>
+                  </div>
                 )}
               </div>
             )}

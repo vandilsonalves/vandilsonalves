@@ -29,6 +29,7 @@ PRECOS_PREMIUM_PADRAO = {
     "descricao_oferta": "Acesso completo a todas as funcionalidades do Ranking Run Pro",
     "preco_pos_oferta": 119.00,
     "parcelas_pos_oferta": 12,
+    "link_pagamento_cartao": "https://payfast.greenn.com.br/hpkjhbt",
     "ativo": True,
 }
 
@@ -60,6 +61,7 @@ async def config_precos_publico():
         "descricao_oferta": config.get("descricao_oferta", ""),
         "preco_pos_oferta": config.get("preco_pos_oferta", 119.00),
         "parcelas_pos_oferta": config.get("parcelas_pos_oferta", 12),
+        "link_pagamento_cartao": config.get("link_pagamento_cartao", "https://payfast.greenn.com.br/hpkjhbt"),
         "ativo": config.get("ativo", True),
     }
 
@@ -76,6 +78,7 @@ class PrecosPremiumUpdate(BaseModel):
     descricao_oferta: str = ""
     preco_pos_oferta: float = 119.00
     parcelas_pos_oferta: int = 12
+    link_pagamento_cartao: str = "https://payfast.greenn.com.br/hpkjhbt"
     ativo: bool = True
 
 
@@ -110,6 +113,7 @@ async def salvar_config_precos(dados: PrecosPremiumUpdate, admin_user: dict = De
         "descricao_oferta": dados.descricao_oferta,
         "preco_pos_oferta": round(dados.preco_pos_oferta, 2),
         "parcelas_pos_oferta": dados.parcelas_pos_oferta,
+        "link_pagamento_cartao": dados.link_pagamento_cartao,
         "ativo": dados.ativo,
         "ultima_atualizacao": datetime.now(timezone.utc).isoformat(),
         "atualizado_por": admin_user.get("nome", "Admin"),

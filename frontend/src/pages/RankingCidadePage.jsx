@@ -99,8 +99,11 @@ const RankingCidadePage = () => {
         ano: new Date().getFullYear()  // Ano atual dinâmico
       });
       
+      const tkn = localStorage.getItem('token');
+      const headers = tkn ? { Authorization: `Bearer ${tkn}` } : {};
       const response = await axios.get(
-        `${API}/api/ranking/por-cidade/${encodeURIComponent(selectedEstado)}/${encodeURIComponent(selectedCidade)}?${params}`
+        `${API}/api/ranking/por-cidade/${encodeURIComponent(selectedEstado)}/${encodeURIComponent(selectedCidade)}?${params}`,
+        { headers }
       );
       
       setRanking(response.data.ranking || []);
