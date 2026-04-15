@@ -39,10 +39,10 @@ rate_limit_store = RateLimitStore()
 
 # Limites por tipo de rota
 RATE_LIMITS = {
-    "default": (60, 60),       # 60 req/min geral
-    "auth": (10, 60),          # 10 tentativas de login/min
-    "export": (5, 60),         # 5 exports/min
-    "api_heavy": (30, 60),     # 30 req/min para rotas pesadas
+    "default": (200, 60),      # 200 req/min geral
+    "auth": (30, 60),          # 30 tentativas de login/min por IP
+    "export": (15, 60),        # 15 exports/min
+    "api_heavy": (120, 60),    # 120 req/min para rotas pesadas
 }
 
 
