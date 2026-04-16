@@ -298,6 +298,11 @@ const DashboardAtletas = ({
                       <p className="text-xs text-slate-400 mt-1">
                         {atleta.equipe || 'Sem equipe'} • {atleta.cidade}/{atleta.estado}
                       </p>
+                      {atleta.data_criacao && (
+                        <p className="text-[10px] text-emerald-500 mt-0.5">
+                          Atleta desde: {new Date(atleta.data_criacao).toLocaleDateString('pt-BR')}
+                        </p>
+                      )}
                     </div>
                   </div>
                   

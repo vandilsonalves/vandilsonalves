@@ -605,6 +605,17 @@ async def exportar_dados_submetidos(admin: dict = Depends(get_admin_user)):
 
 # ==================== EXPORTAÇÕES DE RANKINGS POR MODALIDADE ====================
 
+def _format_data_cadastro(data_str):
+    """Formata data de cadastro para exibição no Excel"""
+    if not data_str:
+        return ""
+    try:
+        dt = datetime.fromisoformat(data_str.replace("Z", "+00:00"))
+        return dt.strftime("%d/%m/%Y %H:%M")
+    except Exception:
+        return str(data_str)[:16]
+
+
 # 16. Exportar Ranking Profissional/Amador
 @router.get("/admin/exportar/ranking-profissional")
 async def exportar_ranking_profissional(admin: dict = Depends(get_admin_user)):
@@ -625,7 +636,7 @@ async def exportar_ranking_profissional(admin: dict = Depends(get_admin_user)):
         "CADEIRANTE_F": lambda a: a.get("genero") == "F" and a.get("categoria", "").upper() == "CADEIRANTE",
     }
 
-    headers = ["Pos", "Nome", "Equipe", "Cidade", "Estado", "Faixa Etaria", "Pontos", "Corridas", "Podios", "Vitorias"]
+    headers = ["Pos", "Nome", "Equipe", "Cidade", "Estado", "Faixa Etaria", "Pontos", "Corridas", "Podios", "Vitorias", "Cadastro"]
     first = True
     for cat_nome, filtro_fn in categorias.items():
         if first:
@@ -645,9 +656,10 @@ async def exportar_ranking_profissional(admin: dict = Depends(get_admin_user)):
                 a.get("cidade", ""), a.get("estado", ""), a.get("faixa_etaria", ""),
                 a.get("pontos_total", 0), a.get("total_corridas", 0),
                 a.get("total_podios", 0), a.get("total_vitorias", 0),
+                _format_data_cadastro(a.get("data_criacao", a.get("created_at", ""))),
             ])
         _style_borders(ws, len(headers))
-        for j, w in enumerate([6, 30, 25, 20, 8, 12, 10, 10, 10, 10]):
+        for j, w in enumerate([6, 30, 25, 20, 8, 12, 10, 10, 10, 10, 18]):
             ws.column_dimensions[chr(65 + j)].width = w
 
     return _make_response(wb, f"ranking_profissional_amador_{datetime.now().strftime('%Y%m%d')}.xlsx")
@@ -663,7 +675,7 @@ async def exportar_ranking_galera(admin: dict = Depends(get_admin_user)):
     ).sort("pontos_povao", -1).to_list(None)
 
     wb = Workbook()
-    headers = ["Pos", "Nome", "Equipe", "Cidade", "Estado", "Faixa Etaria", "Pontos", "Corridas", "Distancia Total (km)"]
+    headers = ["Pos", "Nome", "Equipe", "Cidade", "Estado", "Faixa Etaria", "Pontos", "Corridas", "Distancia Total (km)", "Cadastro"]
 
     for idx, (gen_label, gen_code) in enumerate([("MASCULINO", "M"), ("FEMININO", "F")]):
         if idx == 0:
@@ -685,9 +697,10 @@ async def exportar_ranking_galera(admin: dict = Depends(get_admin_user)):
                 a.get("cidade", ""), a.get("estado", ""), a.get("faixa_etaria", ""),
                 a.get("pontos_povao", 0), a.get("total_corridas_povao", a.get("total_corridas", 0)),
                 a.get("distancia_total_km", 0),
+                _format_data_cadastro(a.get("data_criacao", a.get("created_at", ""))),
             ])
         _style_borders(ws, len(headers))
-        for j, w in enumerate([6, 30, 25, 20, 8, 12, 10, 10, 18]):
+        for j, w in enumerate([6, 30, 25, 20, 8, 12, 10, 10, 18, 18]):
             ws.column_dimensions[chr(65 + j)].width = w
 
     return _make_response(wb, f"ranking_galera_pace_livre_{datetime.now().strftime('%Y%m%d')}.xlsx")
