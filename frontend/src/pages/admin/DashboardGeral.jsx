@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Users, Trophy, TrendingUp, MapPin, Activity, Target, Award, BarChart3, BadgeCheck, Crown, Medal } from 'lucide-react';
+import { Users, Trophy, TrendingUp, MapPin, Activity, Target, Award, BarChart3, BadgeCheck, Crown, Medal, RefreshCw } from 'lucide-react';
 import { 
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, 
   PieChart as RechartsPie, Pie, Cell, AreaChart, Area
@@ -27,19 +27,23 @@ const DashboardGeral = ({ token }) => {
   const [statsAssessoriasVerificadas, setStatsAssessoriasVerificadas] = useState(null);
   const [statsInsignias, setStatsInsignias] = useState([]);
 
-  useEffect(() => {
+  const fetchAll = async () => {
     if (!token) return;
     const headers = { Authorization: `Bearer ${token}` };
-
-    const fetchAll = async () => {
-      setLoadingStats(true);
-      try {
-        const [statsRes, estadosRes, povaoRes] = await Promise.allSettled([
-          axios.get(`${API}/admin/stats`, { headers }),
-          axios.get(`${API}/admin/stats/estados`, { headers }),
-          axios.get(`${API}/ranking/povao/stats`)
-        ]);
-        if (statsRes.status === 'fulfilled') setStats(statsRes.value.data);
+    setLoadingStats(true);
+    try {
+      const [statsRes, estadosRes, povaoRes] = await Promise.allSettled([
+        axios.get(`${API}/admin/stats`, { headers }),
+        axios.get(`${API}/admin/stats/estados`, { headers }),
+        axios.get(`${API}/ranking/povao/stats`)
+      ]);
+        if (statsRes.status === 'fulfilled') {
+          setStats(statsRes.value.data);
+          setStatsModalidade({
+            profissional: statsRes.value.data.total_profissional || 0,
+            povao: statsRes.value.data.total_galera || 0,
+          });
+        }
         if (estadosRes.status === 'fulfilled') setStatsEstados(estadosRes.value.data);
         if (povaoRes.status === 'fulfilled') setStatsPovao(povaoRes.value.data);
 
@@ -58,25 +62,28 @@ const DashboardGeral = ({ token }) => {
         if (assessoriasVerificadasRes.status === 'fulfilled') setStatsAssessoriasVerificadas(assessoriasVerificadasRes.value.data);
         if (insigniasRes.status === 'fulfilled') setStatsInsignias(insigniasRes.value.data);
 
-        const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers });
-        const raw = atletasRes.data;
-        const atletasList = Array.isArray(raw) ? raw : Array.isArray(raw?.atletas) ? raw.atletas : [];
-        const equipesCount = {};
-        let profissionalCount = 0, povaoCount = 0;
-        atletasList.forEach(a => {
-          const equipe = a.equipe || 'Sem equipe';
-          equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
-          if (a.modalidade_usuario === 'povao_pace_livre') { povaoCount++; } else { profissionalCount++; }
-        });
-        setStatsEquipes(Object.entries(equipesCount).map(([equipe, total]) => ({ equipe, total })).sort((a, b) => b.total - a.total).slice(0, 10));
-        setStatsModalidade({ profissional: profissionalCount, povao: povaoCount });
+        // Equipes para gráfico
+        try {
+          const atletasRes = await axios.get(`${API}/admin/atletas?limit=1000`, { headers });
+          const raw = atletasRes.data;
+          const atletasList = Array.isArray(raw) ? raw : Array.isArray(raw?.atletas) ? raw.atletas : [];
+          const equipesCount = {};
+          atletasList.forEach(a => {
+            const equipe = a.equipe || 'Sem equipe';
+            if (equipe !== 'Individual' && equipe !== 'Sem equipe') {
+              equipesCount[equipe] = (equipesCount[equipe] || 0) + 1;
+            }
+          });
+          setStatsEquipes(Object.entries(equipesCount).map(([equipe, total]) => ({ equipe, total })).sort((a, b) => b.total - a.total).slice(0, 10));
+        } catch {}
       } catch (err) {
         console.error('Erro ao buscar stats:', err);
       } finally {
         setLoadingStats(false);
       }
-    };
+  };
 
+  useEffect(() => {
     fetchAll();
   }, [token]);
   if (loadingStats) {
@@ -115,6 +122,18 @@ const DashboardGeral = ({ token }) => {
 
   return (
     <div className="space-y-6">
+      {/* Header com botão atualizar */}
+      <div className="flex items-center justify-end">
+        <button
+          onClick={fetchAll}
+          disabled={loadingStats}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+          data-testid="btn-refresh-dashboard-geral"
+        >
+          <RefreshCw className={`w-3.5 h-3.5 ${loadingStats ? 'animate-spin' : ''}`} />
+          Atualizar
+        </button>
+      </div>
       {/* Cards de Estatísticas Principais */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-gradient-to-br from-green-500 to-emerald-600 text-white">

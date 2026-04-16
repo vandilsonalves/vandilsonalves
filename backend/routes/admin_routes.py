@@ -373,16 +373,20 @@ async def remover_foto_resultado(resultado_id: str, admin: dict = Depends(get_ad
 @router.get("/admin/stats")
 async def get_admin_stats(admin: dict = Depends(get_admin_user)):
     """Estatísticas gerais do dashboard admin"""
-    total_atletas = await db.usuarios.count_documents({"role": "atleta"})
+    total_atletas = await db.usuarios.count_documents({"role": {"$in": ["atleta", "dono_assessoria"]}})
     resultados_pendentes = await db.resultados_pendentes.count_documents({"status": "pendente"})
-    total_corridas = await db.corridas.count_documents({})
+    total_corridas = await db.corridas_eventos.count_documents({})
     total_assessorias = await db.assessorias.count_documents({})
     
-    atletas_masc = await db.usuarios.count_documents({"role": "atleta", "genero": "M"})
-    atletas_fem = await db.usuarios.count_documents({"role": "atleta", "genero": "F"})
+    total_prof = await db.usuarios.count_documents({"role": {"$in": ["atleta", "dono_assessoria"]}, "modalidade_usuario": {"$nin": ["povao_pace_livre", None]}})
+    total_galera = await db.usuarios.count_documents({"role": {"$in": ["atleta", "dono_assessoria"]}, "modalidade_usuario": "povao_pace_livre"})
+    atletas_masc = await db.usuarios.count_documents({"role": {"$in": ["atleta", "dono_assessoria"]}, "genero": "M"})
+    atletas_fem = await db.usuarios.count_documents({"role": {"$in": ["atleta", "dono_assessoria"]}, "genero": "F"})
     
     return {
         "total_atletas": total_atletas,
+        "total_profissional": total_prof,
+        "total_galera": total_galera,
         "resultados_pendentes": resultados_pendentes,
         "total_corridas": total_corridas,
         "total_assessorias": total_assessorias,
@@ -782,17 +786,24 @@ async def atualizar_atleta(atleta_id: str, dados: dict, admin: dict = Depends(ge
 
 @router.delete("/admin/atletas/{atleta_id}")
 async def deletar_atleta(atleta_id: str, admin: dict = Depends(get_admin_user)):
-    """Desativa atleta (soft delete)"""
+    """Exclui atleta do sistema"""
     atleta = await db.usuarios.find_one({"id": atleta_id})
     if not atleta:
         raise HTTPException(status_code=404, detail="Atleta não encontrado")
     
-    await db.usuarios.update_one(
-        {"id": atleta_id},
-        {"$set": {"is_active": False}}
-    )
+    # Excluir de fato (hard delete)
+    await db.usuarios.delete_one({"id": atleta_id})
     
-    return {"message": "Atleta desativado com sucesso!"}
+    # Limpar dados associados
+    await db.ranking_anual.delete_many({"usuario_id": atleta_id})
+    await db.ranking_povao.delete_many({"usuario_id": atleta_id})
+    await db.autorizacoes.delete_many({"atleta_id": atleta_id})
+    
+    # Invalidar cache dos rankings
+    from services.cache_service import cache_service
+    await cache_service.invalidate_all()
+    
+    return {"message": f"Atleta {atleta.get('nome', '')} excluido com sucesso!"}
 
 
 @router.get("/admin/atletas/export")
