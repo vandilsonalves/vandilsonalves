@@ -31,6 +31,8 @@ class Usuario(BaseModel):
     apelido: str = ""
     # Modalidade - profissional_amador ou povao_pace_livre
     modalidade_usuario: str = "profissional_amador"
+    # Data de cadastro
+    data_criacao: str = Field(default_factory=lambda: datetime.now().isoformat())
 
 class UsuarioRegister(BaseModel):
     nome: str
