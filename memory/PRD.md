@@ -40,6 +40,7 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Regulamento atualizado de v1.6 para v1.7 (106K → 130K caracteres)
 
 ## Backlog
+- P2: Implementar Cloudflare Turnstile no cadastro/login (requer ação do usuário no painel Cloudflare)
 - P3: Finalizar integração do scraper Sympla via sitemap nas rotas de scraping
 
 ### Sistema de Votação - Prêmio Nacional Ranking Run (10/04/2026)
@@ -159,6 +160,16 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Security Headers: X-Content-Type-Options, X-Frame-Options, X-XSS-Protection, Referrer-Policy, Permissions-Policy, Cache-Control
 - Parameter Validation: limit max 20, page validado, ano validado
 - URLs hardcoded de preview removidas (usam FRONTEND_URL env var)
+
+### Segurança Anti-Scraping v2 (17/04/2026)
+- Rate Limiting por User ID (JWT sub): 120 req/min auth, 30 req/min anon (NÃO por IP - evita bloqueio atrás de proxy/Cloudflare)
+- Anti-scraping: detecção de paginação sequencial (>15 pages/60s = block 5min)
+- Validação estrita: page max 100, limit max 20-50 conforme rota, ano validado
+- Rotas adicionais protegidas: /ranking-corridas, /ranking-avaliadores, /corrida-avaliacoes (agora requerem JWT)
+- Rotas públicas mantidas: /ranking-corridas/stats, /ranking-corridas/estados, /ranking-corridas/cidades, /corridas-eventos, /reputacao-avaliador/
+- Lista de public_paths no middleware atualizada e alinhada com rotas reais
+- Guia Cloudflare WAF/Turnstile criado em /app/memory/CLOUDFLARE_SECURITY_GUIDE.md
+- Testado: 23/23 backend + todos os fluxos frontend verificados (iteration_119)
 
 ## Credenciais de Producao
 - Super Admin: vandy1250@gmail.com (senha do cadastro)
