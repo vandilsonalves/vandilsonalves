@@ -162,8 +162,10 @@ class APIProtectionMiddleware(BaseHTTPMiddleware):
             public_paths = [
                 "/api/temporadas/", "/api/financeiro/config-precos-publico",
                 "/api/ranking/povao/stats", "/api/efi/pagamento/status",
-                "/api/auth/login", "/api/auth/cadastro",
-                "/api/corridas-eventos", "/api/ranking-corridas",
+                "/api/auth/login", "/api/auth/cadastro", "/api/auth/recuperar-senha",
+                "/api/corridas-eventos", "/api/ranking-corridas/stats",
+                "/api/ranking-corridas/estados", "/api/ranking-corridas/cidades",
+                "/api/reputacao-avaliador/",
             ]
             is_public = any(path.startswith(p) for p in public_paths)
 

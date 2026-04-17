@@ -221,8 +221,8 @@ async def get_minhas_avaliacoes_corridas(current_user: dict = Depends(get_curren
 
 
 @router.get("/corrida-avaliacoes/{corrida_id}")
-async def get_avaliacoes_corrida(corrida_id: str):
-    """Retorna todas as avaliações de uma corrida específica"""
+async def get_avaliacoes_corrida(corrida_id: str, current_user: dict = Depends(get_current_user)):
+    """Retorna todas as avaliações de uma corrida específica - requer autenticacao"""
     
     avaliacoes = await db.avaliacoes_corridas.find(
         {"corrida_id": corrida_id},
@@ -305,8 +305,9 @@ async def get_reputacao_avaliador(atleta_id: str):
 
 
 @router.get("/ranking-avaliadores")
-async def get_ranking_avaliadores(limite: int = 20):
-    """Retorna o ranking dos melhores avaliadores"""
+async def get_ranking_avaliadores(limite: int = 20, current_user: dict = Depends(get_current_user)):
+    """Retorna o ranking dos melhores avaliadores - requer autenticacao"""
+    limite = min(max(1, limite), 50)
     
     pipeline = [
         {

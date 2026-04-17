@@ -24,8 +24,8 @@ router = APIRouter(tags=["Ranking"])
 def validate_limit(limit: int, max_limit: int = 20) -> int:
     return min(max(1, limit), max_limit)
 
-def validate_page(page: int) -> int:
-    return max(1, page)
+def validate_page(page: int, max_page: int = 100) -> int:
+    return min(max(1, page), max_page)
 
 def validate_ano(ano: int) -> int:
     if ano < 2020 or ano > ANO_ATUAL + 1:

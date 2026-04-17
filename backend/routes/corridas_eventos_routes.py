@@ -480,11 +480,14 @@ async def get_ranking_corridas(
     estado: str = None,
     cidade: str = None,
     page: int = 1,
-    limit: int = 20
+    limit: int = 20,
+    current_user: dict = Depends(get_current_user)
 ):
     """
-    Retorna ranking das corridas baseado em avaliações (paginado)
+    Retorna ranking das corridas baseado em avaliações (paginado) - requer autenticacao
     """
+    limit = min(max(1, limit), 50)
+    page = min(max(1, page), 100)
     
     filtro = {}
     if tipo == "estadual" and estado:
