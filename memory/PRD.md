@@ -162,14 +162,20 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - URLs hardcoded de preview removidas (usam FRONTEND_URL env var)
 
 ### Segurança Anti-Scraping v2 (17/04/2026)
-- Rate Limiting por User ID (JWT sub): 120 req/min auth, 30 req/min anon (NÃO por IP - evita bloqueio atrás de proxy/Cloudflare)
-- Anti-scraping: detecção de paginação sequencial (>15 pages/60s = block 5min)
+- Rate Limiting por User ID (JWT sub): 100 req/min + 1000 req/dia auth, 30 req/min anon (NÃO por IP)
+- Bloqueio automático: 10 minutos ao exceder rate limit
+- Anti-bot: detecção de intervalos < 50ms entre requisições (8+ triggers = block 10min)
+- Anti-scraping: detecção de paginação sequencial (>15 pages/60s = block 10min)
 - Validação estrita: page max 100, limit max 20-50 conforme rota, ano validado
-- Rotas adicionais protegidas: /ranking-corridas, /ranking-avaliadores, /corrida-avaliacoes (agora requerem JWT)
-- Rotas públicas mantidas: /ranking-corridas/stats, /ranking-corridas/estados, /ranking-corridas/cidades, /corridas-eventos, /reputacao-avaliador/
-- Lista de public_paths no middleware atualizada e alinhada com rotas reais
+- Token Rotation: access token 10 minutos, refresh token 7 dias
+- Endpoint /api/auth/refresh para renovação automática de tokens
+- Frontend: Axios interceptor auto-refresh em 401 (retry transparente)
+- Token blacklist em memória para invalidação
+- 25+ rotas adicionais protegidas: assessorias, liga, badges, strava-atividades, feed, indicação, corridas detalhes
+- Rotas públicas mantidas apenas para: auth, webhooks, health, catálogo, temporadas, regulamento, preços, parceiros
+- Lista PUBLIC_PATHS centralizada no middleware
 - Guia Cloudflare WAF/Turnstile criado em /app/memory/CLOUDFLARE_SECURITY_GUIDE.md
-- Testado: 23/23 backend + todos os fluxos frontend verificados (iteration_119)
+- Testado: 36/36 backend + todos os fluxos frontend verificados (iteration_120)
 
 ## Credenciais de Producao
 - Super Admin: vandy1250@gmail.com (senha do cadastro)
