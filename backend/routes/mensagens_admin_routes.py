@@ -297,7 +297,7 @@ async def cancelar_agendada(mensagem_id: str, admin: dict = Depends(get_admin_us
 
 
 @router.post("/admin/mensagens/processar-agendadas")
-async def processar_agendadas():
+async def processar_agendadas(admin: dict = Depends(get_admin_user)):
     """
     Processa mensagens agendadas cujo horário já passou.
     Chamado pelo Celery beat ou manualmente.

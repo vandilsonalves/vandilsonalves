@@ -247,7 +247,7 @@ async def registrar_indicacao(
 
 
 @router.get("/ranking")
-async def ranking_indicacoes():
+async def ranking_indicacoes(current_user: dict = Depends(get_current_user)):
     """Retorna o ranking de quem mais indicou"""
     
     pipeline = [
@@ -286,7 +286,7 @@ async def ranking_indicacoes():
 
 
 @router.get("/atleta/{atleta_id}/publico")
-async def get_indicacoes_publico(atleta_id: str):
+async def get_indicacoes_publico(atleta_id: str, current_user: dict = Depends(get_current_user)):
     """Retorna dados públicos de indicação de um atleta (para perfil público)"""
     
     # Buscar atleta

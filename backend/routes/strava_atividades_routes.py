@@ -1,10 +1,11 @@
 # /app/backend/routes/strava_atividades_routes.py
 # Rotas para exibição pública das atividades do Strava
 
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Depends
 from datetime import datetime, timezone, timedelta
 from typing import Optional
 from config import db
+from routes.auth_routes import get_current_user
 
 router = APIRouter()
 
@@ -27,7 +28,7 @@ def get_week_range(week_offset: int = 0):
 
 
 @router.get("/strava-atividades/membros")
-async def get_membros_conectados():
+async def get_membros_conectados(current_user: dict = Depends(get_current_user)):
     """
     Lista todos os membros que conectaram o Strava.
     """
@@ -57,7 +58,8 @@ async def get_membros_conectados():
 @router.get("/strava-atividades/classificacao")
 async def get_classificacao_semanal(
     periodo: str = Query("esta_semana", description="esta_semana ou semana_passada"),
-    ordenar_por: str = Query("distancia", description="distancia, corridas, maior_corrida, ritmo, elevacao")
+    ordenar_por: str = Query("distancia", description="distancia, corridas, maior_corrida, ritmo, elevacao"),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Retorna a classificação semanal dos atletas baseada nas atividades do Strava.
@@ -178,7 +180,8 @@ async def get_classificacao_semanal(
 
 @router.get("/strava-atividades/lideres")
 async def get_lideres_semana(
-    periodo: str = Query("semana_passada", description="esta_semana ou semana_passada")
+    periodo: str = Query("semana_passada", description="esta_semana ou semana_passada"),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Retorna os líderes da semana em cada categoria:
@@ -265,7 +268,8 @@ async def get_lideres_semana(
 @router.get("/strava-atividades/recentes")
 async def get_atividades_recentes(
     limit: int = Query(20, ge=1, le=100),
-    skip: int = Query(0, ge=0)
+    skip: int = Query(0, ge=0),
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Lista as atividades mais recentes de todos os usuários conectados.

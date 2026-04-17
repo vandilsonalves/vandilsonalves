@@ -565,7 +565,7 @@ async def remover_reacao(post_id: str, current_user: dict = Depends(get_current_
 
 
 @router.get("/feed/posts/{post_id}/reacoes")
-async def get_reacoes_post(post_id: str):
+async def get_reacoes_post(post_id: str, current_user: dict = Depends(get_current_user)):
     """Retorna todas as reações de um post agrupadas por tipo"""
     
     # Buscar reações agrupadas
@@ -712,7 +712,8 @@ async def comentar_post(
 async def get_comentarios_post(
     post_id: str,
     pagina: int = Query(1, ge=1),
-    limite: int = Query(20, ge=1, le=50)
+    limite: int = Query(20, ge=1, le=50),
+    current_user: dict = Depends(get_current_user)
 ):
     """Retorna os comentários de um post"""
     
@@ -806,7 +807,7 @@ async def deletar_comentario(comentario_id: str, current_user: dict = Depends(ge
 
 
 @router.get("/feed/trending")
-async def get_trending(limite: int = Query(10, ge=1, le=20)):
+async def get_trending(limite: int = Query(10, ge=1, le=20), current_user: dict = Depends(get_current_user)):
     """Retorna os posts mais populares das últimas 24 horas (baseado em reações)"""
     
     # Posts das últimas 24 horas

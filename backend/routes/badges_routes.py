@@ -378,7 +378,7 @@ async def verificar_badges_atleta(atleta_id: str) -> List[dict]:
 # ==================== ENDPOINTS ====================
 
 @router.get("/lista")
-async def listar_badges():
+async def listar_badges(current_user: dict = Depends(get_current_user)):
     """Lista todos os badges disponíveis no sistema"""
     badges = []
     for badge_id, config in BADGES_CONFIG.items():
@@ -400,7 +400,7 @@ async def listar_badges():
 
 
 @router.get("/atleta/{atleta_id}")
-async def get_badges_atleta(atleta_id: str):
+async def get_badges_atleta(atleta_id: str, current_user: dict = Depends(get_current_user)):
     """Retorna badges de um atleta específico"""
     
     usuario = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
@@ -448,11 +448,11 @@ async def get_badges_atleta(atleta_id: str):
 @router.get("/meus-badges")
 async def get_meus_badges(current_user: dict = Depends(get_current_user)):
     """Retorna badges do usuário logado"""
-    return await get_badges_atleta(current_user["id"])
+    return await get_badges_atleta(current_user["id"], current_user)
 
 
 @router.get("/atleta/{atleta_id}/card-compartilhamento")
-async def gerar_card_compartilhamento(atleta_id: str):
+async def gerar_card_compartilhamento(atleta_id: str, current_user: dict = Depends(get_current_user)):
     """Gera dados para o card de compartilhamento em redes sociais"""
     
     usuario = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
@@ -512,7 +512,7 @@ async def gerar_card_compartilhamento(atleta_id: str):
 
 
 @router.get("/ranking-badges")
-async def ranking_badges():
+async def ranking_badges(current_user: dict = Depends(get_current_user)):
     """Retorna ranking de atletas com mais badges"""
     
     pipeline = [

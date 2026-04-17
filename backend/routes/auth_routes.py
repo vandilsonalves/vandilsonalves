@@ -12,7 +12,7 @@ import os
 from config import db, security
 from models import Usuario, UsuarioRegister, UsuarioLogin
 from services import (
-    verify_password, get_password_hash, create_access_token,
+    verify_password, get_password_hash, create_access_token, create_refresh_token,
     calcular_faixa_etaria, gerar_foto_url, SECRET_KEY, ALGORITHM
 )
 
@@ -305,10 +305,12 @@ async def register_atleta(dados: UsuarioRegister):
         indicador_nome = await registrar_indicacao_interna(usuario.id, usuario.nome, dados.codigo_indicacao)
     
     token = create_access_token({"sub": usuario.id})
+    refresh = create_refresh_token({"sub": usuario.id})
     
     return {
         "message": "Cadastro realizado com sucesso!",
         "token": token,
+        "refresh_token": refresh,
         "user": {
             "id": usuario.id,
             "nome": usuario.nome,
@@ -341,9 +343,11 @@ async def login(dados: UsuarioLogin):
         raise HTTPException(status_code=401, detail="Usuário inativo")
     
     token = create_access_token({"sub": user["id"]})
+    refresh = create_refresh_token({"sub": user["id"]})
     
     return {
         "token": token,
+        "refresh_token": refresh,
         "user": {
             "id": user["id"],
             "nome": user["nome"],
@@ -372,6 +376,52 @@ async def get_me(current_user: dict = Depends(get_current_user)):
         "estado": current_user.get("estado", ""),
         "modalidade_usuario": current_user.get("modalidade_usuario", "profissional_amador")
     }
+
+
+
+# ==================== REFRESH TOKEN ====================
+
+from pydantic import BaseModel as PydanticBaseModel
+
+class RefreshRequest(PydanticBaseModel):
+    refresh_token: str
+
+@router.post("/auth/refresh")
+async def refresh_token(dados: RefreshRequest):
+    """Renova o access token usando o refresh token"""
+    from security_middleware import token_blacklist
+    
+    try:
+        payload = jwt.decode(dados.refresh_token, SECRET_KEY, algorithms=[ALGORITHM])
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=401, detail="Token invalido")
+        
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=401, detail="Token invalido")
+        
+        user = await db.usuarios.find_one({"id": user_id}, {"_id": 0})
+        if not user or not user.get("is_active", True):
+            raise HTTPException(status_code=401, detail="Usuario nao encontrado ou inativo")
+        
+        new_token = create_access_token({"sub": user_id})
+        
+        return {
+            "token": new_token,
+            "user": {
+                "id": user["id"],
+                "nome": user["nome"],
+                "email": user["email"],
+                "role": user["role"],
+                "foto_url": user.get("foto_url", ""),
+                "categoria": user.get("categoria", "normal"),
+                "equipe": user.get("equipe", ""),
+                "estado": user.get("estado", ""),
+                "is_dono_assessoria": user.get("is_dono_assessoria", False)
+            }
+        }
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Refresh token expirado ou invalido. Faca login novamente.")
 
 
 # ==================== LOGIN COM SENHA DE EMERGÊNCIA ====================
@@ -433,9 +483,11 @@ async def login_com_senha_emergencia(dados: LoginEmergencia):
     
     # Criar token de acesso
     token = create_access_token({"sub": user["id"]})
+    refresh = create_refresh_token({"sub": user["id"]})
     
     return {
         "token": token,
+        "refresh_token": refresh,
         "user": {
             "id": user["id"],
             "nome": user["nome"],

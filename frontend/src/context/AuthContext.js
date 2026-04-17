@@ -328,9 +328,10 @@ export function AuthProvider({ children }) {
 
   const login = async (email, password) => {
     const response = await axios.post(`${API}/auth/login`, { email, password });
-    const { token: newToken, user: userData } = response.data;
+    const { token: newToken, refresh_token: refreshToken, user: userData } = response.data;
     
     localStorage.setItem('token', newToken);
+    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
     setToken(newToken);
     setUser(userData);
     
@@ -367,9 +368,10 @@ export function AuthProvider({ children }) {
 
   const register = async (dados) => {
     const response = await axios.post(`${API}/auth/register`, dados);
-    const { token: newToken, user: userData } = response.data;
+    const { token: newToken, refresh_token: refreshToken, user: userData } = response.data;
     
     localStorage.setItem('token', newToken);
+    if (refreshToken) localStorage.setItem('refresh_token', refreshToken);
     setToken(newToken);
     setUser(userData);
     
@@ -381,6 +383,7 @@ export function AuthProvider({ children }) {
     disconnectWebSocket();
     
     localStorage.removeItem('token');
+    localStorage.removeItem('refresh_token');
     localStorage.removeItem('adminData');
     setToken(null);
     setUser(null);

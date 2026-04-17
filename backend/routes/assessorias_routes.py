@@ -91,7 +91,7 @@ def resultado_pertence_equipe(corrida: dict, atleta: dict, nome_equipe: str) -> 
 
 @router.get("/assessorias/lista")
 @cached(prefix='liga', ttl_key='liga_assessorias')
-async def get_assessorias_lista():
+async def get_assessorias_lista(current_user: dict = Depends(get_current_user)):
     """Lista assessorias cadastradas para dropdown do cadastro"""
     assessorias = await db.assessorias.find(
         {},
@@ -125,7 +125,8 @@ async def get_ranking_assessorias(
     tipo: str = "nacional",
     estado: str = None,
     cidade: str = None,
-    mes: int = None
+    mes: int = None,
+    current_user: dict = Depends(get_current_user)
 ):
     """
     Retorna ranking das assessorias baseado no sistema ROE-RR
@@ -333,7 +334,7 @@ async def get_ranking_assessorias(
 
 @router.get("/liga-assessorias/stats")
 @cached(prefix='liga', ttl_key='stats')
-async def get_stats_liga_assessorias():
+async def get_stats_liga_assessorias(current_user: dict = Depends(get_current_user)):
     """Estatísticas gerais da liga de assessorias"""
     
     pipeline_total = [
@@ -373,7 +374,7 @@ async def get_stats_liga_assessorias():
 
 @router.get("/liga-assessorias/evolucao-mensal")
 @cached(prefix='liga', ttl=600)
-async def get_evolucao_mensal_equipes(top: int = 5):
+async def get_evolucao_mensal_equipes(top: int = 5, current_user: dict = Depends(get_current_user)):
     """Retorna a evolução mensal de pontos das top equipes"""
     ano_atual = datetime.now().year
     mes_atual = datetime.now().month
@@ -455,7 +456,7 @@ async def get_evolucao_mensal_equipes(top: int = 5):
 # ==================== DETALHE DA ASSESSORIA ====================
 
 @router.get("/liga-assessorias/assessoria/{nome_equipe}")
-async def get_detalhes_assessoria(nome_equipe: str):
+async def get_detalhes_assessoria(nome_equipe: str, current_user: dict = Depends(get_current_user)):
     """Retorna detalhes de uma assessoria específica"""
     import urllib.parse
     nome_equipe = urllib.parse.unquote(nome_equipe)

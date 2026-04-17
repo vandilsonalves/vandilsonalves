@@ -371,7 +371,7 @@ async def exportar_corridas_eventos(
 
 
 @router.get("/corridas-eventos/{corrida_id}")
-async def get_corrida_evento(corrida_id: str):
+async def get_corrida_evento(corrida_id: str, current_user: dict = Depends(get_current_user)):
     """Retorna detalhes de uma corrida específica"""
     
     corrida = await db.corridas_eventos.find_one({"id": corrida_id}, {"_id": 0})
@@ -666,7 +666,7 @@ async def avaliar_corrida(
 
 
 @router.get("/corridas-eventos/{corrida_id}/avaliacoes")
-async def get_avaliacoes_corrida(corrida_id: str):
+async def get_avaliacoes_corrida(corrida_id: str, current_user: dict = Depends(get_current_user)):
     """Lista avaliações de uma corrida"""
     
     avaliacoes = await db.avaliacoes_corridas.find(

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/liga-assessorias", tags=["Liga Assessorias"])
 
 
 @router.get("/estados")
-async def get_estados_com_assessorias():
+async def get_estados_com_assessorias(current_user: dict = Depends(get_current_user)):
     """Lista estados que têm assessorias cadastradas"""
     pipeline = [
         {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None], "$exists": True}}},
@@ -27,7 +27,7 @@ async def get_estados_com_assessorias():
 
 
 @router.get("/cidades")
-async def get_cidades_com_assessorias(estado: str = None):
+async def get_cidades_com_assessorias(estado: str = None, current_user: dict = Depends(get_current_user)):
     """Lista cidades que têm assessorias cadastradas"""
     match_filter = {"role": {"$in": ["atleta", "dono_assessoria"]}, "equipe": {"$nin": ["", None], "$exists": True}}
     if estado:
@@ -44,7 +44,7 @@ async def get_cidades_com_assessorias(estado: str = None):
 
 
 @router.get("/comparacao-mensal/{nome_equipe}")
-async def get_comparacao_mensal_assessoria(nome_equipe: str):
+async def get_comparacao_mensal_assessoria(nome_equipe: str, current_user: dict = Depends(get_current_user)):
     """
     Retorna comparação de desempenho entre mês atual e mês anterior
     Para uso no Dashboard do Dono de Assessoria

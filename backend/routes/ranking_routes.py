@@ -113,7 +113,7 @@ async def get_ranking_povao(genero: str = "M", page: int = 1, limit: int = 20, c
 
 @router.get("/ranking/povao/stats")
 @cached(prefix='ranking', ttl_key='stats')
-async def get_povao_stats():
+async def get_povao_stats(current_user: dict = Depends(get_current_user)):
     """Retorna estatísticas do ranking da Galera"""
     # Contar TODOS os atletas cadastrados na modalidade galera (não apenas os com resultado)
     total_atletas_m = await db.usuarios.count_documents({
@@ -838,7 +838,7 @@ async def get_ranking_por_categoria(
 # ==================== HISTÓRICO E ANOS ====================
 
 @router.get("/ranking/anos-disponiveis")
-async def get_anos_disponiveis():
+async def get_anos_disponiveis(current_user: dict = Depends(get_current_user)):
     """Retorna anos com dados no ranking"""
     anos = await db.ranking_anual.distinct("ano")
     return sorted(anos, reverse=True)
@@ -848,7 +848,7 @@ async def get_anos_disponiveis():
 
 @router.get("/ranking/estados")
 @cached(prefix='ranking', ttl_key='estados')
-async def get_estados():
+async def get_estados(current_user: dict = Depends(get_current_user)):
     """Lista estados com atletas"""
     estados = await db.usuarios.distinct("estado", {"role": {"$in": ["atleta", "dono_assessoria"]}})
     return {"estados": sorted([e for e in estados if e])}
@@ -856,7 +856,7 @@ async def get_estados():
 
 @router.get("/ranking/faixas-etarias")
 @cached(prefix='ranking', ttl_key='faixas_etarias')
-async def get_faixas_etarias():
+async def get_faixas_etarias(current_user: dict = Depends(get_current_user)):
     """Lista faixas etárias disponíveis"""
     return {"faixas": ["Até 17", "18-29", "30-39", "40-49", "50-59", "60-69", "70+"]}
 
@@ -892,7 +892,7 @@ async def get_equipes(page: int = 1, limit: int = 20, current_user: dict = Depen
 
 @router.get("/ranking/cidades")
 @cached(prefix='ranking', ttl_key='cidades')
-async def get_cidades(estado: str = None):
+async def get_cidades(estado: str = None, current_user: dict = Depends(get_current_user)):
     """Lista cidades com atletas, opcionalmente filtradas por estado"""
     query = {"role": {"$in": ["atleta", "dono_assessoria"]}, "cidade": {"$ne": "", "$exists": True}}
     

@@ -51,7 +51,7 @@ async def get_conquistas_disponiveis():
 
 
 @router.get("/selos-atleta/{atleta_id}")
-async def get_selos_atleta(atleta_id: str):
+async def get_selos_atleta(atleta_id: str, current_user: dict = Depends(get_current_user)):
     """Retorna os selos do atleta com informações de progresso (público)"""
     atleta = await db.usuarios.find_one({"id": atleta_id}, {"_id": 0})
     if not atleta:
