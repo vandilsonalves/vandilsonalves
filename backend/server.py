@@ -6,7 +6,7 @@ from starlette.middleware.gzip import GZipMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 from starlette.middleware.cors import CORSMiddleware
-from security_middleware import SecurityHeadersMiddleware
+from security_middleware import SecurityMiddleware, APIProtectionMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
 import os
 import logging
@@ -1433,8 +1433,11 @@ app.add_middleware(
     expose_headers=["X-RateLimit-Limit", "X-RateLimit-Remaining", "Content-Disposition"],
 )
 
-# Security headers
-app.add_middleware(SecurityHeadersMiddleware)
+# Security headers + HSTS
+app.add_middleware(SecurityMiddleware)
+
+# API Protection (rate limit por usuario + anti-scraping)
+app.add_middleware(APIProtectionMiddleware)
 
 # GZip compression - comprime respostas > 500 bytes (reduz ~70% do trafego)
 app.add_middleware(GZipMiddleware, minimum_size=500)

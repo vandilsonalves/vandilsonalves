@@ -20,7 +20,7 @@ async def get_ranking_nacional(ano: int = Query(ANO_ATUAL), current_user: dict =
     pipeline = [
         {"$match": {"ano": ano, "role": "atleta"}},
         {"$sort": {"pontos_geral": -1}},
-        {"$limit": 500},
+        {"$limit": 50},
         {"$project": {
             "_id": 0,
             "id": 1,
