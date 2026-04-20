@@ -212,6 +212,7 @@ PUBLIC_PATHS = [
     "/api/corridas-eventos/template",
     "/api/corridas-eventos",
     "/api/corridas-parceiras/config", "/api/corridas-parceiras",
+    "/api/assessorias/lista",
     "/api/ranking-corridas/stats", "/api/ranking-corridas/estados", "/api/ranking-corridas/cidades",
     "/api/premiacao/ativas", "/api/premiacao/todas", "/api/premiacao/status",
     "/api/premiacao/p/",
@@ -291,8 +292,8 @@ class APIProtectionMiddleware(BaseHTTPMiddleware):
                     headers={"Retry-After": "60"},
                 )
 
-        # 3. Anti-scraping + anti-bot (apenas em rotas de dados/ranking)
-        if user_id and any(x in path for x in ["/ranking", "/liga-", "/assessorias", "/strava-atividades", "/badges", "/feed/"]):
+        # 3. Anti-scraping + anti-bot (apenas em rotas de ranking/dados competitivos)
+        if user_id and any(x in path for x in ["/ranking", "/liga-assessorias", "/strava-atividades", "/badges/ranking"]):
             if activity_tracker.track(user_id, str(request.url)):
                 return JSONResponse(
                     status_code=429,

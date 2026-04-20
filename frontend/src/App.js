@@ -91,7 +91,11 @@ axios.interceptors.response.use(
         isRefreshing = false;
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
-        window.location.href = '/login';
+        // Não redirecionar se já está em login/cadastro
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/login' && currentPath !== '/cadastro') {
+          window.location.href = '/login';
+        }
         return Promise.reject(error);
       }
 
@@ -107,7 +111,10 @@ axios.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
-        window.location.href = '/login';
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/login' && currentPath !== '/cadastro') {
+          window.location.href = '/login';
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

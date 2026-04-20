@@ -91,8 +91,8 @@ def resultado_pertence_equipe(corrida: dict, atleta: dict, nome_equipe: str) -> 
 
 @router.get("/assessorias/lista")
 @cached(prefix='liga', ttl_key='liga_assessorias')
-async def get_assessorias_lista(current_user: dict = Depends(get_current_user)):
-    """Lista assessorias cadastradas para dropdown do cadastro"""
+async def get_assessorias_lista():
+    """Lista assessorias cadastradas para dropdown do cadastro (publico)"""
     assessorias = await db.assessorias.find(
         {},
         {"_id": 0, "nome": 1, "cidade": 1, "estado": 1}
