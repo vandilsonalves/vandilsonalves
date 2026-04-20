@@ -177,6 +177,12 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Guia Cloudflare WAF/Turnstile criado em /app/memory/CLOUDFLARE_SECURITY_GUIDE.md
 - Testado: 36/36 backend + todos os fluxos frontend verificados (iteration_120)
 
+### Bug Fixes Segurança (17/04/2026)
+- Bug 1: Feed bloqueado por anti-bot (escopo incluía /feed/) → Anti-bot reduzido para apenas /ranking, /liga-assessorias, /strava-atividades, /badges/ranking
+- Bug 2: Cadastro fechava automaticamente → /assessorias/lista tornado público (necessário para dropdown de equipes) + interceptor Axios não redireciona em /login e /cadastro
+- Bug 3: Feed da equipe/assessoria bloqueado → Anti-bot não monitora mais /assessorias
+- Testado: 16/16 backend + 3 bugs verificados corrigidos (iteration_121)
+
 ## Credenciais de Producao
 - Super Admin: vandy1250@gmail.com (senha do cadastro)
 - Super Admin: suporte@rankingrun.com.br (promovido ao cadastrar)
