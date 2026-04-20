@@ -12,7 +12,7 @@ load_dotenv(os.path.join(os.path.dirname(os.path.dirname(__file__)), '.env'))
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 SECRET_KEY = os.environ.get("SECRET_KEY", "sua-chave-secreta-super-segura-aqui-123456")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 10
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
 REFRESH_TOKEN_EXPIRE_DAYS = 7
 
 def verify_password(plain_password, hashed_password):

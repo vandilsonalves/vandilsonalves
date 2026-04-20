@@ -66,11 +66,17 @@ axios.interceptors.response.use(
   async (error) => {
     const originalRequest = error.config;
     
+    // Skip 429 - just let the component handle it
+    if (error.response?.status === 429) {
+      return Promise.reject(error);
+    }
+
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Skip refresh for auth endpoints
       if (originalRequest.url?.includes('/auth/login') || 
           originalRequest.url?.includes('/auth/refresh') ||
-          originalRequest.url?.includes('/auth/register')) {
+          originalRequest.url?.includes('/auth/register') ||
+          originalRequest.url?.includes('/auth/cadastro')) {
         return Promise.reject(error);
       }
 
@@ -89,13 +95,7 @@ axios.interceptors.response.use(
       const refreshToken = localStorage.getItem('refresh_token');
       if (!refreshToken) {
         isRefreshing = false;
-        localStorage.removeItem('token');
-        localStorage.removeItem('refresh_token');
-        // Não redirecionar se já está em login/cadastro
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/login' && currentPath !== '/cadastro') {
-          window.location.href = '/login';
-        }
+        // Sem refresh token - apenas rejeitar, não redirecionar
         return Promise.reject(error);
       }
 
@@ -111,10 +111,7 @@ axios.interceptors.response.use(
         localStorage.removeItem('token');
         localStorage.removeItem('refresh_token');
         localStorage.removeItem('user');
-        const currentPath = window.location.pathname;
-        if (currentPath !== '/login' && currentPath !== '/cadastro') {
-          window.location.href = '/login';
-        }
+        // Não redirecionar - deixar o AuthContext lidar com sessão expirada
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

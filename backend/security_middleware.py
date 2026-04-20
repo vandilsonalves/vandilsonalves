@@ -20,58 +20,28 @@ ALLOWED_ORIGINS = set(
 # ==================== RATE LIMITER POR USUARIO ====================
 
 class UserRateLimiter:
-    """Rate limit por token/usuario - NÃO por IP (evita bloqueio atrás de proxy)"""
+    """Rate limit por token/usuario - SEM bloqueio agressivo"""
 
     def __init__(self):
-        self.user_requests_min = defaultdict(list)    # per-minute window
-        self.user_requests_day = defaultdict(list)    # per-day window
+        self.user_requests_min = defaultdict(list)
         self.anon_requests = defaultdict(list)
-        self.blocked = {}  # key -> unblock_time (10 min ban)
 
     def _cleanup(self, bucket, key, window):
         now = time.time()
         bucket[key] = [t for t in bucket[key] if t > now - window]
 
-    def is_blocked(self, key: str) -> bool:
-        if key in self.blocked:
-            if time.time() < self.blocked[key]:
-                return True
-            del self.blocked[key]
-        return False
-
-    def block(self, key: str, duration: int = 600):
-        self.blocked[key] = time.time() + duration
-
-    def check_user(self, user_id: str, max_per_min: int = 100, max_per_day: int = 1000) -> tuple:
-        """Retorna (bloqueado: bool, motivo: str)"""
-        if self.is_blocked(user_id):
-            return True, "block"
-
-        now = time.time()
-
-        # Per-minute check
+    def check_user(self, user_id: str, max_per_min: int = 300) -> bool:
+        """Retorna True se excedeu limite (sem bloqueio prolongado)"""
         self._cleanup(self.user_requests_min, user_id, 60)
         if len(self.user_requests_min[user_id]) >= max_per_min:
-            self.block(user_id, 600)  # 10 min ban
-            logger.warning(f"[RATE LIMIT] User {user_id[:8]}... BLOQUEADO 10min (>{max_per_min}/min)")
-            return True, "minute"
-
-        # Per-day check
-        self._cleanup(self.user_requests_day, user_id, 86400)
-        if len(self.user_requests_day[user_id]) >= max_per_day:
-            return True, "day"
-
-        self.user_requests_min[user_id].append(now)
-        self.user_requests_day[user_id].append(now)
-        return False, ""
-
-    def check_anon(self, fingerprint: str, max_req: int = 30, window: int = 60) -> bool:
-        """Rate limit para requisições anônimas (sem token) - mais restritivo"""
-        if self.is_blocked(fingerprint):
             return True
+        self.user_requests_min[user_id].append(time.time())
+        return False
+
+    def check_anon(self, fingerprint: str, max_req: int = 60, window: int = 60) -> bool:
+        """Rate limit para requisições anônimas"""
         self._cleanup(self.anon_requests, fingerprint, window)
         if len(self.anon_requests[fingerprint]) >= max_req:
-            self.block(fingerprint, 600)
             return True
         self.anon_requests[fingerprint].append(time.time())
         return False
@@ -83,10 +53,9 @@ rate_limiter = UserRateLimiter()
 # ==================== ANTI-BOT / SCRAPING DETECTOR ====================
 
 class SuspiciousActivityTracker:
-    """Detecta padrões de scraping e uso abusivo"""
+    """Detecta padrões de scraping - apenas paginação sequencial abusiva"""
 
     def __init__(self):
-        self.request_times = defaultdict(list)     # user -> [timestamps]
         self.sequential_access = defaultdict(list)  # user -> [(time, path)]
         self.blocked_users = {}                     # user -> unblock_time
 
@@ -100,32 +69,18 @@ class SuspiciousActivityTracker:
                 return True
             del self.blocked_users[user_id]
 
-        # 1. Detectar intervalos < 50ms (bot behavior - mais rigoroso que navegação normal)
-        self.request_times[user_id] = [
-            t for t in self.request_times[user_id] if t > now - 10
-        ]
-        if len(self.request_times[user_id]) >= 5:
-            intervals = [
-                self.request_times[user_id][i] - self.request_times[user_id][i-1]
-                for i in range(1, len(self.request_times[user_id]))
-            ]
-            fast_requests = sum(1 for gap in intervals if gap < 0.05)
-            if fast_requests >= 8:
-                self.blocked_users[user_id] = now + 600  # block 10 min
-                logger.warning(f"[ANTI-BOT] Bot detectado: {user_id[:8]}... - {fast_requests} reqs < 50ms em 10s")
-                return True
-        self.request_times[user_id].append(now)
+        # Apenas detectar paginação sequencial abusiva (>20 pages em 60s)
+        if "page=" not in path:
+            return False
 
-        # 2. Detectar paginação sequencial abusiva (>15 pages em 60s)
         self.sequential_access[user_id] = [
             (t, p) for t, p in self.sequential_access[user_id] if t > now - 60
         ]
         self.sequential_access[user_id].append((now, path))
 
-        recent_paths = [p for _, p in self.sequential_access[user_id]]
-        page_requests = sum(1 for p in recent_paths if "page=" in p)
-        if page_requests > 15:
-            self.blocked_users[user_id] = now + 600  # block 10 min
+        page_requests = len(self.sequential_access[user_id])
+        if page_requests > 20:
+            self.blocked_users[user_id] = now + 300  # block 5 min
             logger.warning(f"[ANTI-BOT] Scraping detectado: {user_id[:8]}... - {page_requests} paginacoes em 60s")
             return True
 
@@ -263,33 +218,26 @@ class APIProtectionMiddleware(BaseHTTPMiddleware):
 
         # 2. Rate limit
         if user_id:
-            blocked, reason = rate_limiter.check_user(user_id, max_per_min=100, max_per_day=1000)
-            if blocked:
-                retry = "600" if reason == "block" else ("30" if reason == "minute" else "3600")
-                msg = {
-                    "block": "Acesso temporariamente bloqueado por uso excessivo. Tente novamente em 10 minutos.",
-                    "minute": "Limite de requisicoes por minuto atingido. Aguarde.",
-                    "day": "Limite diario de requisicoes atingido (1000/dia)."
-                }.get(reason, "Limite atingido.")
-                logger.warning(f"[RATE LIMIT] User {user_id[:8]}... - {reason} em {path}")
+            if rate_limiter.check_user(user_id, max_per_min=300):
+                logger.warning(f"[RATE LIMIT] User {user_id[:8]}... em {path}")
                 return JSONResponse(
                     status_code=429,
-                    content={"detail": msg},
-                    headers={"Retry-After": retry},
+                    content={"detail": "Aguarde um momento antes de continuar."},
+                    headers={"Retry-After": "5"},
                 )
         else:
-            # Anônimo: 30 req/min (restritivo)
+            # Anônimo: 60 req/min
             fp = hashlib.md5(
                 f"{request.headers.get('user-agent', '')}{request.headers.get('accept-language', '')}".encode()
             ).hexdigest()[:12]
 
             is_public = any(path.startswith(p) for p in PUBLIC_PATHS)
 
-            if is_public and rate_limiter.check_anon(fp, max_req=30, window=60):
+            if is_public and rate_limiter.check_anon(fp, max_req=60, window=60):
                 return JSONResponse(
                     status_code=429,
                     content={"detail": "Muitas requisicoes. Faca login para continuar."},
-                    headers={"Retry-After": "60"},
+                    headers={"Retry-After": "10"},
                 )
 
         # 3. Anti-scraping + anti-bot (apenas em rotas de ranking/dados competitivos)
