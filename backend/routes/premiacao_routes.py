@@ -228,6 +228,38 @@ async def upload_foto_categoria(prem_id: str, cat_id: str, foto: UploadFile = Fi
         raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
 
 
+@router.post("/admin/premiacoes/{prem_id}/categorias/{cat_id}/opcao/{opcao_idx}/foto")
+async def upload_foto_opcao(prem_id: str, cat_id: str, opcao_idx: int, foto: UploadFile = File(...), current_user: dict = Depends(get_admin_user)):
+    """Upload de foto para uma opção específica de votação"""
+    cat = await db.premiacao_categorias.find_one({"id": cat_id, "premiacao_id": prem_id})
+    if not cat:
+        raise HTTPException(status_code=404, detail="Categoria não encontrada")
+    opcoes = cat.get("opcoes", [])
+    if opcao_idx < 0 or opcao_idx >= len(opcoes):
+        raise HTTPException(status_code=400, detail="Índice de opção inválido")
+    data = await foto.read()
+    if len(data) > 5 * 1024 * 1024:
+        raise HTTPException(status_code=400, detail="Arquivo muito grande (max 5MB)")
+    try:
+        from services.object_storage import upload_file
+        result = upload_file(data, foto.filename, pasta="premiacao/opcoes")
+        url = result.get("url", "")
+        # Converter opção string para objeto se necessário
+        opcao_atual = opcoes[opcao_idx]
+        if isinstance(opcao_atual, str):
+            opcoes[opcao_idx] = {"texto": opcao_atual, "foto_url": url}
+        else:
+            opcoes[opcao_idx]["foto_url"] = url
+        await db.premiacao_categorias.update_one(
+            {"id": cat_id, "premiacao_id": prem_id},
+            {"$set": {"opcoes": opcoes}}
+        )
+        return {"message": "Foto da opção enviada!", "url": url, "opcoes": opcoes}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Erro no upload: {str(e)}")
+
+
+
 @router.delete("/admin/premiacoes/{prem_id}/categorias/{cat_id}")
 async def excluir_categoria(prem_id: str, cat_id: str, current_user: dict = Depends(get_admin_user)):
     await db.premiacao_categorias.delete_one({"id": cat_id, "premiacao_id": prem_id})

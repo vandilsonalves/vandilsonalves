@@ -252,7 +252,7 @@ const RankingPage = () => {
               >
                 <Trophy className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
                 <div className="text-left min-w-0">
-                  <p className="font-semibold text-xs md:text-sm truncate">Profissional</p>
+                  <p className="font-semibold text-xs md:text-sm truncate">Ranking Profissional/Amador</p>
                   <p className={`text-xs hidden md:block ${tipoRanking === 'profissional' ? 'text-emerald-100' : 'text-slate-400'}`}>
                     Por colocacao
                   </p>
@@ -271,7 +271,7 @@ const RankingPage = () => {
               >
                 <Users className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
                 <div className="text-left min-w-0">
-                  <p className="font-semibold text-xs md:text-sm truncate">Galera</p>
+                  <p className="font-semibold text-xs md:text-sm truncate">Ranking da Galera - Pace Livre</p>
                   <p className={`text-xs hidden md:block ${tipoRanking === 'povao' ? 'text-purple-100' : 'text-slate-400'}`}>
                     Por distancia
                   </p>
@@ -290,7 +290,7 @@ const RankingPage = () => {
               >
                 <Award className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
                 <div className="text-left min-w-0">
-                  <p className="font-semibold text-xs md:text-sm truncate">Equipes</p>
+                  <p className="font-semibold text-xs md:text-sm truncate">Ranking das Assessorias/Equipes</p>
                   <p className={`text-xs hidden md:block ${tipoRanking === 'equipes' ? 'text-amber-100' : 'text-slate-400'}`}>
                     Liga de Assessorias
                   </p>
@@ -305,7 +305,7 @@ const RankingPage = () => {
               >
                 <Star className="w-4 h-4 md:w-5 md:h-5 flex-shrink-0" />
                 <div className="text-left min-w-0">
-                  <p className="font-semibold text-xs md:text-sm truncate">Corridas</p>
+                  <p className="font-semibold text-xs md:text-sm truncate">Ranking das Corridas</p>
                   <p className="text-xs text-slate-400 hidden md:block">
                     Avalie eventos
                   </p>

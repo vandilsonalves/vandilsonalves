@@ -13,6 +13,12 @@ import { useAuth } from '@/context/AuthContext';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
 const API = `${BACKEND_URL}/api`;
 
+const resolveUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${BACKEND_URL}${url}`;
+};
+
 const VotacaoPage = () => {
   const navigate = useNavigate();
   const { token, user } = useAuth();
@@ -208,7 +214,7 @@ const VotacaoPage = () => {
                 {ativas.map(p => (
                   <Card key={p.id} className="bg-slate-800/80 border-emerald-700/50 hover:border-emerald-500/50 cursor-pointer transition-all" onClick={() => fetchPremiacao(p.id)} data-testid={`prem-card-${p.id}`}>
                     <CardContent className="p-4 flex items-center gap-4">
-                      {p.foto_url ? <img src={p.foto_url} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" /> : (
+                      {p.foto_url ? <img src={resolveUrl(p.foto_url)} alt="" className="w-14 h-14 rounded-xl object-cover shrink-0" /> : (
                         <div className="w-14 h-14 rounded-xl bg-amber-500/10 flex items-center justify-center shrink-0"><Trophy className="w-6 h-6 text-amber-500" /></div>
                       )}
                       <div className="min-w-0 flex-1">
@@ -233,7 +239,7 @@ const VotacaoPage = () => {
                 {encerradas.map(p => (
                   <Card key={p.id} className="bg-slate-800/50 border-slate-700 hover:border-slate-600 cursor-pointer transition-all opacity-70" onClick={() => fetchPremiacao(p.id)} data-testid={`prem-encerrada-${p.id}`}>
                     <CardContent className="p-4 flex items-center gap-4">
-                      {p.foto_url ? <img src={p.foto_url} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" /> : (
+                      {p.foto_url ? <img src={resolveUrl(p.foto_url)} alt="" className="w-12 h-12 rounded-lg object-cover shrink-0" /> : (
                         <div className="w-12 h-12 rounded-lg bg-slate-700 flex items-center justify-center shrink-0"><Trophy className="w-5 h-5 text-slate-500" /></div>
                       )}
                       <div className="min-w-0">
@@ -277,7 +283,7 @@ const VotacaoPage = () => {
         {/* Header */}
         <div className="text-center mb-8">
           {selectedPrem?.foto_url && (
-            <img src={selectedPrem.foto_url} alt="" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-4 border-2 border-amber-500/50" />
+            <img src={resolveUrl(selectedPrem.foto_url)} alt="" className="w-24 h-24 rounded-2xl object-cover mx-auto mb-4 border-2 border-amber-500/50" />
           )}
           <Trophy className="w-14 h-14 text-amber-500 mx-auto mb-3" />
           <h1 className="text-2xl sm:text-3xl font-bold text-amber-400">{selectedPrem?.titulo}</h1>
@@ -321,7 +327,7 @@ const VotacaoPage = () => {
                 <Card key={res.categoria.id} className="bg-slate-800/80 border-slate-700 overflow-hidden">
                   <div className="bg-amber-500/10 px-4 py-3 border-b border-slate-700">
                     <div className="flex items-center gap-3">
-                      {res.categoria.foto_url && <img src={res.categoria.foto_url} alt="" className="w-8 h-8 rounded-lg object-cover" />}
+                      {res.categoria.foto_url && <img src={resolveUrl(res.categoria.foto_url)} alt="" className="w-8 h-8 rounded-lg object-cover" />}
                       <div>
                         <h3 className="font-bold text-amber-400 text-sm sm:text-base">{res.categoria.nome}</h3>
                         <p className="text-xs text-slate-500">{res.total_votos} votos</p>
@@ -397,7 +403,7 @@ const VotacaoPage = () => {
                     <CardContent className="p-4">
                       <div className="flex items-center gap-3 mb-3">
                         {cat.foto_url ? (
-                          <img src={cat.foto_url} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
+                          <img src={resolveUrl(cat.foto_url)} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0" />
                         ) : (
                           <span className="w-8 h-8 rounded-full bg-amber-500/20 text-amber-400 flex items-center justify-center text-sm font-bold shrink-0">{i+1}</span>
                         )}
@@ -451,11 +457,13 @@ const VotacaoPage = () => {
                           {!isIndicar && cat.opcoes?.length > 0 && (
                             <div className="space-y-2">
                               {cat.opcoes.map((opcao, idx) => {
-                                const selecionada = form.nome === opcao;
+                                const opcaoTexto = typeof opcao === 'string' ? opcao : opcao.texto;
+                                const opcaoFoto = typeof opcao === 'object' ? opcao.foto_url : null;
+                                const selecionada = form.nome === opcaoTexto;
                                 return (
                                   <button
                                     key={idx}
-                                    onClick={() => updateForm(cat.id, 'nome', opcao)}
+                                    onClick={() => updateForm(cat.id, 'nome', opcaoTexto)}
                                     className={`w-full flex items-center gap-3 p-3 rounded-lg border text-left transition-all ${
                                       selecionada
                                         ? 'border-amber-500 bg-amber-500/10 text-white'
@@ -463,12 +471,16 @@ const VotacaoPage = () => {
                                     }`}
                                     data-testid={`opcao-${cat.id}-${idx}`}
                                   >
-                                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                                      selecionada ? 'bg-amber-500 text-white' : 'bg-slate-600 text-slate-300'
-                                    }`}>
-                                      {String.fromCharCode(65 + idx)}
-                                    </span>
-                                    <span className="text-sm font-medium">{opcao}</span>
+                                    {opcaoFoto ? (
+                                      <img src={resolveUrl(opcaoFoto)} alt="" className="w-10 h-10 rounded-lg object-cover shrink-0 border border-slate-600" />
+                                    ) : (
+                                      <span className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
+                                        selecionada ? 'bg-amber-500 text-white' : 'bg-slate-600 text-slate-300'
+                                      }`}>
+                                        {String.fromCharCode(65 + idx)}
+                                      </span>
+                                    )}
+                                    <span className="text-sm font-medium">{opcaoTexto}</span>
                                     {selecionada && <Check className="w-4 h-4 text-amber-400 ml-auto shrink-0" />}
                                   </button>
                                 );

@@ -197,7 +197,7 @@ async def get_ranking_assessorias(
         # Buscar dados da assessoria cadastrada (se existir)
         assessoria_db = await db.assessorias.find_one(
             {"nome": nome_equipe},
-            {"_id": 0, "dono_id": 1, "dono_nome": 1}
+            {"_id": 0, "dono_id": 1, "dono_nome": 1, "foto_url": 1}
         )
         
         dono_nome = None
@@ -274,6 +274,7 @@ async def get_ranking_assessorias(
             "nome": nome_equipe,
             "estado": equipe.get("estado", ""),
             "cidade": equipe.get("cidade", ""),
+            "foto_url": assessoria_db.get("foto_url", "") if assessoria_db else "",
             "total_atletas": equipe["total_atletas"],
             "pontos_cadastro": pontos_cadastro,
             "pontos_resultados": pontos_resultados,

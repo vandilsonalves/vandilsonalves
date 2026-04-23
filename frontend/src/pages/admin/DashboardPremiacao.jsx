@@ -17,6 +17,13 @@ import { toast } from 'sonner';
 import axios from 'axios';
 
 const API = `${process.env.REACT_APP_BACKEND_URL}/api`;
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL;
+
+const resolveUrl = (url) => {
+  if (!url) return '';
+  if (url.startsWith('http')) return url;
+  return `${BACKEND_URL}${url}`;
+};
 
 const DashboardPremiacao = ({ token }) => {
   const [premiacoes, setPremiacoes] = useState([]);
@@ -148,6 +155,24 @@ const DashboardPremiacao = ({ token }) => {
     }
     e.target.value = '';
   };
+
+  const handleUploadFotoOpcao = async (catId, opcaoIdx, e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    try {
+      const formData = new FormData();
+      formData.append('foto', file);
+      await axios.post(`${API}/premiacao/admin/premiacoes/${selected.id}/categorias/${catId}/opcao/${opcaoIdx}/foto`, formData, {
+        headers: { ...headers, 'Content-Type': 'multipart/form-data' }
+      });
+      toast.success('Foto da opção atualizada!');
+      fetchPremiacao(selected.id);
+    } catch (err) {
+      toast.error('Erro no upload da foto da opção');
+    }
+    e.target.value = '';
+  };
+
 
   const toggleVotacao = async () => {
     try {
@@ -285,7 +310,7 @@ const DashboardPremiacao = ({ token }) => {
                 <CardContent className="p-4">
                   <div className="flex items-start gap-3">
                     {p.foto_url ? (
-                      <img src={p.foto_url} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 border border-slate-600" />
+                      <img src={resolveUrl(p.foto_url)} alt="" className="w-14 h-14 rounded-lg object-cover shrink-0 border border-slate-600" />
                     ) : (
                       <div className="w-14 h-14 rounded-lg bg-amber-500/10 flex items-center justify-center shrink-0">
                         <Trophy className="w-6 h-6 text-amber-500" />
@@ -364,7 +389,7 @@ const DashboardPremiacao = ({ token }) => {
             {/* Foto */}
             <div className="relative group shrink-0 self-start">
               {selected?.foto_url ? (
-                <img src={selected.foto_url} alt="" className="w-20 h-20 rounded-xl object-cover border-2 border-amber-500/50" data-testid="foto-premiacao" />
+                <img src={resolveUrl(selected.foto_url)} alt="" className="w-20 h-20 rounded-xl object-cover border-2 border-amber-500/50" data-testid="foto-premiacao" />
               ) : (
                 <div className="w-20 h-20 rounded-xl bg-slate-700 border-2 border-dashed border-slate-500 flex items-center justify-center">
                   <ImageIcon className="w-6 h-6 text-slate-500" />
@@ -477,7 +502,7 @@ const DashboardPremiacao = ({ token }) => {
               {/* Foto da categoria */}
               <div className="relative group shrink-0">
                 {cat.foto_url ? (
-                  <img src={cat.foto_url} alt="" className="w-10 h-10 rounded-lg object-cover border border-slate-600" />
+                  <img src={resolveUrl(cat.foto_url)} alt="" className="w-10 h-10 rounded-lg object-cover border border-slate-600" />
                 ) : (
                   <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-400">
                     <Medal className="w-5 h-5" />
@@ -492,9 +517,25 @@ const DashboardPremiacao = ({ token }) => {
                 <p className="text-white font-medium text-sm truncate">{cat.nome}</p>
                 {cat.descricao && <p className="text-slate-400 text-xs truncate">{cat.descricao}</p>}
                 {cat.opcoes?.length > 0 && (
-                  <p className="text-amber-400/70 text-xs mt-0.5 truncate">
-                    Opções: {cat.opcoes.map((o, i) => `${String.fromCharCode(65 + i)}) ${o}`).join(' · ')}
-                  </p>
+                  <div className="mt-1 space-y-1">
+                    {cat.opcoes.map((o, i) => {
+                      const texto = typeof o === 'string' ? o : o.texto;
+                      const fotoOpcao = typeof o === 'object' ? o.foto_url : null;
+                      return (
+                        <div key={i} className="flex items-center gap-1.5 text-xs">
+                          <span className="text-amber-400 font-bold">{String.fromCharCode(65 + i)})</span>
+                          {fotoOpcao ? (
+                            <img src={resolveUrl(fotoOpcao)} alt="" className="w-5 h-5 rounded object-cover" />
+                          ) : null}
+                          <span className="text-slate-400 truncate">{texto}</span>
+                          <label className="cursor-pointer text-slate-500 hover:text-amber-400 transition-colors shrink-0" title="Adicionar foto">
+                            <Upload className="w-3 h-3" />
+                            <input type="file" accept="image/*" className="hidden" onChange={e => handleUploadFotoOpcao(cat.id, i, e)} />
+                          </label>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
               <Badge variant="secondary" className="text-xs shrink-0">{cat.total_votos || 0}</Badge>

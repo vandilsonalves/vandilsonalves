@@ -25,7 +25,7 @@ async def get_aniversariantes_mes(
     mes_atual = mes or hoje.month
     ano_atual = ano or hoje.year
     
-    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    atletas = await db.usuarios.find({"role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0}).to_list(None)
     
     calendario = {dia: [] for dia in range(1, 32)}
     
@@ -61,7 +61,7 @@ async def get_aniversariantes_hoje(admin: dict = Depends(get_admin_user)):
     """Retorna os aniversariantes do dia"""
     hoje = datetime.now()
     
-    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    atletas = await db.usuarios.find({"role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0}).to_list(None)
     
     aniversariantes = []
     for atleta in atletas:
@@ -93,7 +93,7 @@ async def get_aniversariantes_semana(admin: dict = Depends(get_admin_user)):
     inicio_semana = hoje - timedelta(days=hoje.weekday())
     fim_semana = inicio_semana + timedelta(days=6)
     
-    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    atletas = await db.usuarios.find({"role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0}).to_list(None)
     
     aniversariantes = []
     for atleta in atletas:
@@ -160,7 +160,7 @@ async def enviar_aniversarios_agora(admin: dict = Depends(get_admin_user)):
         "Feliz Aniversário! 🎂 Que este novo ciclo traga muitas conquistas nas pistas. O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️"
     ) if config else "Feliz Aniversário! 🎂 O Ranking Run Pró deseja a você muita saúde e velocidade! 🏃‍♂️"
     
-    atletas = await db.usuarios.find({"role": "atleta"}, {"_id": 0}).to_list(None)
+    atletas = await db.usuarios.find({"role": {"$in": ["atleta", "dono_assessoria"]}}, {"_id": 0}).to_list(None)
     
     aniversariantes = []
     for atleta in atletas:
@@ -209,7 +209,7 @@ async def enviar_email_aniversario_massa(admin: dict = Depends(get_admin_user)):
             from datetime import datetime as dt
             hoje = dt.now().strftime("%m-%d")
             pipeline = [
-                {"$match": {"role": "atleta", "is_active": True}},
+                {"$match": {"role": {"$in": ["atleta", "dono_assessoria"]}, "is_active": True}},
                 {"$addFields": {"mes_dia": {"$substr": ["$data_nascimento", 5, 5]}}},
                 {"$match": {"mes_dia": hoje}}
             ]

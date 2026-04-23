@@ -762,6 +762,14 @@ const RankingEquipes = () => {
                             </td>
                             <td className="py-3 px-2 md:px-4">
                               <div className="flex items-center gap-2">
+                                <Avatar className="w-8 h-8 border border-amber-200">
+                                  {equipe.foto_url ? (
+                                    <AvatarImage src={equipe.foto_url.startsWith('http') ? equipe.foto_url : `${BACKEND_URL}${equipe.foto_url}`} />
+                                  ) : null}
+                                  <AvatarFallback className="text-xs bg-amber-100 text-amber-700 font-bold">
+                                    {equipe.nome?.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase()}
+                                  </AvatarFallback>
+                                </Avatar>
                                 <span className="text-lg">{getSeloIcon(equipe.selo)}</span>
                                 <span className="font-medium text-amber-700 dark:text-amber-300 hover:underline">
                                   {equipe.nome}
