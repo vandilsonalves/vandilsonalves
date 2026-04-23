@@ -177,7 +177,14 @@ Plataforma de ranking de corridas de rua com gestão de assessorias esportivas, 
 - Guia Cloudflare WAF/Turnstile criado em /app/memory/CLOUDFLARE_SECURITY_GUIDE.md
 - Testado: 36/36 backend + todos os fluxos frontend verificados (iteration_120)
 
-### Bug Fixes Segurança (17/04/2026)
+### 4 Melhorias Solicitadas pelo Usuário (23/04/2026)
+1. **Nomenclaturas dos Rankings**: "Profissional"→"Ranking Profissional/Amador", "Galera"→"Ranking da Galera - Pace Livre", "Equipes"→"Ranking das Assessorias/Equipes", "Corridas"→"Ranking das Corridas" (subtítulos mantidos)
+2. **Foto de perfil no Ranking Profissional**: RankingTable.js já exibe Avatar com foto_url + fallback de iniciais. Garantido que URL é tratada corretamente
+3. **Foto da assessoria no Ranking**: Backend (assessorias_routes.py) agora retorna foto_url da coleção assessorias. Frontend (RankingEquipes.jsx) exibe Avatar com foto/sigla
+4. **Aniversariantes**: Query corrigida para incluir role "dono_assessoria" além de "atleta" em todos os 4 endpoints
+5. **Premiações - fotos**: Adicionado resolveUrl em DashboardPremiacao.jsx e VotacaoPage.jsx para tratar URLs relativas
+6. **Premiações - foto por opção de votação**: Novo endpoint POST /api/premiacao/admin/premiacoes/{id}/categorias/{id}/opcao/{idx}/foto. Opções suportam formato {texto, foto_url}. Admin pode fazer upload de foto para cada opção. Atleta vê foto ao invés da letra quando disponível
+- Testado: 15/16 backend + frontend verificado (iteration_122)
 - Bug 1: Feed bloqueado por anti-bot (escopo incluía /feed/) → Anti-bot reduzido para apenas /ranking, /liga-assessorias, /strava-atividades, /badges/ranking
 - Bug 2: Cadastro fechava automaticamente → /assessorias/lista tornado público (necessário para dropdown de equipes) + interceptor Axios não redireciona em /login e /cadastro
 - Bug 3: Feed da equipe/assessoria bloqueado → Anti-bot não monitora mais /assessorias
